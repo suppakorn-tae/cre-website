@@ -4,6 +4,7 @@ package engine
 // in the database and the AdviceList schema in the OpenAPI contract.
 type AdviceList string
 
+// Advice list keys, one per score that can drive advice.
 const (
 	AdviceListRL  AdviceList = "RL"
 	AdviceListRIC AdviceList = "RI_C"
