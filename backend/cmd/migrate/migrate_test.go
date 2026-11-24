@@ -18,6 +18,9 @@ var wantTables = []string{
 	"indicator", "indicator_text", "ri_e_option", "ri_e_option_text",
 	"impact_table", "advice_item", "advice_item_text",
 	"account", "job", "report_job", "export_job", "export_job_account", "audit_log",
+	"island", "project_type", "project", "assessment_version", "version_rl_threshold",
+	"version_impact_threshold", "answer", "answer_y3", "risk_result", "result_advice_list",
+	"strategy_choice",
 }
 
 func startPostgres(t *testing.T) (url string, conn *pgx.Conn) {
