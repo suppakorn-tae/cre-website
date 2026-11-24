@@ -18,8 +18,18 @@ type Querier interface {
 	// The record the session middleware checks on every request. Role, status
 	// and session version come from here, never from the token.
 	GetAccountSession(ctx context.Context, id uuid.UUID) (GetAccountSessionRow, error)
+	GetJob(ctx context.Context, id uuid.UUID) (Job, error)
+	// The owner check lives in the query: another account's job looks absent.
+	GetJobForRequester(ctx context.Context, arg GetJobForRequesterParams) (Job, error)
 	// Append-only: the application role has INSERT and SELECT on audit_log only.
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
+	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
+	ListUnfinishedJobs(ctx context.Context) ([]Job, error)
+	MarkJobDone(ctx context.Context, arg MarkJobDoneParams) (int64, error)
+	MarkJobExpired(ctx context.Context, id uuid.UUID) (int64, error)
+	MarkJobFailed(ctx context.Context, arg MarkJobFailedParams) (int64, error)
+	// A job left running by a crashed worker may be claimed again.
+	MarkJobRunning(ctx context.Context, id uuid.UUID) (Job, error)
 }
 
 var _ Querier = (*Queries)(nil)

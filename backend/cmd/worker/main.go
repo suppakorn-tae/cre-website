@@ -1,5 +1,6 @@
-// Command worker runs background jobs. Until the asynq adapter lands it only
-// serves probes and metrics and shuts down cleanly on SIGTERM.
+// Command worker runs background jobs (reports and exports) from the asynq
+// queues, and serves probes and metrics. On SIGTERM it stops taking jobs and
+// lets running ones finish; asynq re-queues whatever is still running.
 package main
 
 import (
@@ -7,46 +8,100 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/pdf"
+	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/queue"
+	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
 	"github.com/suppakorn-tae/cre-website/backend/internal/config"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/health"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/httpserver"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/metrics"
+	"github.com/suppakorn-tae/cre-website/backend/internal/service/jobs"
+	"github.com/suppakorn-tae/cre-website/backend/internal/worker/runtime"
 )
 
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	cfg, err := config.LoadWorker(os.LookupEnv)
 	if err != nil {
 		log.New(os.Stderr, "error").Error("invalid configuration, exiting", "error", err.Error())
-		os.Exit(1)
+		return 1
 	}
 	l := log.New(os.Stdout, cfg.LogLevel)
-
-	hc := health.New(2 * time.Second)
-	addr, err := health.HostPortFromURL(cfg.DatabaseURL, "5432")
-	if err != nil {
-		l.Error("invalid DATABASE_URL, exiting", "error", err.Error())
-		os.Exit(1)
+	fail := func(msg string, err error) int {
+		l.Error(msg, "error", err.Error())
+		return 1
 	}
-	hc.Add("db", health.TCP(addr))
-	hc.Add("valkey", health.TCP(cfg.ValkeyAddr))
 
-	m := metrics.New()
-	r := chi.NewRouter()
-	r.Method(http.MethodGet, "/healthz", hc.Healthz())
-	r.Method(http.MethodGet, "/readyz", hc.Readyz())
-	r.Method(http.MethodGet, "/metrics", m.Handler())
-	srv := &http.Server{Addr: cfg.HTTPAddr, Handler: r, ReadHeaderTimeout: 10 * time.Second}
+	gotenbergURL, _ := os.LookupEnv("GOTENBERG_URL")
+	if gotenbergURL == "" {
+		l.Error("GOTENBERG_URL is required but not set, exiting")
+		return 1
+	}
+	conc, err := runtime.ConcurrencyFromEnv(os.LookupEnv)
+	if err != nil {
+		return fail("invalid worker concurrency, exiting", err)
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
-	if err := httpserver.ListenAndServe(ctx, srv, cfg.ShutdownTimeout, l, hc.SetDraining); err != nil {
-		l.Error("worker stopped with error", "error", err.Error())
-		os.Exit(1)
+
+	pool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	if err != nil {
+		return fail("invalid DATABASE_URL, exiting", err)
 	}
+	defer pool.Close()
+
+	valkeyURL := cfg.ValkeyAddr
+	if !strings.Contains(valkeyURL, "://") {
+		valkeyURL = "redis://" + valkeyURL
+	}
+	vk, err := valkey.New(valkeyURL)
+	if err != nil {
+		return fail("invalid VALKEY_ADDR, exiting", err)
+	}
+	defer func() { _ = vk.Close() }()
+	enq, err := queue.NewClient(valkeyURL)
+	if err != nil {
+		return fail("queue client, exiting", err)
+	}
+	defer func() { _ = enq.Close() }()
+	srv, err := queue.NewServer(queue.ServerConfig{RedisURL: valkeyURL, Concurrency: conc})
+	if err != nil {
+		return fail("queue server, exiting", err)
+	}
+
+	hc := health.New(2 * time.Second)
+	hc.Add("db", pool.Ping)
+	hc.Add("valkey", vk.Check)
+	hc.Add("gotenberg", pdf.New(gotenbergURL).Ready)
+
+	// Job runners are registered per kind by the report and export issues.
+	rt := runtime.New(jobs.New(pool, enq), srv, l)
+	if err := rt.Start(ctx); err != nil {
+		return fail("worker runtime, exiting", err)
+	}
+
+	r := chi.NewRouter()
+	r.Method(http.MethodGet, "/healthz", hc.Healthz())
+	r.Method(http.MethodGet, "/readyz", hc.Readyz())
+	r.Method(http.MethodGet, "/metrics", metrics.New().Handler())
+	httpSrv := &http.Server{Addr: cfg.HTTPAddr, Handler: r, ReadHeaderTimeout: 10 * time.Second}
+
+	err = httpserver.ListenAndServe(ctx, httpSrv, cfg.ShutdownTimeout, l, hc.SetDraining)
+	rt.Stop()
+	if err != nil {
+		return fail("worker stopped with error", err)
+	}
+	return 0
 }

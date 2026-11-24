@@ -4,7 +4,6 @@ package main
 import (
 	"context"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -62,7 +61,7 @@ func main() {
 		os.Exit(1)
 	}
 	hc.Add("db", health.TCP(dbAddr))
-	hc.Add("valkey", health.TCP(valkeyHostPort(cfg.ValkeyAddr)))
+	hc.Add("valkey", cache.Check)
 
 	srv := &http.Server{
 		Addr: cfg.HTTPAddr,
@@ -87,15 +86,4 @@ func valkeyURL(addr string) string {
 		return addr
 	}
 	return "redis://" + addr
-}
-
-// valkeyHostPort extracts the dial target of VALKEY_ADDR for the health
-// check: host:port as given, or the host part of a URL-form value.
-func valkeyHostPort(addr string) string {
-	if strings.Contains(addr, "://") {
-		if u, err := url.Parse(addr); err == nil && u.Host != "" {
-			return u.Host
-		}
-	}
-	return addr
 }
