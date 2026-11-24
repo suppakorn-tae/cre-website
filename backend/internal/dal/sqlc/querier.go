@@ -66,6 +66,8 @@ type Querier interface {
 	// and session version come from here, never from the token.
 	GetAccountSession(ctx context.Context, id uuid.UUID) (GetAccountSessionRow, error)
 	GetAuditEntry(ctx context.Context, id int64) (GetAuditEntryRow, error)
+	// Any admin may fetch any export; the handler sits behind RequireAdmin.
+	GetExportJob(ctx context.Context, jobID uuid.UUID) (GetExportJobRow, error)
 	GetJob(ctx context.Context, id uuid.UUID) (Job, error)
 	// The owner check lives in the query: another account's job looks absent.
 	GetJobForRequester(ctx context.Context, arg GetJobForRequesterParams) (Job, error)
@@ -77,6 +79,8 @@ type Querier interface {
 	GetVersionForReport(ctx context.Context, arg GetVersionForReportParams) (GetVersionForReportRow, error)
 	// Append-only: the application role has INSERT and SELECT on audit_log only.
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
+	InsertExportJob(ctx context.Context, arg InsertExportJobParams) error
+	InsertExportJobAccounts(ctx context.Context, arg InsertExportJobAccountsParams) error
 	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
 	InsertReportJob(ctx context.Context, arg InsertReportJobParams) error
 	// The number counts deleted versions too, so it is never reused.
@@ -98,6 +102,7 @@ type Querier interface {
 	ListCatalogueIslands(ctx context.Context) ([]string, error)
 	ListCatalogueProjectTypes(ctx context.Context) ([]string, error)
 	ListCatalogueRiEOptions(ctx context.Context) ([]ListCatalogueRiEOptionsRow, error)
+	ListExistingAccountIDs(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error)
 	ListUnfinishedJobs(ctx context.Context) ([]Job, error)
 	// Non-deleted versions of an owned project, newest first; version_id narrows
 	// it to one. editable is true only for the highest number ever created,
