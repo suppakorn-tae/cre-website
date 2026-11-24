@@ -1,0 +1,50 @@
+openapi: 3.1.0
+info:
+  title: Construction Risk Expert API
+  version: 1.0.0
+  description: |
+    Contract for the CRE HTTP API. Domain issues add only their own
+    `paths/<domain>.yaml` and `schemas/<domain>.yaml`; `make gen` merges
+    them (see `contracts/bundle.mjs`) and generates the Go and TypeScript code.
+servers:
+  - url: /api/v1
+    description: Same origin as the web app (Caddy routes `/api/v*` to the api).
+security:
+  - sessionCookie: []
+    csrfToken: []
+# `paths` and the domain schemas are filled in by contracts/bundle.mjs from
+# paths/*.yaml and schemas/*.yaml. Do not list them here.
+paths: {}
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: cre_session
+      description: httpOnly, Secure, SameSite=Lax session cookie holding the JWT.
+    csrfToken:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
+      description: Required on state-changing requests together with an Origin check.
+  parameters:
+    Page:
+      $ref: schemas/common.yaml#/parameters/Page
+    PageSize:
+      $ref: schemas/common.yaml#/parameters/PageSize
+  responses:
+    BadRequest:
+      $ref: schemas/common.yaml#/responses/BadRequest
+    ValidationFailed:
+      $ref: schemas/common.yaml#/responses/ValidationFailed
+    Unauthorized:
+      $ref: schemas/common.yaml#/responses/Unauthorized
+    Forbidden:
+      $ref: schemas/common.yaml#/responses/Forbidden
+    NotFound:
+      $ref: schemas/common.yaml#/responses/NotFound
+    Conflict:
+      $ref: schemas/common.yaml#/responses/Conflict
+    TooManyRequests:
+      $ref: schemas/common.yaml#/responses/TooManyRequests
+  schemas: {}
