@@ -3,10 +3,246 @@
  * Do not make direct changes to the file.
  */
 
-export type paths = Record<string, never>;
+export interface paths {
+    "/projects/{project_id}/versions/{version_id}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /** Get all answers of a version. */
+        get: operations["listAnswers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Upsert one or many answers (partial allowed). */
+        patch: operations["upsertAnswers"];
+        trace?: never;
+    };
+    "/projects/{project_id}/versions/{version_id}/answers/{indicator_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+                indicator_code: components["schemas"]["IndicatorCode"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Upsert the answer of one indicator. */
+        put: operations["putAnswer"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/versions/{version_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit (or resubmit) the version and score every complete indicator.
+         * @description 422 with code `no_complete_indicator` when no indicator is complete.
+         *     Previous results of the version are replaced.
+         */
+        post: operations["submitVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/versions/{version_id}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get the results of the last submission.
+         * @description 404 when the version was never submitted, deleted or not owned.
+         */
+        get: operations["getResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/versions/{version_id}/results/{indicator_code}/strategy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+                indicator_code: components["schemas"]["IndicatorCode"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set or change the strategy of an H or VH indicator.
+         * @description 409 when the version is not the latest. 422 with code `not_high_risk`
+         *     when the indicator is not H or VH.
+         */
+        put: operations["putStrategy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+}
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description Indicator code, e.g. `EC-HS-2`.
+         * @example EC-HS-2
+         */
+        IndicatorCode: string;
+        /**
+         * @description Option of y3. `A` is exclusive and cannot be combined with another option.
+         * @enum {string}
+         */
+        Y3Option: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I";
+        /** @description y1, the cost impact. When `unit` is `percent` the value is 0-100. */
+        CostImpact: {
+            value: number;
+            unit: components["schemas"]["CostUnit"];
+        };
+        /** @description y2, the time impact. When `unit` is `percent` the value is 0-100. */
+        TimeImpact: {
+            value: number;
+            unit: components["schemas"]["TimeUnit"];
+        };
+        /**
+         * @description The full answer of one indicator. Fields that are omitted are cleared,
+         *     so a partial answer is allowed. The API rejects a percent value above
+         *     100 (`out_of_range`) and `A` combined with another y3 option
+         *     (`exclusive_option`) with a 422.
+         */
+        AnswerInput: {
+            indicator_code: components["schemas"]["IndicatorCode"];
+            /** @description In the indicator's own unit. */
+            x?: number;
+            y1?: components["schemas"]["CostImpact"];
+            y2?: components["schemas"]["TimeImpact"];
+            y3?: components["schemas"]["Y3Option"][];
+        };
+        Answer: components["schemas"]["AnswerInput"] & {
+            /** @description True when x, y1, y2 and y3 are all given. */
+            complete: boolean;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        AnswerList: {
+            version_id: components["schemas"]["Uuid"];
+            /** @description False when a newer version exists (read-only). */
+            editable: boolean;
+            /** @description Answers recorded so far; indicators never answered are absent. */
+            items: components["schemas"]["Answer"][];
+        };
+        AnswerBatchRequest: {
+            /** @description Each entry replaces the stored answer of its indicator; other indicators are untouched. */
+            answers: components["schemas"]["AnswerInput"][];
+        };
+        LevelCounts: {
+            VL: number;
+            L: number;
+            M: number;
+            H: number;
+            VH: number;
+        };
+        ResultsSummary: {
+            /** @description Number of complete indicators scored at the last submission. */
+            scored_count: number;
+            level_counts: components["schemas"]["LevelCounts"];
+            /** @description Mean RM of the scored indicators. */
+            average_rm?: number;
+        };
+        AdviceListItems: {
+            list: components["schemas"]["AdviceList"];
+            /** @description Current advice text in admin-defined order. Do not assume a length. */
+            items: string[];
+        };
+        IndicatorResult: {
+            indicator_code: components["schemas"]["IndicatorCode"];
+            x: number;
+            /** @description y1 in percent of the project value snapshot. */
+            y1_pct: number;
+            /** @description y2 in percent of the project duration snapshot. */
+            y2_pct: number;
+            rl: number;
+            ri_c: number;
+            ri_t: number;
+            ri_e: number;
+            ri_max: number;
+            rm: number;
+            level: components["schemas"]["RiskLevel"];
+            /** @description Present only for H and VH. One entry per selected list; ties list every tied list. */
+            advice?: components["schemas"]["AdviceListItems"][];
+            strategy?: components["schemas"]["RiskStrategy"];
+            strategy_updated_at?: components["schemas"]["Timestamp"];
+        };
+        ResultsResponse: {
+            version_id: components["schemas"]["Uuid"];
+            submitted_at: components["schemas"]["Timestamp"];
+            /** @description False when a newer version exists; strategies can then no longer change. */
+            editable: boolean;
+            summary: components["schemas"]["ResultsSummary"];
+            items: components["schemas"]["IndicatorResult"][];
+        };
+        SubmitResponse: {
+            version_id: components["schemas"]["Uuid"];
+            status: components["schemas"]["VersionStatus"];
+            submitted_at: components["schemas"]["Timestamp"];
+            summary: components["schemas"]["ResultsSummary"];
+        };
+        StrategyRequest: {
+            strategy: components["schemas"]["RiskStrategy"];
+        };
+        StrategyChoice: {
+            indicator_code: components["schemas"]["IndicatorCode"];
+            strategy: components["schemas"]["RiskStrategy"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /** Format: uuid */
+        Uuid: string;
+        /** @enum {string} */
+        CostUnit: "baht" | "percent";
+        /** @enum {string} */
+        TimeUnit: "day" | "percent";
+        /**
+         * Format: date-time
+         * @description UTC instant, RFC 3339.
+         */
+        Timestamp: string;
         ErrorBody: {
             /** @description Stable machine code, e.g. `not_found`. */
             code: string;
@@ -28,6 +264,14 @@ export interface components {
         ValidationErrorEnvelope: {
             error: components["schemas"]["ValidationErrorBody"];
         };
+        /** @enum {string} */
+        VersionStatus: "draft" | "submitted";
+        /** @enum {string} */
+        RiskLevel: "VL" | "L" | "M" | "H" | "VH";
+        /** @enum {string} */
+        AdviceList: "RL" | "RI_C" | "RI_T" | "RI_E";
+        /** @enum {string} */
+        RiskStrategy: "REDUCE" | "TRANSFER" | "AVOID" | "ACCEPT";
     };
     responses: {
         /** @description Malformed request. */
@@ -103,4 +347,184 @@ export interface components {
     pathItems: never;
 }
 export type $defs = Record<string, never>;
-export type operations = Record<string, never>;
+export interface operations {
+    listAnswers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Answers recorded so far. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnswerList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    upsertAnswers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description The saved answers of the request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnswerList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    putAnswer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+                indicator_code: components["schemas"]["IndicatorCode"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerInput"];
+            };
+        };
+        responses: {
+            /** @description The saved answer. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Answer"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    submitVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Submitted; results summary. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmitResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getResults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-indicator results, advice and strategies, with counts per level. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultsResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putStrategy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+                indicator_code: components["schemas"]["IndicatorCode"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StrategyRequest"];
+            };
+        };
+        responses: {
+            /** @description The saved strategy. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyChoice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+}
