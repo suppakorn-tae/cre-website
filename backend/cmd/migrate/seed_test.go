@@ -13,21 +13,21 @@ func TestSeedCatalogue(t *testing.T) {
 	}
 
 	want := map[string]int{
-		`SELECT count(*) FROM indicator`:                                        55,
-		`SELECT count(*) FROM indicator_text WHERE locale = 'th'`:               55,
-		`SELECT count(*) FROM impact_table`:                                     2,
-		`SELECT count(*) FROM dimension`:                                        3,
-		`SELECT count(*) FROM factor`:                                           11,
-		`SELECT count(*) FROM ri_e_option`:                                      9,
-		`SELECT count(*) FROM ri_e_option WHERE is_exclusive`:                   1,
-		`SELECT count(*) FROM advice_item`:                                      55 * 4 * 3,
-		`SELECT count(*) FROM advice_item_text WHERE locale = 'th'`:             55 * 4 * 3,
-		`SELECT count(*) FROM advice_item WHERE updated_by IS NOT NULL`:         0,
-		`SELECT count(*) FROM indicator WHERE updated_by IS NOT NULL`:           0,
-		`SELECT count(*) FROM impact_table WHERE updated_by IS NOT NULL`:        0,
-		`SELECT count(*) FROM locale WHERE code = 'th' AND is_default`:          1,
-		`SELECT count(*) FROM indicator WHERE direction = 'inverse'`:            4,
-		`SELECT count(*) FROM indicator WHERE a = 0 OR b = 0 OR d = 0 OR e = 0`: 0,
+		`SELECT count(*) FROM indicator`:                                    55,
+		`SELECT count(*) FROM indicator_text WHERE locale = 'th'`:           55,
+		`SELECT count(*) FROM impact_table`:                                 2,
+		`SELECT count(*) FROM dimension`:                                    3,
+		`SELECT count(*) FROM factor`:                                       11,
+		`SELECT count(*) FROM ri_e_option`:                                  9,
+		`SELECT count(*) FROM ri_e_option WHERE is_exclusive`:               1,
+		`SELECT count(*) FROM advice_item`:                                  55 * 4 * 3,
+		`SELECT count(*) FROM advice_item_text WHERE locale = 'th'`:         55 * 4 * 3,
+		`SELECT count(*) FROM advice_item WHERE updated_by IS NOT NULL`:     0,
+		`SELECT count(*) FROM indicator WHERE updated_by IS NOT NULL`:       0,
+		`SELECT count(*) FROM impact_table WHERE updated_by IS NOT NULL`:    0,
+		`SELECT count(*) FROM locale WHERE code = 'th' AND is_default`:      1,
+		`SELECT count(*) FROM indicator WHERE direction = 'inverse'`:        4,
+		`SELECT count(*) FROM indicator WHERE num_nulls(a, b, c, d, e) > 0`: 7,
 	}
 	for q, n := range want {
 		if got := count(t, conn, q); got != n {
