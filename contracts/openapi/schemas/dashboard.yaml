@@ -1,0 +1,369 @@
+# Dashboard (UC-20) and version comparison (UC-21) read models.
+# All figures come from stored results (never recalculated on read) and, for
+# the dashboard, from each non-deleted project's latest submitted version
+# (BR-26). `RM` is the stored risk magnitude, rounded to the version's
+# `snap_rm_decimals`.
+LevelCounts:
+  type: object
+  description: Number of scored indicators per risk level.
+  required: [VL, L, M, H, VH]
+  properties:
+    VL:
+      type: integer
+      minimum: 0
+    L:
+      type: integer
+      minimum: 0
+    M:
+      type: integer
+      minimum: 0
+    H:
+      type: integer
+      minimum: 0
+    VH:
+      type: integer
+      minimum: 0
+DashboardKpis:
+  type: object
+  required: [project_count, version_count, h_vh_indicator_count, island_count, total_value_baht]
+  properties:
+    project_count:
+      type: integer
+      minimum: 0
+    version_count:
+      type: integer
+      minimum: 0
+      description: Non-deleted versions of the non-deleted projects.
+    h_vh_indicator_count:
+      type: integer
+      minimum: 0
+    island_count:
+      type: integer
+      minimum: 0
+      description: Distinct islands that have at least one project.
+    total_value_baht:
+      type: number
+      minimum: 0
+      description: Sum of the project values. Display only.
+DashboardProjectRisk:
+  type: object
+  description: H and VH indicator counts of one project's latest submitted version.
+  required: [project_id, name, nickname, version_id, version_no, h_count, vh_count]
+  properties:
+    project_id:
+      $ref: common.yaml#/schemas/Uuid
+    name:
+      type: string
+    nickname:
+      type: string
+    version_id:
+      $ref: common.yaml#/schemas/Uuid
+    version_no:
+      type: integer
+      minimum: 1
+    h_count:
+      type: integer
+      minimum: 0
+    vh_count:
+      type: integer
+      minimum: 0
+DashboardSummary:
+  type: object
+  required: [kpis, level_distribution, project_risks]
+  properties:
+    kpis:
+      $ref: '#/DashboardKpis'
+    level_distribution:
+      $ref: '#/LevelCounts'
+    project_risks:
+      type: array
+      description: One entry per project that has a submitted version.
+      items:
+        $ref: '#/DashboardProjectRisk'
+DashboardProjectItem:
+  type: object
+  required:
+    - project_id
+    - name
+    - nickname
+    - island_code
+    - type_code
+    - value_baht
+    - progress_pct
+    - version_count
+    - latest_version_id
+    - latest_version_no
+    - latest_version_status
+    - latest_submitted_version_id
+    - h_vh_count
+    - avg_rm
+  properties:
+    project_id:
+      $ref: common.yaml#/schemas/Uuid
+    name:
+      type: string
+    nickname:
+      type: string
+    island_code:
+      type: string
+    island_other:
+      type: [string, 'null']
+    type_code:
+      type: string
+    type_other:
+      type: [string, 'null']
+    value_baht:
+      type: number
+    progress_pct:
+      type: integer
+      minimum: 0
+      maximum: 100
+    version_count:
+      type: integer
+      minimum: 1
+    latest_version_id:
+      description: Target of the assess action.
+      $ref: common.yaml#/schemas/Uuid
+    latest_version_no:
+      type: integer
+      minimum: 1
+    latest_version_status:
+      $ref: common.yaml#/schemas/VersionStatus
+    latest_submitted_version_id:
+      description: Target of the results action; null when never submitted.
+      oneOf:
+        - $ref: common.yaml#/schemas/Uuid
+        - type: 'null'
+    h_vh_count:
+      type: [integer, 'null']
+      minimum: 0
+      description: H plus VH indicators of the latest submitted version.
+    avg_rm:
+      type: [number, 'null']
+      description: Average RM of the latest submitted version.
+DashboardProjectList:
+  type: object
+  required: [items, page]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/DashboardProjectItem'
+    page:
+      $ref: common.yaml#/schemas/PageMeta
+DashboardTopIndicator:
+  type: object
+  description: |
+    An indicator ranked by how many projects have it at H or VH in their
+    latest submitted version. Ties: more VH first, then indicator code.
+  required: [rank, indicator_code, factor_code, h_count, vh_count]
+  properties:
+    rank:
+      type: integer
+      minimum: 1
+      maximum: 10
+    indicator_code:
+      type: string
+    factor_code:
+      type: string
+    h_count:
+      type: integer
+      minimum: 0
+    vh_count:
+      type: integer
+      minimum: 0
+DashboardTopIndicators:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      maxItems: 10
+      items:
+        $ref: '#/DashboardTopIndicator'
+DashboardIslandProject:
+  type: object
+  required: [project_id, name, nickname, progress_pct, latest_version_id, h_vh_count]
+  properties:
+    project_id:
+      $ref: common.yaml#/schemas/Uuid
+    name:
+      type: string
+    nickname:
+      type: string
+    progress_pct:
+      type: integer
+      minimum: 0
+      maximum: 100
+    latest_version_id:
+      $ref: common.yaml#/schemas/Uuid
+    h_vh_count:
+      type: [integer, 'null']
+      minimum: 0
+DashboardIslandGroup:
+  type: object
+  required: [island_code, projects]
+  properties:
+    island_code:
+      type: string
+    projects:
+      type: array
+      items:
+        $ref: '#/DashboardIslandProject'
+DashboardIslands:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/DashboardIslandGroup'
+CompareVersionMetrics:
+  type: object
+  description: Figures of one submitted version, as recorded at its last submission.
+  required: [version_id, version_no, submitted_at, progress_at_submit, avg_rm, h_vh_count, scored_count]
+  properties:
+    version_id:
+      $ref: common.yaml#/schemas/Uuid
+    version_no:
+      type: integer
+      minimum: 1
+    submitted_at:
+      $ref: common.yaml#/schemas/Timestamp
+    progress_at_submit:
+      type: integer
+      minimum: 0
+      maximum: 100
+    avg_rm:
+      type: [number, 'null']
+      description: Mean RM of the scored indicators; null when none is scored.
+    h_vh_count:
+      type: integer
+      minimum: 0
+    scored_count:
+      type: integer
+      minimum: 0
+LevelChangeDirection:
+  type: string
+  enum: [up, down]
+CompareLevelChange:
+  type: object
+  description: An indicator scored in both compared versions whose level changed.
+  required: [indicator_code, factor_code, base_level, target_level, base_rm, target_rm, direction]
+  properties:
+    indicator_code:
+      type: string
+    factor_code:
+      type: string
+    base_level:
+      $ref: common.yaml#/schemas/RiskLevel
+    target_level:
+      $ref: common.yaml#/schemas/RiskLevel
+    base_rm:
+      type: number
+    target_rm:
+      type: number
+    direction:
+      $ref: '#/LevelChangeDirection'
+VersionComparison:
+  type: object
+  required: [base, target, level_up_count, level_down_count, level_changes]
+  properties:
+    base:
+      $ref: '#/CompareVersionMetrics'
+    target:
+      $ref: '#/CompareVersionMetrics'
+    level_up_count:
+      type: integer
+      minimum: 0
+    level_down_count:
+      type: integer
+      minimum: 0
+    level_changes:
+      type: array
+      items:
+        $ref: '#/CompareLevelChange'
+TrendPoint:
+  type: object
+  description: |
+    One version on the trend. A never-submitted version is an empty slot:
+    `submitted_at` and every metric are null.
+  required: [version_id, version_no, status, submitted_at, avg_rm, h_vh_count, level_distribution]
+  properties:
+    version_id:
+      $ref: common.yaml#/schemas/Uuid
+    version_no:
+      type: integer
+      minimum: 1
+    status:
+      $ref: common.yaml#/schemas/VersionStatus
+    submitted_at:
+      type: [string, 'null']
+      format: date-time
+    avg_rm:
+      type: [number, 'null']
+    h_vh_count:
+      type: [integer, 'null']
+      minimum: 0
+    level_distribution:
+      oneOf:
+        - $ref: '#/LevelCounts'
+        - type: 'null'
+VersionTrend:
+  type: object
+  required: [versions]
+  properties:
+    versions:
+      type: array
+      description: All non-deleted versions, ascending by version number.
+      items:
+        $ref: '#/TrendPoint'
+IndicatorRmVersion:
+  type: object
+  required: [version_id, version_no, submitted]
+  properties:
+    version_id:
+      $ref: common.yaml#/schemas/Uuid
+    version_no:
+      type: integer
+      minimum: 1
+    submitted:
+      type: boolean
+IndicatorRmPoint:
+  type: object
+  required: [version_id, rm, level]
+  properties:
+    version_id:
+      $ref: common.yaml#/schemas/Uuid
+    rm:
+      type: [number, 'null']
+      description: Null when the indicator is not scored in that version.
+    level:
+      oneOf:
+        - $ref: common.yaml#/schemas/RiskLevel
+        - type: 'null'
+IndicatorRmRow:
+  type: object
+  required: [indicator_code, factor_code, points]
+  properties:
+    indicator_code:
+      type: string
+    factor_code:
+      type: string
+    points:
+      type: array
+      description: One point per entry of `versions`, same order.
+      items:
+        $ref: '#/IndicatorRmPoint'
+IndicatorRmMatrix:
+  type: object
+  required: [versions, indicators]
+  properties:
+    versions:
+      type: array
+      items:
+        $ref: '#/IndicatorRmVersion'
+    indicators:
+      type: array
+      items:
+        $ref: '#/IndicatorRmRow'

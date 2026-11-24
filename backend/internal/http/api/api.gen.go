@@ -8,22 +8,459 @@ import (
 	"compress/flate"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// Defines values for LevelChangeDirection.
+const (
+	Down LevelChangeDirection = "down"
+	Up   LevelChangeDirection = "up"
+)
+
+// Valid indicates whether the value is a known member of the LevelChangeDirection enum.
+func (e LevelChangeDirection) Valid() bool {
+	switch e {
+	case Down:
+		return true
+	case Up:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskLevel.
+const (
+	H  RiskLevel = "H"
+	L  RiskLevel = "L"
+	M  RiskLevel = "M"
+	VH RiskLevel = "VH"
+	VL RiskLevel = "VL"
+)
+
+// Valid indicates whether the value is a known member of the RiskLevel enum.
+func (e RiskLevel) Valid() bool {
+	switch e {
+	case H:
+		return true
+	case L:
+		return true
+	case M:
+		return true
+	case VH:
+		return true
+	case VL:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VersionStatus.
+const (
+	Draft     VersionStatus = "draft"
+	Submitted VersionStatus = "submitted"
+)
+
+// Valid indicates whether the value is a known member of the VersionStatus enum.
+func (e VersionStatus) Valid() bool {
+	switch e {
+	case Draft:
+		return true
+	case Submitted:
+		return true
+	default:
+		return false
+	}
+}
+
+// CompareLevelChange An indicator scored in both compared versions whose level changed.
+type CompareLevelChange struct {
+	BaseLevel     RiskLevel            `json:"base_level"`
+	BaseRm        float32              `json:"base_rm"`
+	Direction     LevelChangeDirection `json:"direction"`
+	FactorCode    string               `json:"factor_code"`
+	IndicatorCode string               `json:"indicator_code"`
+	TargetLevel   RiskLevel            `json:"target_level"`
+	TargetRm      float32              `json:"target_rm"`
+}
+
+// CompareVersionMetrics Figures of one submitted version, as recorded at its last submission.
+type CompareVersionMetrics struct {
+	// AvgRm Mean RM of the scored indicators; null when none is scored.
+	AvgRm            *float32 `json:"avg_rm"`
+	HVhCount         int      `json:"h_vh_count"`
+	ProgressAtSubmit int      `json:"progress_at_submit"`
+	ScoredCount      int      `json:"scored_count"`
+
+	// SubmittedAt UTC instant, RFC 3339.
+	SubmittedAt Timestamp `json:"submitted_at"`
+	VersionId   Uuid      `json:"version_id"`
+	VersionNo   int       `json:"version_no"`
+}
+
+// DashboardIslandGroup defines model for DashboardIslandGroup.
+type DashboardIslandGroup struct {
+	IslandCode string                   `json:"island_code"`
+	Projects   []DashboardIslandProject `json:"projects"`
+}
+
+// DashboardIslandProject defines model for DashboardIslandProject.
+type DashboardIslandProject struct {
+	HVhCount        *int   `json:"h_vh_count"`
+	LatestVersionId Uuid   `json:"latest_version_id"`
+	Name            string `json:"name"`
+	Nickname        string `json:"nickname"`
+	ProgressPct     int    `json:"progress_pct"`
+	ProjectId       Uuid   `json:"project_id"`
+}
+
+// DashboardIslands defines model for DashboardIslands.
+type DashboardIslands struct {
+	Items []DashboardIslandGroup `json:"items"`
+}
+
+// DashboardKpis defines model for DashboardKpis.
+type DashboardKpis struct {
+	HVhIndicatorCount int `json:"h_vh_indicator_count"`
+
+	// IslandCount Distinct islands that have at least one project.
+	IslandCount  int `json:"island_count"`
+	ProjectCount int `json:"project_count"`
+
+	// TotalValueBaht Sum of the project values. Display only.
+	TotalValueBaht float32 `json:"total_value_baht"`
+
+	// VersionCount Non-deleted versions of the non-deleted projects.
+	VersionCount int `json:"version_count"`
+}
+
+// DashboardProjectItem defines model for DashboardProjectItem.
+type DashboardProjectItem struct {
+	// AvgRm Average RM of the latest submitted version.
+	AvgRm *float32 `json:"avg_rm"`
+
+	// HVhCount H plus VH indicators of the latest submitted version.
+	HVhCount    *int    `json:"h_vh_count"`
+	IslandCode  string  `json:"island_code"`
+	IslandOther *string `json:"island_other"`
+
+	// LatestSubmittedVersionId Target of the results action; null when never submitted.
+	LatestSubmittedVersionId *Uuid `json:"latest_submitted_version_id"`
+
+	// LatestVersionId Target of the assess action.
+	LatestVersionId     Uuid          `json:"latest_version_id"`
+	LatestVersionNo     int           `json:"latest_version_no"`
+	LatestVersionStatus VersionStatus `json:"latest_version_status"`
+	Name                string        `json:"name"`
+	Nickname            string        `json:"nickname"`
+	ProgressPct         int           `json:"progress_pct"`
+	ProjectId           Uuid          `json:"project_id"`
+	TypeCode            string        `json:"type_code"`
+	TypeOther           *string       `json:"type_other"`
+	ValueBaht           float32       `json:"value_baht"`
+	VersionCount        int           `json:"version_count"`
+}
+
+// DashboardProjectList defines model for DashboardProjectList.
+type DashboardProjectList struct {
+	Items []DashboardProjectItem `json:"items"`
+	Page  PageMeta               `json:"page"`
+}
+
+// DashboardProjectRisk H and VH indicator counts of one project's latest submitted version.
+type DashboardProjectRisk struct {
+	HCount    int    `json:"h_count"`
+	Name      string `json:"name"`
+	Nickname  string `json:"nickname"`
+	ProjectId Uuid   `json:"project_id"`
+	VersionId Uuid   `json:"version_id"`
+	VersionNo int    `json:"version_no"`
+	VhCount   int    `json:"vh_count"`
+}
+
+// DashboardSummary defines model for DashboardSummary.
+type DashboardSummary struct {
+	Kpis DashboardKpis `json:"kpis"`
+
+	// LevelDistribution Number of scored indicators per risk level.
+	LevelDistribution LevelCounts `json:"level_distribution"`
+
+	// ProjectRisks One entry per project that has a submitted version.
+	ProjectRisks []DashboardProjectRisk `json:"project_risks"`
+}
+
+// DashboardTopIndicator An indicator ranked by how many projects have it at H or VH in their
+// latest submitted version. Ties: more VH first, then indicator code.
+type DashboardTopIndicator struct {
+	FactorCode    string `json:"factor_code"`
+	HCount        int    `json:"h_count"`
+	IndicatorCode string `json:"indicator_code"`
+	Rank          int    `json:"rank"`
+	VhCount       int    `json:"vh_count"`
+}
+
+// DashboardTopIndicators defines model for DashboardTopIndicators.
+type DashboardTopIndicators struct {
+	Items []DashboardTopIndicator `json:"items"`
+}
+
+// ErrorBody defines model for ErrorBody.
+type ErrorBody struct {
+	// Code Stable machine code, e.g. `not_found`.
+	Code string `json:"code"`
+
+	// Message Developer-facing detail, not shown to users.
+	Message   string  `json:"message"`
+	RequestId *string `json:"request_id,omitempty"`
+}
+
+// ErrorEnvelope defines model for ErrorEnvelope.
+type ErrorEnvelope struct {
+	Error ErrorBody `json:"error"`
+}
+
+// FieldError defines model for FieldError.
+type FieldError struct {
+	Code string `json:"code"`
+
+	// Field JSON pointer of the offending field.
+	Field string `json:"field"`
+}
+
+// IndicatorRmMatrix defines model for IndicatorRmMatrix.
+type IndicatorRmMatrix struct {
+	Indicators []IndicatorRmRow     `json:"indicators"`
+	Versions   []IndicatorRmVersion `json:"versions"`
+}
+
+// IndicatorRmPoint defines model for IndicatorRmPoint.
+type IndicatorRmPoint struct {
+	Level *RiskLevel `json:"level"`
+
+	// Rm Null when the indicator is not scored in that version.
+	Rm        *float32 `json:"rm"`
+	VersionId Uuid     `json:"version_id"`
+}
+
+// IndicatorRmRow defines model for IndicatorRmRow.
+type IndicatorRmRow struct {
+	FactorCode    string `json:"factor_code"`
+	IndicatorCode string `json:"indicator_code"`
+
+	// Points One point per entry of `versions`, same order.
+	Points []IndicatorRmPoint `json:"points"`
+}
+
+// IndicatorRmVersion defines model for IndicatorRmVersion.
+type IndicatorRmVersion struct {
+	Submitted bool `json:"submitted"`
+	VersionId Uuid `json:"version_id"`
+	VersionNo int  `json:"version_no"`
+}
+
+// LevelChangeDirection defines model for LevelChangeDirection.
+type LevelChangeDirection string
+
+// LevelCounts Number of scored indicators per risk level.
+type LevelCounts struct {
+	H  int `json:"H"`
+	L  int `json:"L"`
+	M  int `json:"M"`
+	VH int `json:"VH"`
+	VL int `json:"VL"`
+}
+
+// PageMeta defines model for PageMeta.
+type PageMeta struct {
+	Page     int `json:"page"`
+	PageSize int `json:"page_size"`
+	Total    int `json:"total"`
+}
+
+// RiskLevel defines model for RiskLevel.
+type RiskLevel string
+
+// Timestamp UTC instant, RFC 3339.
+type Timestamp = time.Time
+
+// TrendPoint One version on the trend. A never-submitted version is an empty slot:
+// `submitted_at` and every metric are null.
+type TrendPoint struct {
+	AvgRm             *float32      `json:"avg_rm"`
+	HVhCount          *int          `json:"h_vh_count"`
+	LevelDistribution *LevelCounts  `json:"level_distribution"`
+	Status            VersionStatus `json:"status"`
+	SubmittedAt       *time.Time    `json:"submitted_at"`
+	VersionId         Uuid          `json:"version_id"`
+	VersionNo         int           `json:"version_no"`
+}
+
+// Uuid defines model for Uuid.
+type Uuid = openapi_types.UUID
+
+// ValidationErrorBody defines model for ValidationErrorBody.
+type ValidationErrorBody struct {
+	// Code Stable machine code, e.g. `not_found`.
+	Code   string       `json:"code"`
+	Fields []FieldError `json:"fields"`
+
+	// Message Developer-facing detail, not shown to users.
+	Message   string  `json:"message"`
+	RequestId *string `json:"request_id,omitempty"`
+}
+
+// ValidationErrorEnvelope defines model for ValidationErrorEnvelope.
+type ValidationErrorEnvelope struct {
+	Error ValidationErrorBody `json:"error"`
+}
+
+// VersionComparison defines model for VersionComparison.
+type VersionComparison struct {
+	// Base Figures of one submitted version, as recorded at its last submission.
+	Base           CompareVersionMetrics `json:"base"`
+	LevelChanges   []CompareLevelChange  `json:"level_changes"`
+	LevelDownCount int                   `json:"level_down_count"`
+	LevelUpCount   int                   `json:"level_up_count"`
+
+	// Target Figures of one submitted version, as recorded at its last submission.
+	Target CompareVersionMetrics `json:"target"`
+}
+
+// VersionStatus defines model for VersionStatus.
+type VersionStatus string
+
+// VersionTrend defines model for VersionTrend.
+type VersionTrend struct {
+	// Versions All non-deleted versions, ascending by version number.
+	Versions []TrendPoint `json:"versions"`
+}
+
+// Page defines model for Page.
+type Page = int
+
+// PageSize defines model for PageSize.
+type PageSize = int
+
+// BadRequest defines model for BadRequest.
+type BadRequest = ErrorEnvelope
+
+// Conflict defines model for Conflict.
+type Conflict = ErrorEnvelope
+
+// NotFound defines model for NotFound.
+type NotFound = ErrorEnvelope
+
+// Unauthorized defines model for Unauthorized.
+type Unauthorized = ErrorEnvelope
+
+// ValidationFailed defines model for ValidationFailed.
+type ValidationFailed = ValidationErrorEnvelope
+
+// GetDashboardProjectsPanelParams defines parameters for GetDashboardProjectsPanel.
+type GetDashboardProjectsPanelParams struct {
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+
+	// Q Case-insensitive search on project name and nickname.
+	Q *string `form:"q,omitempty" json:"q,omitempty"`
+}
+
+// CompareProjectVersionsParams defines parameters for CompareProjectVersions.
+type CompareProjectVersionsParams struct {
+	TargetVersionId Uuid  `form:"target_version_id" json:"target_version_id"`
+	BaseVersionId   *Uuid `form:"base_version_id,omitempty" json:"base_version_id,omitempty"`
+}
+
+// GetProjectIndicatorRmParams defines parameters for GetProjectIndicatorRm.
+type GetProjectIndicatorRmParams struct {
+	// FactorCode Keep only indicators of these factors (repeatable).
+	FactorCode *[]string `form:"factor_code,omitempty" json:"factor_code,omitempty"`
+
+	// IndicatorCode Keep only these indicators (repeatable).
+	IndicatorCode *[]string `form:"indicator_code,omitempty" json:"indicator_code,omitempty"`
+}
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// GetDashboard KPI cards, level distribution and H/VH per project (UC-20)
+	// (GET /dashboard)
+	GetDashboard(w http.ResponseWriter, r *http.Request)
+	// GetDashboardIslandsPanel Panel of the islands KPI card (projects grouped by island)
+	// (GET /dashboard/panels/islands)
+	GetDashboardIslandsPanel(w http.ResponseWriter, r *http.Request)
+	// GetDashboardProjectsPanel Panel of the projects KPI card (project list)
+	// (GET /dashboard/panels/projects)
+	GetDashboardProjectsPanel(w http.ResponseWriter, r *http.Request, params GetDashboardProjectsPanelParams)
+	// GetDashboardTopIndicatorsPanel Panel of the H+VH indicators KPI card (Top 10)
+	// (GET /dashboard/panels/top-indicators)
+	GetDashboardTopIndicatorsPanel(w http.ResponseWriter, r *http.Request)
+	// CompareProjectVersions Compare two submitted versions of one project (UC-21)
+	// (GET /projects/{project_id}/compare)
+	CompareProjectVersions(w http.ResponseWriter, r *http.Request, projectId Uuid, params CompareProjectVersionsParams)
+	// GetProjectIndicatorRm RM of each indicator per version (UC-21)
+	// (GET /projects/{project_id}/indicator-rm)
+	GetProjectIndicatorRm(w http.ResponseWriter, r *http.Request, projectId Uuid, params GetProjectIndicatorRmParams)
+	// GetProjectVersionTrend Trend and level distribution over all versions (UC-21)
+	// (GET /projects/{project_id}/trend)
+	GetProjectVersionTrend(w http.ResponseWriter, r *http.Request, projectId Uuid)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 type Unimplemented struct{}
+
+// GetDashboard KPI cards, level distribution and H/VH per project (UC-20)
+// (GET /dashboard)
+func (_ Unimplemented) GetDashboard(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetDashboardIslandsPanel Panel of the islands KPI card (projects grouped by island)
+// (GET /dashboard/panels/islands)
+func (_ Unimplemented) GetDashboardIslandsPanel(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetDashboardProjectsPanel Panel of the projects KPI card (project list)
+// (GET /dashboard/panels/projects)
+func (_ Unimplemented) GetDashboardProjectsPanel(w http.ResponseWriter, r *http.Request, params GetDashboardProjectsPanelParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetDashboardTopIndicatorsPanel Panel of the H+VH indicators KPI card (Top 10)
+// (GET /dashboard/panels/top-indicators)
+func (_ Unimplemented) GetDashboardTopIndicatorsPanel(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CompareProjectVersions Compare two submitted versions of one project (UC-21)
+// (GET /projects/{project_id}/compare)
+func (_ Unimplemented) CompareProjectVersions(w http.ResponseWriter, r *http.Request, projectId Uuid, params CompareProjectVersionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetProjectIndicatorRm RM of each indicator per version (UC-21)
+// (GET /projects/{project_id}/indicator-rm)
+func (_ Unimplemented) GetProjectIndicatorRm(w http.ResponseWriter, r *http.Request, projectId Uuid, params GetProjectIndicatorRmParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetProjectVersionTrend Trend and level distribution over all versions (UC-21)
+// (GET /projects/{project_id}/trend)
+func (_ Unimplemented) GetProjectVersionTrend(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
@@ -33,6 +470,243 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// GetDashboard operation middleware
+func (siw *ServerInterfaceWrapper) GetDashboard(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDashboard(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDashboardIslandsPanel operation middleware
+func (siw *ServerInterfaceWrapper) GetDashboardIslandsPanel(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDashboardIslandsPanel(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDashboardProjectsPanel operation middleware
+func (siw *ServerInterfaceWrapper) GetDashboardProjectsPanel(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetDashboardProjectsPanelParams
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", r.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDashboardProjectsPanel(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetDashboardTopIndicatorsPanel operation middleware
+func (siw *ServerInterfaceWrapper) GetDashboardTopIndicatorsPanel(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetDashboardTopIndicatorsPanel(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CompareProjectVersions operation middleware
+func (siw *ServerInterfaceWrapper) CompareProjectVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params CompareProjectVersionsParams
+
+	// ------------- Required query parameter "target_version_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, true, "target_version_id", r.URL.Query(), &params.TargetVersionId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "target_version_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_version_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "base_version_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "base_version_id", r.URL.Query(), &params.BaseVersionId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "base_version_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "base_version_id", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompareProjectVersions(w, r, projectId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProjectIndicatorRm operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectIndicatorRm(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetProjectIndicatorRmParams
+
+	// ------------- Optional query parameter "factor_code" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "factor_code", r.URL.Query(), &params.FactorCode, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "factor_code"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "factor_code", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "indicator_code" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "indicator_code", r.URL.Query(), &params.IndicatorCode, runtime.BindQueryParameterOptions{Type: "array", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "indicator_code"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "indicator_code", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectIndicatorRm(w, r, projectId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProjectVersionTrend operation middleware
+func (siw *ServerInterfaceWrapper) GetProjectVersionTrend(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProjectVersionTrend(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 type UnescapedCookieParamError struct {
 	ParamName string
@@ -142,11 +816,461 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		}
 	}
 
+	wrapper := ServerInterfaceWrapper{
+		Handler:            si,
+		HandlerMiddlewares: options.Middlewares,
+		ErrorHandlerFunc:   options.ErrorHandlerFunc,
+	}
+
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{project_id}/compare", wrapper.CompareProjectVersions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{project_id}/trend", wrapper.GetProjectVersionTrend)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{project_id}/indicator-rm", wrapper.GetProjectIndicatorRm)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/dashboard", wrapper.GetDashboard)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/dashboard/panels/projects", wrapper.GetDashboardProjectsPanel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/dashboard/panels/top-indicators", wrapper.GetDashboardTopIndicatorsPanel)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/dashboard/panels/islands", wrapper.GetDashboardIslandsPanel)
+	})
+
 	return r
+}
+
+type BadRequestJSONResponse ErrorEnvelope
+
+type ConflictJSONResponse ErrorEnvelope
+
+type NotFoundJSONResponse ErrorEnvelope
+
+type UnauthorizedJSONResponse ErrorEnvelope
+
+type ValidationFailedJSONResponse ValidationErrorEnvelope
+
+type GetDashboardRequestObject struct {
+}
+
+type GetDashboardResponseObject interface {
+	VisitGetDashboardResponse(w http.ResponseWriter) error
+}
+
+type GetDashboard200JSONResponse DashboardSummary
+
+func (response GetDashboard200JSONResponse) VisitGetDashboardResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDashboard401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetDashboard401JSONResponse) VisitGetDashboardResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDashboardIslandsPanelRequestObject struct {
+}
+
+type GetDashboardIslandsPanelResponseObject interface {
+	VisitGetDashboardIslandsPanelResponse(w http.ResponseWriter) error
+}
+
+type GetDashboardIslandsPanel200JSONResponse DashboardIslands
+
+func (response GetDashboardIslandsPanel200JSONResponse) VisitGetDashboardIslandsPanelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDashboardIslandsPanel401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetDashboardIslandsPanel401JSONResponse) VisitGetDashboardIslandsPanelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDashboardProjectsPanelRequestObject struct {
+	Params GetDashboardProjectsPanelParams
+}
+
+type GetDashboardProjectsPanelResponseObject interface {
+	VisitGetDashboardProjectsPanelResponse(w http.ResponseWriter) error
+}
+
+type GetDashboardProjectsPanel200JSONResponse DashboardProjectList
+
+func (response GetDashboardProjectsPanel200JSONResponse) VisitGetDashboardProjectsPanelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDashboardProjectsPanel400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetDashboardProjectsPanel400JSONResponse) VisitGetDashboardProjectsPanelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDashboardProjectsPanel401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetDashboardProjectsPanel401JSONResponse) VisitGetDashboardProjectsPanelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDashboardProjectsPanel422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response GetDashboardProjectsPanel422JSONResponse) VisitGetDashboardProjectsPanelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDashboardTopIndicatorsPanelRequestObject struct {
+}
+
+type GetDashboardTopIndicatorsPanelResponseObject interface {
+	VisitGetDashboardTopIndicatorsPanelResponse(w http.ResponseWriter) error
+}
+
+type GetDashboardTopIndicatorsPanel200JSONResponse DashboardTopIndicators
+
+func (response GetDashboardTopIndicatorsPanel200JSONResponse) VisitGetDashboardTopIndicatorsPanelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetDashboardTopIndicatorsPanel401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetDashboardTopIndicatorsPanel401JSONResponse) VisitGetDashboardTopIndicatorsPanelResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompareProjectVersionsRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+	Params    CompareProjectVersionsParams
+}
+
+type CompareProjectVersionsResponseObject interface {
+	VisitCompareProjectVersionsResponse(w http.ResponseWriter) error
+}
+
+type CompareProjectVersions200JSONResponse VersionComparison
+
+func (response CompareProjectVersions200JSONResponse) VisitCompareProjectVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompareProjectVersions400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CompareProjectVersions400JSONResponse) VisitCompareProjectVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompareProjectVersions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CompareProjectVersions401JSONResponse) VisitCompareProjectVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompareProjectVersions404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CompareProjectVersions404JSONResponse) VisitCompareProjectVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompareProjectVersions409JSONResponse struct{ ConflictJSONResponse }
+
+func (response CompareProjectVersions409JSONResponse) VisitCompareProjectVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CompareProjectVersions422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response CompareProjectVersions422JSONResponse) VisitCompareProjectVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectIndicatorRmRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+	Params    GetProjectIndicatorRmParams
+}
+
+type GetProjectIndicatorRmResponseObject interface {
+	VisitGetProjectIndicatorRmResponse(w http.ResponseWriter) error
+}
+
+type GetProjectIndicatorRm200JSONResponse IndicatorRmMatrix
+
+func (response GetProjectIndicatorRm200JSONResponse) VisitGetProjectIndicatorRmResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectIndicatorRm400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response GetProjectIndicatorRm400JSONResponse) VisitGetProjectIndicatorRmResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectIndicatorRm401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetProjectIndicatorRm401JSONResponse) VisitGetProjectIndicatorRmResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectIndicatorRm404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetProjectIndicatorRm404JSONResponse) VisitGetProjectIndicatorRmResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectIndicatorRm422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response GetProjectIndicatorRm422JSONResponse) VisitGetProjectIndicatorRmResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectVersionTrendRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+}
+
+type GetProjectVersionTrendResponseObject interface {
+	VisitGetProjectVersionTrendResponse(w http.ResponseWriter) error
+}
+
+type GetProjectVersionTrend200JSONResponse VersionTrend
+
+func (response GetProjectVersionTrend200JSONResponse) VisitGetProjectVersionTrendResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectVersionTrend401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetProjectVersionTrend401JSONResponse) VisitGetProjectVersionTrendResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectVersionTrend404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetProjectVersionTrend404JSONResponse) VisitGetProjectVersionTrendResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// GetDashboard KPI cards, level distribution and H/VH per project (UC-20)
+	// (GET /dashboard)
+	GetDashboard(ctx context.Context, request GetDashboardRequestObject) (GetDashboardResponseObject, error)
+	// GetDashboardIslandsPanel Panel of the islands KPI card (projects grouped by island)
+	// (GET /dashboard/panels/islands)
+	GetDashboardIslandsPanel(ctx context.Context, request GetDashboardIslandsPanelRequestObject) (GetDashboardIslandsPanelResponseObject, error)
+	// GetDashboardProjectsPanel Panel of the projects KPI card (project list)
+	// (GET /dashboard/panels/projects)
+	GetDashboardProjectsPanel(ctx context.Context, request GetDashboardProjectsPanelRequestObject) (GetDashboardProjectsPanelResponseObject, error)
+	// GetDashboardTopIndicatorsPanel Panel of the H+VH indicators KPI card (Top 10)
+	// (GET /dashboard/panels/top-indicators)
+	GetDashboardTopIndicatorsPanel(ctx context.Context, request GetDashboardTopIndicatorsPanelRequestObject) (GetDashboardTopIndicatorsPanelResponseObject, error)
+	// CompareProjectVersions Compare two submitted versions of one project (UC-21)
+	// (GET /projects/{project_id}/compare)
+	CompareProjectVersions(ctx context.Context, request CompareProjectVersionsRequestObject) (CompareProjectVersionsResponseObject, error)
+	// GetProjectIndicatorRm RM of each indicator per version (UC-21)
+	// (GET /projects/{project_id}/indicator-rm)
+	GetProjectIndicatorRm(ctx context.Context, request GetProjectIndicatorRmRequestObject) (GetProjectIndicatorRmResponseObject, error)
+	// GetProjectVersionTrend Trend and level distribution over all versions (UC-21)
+	// (GET /projects/{project_id}/trend)
+	GetProjectVersionTrend(ctx context.Context, request GetProjectVersionTrendRequestObject) (GetProjectVersionTrendResponseObject, error)
 }
 
 // StrictHandlerFunc and StrictMiddlewareFunc are type aliases rather than
@@ -191,20 +1315,246 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
+// GetDashboard operation middleware
+func (sh *strictHandler) GetDashboard(w http.ResponseWriter, r *http.Request) {
+	var request GetDashboardRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetDashboard(ctx, request.(GetDashboardRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDashboard")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDashboardResponseObject); ok {
+		if err := validResponse.VisitGetDashboardResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDashboardIslandsPanel operation middleware
+func (sh *strictHandler) GetDashboardIslandsPanel(w http.ResponseWriter, r *http.Request) {
+	var request GetDashboardIslandsPanelRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetDashboardIslandsPanel(ctx, request.(GetDashboardIslandsPanelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDashboardIslandsPanel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDashboardIslandsPanelResponseObject); ok {
+		if err := validResponse.VisitGetDashboardIslandsPanelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDashboardProjectsPanel operation middleware
+func (sh *strictHandler) GetDashboardProjectsPanel(w http.ResponseWriter, r *http.Request, params GetDashboardProjectsPanelParams) {
+	var request GetDashboardProjectsPanelRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetDashboardProjectsPanel(ctx, request.(GetDashboardProjectsPanelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDashboardProjectsPanel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDashboardProjectsPanelResponseObject); ok {
+		if err := validResponse.VisitGetDashboardProjectsPanelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetDashboardTopIndicatorsPanel operation middleware
+func (sh *strictHandler) GetDashboardTopIndicatorsPanel(w http.ResponseWriter, r *http.Request) {
+	var request GetDashboardTopIndicatorsPanelRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetDashboardTopIndicatorsPanel(ctx, request.(GetDashboardTopIndicatorsPanelRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetDashboardTopIndicatorsPanel")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetDashboardTopIndicatorsPanelResponseObject); ok {
+		if err := validResponse.VisitGetDashboardTopIndicatorsPanelResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CompareProjectVersions operation middleware
+func (sh *strictHandler) CompareProjectVersions(w http.ResponseWriter, r *http.Request, projectId Uuid, params CompareProjectVersionsParams) {
+	var request CompareProjectVersionsRequestObject
+
+	request.ProjectId = projectId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.CompareProjectVersions(ctx, request.(CompareProjectVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CompareProjectVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CompareProjectVersionsResponseObject); ok {
+		if err := validResponse.VisitCompareProjectVersionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProjectIndicatorRm operation middleware
+func (sh *strictHandler) GetProjectIndicatorRm(w http.ResponseWriter, r *http.Request, projectId Uuid, params GetProjectIndicatorRmParams) {
+	var request GetProjectIndicatorRmRequestObject
+
+	request.ProjectId = projectId
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetProjectIndicatorRm(ctx, request.(GetProjectIndicatorRmRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProjectIndicatorRm")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectIndicatorRmResponseObject); ok {
+		if err := validResponse.VisitGetProjectIndicatorRmResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProjectVersionTrend operation middleware
+func (sh *strictHandler) GetProjectVersionTrend(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	var request GetProjectVersionTrendRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetProjectVersionTrend(ctx, request.(GetProjectVersionTrendRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProjectVersionTrend")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectVersionTrendResponseObject); ok {
+		if err := validResponse.VisitGetProjectVersionTrendResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"dFJfa9tOEPwqyz4lPxTZIW/60Yfipv8hwTK0EIfqctpIV0t3l9tVHGH03cudTEowfZP2ZndnZueA2vXe",
-	"WbLCWByQSQ/ByFjqlnpKJc3hceN2ZONPTayD8WKcxQLX9DSYQDU4CyxK6EK3yjbGNhDoaSAWBnENSUsB",
-	"9kZaUBZugmmMBd2S3uWYoYmTWlI1BczQqp6wwJ8Xq3L98WLem6GMPlaVN99oxClDJmbj7Mq5naFTYq2I",
-	"v7HdmEEZBVEGpeqpNELvvqsXOHaDTu3Quq6OnKUl+Ppj80pqfv5LSgf6dWw95TRNsevRnZJZOStBaYFH",
-	"F9KO1foaPm82t/D+9ksOH1yvjAXDPBCDqqOb3RiBJoDb262tvJKWF9thubzSdYKnb8pH1XcVKFtDxfFi",
-	"6t+o/6Hq1Y6gIVtBT6Eh3lppqYczJoJKH1ny4mGwdUd5/5ur8zS7IUtBCXFi/8ml4mb0VCaVoF1N+TZ5",
-	"YqSjWTJLGHR0ANaGd3D94ilIVIwZPlPg2ZvLfJkv40GdJ6u8wQKv8st8iRkm0Vgcpuw1lVjcvcnj3f1J",
-	"Eu7up1QMcUfCvz1GzAG4OYJqFrSnB1Dew9lK1fUIwQ1RarVQ3iye/6tAXIIpb85jNIbQYYHz6yVO99Of",
-	"AQA=",
+	"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",
+	"KR2v/zEvMkOSUuPEMhF7U89+3dcNiP8OAA==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,
