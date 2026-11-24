@@ -24,6 +24,18 @@ type Querier interface {
 	// Append-only: the application role has INSERT and SELECT on audit_log only.
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
+	// Advice items with one row per locale of text, in list order.
+	ListCatalogueAdvice(ctx context.Context) ([]ListCatalogueAdviceRow, error)
+	// Dimensions with one row per locale of text, in display order.
+	ListCatalogueDimensions(ctx context.Context) ([]ListCatalogueDimensionsRow, error)
+	ListCatalogueFactors(ctx context.Context) ([]ListCatalogueFactorsRow, error)
+	ListCatalogueImpactTables(ctx context.Context) ([]ListCatalogueImpactTablesRow, error)
+	// Indicators with thresholds and one row per locale of text. Display order
+	// follows the factor, then the f_code.
+	ListCatalogueIndicators(ctx context.Context) ([]ListCatalogueIndicatorsRow, error)
+	ListCatalogueIslands(ctx context.Context) ([]string, error)
+	ListCatalogueProjectTypes(ctx context.Context) ([]string, error)
+	ListCatalogueRiEOptions(ctx context.Context) ([]ListCatalogueRiEOptionsRow, error)
 	ListUnfinishedJobs(ctx context.Context) ([]Job, error)
 	MarkJobDone(ctx context.Context, arg MarkJobDoneParams) (int64, error)
 	MarkJobExpired(ctx context.Context, id uuid.UUID) (int64, error)
