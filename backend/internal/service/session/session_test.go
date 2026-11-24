@@ -30,6 +30,13 @@ func (f *fakeStore) GetRecord(_ context.Context, id string) (Record, error) {
 	return r, nil
 }
 
+func (f *fakeStore) GetProfile(_ context.Context, id string) (Profile, error) {
+	if _, ok := f.recs[id]; !ok {
+		return Profile{}, ErrNoAccount
+	}
+	return Profile{ID: id}, nil
+}
+
 func (f *fakeStore) BumpVersion(_ context.Context, id string) (int, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -220,5 +227,63 @@ func TestCookies(t *testing.T) {
 	svc.ClearCookie(w)
 	if c := w.Result().Cookies()[0]; c.MaxAge >= 0 || c.Value != "" {
 		t.Fatalf("clear: %+v", c)
+	}
+}
+
+// racingStore returns the old record and runs onRead (a concurrent bump)
+// before handing it over, like a reader that loaded the row just before the
+// bump committed.
+type racingStore struct {
+	*fakeStore
+	onRead func()
+}
+
+func (r *racingStore) GetRecord(ctx context.Context, id string) (Record, error) {
+	rec, err := r.fakeStore.GetRecord(ctx, id)
+	if r.onRead != nil {
+		f := r.onRead
+		r.onRead = nil
+		f()
+	}
+	return rec, err
+}
+
+func TestBumpRacingCacheWriteDoesNotKeepOldRecord(t *testing.T) {
+	ctx := context.Background()
+	fs := &fakeStore{recs: map[string]Record{"a1": {Role: RoleUser, Status: StatusActive, Version: 1}}}
+	rs := &racingStore{fakeStore: fs}
+	svc, err := New(Config{Secret: []byte(strings.Repeat("k", 32))}, rs, &fakeCache{m: map[string][]byte{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	old, _ := svc.Issue("a1", 1, false)
+	rs.onRead = func() {
+		if _, err := svc.BumpVersion(ctx, "a1"); err != nil {
+			t.Error(err)
+		}
+	}
+	// This request read version 1, then the bump ran, then the stale record
+	// was written to the cache.
+	_, _ = svc.Authenticate(ctx, old)
+	// The next request must not be served from that stale cache entry.
+	if _, err := svc.Authenticate(ctx, old); !errors.Is(err, ErrRevoked) {
+		t.Fatalf("old cookie after racing bump: %v", err)
+	}
+	fresh, _ := svc.Issue("a1", 2, false)
+	if _, err := svc.Authenticate(ctx, fresh); err != nil {
+		t.Fatalf("new cookie: %v", err)
+	}
+}
+
+func TestPrincipalCarriesExpiryAndRemember(t *testing.T) {
+	svc, _ := setup(t)
+	base := time.Date(2026, 11, 24, 12, 0, 0, 0, time.UTC)
+	svc.now = func() time.Time { return base }
+	for _, remember := range []bool{false, true} {
+		tok, exp := svc.Issue("a1", 1, remember)
+		p, err := svc.Authenticate(context.Background(), tok)
+		if err != nil || !p.Expires.Equal(exp) || p.Remember != remember {
+			t.Fatalf("remember=%v: %+v %v", remember, p, err)
+		}
 	}
 }

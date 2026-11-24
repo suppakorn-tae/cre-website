@@ -2,15 +2,22 @@ package middleware_test
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/middleware"
+	"github.com/suppakorn-tae/cre-website/backend/internal/service/audit"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/session"
 )
 
@@ -27,6 +34,10 @@ func (s *store) GetRecord(_ context.Context, id string) (session.Record, error) 
 		return session.Record{}, session.ErrNoAccount
 	}
 	return r, nil
+}
+
+func (s *store) GetProfile(_ context.Context, id string) (session.Profile, error) {
+	return session.Profile{ID: id}, nil
 }
 
 func (s *store) BumpVersion(_ context.Context, id string) (int, error) {
@@ -155,5 +166,74 @@ func TestRequireRole(t *testing.T) {
 	bare := middleware.RequireRole(session.RoleAdmin)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
 	if w := doGet(bare, "/", ""); w.Code != 401 {
 		t.Fatalf("bare: %d", w.Code)
+	}
+}
+
+type auditDB struct{ args []any }
+
+func (d *auditDB) Exec(_ context.Context, _ string, args ...any) (pgconn.CommandTag, error) {
+	d.args = args
+	return pgconn.NewCommandTag("INSERT 0 1"), nil
+}
+
+func (d *auditDB) Query(context.Context, string, ...any) (pgx.Rows, error) {
+	return nil, errors.New("unexpected query")
+}
+
+func (d *auditDB) QueryRow(context.Context, string, ...any) pgx.Row { return errRow{} }
+
+type errRow struct{}
+
+func (errRow) Scan(...any) error { return errors.New("unexpected query row") }
+
+// An admin request carries the admin id and client IP in its context, so an
+// audit entry written from it needs nothing else; a user request does not.
+func TestSessionPutsAuditContextOnAdminRequests(t *testing.T) {
+	const adminID = "0193a5c2-7b1e-7c3a-9d4f-2a6b8e1f5c70"
+	st := &store{recs: map[string]session.Record{
+		adminID: {Role: session.RoleAdmin, Status: session.StatusActive, Version: 1},
+		"user":  {Role: session.RoleUser, Status: session.StatusActive, Version: 1},
+	}}
+	svc, err := session.New(session.Config{Secret: []byte(strings.Repeat("k", 32))}, st, &cache{m: map[string][]byte{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var recErr error
+	var db auditDB
+	h := middleware.RequestID(middleware.RealIP(nil)(middleware.Session(svc)(
+		http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+			recErr = audit.New(audit.NewRepository()).Record(r.Context(), &db, audit.Entry{
+				Action: audit.UserDeactivate, TargetType: "account", TargetID: "x",
+			})
+		}))))
+
+	call := func(account string) {
+		tok, _ := svc.Issue(account, 1, false)
+		req := httptest.NewRequest(http.MethodGet, "/x", nil)
+		req.RemoteAddr = "203.0.113.9:4000"
+		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: tok})
+		h.ServeHTTP(httptest.NewRecorder(), req)
+	}
+
+	call(adminID)
+	if recErr != nil {
+		t.Fatalf("admin audit record: %v", recErr)
+	}
+	if len(db.args) == 0 || db.args[0] != uuid.MustParse(adminID) {
+		t.Fatalf("admin id not written: %v", db.args)
+	}
+	var ipSeen bool
+	for _, a := range db.args {
+		if ip, ok := a.(*netip.Addr); ok && ip != nil && ip.String() == "203.0.113.9" {
+			ipSeen = true
+		}
+	}
+	if !ipSeen {
+		t.Fatalf("client ip not written: %v", db.args)
+	}
+
+	call("user")
+	if !errors.Is(recErr, audit.ErrNoAdmin) {
+		t.Fatalf("user request must not carry an admin: %v", recErr)
 	}
 }
