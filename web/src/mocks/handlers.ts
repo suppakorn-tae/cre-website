@@ -1,4 +1,4 @@
-import type { HttpHandler } from 'msw';
+import { http as mswHttp, HttpResponse, type HttpHandler } from 'msw';
 import { createOpenApiHttp } from 'openapi-msw';
 
 import type { paths } from '@/lib/api/generated/schema';
@@ -7,4 +7,10 @@ import type { paths } from '@/lib/api/generated/schema';
 // handlers to `handlers` as they define endpoints.
 export const http = createOpenApiHttp<paths>({ baseUrl: '/api/v1' });
 
-export const handlers: HttpHandler[] = [];
+/** Response of the dev-only `/mock-sample` page. */
+export const mockSampleResponse = { message: 'mocked', items: [{ id: 1 }, { id: 2 }] };
+
+export const handlers: HttpHandler[] = [
+  // The contract has no endpoints yet, so this one is untyped and mock-only.
+  mswHttp.get('*/api/v1/mock-sample', () => HttpResponse.json(mockSampleResponse)),
+];

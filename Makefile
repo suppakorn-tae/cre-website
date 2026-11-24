@@ -18,6 +18,7 @@ gen:
 	node contracts/bundle.mjs
 	cd backend && go tool oapi-codegen -config ../contracts/codegen/oapi-codegen.yaml ../contracts/openapi/dist/openapi.yaml
 	pnpm --dir web exec openapi-typescript ../contracts/openapi/dist/openapi.yaml -o src/lib/api/generated/schema.d.ts
+	pnpm --dir web run msw:init
 
 lint:
 	node contracts/bundle.mjs
