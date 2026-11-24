@@ -4,6 +4,12 @@
 }
 
 localhost {
+	# The API serves its liveness probe at /healthz, outside the /api/v1 prefix.
+	handle /api/v1/healthz {
+		rewrite * /healthz
+		reverse_proxy api:4000
+	}
+
 	handle /api/v* {
 		reverse_proxy api:4000
 	}
