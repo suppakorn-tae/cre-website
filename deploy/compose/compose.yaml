@@ -30,7 +30,8 @@ services:
 
   web:
     build:
-      context: ../../web
+      context: ../..
+      dockerfile: web/Dockerfile
     restart: unless-stopped
     environment:
       API_INTERNAL_URL: http://api:4000
