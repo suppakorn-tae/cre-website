@@ -465,6 +465,136 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{project_id}/compare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Compare two submitted versions of one project (UC-21)
+         * @description Both versions must belong to the project and be submitted. When
+         *     `base_version_id` is omitted it defaults to the submitted version
+         *     before the target. Level changes compare only indicators scored in
+         *     both versions.
+         */
+        get: operations["compareProjectVersions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Trend and level distribution over all versions (UC-21) */
+        get: operations["getProjectVersionTrend"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/indicator-rm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** RM of each indicator per version (UC-21) */
+        get: operations["getProjectIndicatorRm"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * KPI cards, level distribution and H/VH per project (UC-20)
+         * @description Figures use only the caller's own non-deleted projects and their
+         *     latest submitted non-deleted versions (BR-26). Never reads other
+         *     users' projects, whatever the caller's role.
+         */
+        get: operations["getDashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dashboard/panels/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Panel of the projects KPI card (project list) */
+        get: operations["getDashboardProjectsPanel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dashboard/panels/top-indicators": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Panel of the H+VH indicators KPI card (Top 10) */
+        get: operations["getDashboardTopIndicatorsPanel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/dashboard/panels/islands": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Panel of the islands KPI card (projects grouped by island) */
+        get: operations["getDashboardIslandsPanel"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/jobs/{id}": {
         parameters: {
             query?: never;
@@ -1012,6 +1142,156 @@ export interface components {
             /** @description In display order; `other` is last. */
             items: components["schemas"]["ProjectTypeOption"][];
         };
+        DashboardKpis: {
+            project_count: number;
+            /** @description Non-deleted versions of the non-deleted projects. */
+            version_count: number;
+            h_vh_indicator_count: number;
+            /** @description Distinct islands that have at least one project. */
+            island_count: number;
+            /** @description Sum of the project values. Display only. */
+            total_value_baht: number;
+        };
+        /** @description H and VH indicator counts of one project's latest submitted version. */
+        DashboardProjectRisk: {
+            project_id: components["schemas"]["Uuid"];
+            name: string;
+            nickname: string;
+            version_id: components["schemas"]["Uuid"];
+            version_no: number;
+            h_count: number;
+            vh_count: number;
+        };
+        DashboardSummary: {
+            kpis: components["schemas"]["DashboardKpis"];
+            level_distribution: components["schemas"]["LevelCounts"];
+            /** @description One entry per project that has a submitted version. */
+            project_risks: components["schemas"]["DashboardProjectRisk"][];
+        };
+        DashboardProjectItem: {
+            project_id: components["schemas"]["Uuid"];
+            name: string;
+            nickname: string;
+            island_code: string;
+            island_other?: string | null;
+            type_code: string;
+            type_other?: string | null;
+            value_baht: number;
+            progress_pct: number;
+            version_count: number;
+            /** @description Target of the assess action. */
+            latest_version_id: components["schemas"]["Uuid"];
+            latest_version_no: number;
+            latest_version_status: components["schemas"]["VersionStatus"];
+            /** @description Target of the results action; null when never submitted. */
+            latest_submitted_version_id: components["schemas"]["Uuid"] | null;
+            /** @description H plus VH indicators of the latest submitted version. */
+            h_vh_count: number | null;
+            /** @description Average RM of the latest submitted version. */
+            avg_rm: number | null;
+        };
+        DashboardProjectList: {
+            items: components["schemas"]["DashboardProjectItem"][];
+            page: components["schemas"]["PageMeta"];
+        };
+        /**
+         * @description An indicator ranked by how many projects have it at H or VH in their
+         *     latest submitted version. Ties: more VH first, then indicator code.
+         */
+        DashboardTopIndicator: {
+            rank: number;
+            indicator_code: string;
+            factor_code: string;
+            h_count: number;
+            vh_count: number;
+        };
+        DashboardTopIndicators: {
+            items: components["schemas"]["DashboardTopIndicator"][];
+        };
+        DashboardIslandProject: {
+            project_id: components["schemas"]["Uuid"];
+            name: string;
+            nickname: string;
+            progress_pct: number;
+            latest_version_id: components["schemas"]["Uuid"];
+            h_vh_count: number | null;
+        };
+        DashboardIslandGroup: {
+            island_code: string;
+            projects: components["schemas"]["DashboardIslandProject"][];
+        };
+        DashboardIslands: {
+            items: components["schemas"]["DashboardIslandGroup"][];
+        };
+        /** @description Figures of one submitted version, as recorded at its last submission. */
+        CompareVersionMetrics: {
+            version_id: components["schemas"]["Uuid"];
+            version_no: number;
+            submitted_at: components["schemas"]["Timestamp"];
+            progress_at_submit: number;
+            /** @description Mean RM of the scored indicators; null when none is scored. */
+            avg_rm: number | null;
+            h_vh_count: number;
+            scored_count: number;
+        };
+        /** @enum {string} */
+        LevelChangeDirection: "up" | "down";
+        /** @description An indicator scored in both compared versions whose level changed. */
+        CompareLevelChange: {
+            indicator_code: string;
+            factor_code: string;
+            base_level: components["schemas"]["RiskLevel"];
+            target_level: components["schemas"]["RiskLevel"];
+            base_rm: number;
+            target_rm: number;
+            direction: components["schemas"]["LevelChangeDirection"];
+        };
+        VersionComparison: {
+            base: components["schemas"]["CompareVersionMetrics"];
+            target: components["schemas"]["CompareVersionMetrics"];
+            level_up_count: number;
+            level_down_count: number;
+            level_changes: components["schemas"]["CompareLevelChange"][];
+        };
+        /**
+         * @description One version on the trend. A never-submitted version is an empty slot:
+         *     `submitted_at` and every metric are null.
+         */
+        TrendPoint: {
+            version_id: components["schemas"]["Uuid"];
+            version_no: number;
+            status: components["schemas"]["VersionStatus"];
+            /** Format: date-time */
+            submitted_at: string | null;
+            avg_rm: number | null;
+            h_vh_count: number | null;
+            level_distribution: components["schemas"]["LevelCounts"] | null;
+        };
+        VersionTrend: {
+            /** @description All non-deleted versions, ascending by version number. */
+            versions: components["schemas"]["TrendPoint"][];
+        };
+        IndicatorRmVersion: {
+            version_id: components["schemas"]["Uuid"];
+            version_no: number;
+            submitted: boolean;
+        };
+        IndicatorRmPoint: {
+            version_id: components["schemas"]["Uuid"];
+            /** @description Null when the indicator is not scored in that version. */
+            rm: number | null;
+            level: components["schemas"]["RiskLevel"] | null;
+        };
+        IndicatorRmRow: {
+            indicator_code: string;
+            factor_code: string;
+            /** @description One point per entry of `versions`, same order. */
+            points: components["schemas"]["IndicatorRmPoint"][];
+        };
+        IndicatorRmMatrix: {
+            versions: components["schemas"]["IndicatorRmVersion"][];
+            indicators: components["schemas"]["IndicatorRmRow"][];
+        };
         /**
          * @example {
          *       "id": "0193f6a2-7c1e-7b52-9a0d-3f1c2a4b5d6e",
@@ -1202,6 +1482,8 @@ export interface components {
         /** @enum {string} */
         VersionStatus: "draft" | "submitted";
         /** @enum {string} */
+        RiskLevel: "VL" | "L" | "M" | "H" | "VH";
+        /** @enum {string} */
         JobKind: "report" | "export";
         /** @enum {string} */
         JobStatus: "queued" | "running" | "done" | "failed" | "expired";
@@ -1222,8 +1504,6 @@ export interface components {
         /** @description Entered progress in percent. */
         progress_pct: number;
         description: string | null;
-        /** @enum {string} */
-        RiskLevel: "VL" | "L" | "M" | "H" | "VH";
         /** @enum {string} */
         RiskStrategy: "REDUCE" | "TRANSFER" | "AVOID" | "ACCEPT";
     };
@@ -2002,6 +2282,185 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    compareProjectVersions: {
+        parameters: {
+            query: {
+                target_version_id: components["schemas"]["Uuid"];
+                base_version_id?: components["schemas"]["Uuid"];
+            };
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Comparison of the two versions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionComparison"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getProjectVersionTrend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One point per non-deleted version. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionTrend"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getProjectIndicatorRm: {
+        parameters: {
+            query?: {
+                /** @description Keep only indicators of these factors (repeatable). */
+                factor_code?: string[];
+                /** @description Keep only these indicators (repeatable). */
+                indicator_code?: string[];
+            };
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description RM matrix across all non-deleted versions. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IndicatorRmMatrix"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getDashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dashboard figures. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardSummary"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getDashboardProjectsPanel: {
+        parameters: {
+            query?: {
+                page?: components["parameters"]["Page"];
+                page_size?: components["parameters"]["PageSize"];
+                /** @description Case-insensitive search on project name and nickname. */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Page of the caller's projects. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardProjectList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getDashboardTopIndicatorsPanel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Top 10 indicators most often H or VH. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardTopIndicators"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    getDashboardIslandsPanel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Projects grouped by island. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardIslands"];
+                };
             };
             401: components["responses"]["Unauthorized"];
         };

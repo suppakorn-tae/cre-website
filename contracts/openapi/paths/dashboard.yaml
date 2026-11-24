@@ -1,1 +1,69 @@
-{}
+/dashboard:
+  get:
+    operationId: getDashboard
+    summary: KPI cards, level distribution and H/VH per project (UC-20)
+    description: |
+      Figures use only the caller's own non-deleted projects and their
+      latest submitted non-deleted versions (BR-26). Never reads other
+      users' projects, whatever the caller's role.
+    responses:
+      '200':
+        description: Dashboard figures.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/dashboard.yaml#/DashboardSummary
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+/dashboard/panels/projects:
+  get:
+    operationId: getDashboardProjectsPanel
+    summary: Panel of the projects KPI card (project list)
+    parameters:
+      - $ref: ../schemas/common.yaml#/parameters/Page
+      - $ref: ../schemas/common.yaml#/parameters/PageSize
+      - name: q
+        in: query
+        description: Case-insensitive search on project name and nickname.
+        schema:
+          type: string
+          maxLength: 100
+    responses:
+      '200':
+        description: Page of the caller's projects.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/dashboard.yaml#/DashboardProjectList
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+/dashboard/panels/top-indicators:
+  get:
+    operationId: getDashboardTopIndicatorsPanel
+    summary: Panel of the H+VH indicators KPI card (Top 10)
+    responses:
+      '200':
+        description: Top 10 indicators most often H or VH.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/dashboard.yaml#/DashboardTopIndicators
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+/dashboard/panels/islands:
+  get:
+    operationId: getDashboardIslandsPanel
+    summary: Panel of the islands KPI card (projects grouped by island)
+    responses:
+      '200':
+        description: Projects grouped by island.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/dashboard.yaml#/DashboardIslands
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized

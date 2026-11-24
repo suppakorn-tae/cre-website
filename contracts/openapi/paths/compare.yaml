@@ -1,0 +1,111 @@
+/projects/{project_id}/compare:
+  get:
+    operationId: compareProjectVersions
+    summary: Compare two submitted versions of one project (UC-21)
+    description: |
+      Both versions must belong to the project and be submitted. When
+      `base_version_id` is omitted it defaults to the submitted version
+      before the target. Level changes compare only indicators scored in
+      both versions.
+    parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          $ref: ../schemas/common.yaml#/schemas/Uuid
+      - name: target_version_id
+        in: query
+        required: true
+        schema:
+          $ref: ../schemas/common.yaml#/schemas/Uuid
+      - name: base_version_id
+        in: query
+        schema:
+          $ref: ../schemas/common.yaml#/schemas/Uuid
+    responses:
+      '200':
+        description: Comparison of the two versions.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/dashboard.yaml#/VersionComparison
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+/projects/{project_id}/trend:
+  get:
+    operationId: getProjectVersionTrend
+    summary: Trend and level distribution over all versions (UC-21)
+    parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          $ref: ../schemas/common.yaml#/schemas/Uuid
+    responses:
+      '200':
+        description: One point per non-deleted version.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/dashboard.yaml#/VersionTrend
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+/projects/{project_id}/indicator-rm:
+  get:
+    operationId: getProjectIndicatorRm
+    summary: RM of each indicator per version (UC-21)
+    parameters:
+      - name: project_id
+        in: path
+        required: true
+        schema:
+          $ref: ../schemas/common.yaml#/schemas/Uuid
+      - name: factor_code
+        in: query
+        description: Keep only indicators of these factors (repeatable).
+        schema:
+          type: array
+          items:
+            type: string
+        style: form
+        explode: true
+      - name: indicator_code
+        in: query
+        description: Keep only these indicators (repeatable).
+        schema:
+          type: array
+          items:
+            type: string
+        style: form
+        explode: true
+    responses:
+      '200':
+        description: RM matrix across all non-deleted versions.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/dashboard.yaml#/IndicatorRmMatrix
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
