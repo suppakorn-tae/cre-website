@@ -40,6 +40,11 @@ func TestCSRF(t *testing.T) {
 		{"cross-origin with valid token", csrfReq("POST", "tok", "tok", "https://evil.test"), 403},
 		{"same host origin", csrfReq("DELETE", "tok", "tok", "http://api.example.com"), 204},
 		{"listed origin", csrfReq("PATCH", "tok", "tok", "https://web.example.com"), 204},
+		{"listed host with wrong scheme", csrfReq("POST", "tok", "tok", "http://web.example.com"), 403},
+		{"request host with wrong scheme", csrfReq("POST", "tok", "tok", "https://api.example.com"), 403},
+		{"listed origin with other port", csrfReq("POST", "tok", "tok", "https://web.example.com:8443"), 403},
+		{"listed origin, different case", csrfReq("POST", "tok", "tok", "HTTPS://Web.Example.com"), 204},
+		{"opaque origin", csrfReq("POST", "tok", "tok", "null"), 403},
 		{"missing origin with token (next.js server)", csrfReq("POST", "tok", "tok", ""), 204},
 	}
 	for _, tc := range tests {

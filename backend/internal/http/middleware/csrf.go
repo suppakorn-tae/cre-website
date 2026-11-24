@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // CSRF cookie and header names, as in the contract (GET /auth/csrf).
@@ -31,15 +32,18 @@ func SetCSRFCookie(w http.ResponseWriter, token string, insecure bool) {
 }
 
 // CSRF guards POST, PUT, PATCH and DELETE with a double-submit token and an
-// Origin check. The header must equal the cookie. When Origin is present its
-// host must be the request host or one of extraOrigins (full origins such as
-// https://conriskexpert.com); a missing Origin (server-side calls from
+// Origin check. The header must equal the cookie. When Origin is present it
+// must be one of extraOrigins (full origins such as https://conriskexpert.com,
+// compared on scheme, host and port) or have the request's own scheme and
+// host; a missing Origin (server-side calls from
 // Next.js) is accepted when the token matches. Failures answer 403
 // `csrf_invalid`.
 func CSRF(extraOrigins ...string) func(http.Handler) http.Handler {
 	allowed := map[string]bool{}
 	for _, o := range extraOrigins {
-		allowed[o] = true
+		if n, ok := normOrigin(o); ok {
+			allowed[n] = true
+		}
 	}
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -55,9 +59,9 @@ func CSRF(extraOrigins ...string) func(http.Handler) http.Handler {
 				WriteError(w, r, http.StatusForbidden, "csrf_invalid", "csrf token missing or wrong")
 				return
 			}
-			if o := r.Header.Get("Origin"); o != "" && !allowed[o] {
-				u, err := url.Parse(o)
-				if err != nil || u.Host != r.Host {
+			if o := r.Header.Get("Origin"); o != "" {
+				n, ok := normOrigin(o)
+				if !ok || (!allowed[n] && n != ownOrigin(r)) {
 					WriteError(w, r, http.StatusForbidden, "csrf_invalid", "origin not allowed")
 					return
 				}
@@ -65,4 +69,23 @@ func CSRF(extraOrigins ...string) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r)
 		})
 	}
+}
+
+// normOrigin returns "scheme://host[:port]" in lower case, or false when o is
+// not an http(s) origin (for example the opaque origin "null").
+func normOrigin(o string) (string, bool) {
+	u, err := url.Parse(strings.TrimRight(o, "/"))
+	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
+		return "", false
+	}
+	return strings.ToLower(u.Scheme + "://" + u.Host), true
+}
+
+// ownOrigin is the origin the request itself was made to.
+func ownOrigin(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil {
+		scheme = "https"
+	}
+	return strings.ToLower(scheme + "://" + r.Host)
 }
