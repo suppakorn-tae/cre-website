@@ -8,22 +8,522 @@ import (
 	"compress/flate"
 	"context"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// Defines values for ProjectIsland.
+const (
+	ProjectIslandKohChang   ProjectIsland = "koh_chang"
+	ProjectIslandKohKood    ProjectIsland = "koh_kood"
+	ProjectIslandKohLanta   ProjectIsland = "koh_lanta"
+	ProjectIslandKohPhangan ProjectIsland = "koh_phangan"
+	ProjectIslandKohPhiPhi  ProjectIsland = "koh_phi_phi"
+	ProjectIslandKohSamui   ProjectIsland = "koh_samui"
+	ProjectIslandKohTao     ProjectIsland = "koh_tao"
+	ProjectIslandOther      ProjectIsland = "other"
+)
+
+// Valid indicates whether the value is a known member of the ProjectIsland enum.
+func (e ProjectIsland) Valid() bool {
+	switch e {
+	case ProjectIslandKohChang:
+		return true
+	case ProjectIslandKohKood:
+		return true
+	case ProjectIslandKohLanta:
+		return true
+	case ProjectIslandKohPhangan:
+		return true
+	case ProjectIslandKohPhiPhi:
+		return true
+	case ProjectIslandKohSamui:
+		return true
+	case ProjectIslandKohTao:
+		return true
+	case ProjectIslandOther:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectType.
+const (
+	ProjectTypeBuilding  ProjectType = "building"
+	ProjectTypeCoastal   ProjectType = "coastal"
+	ProjectTypeOther     ProjectType = "other"
+	ProjectTypePier      ProjectType = "pier"
+	ProjectTypeRoad      ProjectType = "road"
+	ProjectTypeUtilities ProjectType = "utilities"
+)
+
+// Valid indicates whether the value is a known member of the ProjectType enum.
+func (e ProjectType) Valid() bool {
+	switch e {
+	case ProjectTypeBuilding:
+		return true
+	case ProjectTypeCoastal:
+		return true
+	case ProjectTypeOther:
+		return true
+	case ProjectTypePier:
+		return true
+	case ProjectTypeRoad:
+		return true
+	case ProjectTypeUtilities:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for VersionStatus.
+const (
+	Draft     VersionStatus = "draft"
+	Submitted VersionStatus = "submitted"
+)
+
+// Valid indicates whether the value is a known member of the VersionStatus enum.
+func (e VersionStatus) Valid() bool {
+	switch e {
+	case Draft:
+		return true
+	case Submitted:
+		return true
+	default:
+		return false
+	}
+}
+
+// ErrorBody defines model for ErrorBody.
+type ErrorBody struct {
+	// Code Stable machine code, e.g. `not_found`.
+	Code string `json:"code"`
+
+	// Message Developer-facing detail, not shown to users.
+	Message   string  `json:"message"`
+	RequestId *string `json:"request_id,omitempty"`
+}
+
+// ErrorEnvelope defines model for ErrorEnvelope.
+type ErrorEnvelope struct {
+	Error ErrorBody `json:"error"`
+}
+
+// FieldError defines model for FieldError.
+type FieldError struct {
+	Code string `json:"code"`
+
+	// Field JSON pointer of the offending field.
+	Field string `json:"field"`
+}
+
+// PageMeta defines model for PageMeta.
+type PageMeta struct {
+	Page     int `json:"page"`
+	PageSize int `json:"page_size"`
+	Total    int `json:"total"`
+}
+
+// Project defines model for Project.
+type Project struct {
+	// CreatedAt UTC instant, RFC 3339.
+	CreatedAt   Timestamp `json:"created_at"`
+	Description *string   `json:"description"`
+
+	// EndDate After `start_date`.
+	EndDate openapi_types.Date `json:"end_date"`
+
+	// ExpectedProgressPct Computed from the project dates, never stored: elapsed
+	// calendar days over duration, clamped to 0-100 and rounded.
+	ExpectedProgressPct int  `json:"expected_progress_pct"`
+	Id                  Uuid `json:"id"`
+
+	// IslandCode Island / location code. `other` requires `island_other`.
+	IslandCode  ProjectIsland `json:"island_code"`
+	IslandOther *string       `json:"island_other"`
+
+	// LatestVersionNo Number of the latest non-deleted version, null when there is none.
+	LatestVersionNo *int `json:"latest_version_no"`
+
+	// Name Not blank.
+	Name     string `json:"name"`
+	Nickname string `json:"nickname"`
+
+	// ProgressPct Entered progress in percent.
+	ProgressPct int                `json:"progress_pct"`
+	StartDate   openapi_types.Date `json:"start_date"`
+
+	// TypeCode Project type code. `other` requires `type_other`.
+	TypeCode  ProjectType `json:"type_code"`
+	TypeOther *string     `json:"type_other"`
+
+	// UpdatedAt UTC instant, RFC 3339.
+	UpdatedAt Timestamp `json:"updated_at"`
+
+	// ValueBaht Project value in baht, greater than 0.
+	ValueBaht float32 `json:"value_baht"`
+
+	// VersionCount Number of non-deleted versions.
+	VersionCount int `json:"version_count"`
+}
+
+// ProjectCreate defines model for ProjectCreate.
+type ProjectCreate struct {
+	Description *string `json:"description"`
+
+	// EndDate After `start_date`.
+	EndDate openapi_types.Date `json:"end_date"`
+
+	// IslandCode Island / location code. `other` requires `island_other`.
+	IslandCode  ProjectIsland `json:"island_code"`
+	IslandOther *string       `json:"island_other"`
+
+	// Name Not blank.
+	Name     string `json:"name"`
+	Nickname string `json:"nickname"`
+
+	// ProgressPct Entered progress in percent.
+	ProgressPct int                `json:"progress_pct"`
+	StartDate   openapi_types.Date `json:"start_date"`
+
+	// TypeCode Project type code. `other` requires `type_other`.
+	TypeCode  ProjectType `json:"type_code"`
+	TypeOther *string     `json:"type_other"`
+
+	// ValueBaht Project value in baht, greater than 0.
+	ValueBaht float32 `json:"value_baht"`
+}
+
+// ProjectFields Editable project fields. `end_date` must be after `start_date`;
+// `island_other` and `type_other` are set if and only if the matching
+// code is `other`. Value and dates apply to versions created afterwards.
+type ProjectFields struct {
+	Description *string `json:"description"`
+
+	// EndDate After `start_date`.
+	EndDate openapi_types.Date `json:"end_date"`
+
+	// IslandCode Island / location code. `other` requires `island_other`.
+	IslandCode  ProjectIsland `json:"island_code"`
+	IslandOther *string       `json:"island_other"`
+
+	// Name Not blank.
+	Name     string `json:"name"`
+	Nickname string `json:"nickname"`
+
+	// ProgressPct Entered progress in percent.
+	ProgressPct int                `json:"progress_pct"`
+	StartDate   openapi_types.Date `json:"start_date"`
+
+	// TypeCode Project type code. `other` requires `type_other`.
+	TypeCode  ProjectType `json:"type_code"`
+	TypeOther *string     `json:"type_other"`
+
+	// ValueBaht Project value in baht, greater than 0.
+	ValueBaht float32 `json:"value_baht"`
+}
+
+// ProjectIsland Island / location code. `other` requires `island_other`.
+type ProjectIsland string
+
+// ProjectList defines model for ProjectList.
+type ProjectList struct {
+	Items    []Project `json:"items"`
+	Page     int       `json:"page"`
+	PageSize int       `json:"page_size"`
+	Total    int       `json:"total"`
+}
+
+// ProjectType Project type code. `other` requires `type_other`.
+type ProjectType string
+
+// ProjectUpdate Partial update; send only the fields to change, at least one. The
+// rules of `ProjectFields` apply to the stored result.
+type ProjectUpdate struct {
+	Description *Description `json:"description"`
+
+	// EndDate After `start_date`.
+	EndDate *EndDate `json:"end_date,omitempty"`
+
+	// IslandCode Island / location code. `other` requires `island_other`.
+	IslandCode  *ProjectIsland `json:"island_code,omitempty"`
+	IslandOther *IslandOther   `json:"island_other"`
+
+	// Name Not blank.
+	Name     *Name     `json:"name,omitempty"`
+	Nickname *Nickname `json:"nickname,omitempty"`
+
+	// ProgressPct Entered progress in percent.
+	ProgressPct *ProgressPct `json:"progress_pct,omitempty"`
+	StartDate   *StartDate   `json:"start_date,omitempty"`
+
+	// TypeCode Project type code. `other` requires `type_other`.
+	TypeCode  *ProjectType `json:"type_code,omitempty"`
+	TypeOther *TypeOther   `json:"type_other"`
+
+	// ValueBaht Project value in baht, greater than 0.
+	ValueBaht *ValueBaht `json:"value_baht,omitempty"`
+}
+
+// Timestamp UTC instant, RFC 3339.
+type Timestamp = time.Time
+
+// Uuid defines model for Uuid.
+type Uuid = openapi_types.UUID
+
+// ValidationErrorBody defines model for ValidationErrorBody.
+type ValidationErrorBody struct {
+	// Code Stable machine code, e.g. `not_found`.
+	Code   string       `json:"code"`
+	Fields []FieldError `json:"fields"`
+
+	// Message Developer-facing detail, not shown to users.
+	Message   string  `json:"message"`
+	RequestId *string `json:"request_id,omitempty"`
+}
+
+// ValidationErrorEnvelope defines model for ValidationErrorEnvelope.
+type ValidationErrorEnvelope struct {
+	Error ValidationErrorBody `json:"error"`
+}
+
+// Version defines model for Version.
+type Version struct {
+	// AverageRm Mean RM of the scored indicators; null while `draft`.
+	AverageRm *float32 `json:"average_rm"`
+
+	// CreatedAt UTC instant, RFC 3339.
+	CreatedAt Timestamp `json:"created_at"`
+
+	// Editable True only for the latest non-deleted version of the project.
+	Editable bool               `json:"editable"`
+	EndDate  openapi_types.Date `json:"end_date"`
+
+	// HighCount Number of indicators at level H; null while `draft`.
+	HighCount *int `json:"high_count"`
+	Id        Uuid `json:"id"`
+
+	// ProgressAtSubmit Project progress at the last submission; null while `draft`.
+	ProgressAtSubmit *int               `json:"progress_at_submit"`
+	ProjectId        Uuid               `json:"project_id"`
+	StartDate        openapi_types.Date `json:"start_date"`
+	Status           VersionStatus      `json:"status"`
+
+	// SubmissionNo Number of submissions, 0 when never submitted.
+	SubmissionNo int `json:"submission_no"`
+
+	// SubmittedAt Time of the last submission, null while the status is `draft`.
+	SubmittedAt *Timestamp `json:"submitted_at"`
+
+	// ValueBaht Project value copied when the version was created.
+	ValueBaht float32 `json:"value_baht"`
+
+	// VersionNo Sequential per project, never reused.
+	VersionNo int `json:"version_no"`
+
+	// VeryHighCount Number of indicators at level VH; null while `draft`.
+	VeryHighCount *int `json:"very_high_count"`
+}
+
+// VersionList All non-deleted versions of a project, newest first. Not paginated.
+type VersionList struct {
+	Items []VersionSummary `json:"items"`
+}
+
+// VersionStatus defines model for VersionStatus.
+type VersionStatus string
+
+// VersionSummary One row of a project's version list.
+type VersionSummary struct {
+	// AverageRm Mean RM of the scored indicators; null while `draft`.
+	AverageRm *float32 `json:"average_rm"`
+
+	// CreatedAt UTC instant, RFC 3339.
+	CreatedAt Timestamp `json:"created_at"`
+
+	// Editable True only for the latest non-deleted version of the project.
+	Editable bool `json:"editable"`
+
+	// HighCount Number of indicators at level H; null while `draft`.
+	HighCount *int `json:"high_count"`
+	Id        Uuid `json:"id"`
+
+	// ProgressAtSubmit Project progress at the last submission; null while `draft`.
+	ProgressAtSubmit *int          `json:"progress_at_submit"`
+	ProjectId        Uuid          `json:"project_id"`
+	Status           VersionStatus `json:"status"`
+
+	// SubmittedAt Time of the last submission, null while the status is `draft`.
+	SubmittedAt *Timestamp `json:"submitted_at"`
+
+	// VersionNo Sequential per project, never reused.
+	VersionNo int `json:"version_no"`
+
+	// VeryHighCount Number of indicators at level VH; null while `draft`.
+	VeryHighCount *int `json:"very_high_count"`
+}
+
+// Description defines model for description.
+type Description = string
+
+// EndDate After `start_date`.
+type EndDate = openapi_types.Date
+
+// IslandOther defines model for island_other.
+type IslandOther = string
+
+// Name Not blank.
+type Name = string
+
+// Nickname defines model for nickname.
+type Nickname = string
+
+// ProgressPct Entered progress in percent.
+type ProgressPct = int
+
+// StartDate defines model for start_date.
+type StartDate = openapi_types.Date
+
+// TypeOther defines model for type_other.
+type TypeOther = string
+
+// ValueBaht Project value in baht, greater than 0.
+type ValueBaht = float32
+
+// Page defines model for Page.
+type Page = int
+
+// PageSize defines model for PageSize.
+type PageSize = int
+
+// BadRequest defines model for BadRequest.
+type BadRequest = ErrorEnvelope
+
+// Forbidden defines model for Forbidden.
+type Forbidden = ErrorEnvelope
+
+// NotFound defines model for NotFound.
+type NotFound = ErrorEnvelope
+
+// Unauthorized defines model for Unauthorized.
+type Unauthorized = ErrorEnvelope
+
+// ValidationFailed defines model for ValidationFailed.
+type ValidationFailed = ValidationErrorEnvelope
+
+// ListProjectsParams defines parameters for ListProjects.
+type ListProjectsParams struct {
+	// Q Case-insensitive search over name, nickname and island (code or other text).
+	Q        *string   `form:"q,omitempty" json:"q,omitempty"`
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
+type CreateProjectJSONRequestBody = ProjectCreate
+
+// UpdateProjectJSONRequestBody defines body for UpdateProject for application/json ContentType.
+type UpdateProjectJSONRequestBody = ProjectUpdate
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// ListProjects List own projects
+	// (GET /projects)
+	ListProjects(w http.ResponseWriter, r *http.Request, params ListProjectsParams)
+	// CreateProject Create a project
+	// (POST /projects)
+	CreateProject(w http.ResponseWriter, r *http.Request)
+	// DeleteProject Delete a project (soft)
+	// (DELETE /projects/{project_id})
+	DeleteProject(w http.ResponseWriter, r *http.Request, projectId Uuid)
+	// GetProject Get a project
+	// (GET /projects/{project_id})
+	GetProject(w http.ResponseWriter, r *http.Request, projectId Uuid)
+	// UpdateProject Edit a project
+	// (PATCH /projects/{project_id})
+	UpdateProject(w http.ResponseWriter, r *http.Request, projectId Uuid)
+	// ListVersions List the versions of a project
+	// (GET /projects/{project_id}/versions)
+	ListVersions(w http.ResponseWriter, r *http.Request, projectId Uuid)
+	// CreateVersion Start a new blank version
+	// (POST /projects/{project_id}/versions)
+	CreateVersion(w http.ResponseWriter, r *http.Request, projectId Uuid)
+	// DeleteVersion Delete a version (soft)
+	// (DELETE /projects/{project_id}/versions/{version_id})
+	DeleteVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
+	// GetVersion Get a version
+	// (GET /projects/{project_id}/versions/{version_id})
+	GetVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 type Unimplemented struct{}
+
+// ListProjects List own projects
+// (GET /projects)
+func (_ Unimplemented) ListProjects(w http.ResponseWriter, r *http.Request, params ListProjectsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateProject Create a project
+// (POST /projects)
+func (_ Unimplemented) CreateProject(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteProject Delete a project (soft)
+// (DELETE /projects/{project_id})
+func (_ Unimplemented) DeleteProject(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetProject Get a project
+// (GET /projects/{project_id})
+func (_ Unimplemented) GetProject(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateProject Edit a project
+// (PATCH /projects/{project_id})
+func (_ Unimplemented) UpdateProject(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListVersions List the versions of a project
+// (GET /projects/{project_id}/versions)
+func (_ Unimplemented) ListVersions(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateVersion Start a new blank version
+// (POST /projects/{project_id}/versions)
+func (_ Unimplemented) CreateVersion(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteVersion Delete a version (soft)
+// (DELETE /projects/{project_id}/versions/{version_id})
+func (_ Unimplemented) DeleteVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetVersion Get a version
+// (GET /projects/{project_id}/versions/{version_id})
+func (_ Unimplemented) GetVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
@@ -33,6 +533,279 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// ListProjects operation middleware
+func (siw *ServerInterfaceWrapper) ListProjects(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProjectsParams
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", r.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjects(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProject operation middleware
+func (siw *ServerInterfaceWrapper) CreateProject(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProject(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteProject operation middleware
+func (siw *ServerInterfaceWrapper) DeleteProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteProject(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProject operation middleware
+func (siw *ServerInterfaceWrapper) GetProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProject(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProject operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProject(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListVersions operation middleware
+func (siw *ServerInterfaceWrapper) ListVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListVersions(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateVersion operation middleware
+func (siw *ServerInterfaceWrapper) CreateVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateVersion(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteVersion operation middleware
+func (siw *ServerInterfaceWrapper) DeleteVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version_id" -------------
+	var versionId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteVersion(w, r, projectId, versionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetVersion operation middleware
+func (siw *ServerInterfaceWrapper) GetVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version_id" -------------
+	var versionId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetVersion(w, r, projectId, versionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 type UnescapedCookieParamError struct {
 	ParamName string
@@ -142,11 +915,635 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		}
 	}
 
+	wrapper := ServerInterfaceWrapper{
+		Handler:            si,
+		HandlerMiddlewares: options.Middlewares,
+		ErrorHandlerFunc:   options.ErrorHandlerFunc,
+	}
+
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects", wrapper.ListProjects)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects", wrapper.CreateProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/projects/{project_id}", wrapper.DeleteProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{project_id}", wrapper.GetProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/projects/{project_id}", wrapper.UpdateProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{project_id}/versions", wrapper.ListVersions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{project_id}/versions", wrapper.CreateVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/projects/{project_id}/versions/{version_id}", wrapper.DeleteVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{project_id}/versions/{version_id}", wrapper.GetVersion)
+	})
+
 	return r
+}
+
+type BadRequestJSONResponse ErrorEnvelope
+
+type ForbiddenJSONResponse ErrorEnvelope
+
+type NotFoundJSONResponse ErrorEnvelope
+
+type UnauthorizedJSONResponse ErrorEnvelope
+
+type ValidationFailedJSONResponse ValidationErrorEnvelope
+
+type ListProjectsRequestObject struct {
+	Params ListProjectsParams
+}
+
+type ListProjectsResponseObject interface {
+	VisitListProjectsResponse(w http.ResponseWriter) error
+}
+
+type ListProjects200JSONResponse ProjectList
+
+func (response ListProjects200JSONResponse) VisitListProjectsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjects400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListProjects400JSONResponse) VisitListProjectsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjects401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListProjects401JSONResponse) VisitListProjectsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProjectRequestObject struct {
+	Body *CreateProjectJSONRequestBody
+}
+
+type CreateProjectResponseObject interface {
+	VisitCreateProjectResponse(w http.ResponseWriter) error
+}
+
+type CreateProject201JSONResponse Project
+
+func (response CreateProject201JSONResponse) VisitCreateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProject400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateProject400JSONResponse) VisitCreateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProject401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateProject401JSONResponse) VisitCreateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProject403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateProject403JSONResponse) VisitCreateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProject422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response CreateProject422JSONResponse) VisitCreateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProjectRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+}
+
+type DeleteProjectResponseObject interface {
+	VisitDeleteProjectResponse(w http.ResponseWriter) error
+}
+
+type DeleteProject204Response struct {
+}
+
+func (response DeleteProject204Response) VisitDeleteProjectResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteProject401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteProject401JSONResponse) VisitDeleteProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProject403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteProject403JSONResponse) VisitDeleteProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProject404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteProject404JSONResponse) VisitDeleteProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+}
+
+type GetProjectResponseObject interface {
+	VisitGetProjectResponse(w http.ResponseWriter) error
+}
+
+type GetProject200JSONResponse Project
+
+func (response GetProject200JSONResponse) VisitGetProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProject401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetProject401JSONResponse) VisitGetProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProject404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetProject404JSONResponse) VisitGetProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+	Body      *UpdateProjectJSONRequestBody
+}
+
+type UpdateProjectResponseObject interface {
+	VisitUpdateProjectResponse(w http.ResponseWriter) error
+}
+
+type UpdateProject200JSONResponse Project
+
+func (response UpdateProject200JSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProject400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateProject400JSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProject401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateProject401JSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProject403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateProject403JSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProject404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateProject404JSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProject422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response UpdateProject422JSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListVersionsRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+}
+
+type ListVersionsResponseObject interface {
+	VisitListVersionsResponse(w http.ResponseWriter) error
+}
+
+type ListVersions200JSONResponse VersionList
+
+func (response ListVersions200JSONResponse) VisitListVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListVersions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListVersions401JSONResponse) VisitListVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListVersions404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListVersions404JSONResponse) VisitListVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateVersionRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+}
+
+type CreateVersionResponseObject interface {
+	VisitCreateVersionResponse(w http.ResponseWriter) error
+}
+
+type CreateVersion201JSONResponse Version
+
+func (response CreateVersion201JSONResponse) VisitCreateVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateVersion401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateVersion401JSONResponse) VisitCreateVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateVersion403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateVersion403JSONResponse) VisitCreateVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateVersion404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateVersion404JSONResponse) VisitCreateVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteVersionRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+	VersionId Uuid `json:"version_id"`
+}
+
+type DeleteVersionResponseObject interface {
+	VisitDeleteVersionResponse(w http.ResponseWriter) error
+}
+
+type DeleteVersion204Response struct {
+}
+
+func (response DeleteVersion204Response) VisitDeleteVersionResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteVersion401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteVersion401JSONResponse) VisitDeleteVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteVersion403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteVersion403JSONResponse) VisitDeleteVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteVersion404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteVersion404JSONResponse) VisitDeleteVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetVersionRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+	VersionId Uuid `json:"version_id"`
+}
+
+type GetVersionResponseObject interface {
+	VisitGetVersionResponse(w http.ResponseWriter) error
+}
+
+type GetVersion200JSONResponse Version
+
+func (response GetVersion200JSONResponse) VisitGetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetVersion401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetVersion401JSONResponse) VisitGetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetVersion404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetVersion404JSONResponse) VisitGetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// ListProjects List own projects
+	// (GET /projects)
+	ListProjects(ctx context.Context, request ListProjectsRequestObject) (ListProjectsResponseObject, error)
+	// CreateProject Create a project
+	// (POST /projects)
+	CreateProject(ctx context.Context, request CreateProjectRequestObject) (CreateProjectResponseObject, error)
+	// DeleteProject Delete a project (soft)
+	// (DELETE /projects/{project_id})
+	DeleteProject(ctx context.Context, request DeleteProjectRequestObject) (DeleteProjectResponseObject, error)
+	// GetProject Get a project
+	// (GET /projects/{project_id})
+	GetProject(ctx context.Context, request GetProjectRequestObject) (GetProjectResponseObject, error)
+	// UpdateProject Edit a project
+	// (PATCH /projects/{project_id})
+	UpdateProject(ctx context.Context, request UpdateProjectRequestObject) (UpdateProjectResponseObject, error)
+	// ListVersions List the versions of a project
+	// (GET /projects/{project_id}/versions)
+	ListVersions(ctx context.Context, request ListVersionsRequestObject) (ListVersionsResponseObject, error)
+	// CreateVersion Start a new blank version
+	// (POST /projects/{project_id}/versions)
+	CreateVersion(ctx context.Context, request CreateVersionRequestObject) (CreateVersionResponseObject, error)
+	// DeleteVersion Delete a version (soft)
+	// (DELETE /projects/{project_id}/versions/{version_id})
+	DeleteVersion(ctx context.Context, request DeleteVersionRequestObject) (DeleteVersionResponseObject, error)
+	// GetVersion Get a version
+	// (GET /projects/{project_id}/versions/{version_id})
+	GetVersion(ctx context.Context, request GetVersionRequestObject) (GetVersionResponseObject, error)
 }
 
 // StrictHandlerFunc and StrictMiddlewareFunc are type aliases rather than
@@ -191,20 +1588,312 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
+// ListProjects operation middleware
+func (sh *strictHandler) ListProjects(w http.ResponseWriter, r *http.Request, params ListProjectsParams) {
+	var request ListProjectsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.ListProjects(ctx, request.(ListProjectsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProjects")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProjectsResponseObject); ok {
+		if err := validResponse.VisitListProjectsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateProject operation middleware
+func (sh *strictHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
+	var request CreateProjectRequestObject
+
+	var body CreateProjectJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.CreateProject(ctx, request.(CreateProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateProjectResponseObject); ok {
+		if err := validResponse.VisitCreateProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteProject operation middleware
+func (sh *strictHandler) DeleteProject(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	var request DeleteProjectRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.DeleteProject(ctx, request.(DeleteProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteProjectResponseObject); ok {
+		if err := validResponse.VisitDeleteProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProject operation middleware
+func (sh *strictHandler) GetProject(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	var request GetProjectRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetProject(ctx, request.(GetProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectResponseObject); ok {
+		if err := validResponse.VisitGetProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProject operation middleware
+func (sh *strictHandler) UpdateProject(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	var request UpdateProjectRequestObject
+
+	request.ProjectId = projectId
+
+	var body UpdateProjectJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.UpdateProject(ctx, request.(UpdateProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProjectResponseObject); ok {
+		if err := validResponse.VisitUpdateProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListVersions operation middleware
+func (sh *strictHandler) ListVersions(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	var request ListVersionsRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.ListVersions(ctx, request.(ListVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListVersionsResponseObject); ok {
+		if err := validResponse.VisitListVersionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateVersion operation middleware
+func (sh *strictHandler) CreateVersion(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	var request CreateVersionRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.CreateVersion(ctx, request.(CreateVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateVersionResponseObject); ok {
+		if err := validResponse.VisitCreateVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteVersion operation middleware
+func (sh *strictHandler) DeleteVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	var request DeleteVersionRequestObject
+
+	request.ProjectId = projectId
+	request.VersionId = versionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.DeleteVersion(ctx, request.(DeleteVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteVersionResponseObject); ok {
+		if err := validResponse.VisitDeleteVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetVersion operation middleware
+func (sh *strictHandler) GetVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	var request GetVersionRequestObject
+
+	request.ProjectId = projectId
+	request.VersionId = versionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetVersion(ctx, request.(GetVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetVersionResponseObject); ok {
+		if err := validResponse.VisitGetVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"dFJfa9tOEPwqyz4lPxTZIW/60Yfipv8hwTK0EIfqctpIV0t3l9tVHGH03cudTEowfZP2ZndnZueA2vXe",
-	"WbLCWByQSQ/ByFjqlnpKJc3hceN2ZONPTayD8WKcxQLX9DSYQDU4CyxK6EK3yjbGNhDoaSAWBnENSUsB",
-	"9kZaUBZugmmMBd2S3uWYoYmTWlI1BczQqp6wwJ8Xq3L98WLem6GMPlaVN99oxClDJmbj7Mq5naFTYq2I",
-	"v7HdmEEZBVEGpeqpNELvvqsXOHaDTu3Quq6OnKUl+Ppj80pqfv5LSgf6dWw95TRNsevRnZJZOStBaYFH",
-	"F9KO1foaPm82t/D+9ksOH1yvjAXDPBCDqqOb3RiBJoDb262tvJKWF9thubzSdYKnb8pH1XcVKFtDxfFi",
-	"6t+o/6Hq1Y6gIVtBT6Eh3lppqYczJoJKH1ny4mGwdUd5/5ur8zS7IUtBCXFi/8ml4mb0VCaVoF1N+TZ5",
-	"YqSjWTJLGHR0ANaGd3D94ilIVIwZPlPg2ZvLfJkv40GdJ6u8wQKv8st8iRkm0Vgcpuw1lVjcvcnj3f1J",
-	"Eu7up1QMcUfCvz1GzAG4OYJqFrSnB1Dew9lK1fUIwQ1RarVQ3iye/6tAXIIpb85jNIbQYYHz6yVO99Of",
-	"AQA=",
+	"7Dr7b9s40v/KQN8HfO0HxXba3g91cT90s+0+bvtAnfYOSAqbFsc2NxKpJSmn3iD/+2FI6mXJj7bZ9HZx",
+	"BYrI0gw57xkO5yZKVJYridKaaHwT5UyzDC1q9+stWyL9FTIaR78VqDdRHEmWYTSOcvoWRyZZYcYIiOOC",
+	"FamNxqdxlAkpsiJzz3aTE7yQFpeoo9vb2K07Eb/vXXtqxO87Nng0iqOMfQo7jEYH9ruNI40mV9Kg4+o7",
+	"xt/hbwUaS78SJS1K98jyPBUJs0LJ4a9GSXpXb/+/GhfROPqfYS2xof9qhi+0VvqFXGOqcvRbcjSJFjkt",
+	"Fo2jVyxdKJ0hB+23HkS3cfRS6bngHOX9EXK+QjBojFASMrYBqSzkqIk4sCthgCUECQ+0ShGUhrPJu5cP",
+	"HbWvlX2pCsnvj9jXysKCthzA89Qo0GgLLZHDQmnQaFShEzRgVwiFQQ1coXEcqWvpSH4vWWFXSovf8V7J",
+	"hjVLBS8F7Uj5QG/cdi+ZSO+QnHrho5Qf7A/mim9Iv7XHw8IRButqwYHz1rAR0eF2+E7xDf3ItcpRW+G9",
+	"KlEcvZc2d5xYNk8RMpashEQgoBhwsBzATCo7dcqdDaLKa43VQi5JXhkaw5Y9S36PnkF9smCJkEvgaJlI",
+	"Y6d4s1LXEqxy9mB6Fw4CmAqngq3P4bvQpKALz1RNy8dqOTX/FRNLy7WF3hEL0uejLMqJdZsAj96370uB",
+	"KX9Rrt6viw7vC0LqivTnyZvXkCsKmRrUwjmUWixQcpKvQ+oR5Rapfu3Yb95HMUX9V2hZl948KHpfGI8b",
+	"WeEgqFWWpS2wUW8iatIfEloz9/hlennRyj2S56bpm0U0vtiv4oDgtGai27ijMo3MIp8ye8hYzkWGxrIs",
+	"JzrwU44J4eVaLTUaM80T21XwmcrywlLg1Cpz6s09PcCZRRODxDVqMFZp5GPAlOUG+aVMWIqSMw2cbQwo",
+	"guGFdrEhhiRlWY6cvG10cjoaAZMcNHk08sGljHYm6VGfygQ/xPj7QnCCTIlkO12jpuA6larL7+sim9em",
+	"7BFAKnnCMUWSQ0COQRZpCtcrlASpEQQlEImDqEFvZWIXFcFxRIjRx9s4KnL+JZoryU9UIe0+DnrINoNo",
+	"vzi3TFvwaJepbBPSJ964aZ0thruu8bF2jjOH9DUu0hbJGwmejhhmTR5mECpD40zRmSGVNnMElQlr0QWv",
+	"pjxcmRlHUiRX4VGYlEk+DfGeeCqfjWXaToljkqHk5eOapQVO52x1QAqBnY6CX3Dhc2PpiS5+mgHMyk1m",
+	"kBWUqBHYggLzrCZl9uxSzgLNigx35rieOcLLFxrBoAWxcN+UTDcgvENkzFI+Xl5KYpJsfuaRBvCB2HII",
+	"tI8Bqks2JNfS9IIOuCfqmmluvLO341mL2RuKBL+gXNpVNP7baDSqHSokk4Y/VTLuiOx5RwykWCpdyfei",
+	"oJhO0mvqdnyUCf7kMBq4TjpbfDwKMa38fbqPKX+wuempb+cpk1cDHyz3LJ0za1ET0uXlpI/LypjbVD5p",
+	"LfS4B3F/5nghLWrkUEKBkHReSFDawWdG+IYnjW8Oq612wuOUdk4LlHhfrbCGe3dkEjYEB0MCIbAYls4x",
+	"NNgVkzAauJCbpIURa3zVEEwlsqfNf4OnTysZSBf7O1H8jqPWlub3VDnBHTpy8O9hCKnyJxdX3w/KYAKB",
+	"eAPtUOUkI0kCF9GVWk0tU1HsngzLChGe8xWTSyarX4L+h18pk5aF54TgwvOVUjyKI6/8jz02FRj6RZjP",
+	"Kd3KurVbtQmLWfvhCEMtjTQaR0xr1i36/WJ7s4oz9p2GSXg7ddHIEU1NzAuRcu8EuXAVjlaMpFlYkQrH",
+	"cBwlihkqiY+Q8fu89HTGuSACWfq2IbwFSw1uH1DfMm0FS8GXGM/AYJm5KG35DEnJyCkdY2AWUmTGApVs",
+	"cL7CS6mLFA3VTbNWAp7VmYyW8pUuaDRFakOxKmSTvtMDGW2fopugWxltH1oFd8dJax9yC7aRqPbhOJit",
+	"lLMXvoTryTb78FqwnQSyD7MBeWeZZB9iA7KTO/bhNSBvb3sCcH1i6Pj6+/MzENJYJm0M716ewePHj592",
+	"6qETK7Le7OoOU800XBSC9wFutZfK5s9xobNG6cbORVUYHxU8G/2OQ/EzrNwfQHe1y76sc9MnneN7OB98",
+	"TX28PAPCpMgypjc9Z6QAANfCrlrn/PVWXS8sXLO6mCf4QaeIbwaug/XaZ5Z3pphnwhxxgq8BTQwjf1YP",
+	"7YpiXp/v9teex5dzicoFcr8NCXBdSrSW1s7Sbn/91uZ4qxbrL9h2mLAnqaxitg5JadrbMiBRstIcYpB4",
+	"jYYOndrYAdBBJGdLIUv2vqbM6Rjpl1U7FZ8Ty2wR7NHXKlyzhRNaaQC9hcgWHeNuPwFBq+uWYP7PVApP",
+	"hbFdUbA1auoQ6qy74CtkEt69KttOJnE1hpCcGvtKm2dlt0mkCDPHxKzfdC9KG2qcSL60Qxj6DF1yz3WB",
+	"vrii65T9jbKSpyCmRjd4rlSKzNU5K7FcHe5n1fLw5dsaU/jxc0TT04M7vnlY1RTMTr357A4IJSzR6cVj",
+	"bCMc7aT5wJm4l4Mg2OnxnJjKLY5xRg982/CZKethnUynbpu22I2b7PoamtZ03aOaeSXxiDzWtNCbOmym",
+	"qQ9w+1q7E7q+ke6UkKNuBjRKCRoLs5UPei8I1qg30y+31w9fZ7B97dmGAbQEUCm64cpbDdmWSntNvOWb",
+	"Xe7jZljri8T/ed28/3bkvlFH7q/SWTOYFFrYzYRCUriDM3pxrq5Qdgl7F9wVlHRxD09cC4KuR8N9sgGr",
+	"lkjC8cU3k/BGi6WQkKwwcfbkRl1WyLiPBc40on+d0ITFid+3LpVy8Q90tVOYIThT6kr0GOzK2vyNTDcx",
+	"TIghjGHCMpwIi3//hX2qRj0Shw4r5Xo8Lnz//M/ziij/uSYq0TgNqF2aSHpCLlTfNaO0miW2KijO3r2A",
+	"H8/P38Lztz8N4HuVMSFBGFOgAcbr1o7QNLJxKWc5syszvCxGo8cJd+DuGQcblqXhkqNMIrugnsEsY1cI",
+	"S5QzyFAv0VxKu8IMHhhEmCWBSjOcF5KnOMh+NbOHbu0lStTufETU/6DcS2oHTByXvqfmukVW2BQ9y8bq",
+	"wg/NvBPmCl58ylFb4rgO5NE4Oh2MBiNSqMpRslxE4+jx4HQwclfOduUMcBiSgPuxxB4HeXMtW+VZidAu",
+	"6GMwyHSycvdL8w2QVmMo4xEoDT6KuoSdo7/Q/YlH44jOFG9LIuLWONhFR9vM4ImQBqURVqwxbOqvibe2",
+	"JDn6PeGBu3NSGlwkAYuf7MPKELcGwX5rDYBtR5zOPEJ/0VEz4Vq50ZFwbkDt9uPW8Nij0ejOJnea3eie",
+	"aZ3ndCRz1VipZTdI9GQ02rVwRemwMePmUE4Po7RmpVyELA9OzirIQStCXJZS/vjZNiB/6Rs4i6ppm7Jt",
+	"dJdy81uVA35lOWV1gbcdpZ3e9ea7xqvKhkp1ULo3jRHS48NI9cwhYTx6dBijM7nWNg6vhvoI7T5XkWx4",
+	"Uxe2tz6eUeTqRrYfBQ9hNyC4mMHSFIQ1dReDXmrMlbbGNfzLkQ3Q6Hr63ZD2vduwaZEty3jSN2FGGHxw",
+	"n4oYPTmMUQ1gthXgya0VAA+MWtiHtGzIIW2B/IB2pzRG9+Un1bnNFUvlbEpV1H6N7L9ckj+gbdpxJ/+5",
+	"FEXZujGq3Dy2taNQfKSk/IGeMk1Ocxlde+yfyVDy8GBGxxn8rdy9hGe/1XHh+d7MLswu/VnC8+fZ8t3E",
+	"cxpMOiqaD0vLa1Sr3WryQwn0Byq92RDvncfutsO3OuDfJNy4sqpxx9Du0X+L+KP6bhTO2ZUbq3cj4y7p",
+	"gsRPFvxhmtIvM0YsJfK4e+UUhwlTOoFpNHQANfWgKJ1Fma4uXYS0qimQ2EH6NXEtVGEuZfgEc0xUhgY0",
+	"Mn5CsdCfy/qq0WAe0R9YFZZb7Ag7Eq9j31cC1yosGfyzlBgTyzQFBYnXgY11xfDB8DC8CU/Hl4Clkt2x",
+	"0Zq9FV8FVNujVLbRCe4rB3eaxF+oHCyFeLgc3CmN0X05SKD1GczKJveMFGl3XVG5Ee1vVyJW1n+/ITru",
+	"Xb/2rq9OAc3GqGOn0RK9+NhpRl58vHUv9bq/QzTx3SbXBWXes69xTvUrPDhjnG8oC1gaShuyXAzX/z8r",
+	"57NYLlxTqNBpNI7811O6HPr3AA==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,
