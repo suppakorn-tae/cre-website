@@ -1,0 +1,9 @@
+bin/
+*.test
+coverage.out
+.git
+.env
+.env.*
+Dockerfile
+.dockerignore
+**/*_test.go
