@@ -1,0 +1,7 @@
+// Package jobs holds the jobs HTTP handlers.
+package jobs
+
+import "github.com/go-chi/chi/v5"
+
+// Routes registers the jobs endpoints. Stub: filled by the feature issue.
+func Routes(_ chi.Router) {}
