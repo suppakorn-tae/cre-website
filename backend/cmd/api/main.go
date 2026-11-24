@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/mailer"
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
 	"github.com/suppakorn-tae/cre-website/backend/internal/config"
 	apihttp "github.com/suppakorn-tae/cre-website/backend/internal/http"
@@ -49,6 +50,19 @@ func main() {
 	defer func() { _ = cache.Close() }()
 
 	deps := app.Deps{Config: cfg, Logger: l}
+	if cfg.SMTPHost != "" {
+		m, err := mailer.NewSMTP(mailer.Config{
+			Host: cfg.SMTPHost, Port: cfg.SMTPPort, User: cfg.SMTPUser,
+			Password: cfg.SMTPPassword, From: cfg.SMTPFrom, RequireTLS: cfg.SMTPRequireTLS,
+		})
+		if err != nil {
+			l.Error("invalid SMTP settings, exiting", "error", err.Error())
+			os.Exit(1)
+		}
+		deps.Mailer = m
+	} else {
+		l.Warn("SMTP_HOST is not set: e-mail sign-up is unavailable")
+	}
 	if err := deps.WireAuth(pool, cache); err != nil {
 		l.Error("cannot wire authentication, exiting", "error", err.Error())
 		os.Exit(1)

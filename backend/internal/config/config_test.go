@@ -86,6 +86,7 @@ func TestLoadAPISession(t *testing.T) {
 	c, err := LoadAPI(apiEnv(map[string]string{
 		"SESSION_SECRET": secret, "SESSION_TTL": "2h", "REMEMBER_TTL": "30d",
 		"ALLOWED_ORIGINS": "https://a.example.com, http://b.example.com/",
+		"SMTP_HOST":       "smtp.example.com", "SMTP_FROM": "no-reply@example.com",
 	}))
 	if err != nil {
 		t.Fatal(err)
@@ -124,6 +125,38 @@ func TestLoadAPIRejectsBadSessionConfig(t *testing.T) {
 	for _, want := range []string{"APP_ENV", "REMEMBER_TTL", "ALLOWED_ORIGINS"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("error missing %s: %v", want, err)
+		}
+	}
+}
+
+func TestLoadAPISMTP(t *testing.T) {
+	c, err := LoadAPI(apiEnv(map[string]string{
+		"APP_ENV": "development", "SMTP_HOST": "mailpit", "SMTP_PORT": "1025", "SMTP_FROM": "no-reply@localhost",
+		"SMTP_USER": "u", "SMTP_PASSWORD": "p", "SMTP_REQUIRE_TLS": "true",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if c.SMTPHost != "mailpit" || c.SMTPPort != 1025 || c.SMTPFrom != "no-reply@localhost" ||
+		c.SMTPUser != "u" || c.SMTPPassword != "p" || !c.SMTPRequireTLS {
+		t.Fatalf("smtp: %+v", c)
+	}
+	c, err = LoadAPI(apiEnv(map[string]string{"APP_ENV": "development"}))
+	if err != nil || c.SMTPHost != "" || c.SMTPPort != 587 || c.SMTPRequireTLS {
+		t.Fatalf("development without smtp: %+v %v", c, err)
+	}
+}
+
+func TestLoadAPISMTPProblems(t *testing.T) {
+	cases := map[string]map[string]string{
+		"SMTP_HOST is required in production": {"SESSION_SECRET": strings.Repeat("s", 32)},
+		"SMTP_FROM is required":               {"APP_ENV": "development", "SMTP_HOST": "m"},
+		"SMTP_PORT":                           {"APP_ENV": "development", "SMTP_PORT": "x"},
+		"SMTP_REQUIRE_TLS":                    {"APP_ENV": "development", "SMTP_REQUIRE_TLS": "maybe"},
+	}
+	for want, e := range cases {
+		if _, err := LoadAPI(apiEnv(e)); err == nil || !strings.Contains(err.Error(), want) {
+			t.Errorf("want %q, got %v", want, err)
 		}
 	}
 }

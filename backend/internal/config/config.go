@@ -42,6 +42,19 @@ type API struct {
 	// AllowedOrigins are the full origins (scheme and host) accepted by the
 	// CSRF Origin check besides the request host. Defaults to PUBLIC_BASE_URL.
 	AllowedOrigins []string
+
+	// SMTP settings for the OTP mailer (SMTP_HOST, SMTP_PORT, SMTP_USER,
+	// SMTP_PASSWORD, SMTP_FROM). SMTPHost is required in production; when it
+	// is empty (development) the api starts without a mailer and every
+	// route that sends e-mail answers 503.
+	SMTPHost     string
+	SMTPPort     int
+	SMTPUser     string
+	SMTPPassword string
+	SMTPFrom     string
+	// SMTPRequireTLS (SMTP_REQUIRE_TLS) fails a send when the relay does not
+	// offer STARTTLS. Set it for Brevo; Mailpit in dev does not offer it.
+	SMTPRequireTLS bool
 }
 
 // MinSessionSecret is the shortest accepted SESSION_SECRET in bytes.
@@ -79,6 +92,18 @@ func LoadAPI(get Getenv) (API, error) {
 	c.SessionTTL = r.duration("SESSION_TTL", 12*time.Hour)
 	c.RememberTTL = r.duration("REMEMBER_TTL", 30*24*time.Hour)
 	c.AllowedOrigins = r.origins("ALLOWED_ORIGINS", r.str("PUBLIC_BASE_URL", ""))
+	c.SMTPHost = r.str("SMTP_HOST", "")
+	c.SMTPPort = r.port("SMTP_PORT", 587)
+	c.SMTPUser = r.str("SMTP_USER", "")
+	c.SMTPPassword = r.str("SMTP_PASSWORD", "")
+	c.SMTPFrom = r.str("SMTP_FROM", "")
+	c.SMTPRequireTLS = r.boolean("SMTP_REQUIRE_TLS")
+	if c.Env == "production" && c.SMTPHost == "" {
+		r.errs = append(r.errs, errors.New("SMTP_HOST is required in production"))
+	}
+	if c.SMTPHost != "" && c.SMTPFrom == "" {
+		r.errs = append(r.errs, errors.New("SMTP_FROM is required when SMTP_HOST is set"))
+	}
 	return c, r.err()
 }
 
@@ -140,6 +165,31 @@ func (r *reader) duration(key string, def time.Duration) time.Duration {
 		return def
 	}
 	return d
+}
+
+func (r *reader) port(key string, def int) int {
+	v, ok := r.get(key)
+	if !ok || v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 1 || n > 65535 {
+		r.errs = append(r.errs, fmt.Errorf("%s: %q is not a port", key, v))
+		return def
+	}
+	return n
+}
+
+func (r *reader) boolean(key string) bool {
+	v, ok := r.get(key)
+	if !ok || v == "" {
+		return false
+	}
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		r.errs = append(r.errs, fmt.Errorf("%s: %q is not true or false", key, v))
+	}
+	return b
 }
 
 func (r *reader) prefixes(key, def string) []netip.Prefix {
