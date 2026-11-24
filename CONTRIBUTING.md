@@ -37,6 +37,14 @@ from the NULL pattern and reject any other pattern.
 Refs: IO-23
 ```
 
+## Commit identity
+
+GitHub must show which teammate is responsible for each commit and PR, not a generic agent name.
+
+- An agent commits as its human owner: set `git config user.name` and `git config user.email` in the clone to the owner's name and an email verified on the owner's GitHub account.
+- An agent pushes and opens PRs with its owner's GitHub credentials, so the PR and the squash commit on `main` carry the owner's name.
+- Optional: add a `Co-Authored-By: <agent name> <email>` trailer after `Refs: IO-<n>` to show the agent's part. It adds a co-author; it never replaces the owner.
+
 ## Pull requests
 
 - Title = squash commit header + issue key: `<type>(<scope>): <summary> (IO-<n>)`.
