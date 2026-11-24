@@ -97,7 +97,7 @@ func TestResetSetsPasswordAndEndsSessions(t *testing.T) {
 	if len(e.sess.bumped) != 1 || e.sess.bumped[0] != "a" {
 		t.Errorf("bumped = %v, want [a]", e.sess.bumped)
 	}
-	if !loginVerifySecret("brand-new-pass", e.store.accs["a@example.com"].PasswordHash) {
+	if !VerifyPassword("brand-new-pass", e.store.accs["a@example.com"].PasswordHash) {
 		t.Error("new password not stored")
 	}
 	// The code is spent.
@@ -131,7 +131,7 @@ func TestResetOTPFailures(t *testing.T) {
 	if len(e.sess.bumped) != 0 {
 		t.Error("sessions bumped without a successful reset")
 	}
-	if !loginVerifySecret("old-password", e.store.accs["a@example.com"].PasswordHash) {
+	if !VerifyPassword("old-password", e.store.accs["a@example.com"].PasswordHash) {
 		t.Error("password changed")
 	}
 }
@@ -149,6 +149,19 @@ func TestResetFifthAttemptStillWorks(t *testing.T) {
 	}
 	if err := e.s.Reset(ctx, "a@example.com", code, "brand-new-pass", "brand-new-pass"); err != nil {
 		t.Fatalf("fifth attempt: %v", err)
+	}
+}
+
+func TestRequestCodeWithoutMailer(t *testing.T) {
+	e := resetNewEnv(t)
+	s, err := NewResetService(e.store, e.sess, e.cache, nil, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, em := range []string{"a@example.com", "nobody@example.com"} {
+		if _, err := s.RequestCode(context.Background(), em); !errors.Is(err, ErrResetMailUnavailable) {
+			t.Errorf("%s: %v, want ErrResetMailUnavailable", em, err)
+		}
 	}
 }
 

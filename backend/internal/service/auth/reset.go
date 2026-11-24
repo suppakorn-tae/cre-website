@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"math/big"
 	"time"
 	"unicode/utf8"
 
@@ -32,6 +31,9 @@ const (
 var (
 	// ErrResetCooldown: a code was requested less than 60 s ago (HTTP 429).
 	ErrResetCooldown = errors.New("auth: otp resend cool-down")
+	// ErrResetMailUnavailable: no mailer is configured (HTTP 503, for every
+	// e-mail, so it reveals nothing about an account).
+	ErrResetMailUnavailable = errors.New("auth: mail not configured")
 	// ErrResetOTPInvalid: wrong code (HTTP 422, /otp).
 	ErrResetOTPInvalid = errors.New("auth: otp invalid")
 	// ErrResetOTPExpired: older than 10 minutes or never issued.
@@ -55,30 +57,27 @@ type ResetService struct {
 	cache    valkey.StateStore
 	mail     mailer.Mailer
 	log      *slog.Logger
-	dummy    string
 	// Async runs the e-mail send off the request path, so a known and an
 	// unknown address answer in the same time. Tests set it to run inline.
 	Async func(func())
 }
 
-// NewResetService builds the service. mail may be nil: the code is then
-// stored but not sent, and an error is logged.
+// NewResetService builds the service. mail may be nil: RequestCode then
+// answers ErrResetMailUnavailable. A send failure for a real account is only
+// logged, so the answer does not tell registered e-mails apart.
 func NewResetService(store LoginStore, sessions LoginSessions, cache valkey.StateStore, mail mailer.Mailer, log *slog.Logger) (*ResetService, error) {
-	dummy, err := loginHashSecret("dummy-otp-for-timing")
-	if err != nil {
-		return nil, err
-	}
 	if log == nil {
 		log = slog.Default()
 	}
 	return &ResetService{
-		store: store, sessions: sessions, cache: cache, mail: mail, log: log, dummy: dummy,
+		store: store, sessions: sessions, cache: cache, mail: mail, log: log,
 		Async: func(f func()) { go f() },
 	}, nil
 }
 
 type resetCode struct {
-	Hash  string `json:"hash"`
+	Salt  []byte `json:"salt"`
+	Hash  []byte `json:"hash"`
 	Nonce string `json:"nonce"`
 }
 
@@ -88,20 +87,15 @@ func resetAttemptsKey(email, nonce string) string {
 	return "otp:reset:att:" + email + ":" + nonce
 }
 
-func resetNewCode() (string, error) {
-	n, err := rand.Int(rand.Reader, big.NewInt(1_000_000))
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%06d", n.Int64()), nil
-}
-
 // RequestCode starts a reset. The answer is the same whether or not the
 // e-mail is registered, and the cool-down applies to every e-mail. Only an
 // active account with a password gets a code.
 func (s *ResetService) RequestCode(ctx context.Context, email string) (ResetChallenge, error) {
-	email = loginNormaliseEmail(email)
+	email = NormaliseEmail(email)
 	ch := ResetChallenge{ExpiresIn: ResetOTPTTL, ResendIn: ResetResendAfter}
+	if s.mail == nil {
+		return ch, ErrResetMailUnavailable
+	}
 	fresh, err := s.cache.SetNX(ctx, resetCooldownKey(email), []byte("1"), ResetResendAfter)
 	if err != nil {
 		return ch, fmt.Errorf("auth: cool-down: %w", err)
@@ -114,33 +108,28 @@ func (s *ResetService) RequestCode(ctx context.Context, email string) (ResetChal
 	if err != nil && !errors.Is(err, ErrLoginNoAccount) {
 		return ch, fmt.Errorf("auth: load account: %w", err)
 	}
-	code, err := resetNewCode()
+	code, err := NewOTP()
 	if err != nil {
 		return ch, fmt.Errorf("auth: generate code: %w", err)
 	}
-	// Hash on every path so timing does not reveal the account.
-	hash, err := loginHashSecret(code)
-	if err != nil {
-		return ch, err
-	}
 	if !eligible {
 		return ch, nil
+	}
+	salt, err := NewSalt()
+	if err != nil {
+		return ch, err
 	}
 	nonce := make([]byte, 8)
 	if _, err := rand.Read(nonce); err != nil {
 		return ch, err
 	}
-	b, _ := json.Marshal(resetCode{Hash: hash, Nonce: hex.EncodeToString(nonce)})
+	b, _ := json.Marshal(resetCode{Salt: salt, Hash: HashOTP(salt, email, code), Nonce: hex.EncodeToString(nonce)})
 	if err := s.cache.Set(ctx, resetCodeKey(email), b, ResetOTPTTL); err != nil {
 		return ch, fmt.Errorf("auth: store code: %w", err)
 	}
 	s.Async(func() {
 		c, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
 		defer cancel()
-		if s.mail == nil {
-			s.log.Error("password reset code not sent: no mailer configured")
-			return
-		}
 		if err := mailer.SendOTP(c, s.mail, email, code, int(ResetOTPTTL.Minutes())); err != nil {
 			s.log.Error("password reset e-mail failed", "error", err)
 		}
@@ -162,7 +151,7 @@ func ResetValidatePassword(newPassword, confirmation string) error {
 // Reset checks the code and stores the new password. On success every
 // session of the account ends (session version bump) and the code is spent.
 func (s *ResetService) Reset(ctx context.Context, email, otp, newPassword, confirmation string) error {
-	email = loginNormaliseEmail(email)
+	email = NormaliseEmail(email)
 	if err := ResetValidatePassword(newPassword, confirmation); err != nil {
 		return err
 	}
@@ -176,7 +165,6 @@ func (s *ResetService) Reset(ctx context.Context, email, otp, newPassword, confi
 		missing = true
 	}
 	if missing {
-		loginVerifySecret(otp, s.dummy) // same cost as a real check
 		return ErrResetOTPExpired
 	}
 	n, err := s.cache.Incr(ctx, resetAttemptsKey(email, rc.Nonce), ResetOTPTTL)
@@ -187,7 +175,7 @@ func (s *ResetService) Reset(ctx context.Context, email, otp, newPassword, confi
 		_ = s.cache.Del(ctx, resetCodeKey(email))
 		return ErrResetOTPLocked
 	}
-	if !loginVerifySecret(otp, rc.Hash) {
+	if !OTPMatches(rc.Hash, rc.Salt, email, otp) {
 		return ErrResetOTPInvalid
 	}
 	acc, err := s.store.ByEmail(ctx, email)
@@ -198,7 +186,7 @@ func (s *ResetService) Reset(ctx context.Context, email, otp, newPassword, confi
 	if err != nil {
 		return fmt.Errorf("auth: load account: %w", err)
 	}
-	hash, err := loginHashSecret(newPassword)
+	hash, err := HashPassword(newPassword)
 	if err != nil {
 		return err
 	}

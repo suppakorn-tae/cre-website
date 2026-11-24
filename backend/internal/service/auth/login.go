@@ -3,73 +3,10 @@ package auth
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/subtle"
-	"encoding/base64"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
-
-	"golang.org/x/crypto/argon2"
 )
-
-// Argon2id parameters (OWASP minimum profile). The PHC string carries them,
-// so they can be raised later without breaking stored hashes.
-const (
-	loginArgonMemory  = 19 * 1024 // KiB
-	loginArgonTime    = 2
-	loginArgonThreads = 1
-	loginArgonKeyLen  = 32
-	loginArgonSaltLen = 16
-)
-
-// loginHashSecret returns the Argon2id PHC string of secret.
-func loginHashSecret(secret string) (string, error) {
-	salt := make([]byte, loginArgonSaltLen)
-	if _, err := rand.Read(salt); err != nil {
-		return "", fmt.Errorf("auth: salt: %w", err)
-	}
-	key := argon2.IDKey([]byte(secret), salt, loginArgonTime, loginArgonMemory, loginArgonThreads, loginArgonKeyLen)
-	return fmt.Sprintf("$argon2id$v=%d$m=%d,t=%d,p=%d$%s$%s", argon2.Version,
-		loginArgonMemory, loginArgonTime, loginArgonThreads,
-		base64.RawStdEncoding.EncodeToString(salt), base64.RawStdEncoding.EncodeToString(key)), nil
-}
-
-// HashPassword returns the Argon2id PHC string of a password, for fixtures
-// and other services that store passwords in the same format.
-func HashPassword(password string) (string, error) { return loginHashSecret(password) }
-
-// loginVerifySecret reports whether secret matches the PHC string. A string
-// that cannot be parsed never matches.
-func loginVerifySecret(secret, phc string) bool {
-	parts := strings.Split(phc, "$")
-	if len(parts) != 6 || parts[1] != "argon2id" {
-		return false
-	}
-	var version int
-	if _, err := fmt.Sscanf(parts[2], "v=%d", &version); err != nil || version != argon2.Version {
-		return false
-	}
-	var m, t uint32
-	var p uint8
-	if _, err := fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &m, &t, &p); err != nil {
-		return false
-	}
-	if m == 0 || m > 256*1024 || t == 0 || t > 10 || p == 0 {
-		return false
-	}
-	salt, err := base64.RawStdEncoding.DecodeString(parts[4])
-	if err != nil {
-		return false
-	}
-	want, err := base64.RawStdEncoding.DecodeString(parts[5])
-	if err != nil || len(want) == 0 {
-		return false
-	}
-	got := argon2.IDKey([]byte(secret), salt, t, m, p, uint32(len(want)))
-	return subtle.ConstantTimeCompare(got, want) == 1
-}
 
 // Errors returned by Login.
 var (
@@ -129,21 +66,18 @@ type LoginService struct {
 
 // NewLoginService builds the service.
 func NewLoginService(store LoginStore, sessions LoginSessions) (*LoginService, error) {
-	dummy, err := loginHashSecret("dummy-password-for-timing")
+	dummy, err := HashPassword("dummy-password-for-timing")
 	if err != nil {
 		return nil, err
 	}
 	return &LoginService{store: store, sessions: sessions, dummy: dummy}, nil
 }
 
-// loginNormaliseEmail trims and lower-cases an e-mail.
-func loginNormaliseEmail(s string) string { return strings.ToLower(strings.TrimSpace(s)) }
-
 // Login verifies the password and issues a session. Exactly one Argon2id
 // verification runs on every path, so timing does not tell the cases apart.
 // A deactivated account is reported only after the password was right.
 func (s *LoginService) Login(ctx context.Context, email, password string, keep bool) (LoginResult, error) {
-	acc, err := s.store.ByEmail(ctx, loginNormaliseEmail(email))
+	acc, err := s.store.ByEmail(ctx, NormaliseEmail(email))
 	if err != nil && !errors.Is(err, ErrLoginNoAccount) {
 		return LoginResult{}, fmt.Errorf("auth: load account: %w", err)
 	}
@@ -152,7 +86,7 @@ func (s *LoginService) Login(ctx context.Context, email, password string, keep b
 	if !known {
 		hash = s.dummy
 	}
-	ok := loginVerifySecret(password, hash)
+	ok := VerifyPassword(password, hash)
 	if !known || !ok {
 		return LoginResult{}, ErrInvalidCredentials
 	}

@@ -110,7 +110,7 @@ func (c *loginMemCache) SetNX(_ context.Context, k string, v []byte, _ time.Dura
 
 func loginMustHash(t *testing.T, s string) string {
 	t.Helper()
-	h, err := loginHashSecret(s)
+	h, err := HashPassword(s)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -119,10 +119,10 @@ func loginMustHash(t *testing.T, s string) string {
 
 func TestHashRoundTrip(t *testing.T) {
 	h := loginMustHash(t, "รหัสผ่านทดสอบ-2569")
-	if !loginVerifySecret("รหัสผ่านทดสอบ-2569", h) {
+	if !VerifyPassword("รหัสผ่านทดสอบ-2569", h) {
 		t.Fatal("correct secret rejected")
 	}
-	if loginVerifySecret("wrong", h) || loginVerifySecret("x", "not-a-hash") || loginVerifySecret("x", "") {
+	if VerifyPassword("wrong", h) || VerifyPassword("x", "not-a-hash") || VerifyPassword("x", "") {
 		t.Fatal("wrong secret or bad hash accepted")
 	}
 }
