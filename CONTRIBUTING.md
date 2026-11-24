@@ -49,7 +49,9 @@ Refs: IO-23
 ## Merge rules
 
 - CI green and PR title check passing.
-- One approving review, from a human or a reviewer agent that did not write the code.
+- One approving review. Who reviews depends on what the PR touches:
+  - **Most PRs:** a reviewer agent that did not write the code. It runs the review checklist in the Linear agent guide, posts its verdict as a PR comment, and squash-merges when CI is green and the verdict is APPROVE.
+  - **Human review required (Tae):** PRs labelled `hotspot` or `needs-decision`, and any PR that changes `contracts/`, `backend/migrations/`, `backend/internal/http/router.go`, `deploy/` or `.github/workflows/`. A reviewer agent may still review these, but only a human merges them.
 - Branch up to date with main.
 - Squash merge only. The squash message is the PR title plus the What bullets.
 - Target at most 400 changed lines, excluding generated code.
