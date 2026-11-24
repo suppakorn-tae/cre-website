@@ -5,6 +5,7 @@ import (
 	"crypto/subtle"
 	"encoding/hex"
 	"net/http"
+	"net/netip"
 	"net/url"
 	"strings"
 )
@@ -35,10 +36,11 @@ func SetCSRFCookie(w http.ResponseWriter, token string, insecure bool) {
 // Origin check. The header must equal the cookie. When Origin is present it
 // must be one of extraOrigins (full origins such as https://conriskexpert.com,
 // compared on scheme, host and port) or have the request's own scheme and
-// host; a missing Origin (server-side calls from
+// host; for a request from a trusted proxy (Caddy) the client scheme is read
+// from X-Forwarded-Proto. A missing Origin (server-side calls from
 // Next.js) is accepted when the token matches. Failures answer 403
 // `csrf_invalid`.
-func CSRF(extraOrigins ...string) func(http.Handler) http.Handler {
+func CSRF(trusted []netip.Prefix, extraOrigins ...string) func(http.Handler) http.Handler {
 	allowed := map[string]bool{}
 	for _, o := range extraOrigins {
 		if n, ok := normOrigin(o); ok {
@@ -61,7 +63,7 @@ func CSRF(extraOrigins ...string) func(http.Handler) http.Handler {
 			}
 			if o := r.Header.Get("Origin"); o != "" {
 				n, ok := normOrigin(o)
-				if !ok || (!allowed[n] && n != ownOrigin(r)) {
+				if !ok || (!allowed[n] && n != ownOrigin(r, trusted)) {
 					WriteError(w, r, http.StatusForbidden, "csrf_invalid", "origin not allowed")
 					return
 				}
@@ -81,10 +83,15 @@ func normOrigin(o string) (string, bool) {
 	return strings.ToLower(u.Scheme + "://" + u.Host), true
 }
 
-// ownOrigin is the origin the request itself was made to.
-func ownOrigin(r *http.Request) string {
+// ownOrigin is the origin the request itself was made to. Behind a
+// TLS-terminating proxy r.TLS is nil, so the client scheme comes from
+// X-Forwarded-Proto, believed only when the direct peer is a trusted proxy.
+func ownOrigin(r *http.Request, trusted []netip.Prefix) string {
 	scheme := "http"
-	if r.TLS != nil {
+	switch {
+	case r.TLS != nil:
+		scheme = "https"
+	case TrustedPeer(r, trusted) && r.Header.Get("X-Forwarded-Proto") == "https":
 		scheme = "https"
 	}
 	return strings.ToLower(scheme + "://" + r.Host)

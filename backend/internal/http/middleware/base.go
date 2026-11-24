@@ -42,14 +42,7 @@ func ClientIP(ctx context.Context) string {
 // the direct peer is inside trusted (Caddy); entries are read right to left
 // and the first one outside trusted is the client. Otherwise the peer is used.
 func RealIP(trusted []netip.Prefix) func(http.Handler) http.Handler {
-	isTrusted := func(a netip.Addr) bool {
-		for _, p := range trusted {
-			if p.Contains(a.Unmap()) {
-				return true
-			}
-		}
-		return false
-	}
+	isTrusted := func(a netip.Addr) bool { return inPrefixes(a, trusted) }
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			host, _, err := net.SplitHostPort(r.RemoteAddr)
@@ -73,6 +66,30 @@ func RealIP(trusted []netip.Prefix) func(http.Handler) http.Handler {
 			next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), clientIPKey{}, ip)))
 		})
 	}
+}
+
+// inPrefixes reports whether a is inside one of the trusted prefixes.
+func inPrefixes(a netip.Addr, trusted []netip.Prefix) bool {
+	for _, p := range trusted {
+		if p.Contains(a.Unmap()) {
+			return true
+		}
+	}
+	return false
+}
+
+// TrustedPeer reports whether the direct TCP peer of r (the proxy that
+// connects to us) is inside one of the trusted networks.
+func TrustedPeer(r *http.Request, trusted []netip.Prefix) bool {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		host = r.RemoteAddr
+	}
+	peer, err := netip.ParseAddr(host)
+	if err != nil {
+		return false
+	}
+	return inPrefixes(peer, trusted)
 }
 
 type statusWriter struct {

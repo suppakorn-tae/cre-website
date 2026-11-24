@@ -82,7 +82,7 @@ func (d *Deps) WireAuth(db dal.DBTX, cache valkey.StateStore) error {
 	d.DB, d.Valkey, d.Sessions = db, cache, svc
 	d.Auth = middleware.Session(svc)
 	d.RequireAdmin = middleware.RequireRole(session.RoleAdmin)
-	d.CSRF = middleware.CSRF(cfg.AllowedOrigins...)
+	d.CSRF = middleware.CSRF(cfg.TrustedProxies, cfg.AllowedOrigins...)
 	d.RateLimit = func(prefix string, defLimit int, defWindow time.Duration, key middleware.KeyFunc) Middleware {
 		limit, window := middleware.LimitFromEnv(prefix, defLimit, defWindow)
 		return middleware.RateLimit(cache, prefix, limit, window, key)
