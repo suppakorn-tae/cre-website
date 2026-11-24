@@ -19,7 +19,7 @@ type world struct {
 	s       *svc.AnswerService
 	owner   uuid.UUID
 	project uuid.UUID
-	v1, v2  uuid.UUID
+	v1      uuid.UUID
 }
 
 func setup(t *testing.T) world {
