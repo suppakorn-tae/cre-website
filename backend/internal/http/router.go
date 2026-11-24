@@ -49,7 +49,7 @@ func NewRouter(d Deps) http.Handler {
 	r.Method(http.MethodGet, "/metrics", d.Metrics.Handler())
 
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Use(middleware.Timeout(d.Config.RequestTimeout))
+		r.Use(middleware.Timeout(d.Config.RequestTimeout), d.CSRF)
 		r.Route("/auth", func(r chi.Router) { auth.Routes(r, d.Deps) })
 		r.Route("/account", func(r chi.Router) { account.Routes(r, d.Deps) })
 		r.Route("/catalogue", func(r chi.Router) { catalogue.Routes(r, d.Deps) })
@@ -60,7 +60,9 @@ func NewRouter(d Deps) http.Handler {
 		r.Route("/dashboard", func(r chi.Router) { dashboard.Routes(r, d.Deps) })
 		r.Route("/jobs", func(r chi.Router) { jobs.Routes(r, d.Deps) })
 		r.Route("/reports", func(r chi.Router) { reports.Routes(r, d.Deps) })
-		r.Route("/admin", func(r chi.Router) { admin.Routes(r, d.Deps) })
+		// With, not Use inside the group: the guard then wraps the mount
+		// itself and runs for every path under /admin.
+		r.With(d.Auth, d.RequireAdmin).Route("/admin", func(r chi.Router) { admin.Routes(r, d.Deps) })
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
