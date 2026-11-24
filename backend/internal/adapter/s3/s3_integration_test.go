@@ -28,7 +28,7 @@ func startStore(t *testing.T) *s3.Store {
 	ctx := context.Background()
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "minio/minio:latest",
+			Image:        "quay.io/minio/minio:latest",
 			Cmd:          []string{"server", "/data"},
 			ExposedPorts: []string{"9000/tcp"},
 			Env: map[string]string{
