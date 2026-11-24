@@ -6,6 +6,7 @@ package sqlc
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -15,13 +16,22 @@ type Querier interface {
 	// Sign-up start and verify: is the e-mail taken? Deleted accounts have no
 	// e-mail, so they never match.
 	AccountEmailExists(ctx context.Context, email pgtype.Text) (bool, error)
+	AdminAdviceIndicatorExists(ctx context.Context, code string) (bool, error)
+	// Serialises concurrent replaces of one indicator's advice (released at commit).
+	AdminAdviceLock(ctx context.Context, key string) error
 	// Anonymising delete (UC-04 1b, BR-13): e-mail, password hash and Google id
 	// removed, status deleted. Pseudonym, organisation and projects stay.
 	// IO-39 (user self-delete) should reuse this query.
 	AdminAnonymiseAccount(ctx context.Context, id uuid.UUID) error
 	AdminCountUsers(ctx context.Context, arg AdminCountUsersParams) (int32, error)
+	// Texts go with the items (ON DELETE CASCADE).
+	AdminDeleteAdviceList(ctx context.Context, arg AdminDeleteAdviceListParams) error
 	AdminGetRlThreshold(ctx context.Context, code string) (AdminGetRlThresholdRow, error)
 	AdminGetUser(ctx context.Context, id uuid.UUID) (AdminGetUserRow, error)
+	AdminInsertAdviceItem(ctx context.Context, arg AdminInsertAdviceItemParams) (time.Time, error)
+	AdminInsertAdviceText(ctx context.Context, arg AdminInsertAdviceTextParams) error
+	// Every advice item of one indicator with one row per locale of text, in list order.
+	AdminListAdvice(ctx context.Context, indicatorCode string) ([]AdminListAdviceRow, error)
 	// Thresholds of every indicator with the display unit in Thai, in catalogue
 	// order.
 	AdminListRlThresholds(ctx context.Context) ([]AdminListRlThresholdsRow, error)
