@@ -1,0 +1,278 @@
+/* Button, fields and selection controls. Values come from styles/tokens.css. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-md);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-body);
+  text-align: center;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.btn:disabled {
+  background: var(--color-disabled-bg);
+  border-color: transparent;
+  color: var(--color-disabled);
+  cursor: not-allowed;
+}
+.sm {
+  min-height: var(--control-sm);
+  padding: var(--space-1) var(--space-3);
+}
+.lg {
+  min-height: var(--control-lg);
+}
+.fullWidth {
+  display: flex;
+  width: 100%;
+}
+.iconOnly {
+  width: var(--control-md);
+  padding: 0;
+}
+.primary {
+  background: var(--color-blue-600);
+  color: var(--color-white);
+}
+.primary:hover:not(:disabled) {
+  background: var(--color-blue-700);
+}
+.primary:active:not(:disabled) {
+  background: var(--color-blue-800);
+}
+.secondary {
+  background: var(--color-white);
+  border-color: var(--color-field-border);
+  color: var(--color-text);
+}
+.secondary:hover:not(:disabled) {
+  background: var(--color-subtle);
+}
+.secondary:active:not(:disabled) {
+  background: var(--color-border);
+}
+.ghost {
+  background: transparent;
+  color: var(--color-blue-600);
+}
+.ghost:hover:not(:disabled) {
+  background: var(--color-blue-50);
+  color: var(--color-blue-700);
+}
+.ghost:active:not(:disabled) {
+  background: var(--color-blue-100);
+}
+.destructive {
+  background: var(--level-vh);
+  color: var(--color-white);
+}
+.destructive:hover:not(:disabled) {
+  background: var(--color-danger-hover);
+}
+.destructive:active:not(:disabled) {
+  background: var(--color-danger-pressed);
+}
+
+/* Field wrapper */
+.field,
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.label {
+  padding: 0;
+  color: var(--color-text);
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  line-height: var(--leading-body);
+}
+.required {
+  margin-inline-start: var(--space-1);
+  color: var(--color-error);
+}
+.optional {
+  margin-inline-start: var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-regular);
+}
+.helper {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+}
+.errorText {
+  margin: 0;
+  color: var(--color-error);
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+}
+
+/* Text input, number input, select */
+.control {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--field-height);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-control);
+  background: var(--color-white);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+.control::placeholder {
+  color: var(--color-placeholder);
+}
+.control:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
+}
+.control:focus-visible {
+  outline: none;
+  border-color: var(--color-blue-600);
+  box-shadow: var(--focus-ring);
+}
+.control:disabled {
+  background: var(--color-disabled-bg);
+  color: var(--color-disabled);
+  cursor: not-allowed;
+}
+.control[aria-invalid='true'] {
+  border-color: var(--color-error);
+}
+.numeric {
+  font-variant-numeric: tabular-nums;
+}
+.withSuffix {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.suffix {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+}
+
+/* Unit picker: amount plus a segmented unit switch */
+.unitRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.unitRow .control {
+  flex: 1 1 8rem;
+  width: auto;
+}
+.segmented {
+  display: inline-flex;
+  flex: none;
+  padding: 2px;
+  border-radius: var(--radius-control);
+  background: var(--color-disabled-bg);
+}
+.segment {
+  min-width: var(--hit-area);
+  min-height: calc(var(--field-height) - 6px);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--text-body);
+  cursor: pointer;
+}
+.segment[aria-checked='true'] {
+  background: var(--color-white);
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
+}
+.segment:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.segment:disabled {
+  color: var(--color-disabled);
+  cursor: not-allowed;
+}
+
+/* Checkbox group rendered as toggle chips (A to I style) */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.chip {
+  position: relative;
+  display: inline-flex;
+}
+.chip input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.chipFace {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--hit-area);
+  min-height: var(--hit-area);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-control);
+  background: var(--color-white);
+  color: var(--color-text-secondary);
+  font-size: var(--text-body);
+}
+.chip input:checked + .chipFace {
+  border-color: var(--color-blue-600);
+  background: var(--color-blue-600);
+  color: var(--color-white);
+}
+.chip input:focus-visible + .chipFace {
+  box-shadow: var(--focus-ring);
+}
+.chip input:disabled + .chipFace {
+  background: var(--color-disabled-bg);
+  color: var(--color-disabled);
+}
+.invalid .chipFace {
+  border-color: var(--color-error-border);
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+.invalid .chip input:checked + .chipFace {
+  border-color: var(--color-error);
+}

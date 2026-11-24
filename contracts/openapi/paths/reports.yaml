@@ -1,0 +1,65 @@
+/projects/{project_id}/versions/{version_id}/reports:
+  parameters:
+    - name: project_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+    - name: version_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+  post:
+    operationId: requestReport
+    summary: Request a PDF report for the last submission of a version
+    description: |
+      Enqueues a report job. A repeated request for the same submission
+      returns the existing job id instead of creating another job.
+      404 when the project or version is not the caller's or is deleted.
+    responses:
+      '202':
+        description: Job accepted (new or existing); poll `GET /jobs/{id}`.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/common.yaml#/schemas/JobAccepted
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
+      '429':
+        $ref: ../schemas/common.yaml#/responses/TooManyRequests
+/reports/{job_id}/download:
+  parameters:
+    - name: job_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+  get:
+    operationId: downloadReport
+    summary: Download a finished report
+    description: |
+      Streams the PDF through the api after the session and ownership check.
+      404 when the job is not the caller's, is not a report, or its version
+      is deleted. 409 when the job is not `done` or the file is missing in
+      storage (the user may request the report again).
+    responses:
+      '200':
+        description: The PDF file.
+        content:
+          application/pdf:
+            schema:
+              type: string
+              format: binary
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict

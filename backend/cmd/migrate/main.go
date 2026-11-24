@@ -20,7 +20,7 @@ import (
 )
 
 func main() {
-	if err := run(os.Args[1:], os.Getenv("DATABASE_URL")); err != nil {
+	if err := runAndSeed(os.Args[1:], os.Getenv("DATABASE_URL")); err != nil {
 		slog.Error("migrate failed", "err", err)
 		os.Exit(1)
 	}
