@@ -30,7 +30,7 @@ Fixed. Do not pick alternatives.
 4. Write tests first for the acceptance criteria, implement, run `make gen lint test`.
 5. Make small Conventional Commits with `Refs: IO-<n>`, push, open a draft PR after the first commit.
 6. Rebase on main before marking ready, fill the PR template, move the issue to In Review.
-7. Address review in new commits (no force-push after review starts, except rebase). Squash-merge when green.
+7. Address review in new commits (no force-push after review starts, except rebase). A reviewer agent that did not write the code squash-merges when green, except PRs that need a human (see CONTRIBUTING.md, Merge rules).
 
 ## Hard rules
 
