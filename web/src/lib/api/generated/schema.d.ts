@@ -321,6 +321,84 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/catalogue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the indicator catalogue
+         * @description The 55 indicators grouped dimension, factor, indicator, with the four questions of each, and the options A to I of the environmental impact.
+         *
+         *     Caching: the response carries a strong `ETag` and
+         *     `Cache-Control: private, no-cache`, so a client may keep a copy but
+         *     must revalidate with `If-None-Match`; an unchanged answer is `304`
+         *     with no body. The api renews the ETag when an admin edit invalidates
+         *     its cache.
+         */
+        get: operations["getCatalogue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/islands": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List islands
+         * @description Island and location codes for the project form, `other` last.
+         *
+         *     Caching: the response carries a strong `ETag` and
+         *     `Cache-Control: private, no-cache`, so a client may keep a copy but
+         *     must revalidate with `If-None-Match`; an unchanged answer is `304`
+         *     with no body. The api renews the ETag when an admin edit invalidates
+         *     its cache.
+         */
+        get: operations["listIslands"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project types
+         * @description Project type codes for the project form, `other` last.
+         *
+         *     Caching: the response carries a strong `ETag` and
+         *     `Cache-Control: private, no-cache`, so a client may keep a copy but
+         *     must revalidate with `If-None-Match`; an unchanged answer is `304`
+         *     with no body. The api renews the ETag when an admin edit invalidates
+         *     its cache.
+         */
+        get: operations["listProjectTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects": {
         parameters: {
             query?: never;
@@ -561,6 +639,81 @@ export interface components {
             user_ids?: components["schemas"]["Uuid"][];
             /** @description Include soft-deleted projects and versions. */
             include_deleted: boolean;
+        };
+        /**
+         * @description Two-letter locale code, e.g. `th`.
+         * @example th
+         */
+        Locale: string;
+        CatalogueIndicator: {
+            /**
+             * @description Stable indicator code, e.g. `EC-MG-1`.
+             * @example EC-MG-1
+             */
+            code: string;
+            name: string;
+            /** @description Unit of the likelihood input X, as text. */
+            unit: string;
+            /** @description Question for the likelihood input X (a number, 0 or more). */
+            question_x: string | null;
+            /** @description Question for the cost impact y1. */
+            question_y1: string | null;
+            /** @description Question for the time impact y2. */
+            question_y2: string | null;
+            /** @description Question for the environmental impact y3 (multi-select). */
+            question_y3: string | null;
+        };
+        CatalogueFactor: {
+            /** @example EC-MG */
+            code: string;
+            name: string;
+            /** @description Indicators of this factor, in display order. */
+            indicators: components["schemas"]["CatalogueIndicator"][];
+        };
+        CatalogueDimension: {
+            /** @example EC */
+            code: string;
+            name: string;
+            /** @description Factors of this dimension, in display order. */
+            factors: components["schemas"]["CatalogueFactor"][];
+        };
+        /** @description One option of the environmental impact question y3. */
+        RiEOption: {
+            code: string;
+            label: string;
+            /** @description When true the option cannot be combined with any other (A). */
+            is_exclusive: boolean;
+        };
+        Catalogue: {
+            locale: components["schemas"]["Locale"];
+            /** @description Dimensions in display order, each with its factors and indicators. */
+            dimensions: components["schemas"]["CatalogueDimension"][];
+            /** @description Options A to I in order. */
+            ri_e_options: components["schemas"]["RiEOption"][];
+        };
+        /** @description Label comes from the web message catalogue, keyed by `code`. */
+        IslandOption: {
+            /**
+             * @description e.g. `koh_tao`; `other` asks the user to type a place.
+             * @example koh_tao
+             */
+            code: string;
+        };
+        IslandList: {
+            /** @description In display order; `other` is last. */
+            items: components["schemas"]["IslandOption"][];
+        };
+        /** @description Label comes from the web message catalogue, keyed by `code`. */
+        ProjectTypeOption: {
+            /**
+             * @description e.g. `building`; `other` asks the user to type a type.
+             * @example building
+             */
+            code: string;
+        };
+        ProjectTypeList: {
+            /** @description In display order; `other` is last. */
+            items: components["schemas"]["ProjectTypeOption"][];
         };
         /**
          * @description Island / location code. `other` requires `island_other`.
@@ -1285,6 +1438,117 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+        };
+    };
+    getCatalogue: {
+        parameters: {
+            query?: {
+                /** @description Locale of the text; texts missing in it fall back to `th`. */
+                locale?: components["schemas"]["Locale"];
+            };
+            header?: {
+                /** @description ETag from an earlier response. */
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK. */
+            200: {
+                headers: {
+                    /** @description Strong validator of this representation. */
+                    ETag?: string;
+                    /** @description `private, no-cache`. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Catalogue"];
+                };
+            };
+            /** @description Not modified; the copy matching `If-None-Match` is current. */
+            304: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listIslands: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description ETag from an earlier response. */
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK. */
+            200: {
+                headers: {
+                    /** @description Strong validator of this representation. */
+                    ETag?: string;
+                    /** @description `private, no-cache`. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IslandList"];
+                };
+            };
+            /** @description Not modified; the copy matching `If-None-Match` is current. */
+            304: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listProjectTypes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description ETag from an earlier response. */
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK. */
+            200: {
+                headers: {
+                    /** @description Strong validator of this representation. */
+                    ETag?: string;
+                    /** @description `private, no-cache`. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTypeList"];
+                };
+            };
+            /** @description Not modified; the copy matching `If-None-Match` is current. */
+            304: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
         };
     };
     listProjects: {
