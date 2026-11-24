@@ -60,6 +60,9 @@ type Querier interface {
 	// The live job for a submission; a failed job does not count, so the user
 	// may ask again.
 	FindReportJob(ctx context.Context, arg FindReportJobParams) (uuid.UUID, error)
+	// Looks an account up by e-mail for log in and password reset. A deleted
+	// account has no e-mail, so it never matches.
+	GetAccountForLogin(ctx context.Context, email pgtype.Text) (GetAccountForLoginRow, error)
 	// What GET /auth/me returns about the signed-in account.
 	GetAccountProfile(ctx context.Context, id uuid.UUID) (GetAccountProfileRow, error)
 	// The record the session middleware checks on every request. Role, status
@@ -114,6 +117,8 @@ type Querier interface {
 	MarkJobFailed(ctx context.Context, arg MarkJobFailedParams) (int64, error)
 	// A job left running by a crashed worker may be claimed again.
 	MarkJobRunning(ctx context.Context, id uuid.UUID) (Job, error)
+	// Stores the new password hash after a reset. Only an active account changes.
+	SetAccountPasswordHash(ctx context.Context, arg SetAccountPasswordHashParams) (int64, error)
 	SnapshotImpactThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
 	SnapshotRLThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
 	SoftDeleteVersion(ctx context.Context, arg SoftDeleteVersionParams) (int64, error)
