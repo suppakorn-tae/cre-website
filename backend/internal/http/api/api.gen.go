@@ -9,21 +9,165 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// Defines values for JobKind.
+const (
+	Export JobKind = "export"
+	Report JobKind = "report"
+)
+
+// Valid indicates whether the value is a known member of the JobKind enum.
+func (e JobKind) Valid() bool {
+	switch e {
+	case Export:
+		return true
+	case Report:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for JobStatus.
+const (
+	Done    JobStatus = "done"
+	Expired JobStatus = "expired"
+	Failed  JobStatus = "failed"
+	Queued  JobStatus = "queued"
+	Running JobStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the JobStatus enum.
+func (e JobStatus) Valid() bool {
+	switch e {
+	case Done:
+		return true
+	case Expired:
+		return true
+	case Failed:
+		return true
+	case Queued:
+		return true
+	case Running:
+		return true
+	default:
+		return false
+	}
+}
+
+// ErrorBody defines model for ErrorBody.
+type ErrorBody struct {
+	// Code Stable machine code, e.g. `not_found`.
+	Code string `json:"code"`
+
+	// Message Developer-facing detail, not shown to users.
+	Message   string  `json:"message"`
+	RequestId *string `json:"request_id,omitempty"`
+}
+
+// ErrorEnvelope defines model for ErrorEnvelope.
+type ErrorEnvelope struct {
+	Error ErrorBody `json:"error"`
+}
+
+// Job Examples: {"created_at":"2026-11-24T08:00:00Z","error":null,"expires_at":null,"finished_at":null,"id":"0193f6a2-7c1e-7b52-9a0d-3f1c2a4b5d6e","kind":"report","started_at":"2026-11-24T08:00:02Z","status":"running"}
+type Job struct {
+	// CreatedAt UTC instant, RFC 3339.
+	CreatedAt Timestamp `json:"created_at"`
+
+	// Error Developer-facing failure detail, set only when `failed`. The web app shows its own Thai text.
+	Error *string `json:"error"`
+
+	// ExpiresAt Exports only; null for reports, which do not expire.
+	ExpiresAt *Timestamp `json:"expires_at"`
+
+	// FinishedAt Null while `queued` or `running`.
+	FinishedAt *Timestamp `json:"finished_at"`
+	Id         Uuid       `json:"id"`
+	Kind       JobKind    `json:"kind"`
+
+	// StartedAt Null while `queued`.
+	StartedAt *Timestamp `json:"started_at"`
+	Status    JobStatus  `json:"status"`
+}
+
+// JobAccepted Body of a 202 response; poll the job with this id.
+type JobAccepted struct {
+	JobId Uuid `json:"job_id"`
+}
+
+// JobKind defines model for JobKind.
+type JobKind string
+
+// JobStatus defines model for JobStatus.
+type JobStatus string
+
+// Timestamp UTC instant, RFC 3339.
+type Timestamp = time.Time
+
+// Uuid defines model for Uuid.
+type Uuid = openapi_types.UUID
+
+// Conflict defines model for Conflict.
+type Conflict = ErrorEnvelope
+
+// Forbidden defines model for Forbidden.
+type Forbidden = ErrorEnvelope
+
+// NotFound defines model for NotFound.
+type NotFound = ErrorEnvelope
+
+// TooManyRequests defines model for TooManyRequests.
+type TooManyRequests = ErrorEnvelope
+
+// Unauthorized defines model for Unauthorized.
+type Unauthorized = ErrorEnvelope
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// GetJob Get the status of a job
+	// (GET /jobs/{id})
+	GetJob(w http.ResponseWriter, r *http.Request, id Uuid)
+	// DownloadReport Download a finished report
+	// (GET /reports/{job_id}/download)
+	DownloadReport(w http.ResponseWriter, r *http.Request, jobId Uuid)
+	// RequestReport Request a PDF report for the last submission of a version
+	// (POST /versions/{version_id}/reports)
+	RequestReport(w http.ResponseWriter, r *http.Request, versionId Uuid)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 type Unimplemented struct{}
+
+// GetJob Get the status of a job
+// (GET /jobs/{id})
+func (_ Unimplemented) GetJob(w http.ResponseWriter, r *http.Request, id Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DownloadReport Download a finished report
+// (GET /reports/{job_id}/download)
+func (_ Unimplemented) DownloadReport(w http.ResponseWriter, r *http.Request, jobId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RequestReport Request a PDF report for the last submission of a version
+// (POST /versions/{version_id}/reports)
+func (_ Unimplemented) RequestReport(w http.ResponseWriter, r *http.Request, versionId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
@@ -33,6 +177,84 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// GetJob operation middleware
+func (siw *ServerInterfaceWrapper) GetJob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetJob(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadReport operation middleware
+func (siw *ServerInterfaceWrapper) DownloadReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "job_id" -------------
+	var jobId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "job_id", chi.URLParam(r, "job_id"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "job_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadReport(w, r, jobId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RequestReport operation middleware
+func (siw *ServerInterfaceWrapper) RequestReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "version_id" -------------
+	var versionId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestReport(w, r, versionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 type UnescapedCookieParamError struct {
 	ParamName string
@@ -142,11 +364,258 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		}
 	}
 
+	wrapper := ServerInterfaceWrapper{
+		Handler:            si,
+		HandlerMiddlewares: options.Middlewares,
+		ErrorHandlerFunc:   options.ErrorHandlerFunc,
+	}
+
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/jobs/{id}", wrapper.GetJob)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/versions/{version_id}/reports", wrapper.RequestReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/reports/{job_id}/download", wrapper.DownloadReport)
+	})
+
 	return r
+}
+
+type ConflictJSONResponse ErrorEnvelope
+
+type ForbiddenJSONResponse ErrorEnvelope
+
+type NotFoundJSONResponse ErrorEnvelope
+
+type TooManyRequestsJSONResponse ErrorEnvelope
+
+type UnauthorizedJSONResponse ErrorEnvelope
+
+type GetJobRequestObject struct {
+	Id Uuid `json:"id"`
+}
+
+type GetJobResponseObject interface {
+	VisitGetJobResponse(w http.ResponseWriter) error
+}
+
+type GetJob200JSONResponse Job
+
+func (response GetJob200JSONResponse) VisitGetJobResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetJob401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetJob401JSONResponse) VisitGetJobResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetJob404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetJob404JSONResponse) VisitGetJobResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadReportRequestObject struct {
+	JobId Uuid `json:"job_id"`
+}
+
+type DownloadReportResponseObject interface {
+	VisitDownloadReportResponse(w http.ResponseWriter) error
+}
+
+type DownloadReport200ApplicationpdfResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response DownloadReport200ApplicationpdfResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/pdf")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DownloadReport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DownloadReport401JSONResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadReport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DownloadReport404JSONResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadReport409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DownloadReport409JSONResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestReportRequestObject struct {
+	VersionId Uuid `json:"version_id"`
+}
+
+type RequestReportResponseObject interface {
+	VisitRequestReportResponse(w http.ResponseWriter) error
+}
+
+type RequestReport202JSONResponse JobAccepted
+
+func (response RequestReport202JSONResponse) VisitRequestReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestReport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RequestReport401JSONResponse) VisitRequestReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestReport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RequestReport403JSONResponse) VisitRequestReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestReport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RequestReport404JSONResponse) VisitRequestReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestReport409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RequestReport409JSONResponse) VisitRequestReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestReport429JSONResponse struct{ TooManyRequestsJSONResponse }
+
+func (response RequestReport429JSONResponse) VisitRequestReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.TooManyRequestsJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
 }
 
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// GetJob Get the status of a job
+	// (GET /jobs/{id})
+	GetJob(ctx context.Context, request GetJobRequestObject) (GetJobResponseObject, error)
+	// DownloadReport Download a finished report
+	// (GET /reports/{job_id}/download)
+	DownloadReport(ctx context.Context, request DownloadReportRequestObject) (DownloadReportResponseObject, error)
+	// RequestReport Request a PDF report for the last submission of a version
+	// (POST /versions/{version_id}/reports)
+	RequestReport(ctx context.Context, request RequestReportRequestObject) (RequestReportResponseObject, error)
 }
 
 // StrictHandlerFunc and StrictMiddlewareFunc are type aliases rather than
@@ -191,20 +660,120 @@ type strictHandler struct {
 	options     StrictHTTPServerOptions
 }
 
+// GetJob operation middleware
+func (sh *strictHandler) GetJob(w http.ResponseWriter, r *http.Request, id Uuid) {
+	var request GetJobRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetJob(ctx, request.(GetJobRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetJob")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetJobResponseObject); ok {
+		if err := validResponse.VisitGetJobResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DownloadReport operation middleware
+func (sh *strictHandler) DownloadReport(w http.ResponseWriter, r *http.Request, jobId Uuid) {
+	var request DownloadReportRequestObject
+
+	request.JobId = jobId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.DownloadReport(ctx, request.(DownloadReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadReportResponseObject); ok {
+		if err := validResponse.VisitDownloadReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// RequestReport operation middleware
+func (sh *strictHandler) RequestReport(w http.ResponseWriter, r *http.Request, versionId Uuid) {
+	var request RequestReportRequestObject
+
+	request.VersionId = versionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.RequestReport(ctx, request.(RequestReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestReportResponseObject); ok {
+		if err := validResponse.VisitRequestReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"dFJfa9tOEPwqyz4lPxTZIW/60Yfipv8hwTK0EIfqctpIV0t3l9tVHGH03cudTEowfZP2ZndnZueA2vXe",
-	"WbLCWByQSQ/ByFjqlnpKJc3hceN2ZONPTayD8WKcxQLX9DSYQDU4CyxK6EK3yjbGNhDoaSAWBnENSUsB",
-	"9kZaUBZugmmMBd2S3uWYoYmTWlI1BczQqp6wwJ8Xq3L98WLem6GMPlaVN99oxClDJmbj7Mq5naFTYq2I",
-	"v7HdmEEZBVEGpeqpNELvvqsXOHaDTu3Quq6OnKUl+Ppj80pqfv5LSgf6dWw95TRNsevRnZJZOStBaYFH",
-	"F9KO1foaPm82t/D+9ksOH1yvjAXDPBCDqqOb3RiBJoDb262tvJKWF9thubzSdYKnb8pH1XcVKFtDxfFi",
-	"6t+o/6Hq1Y6gIVtBT6Eh3lppqYczJoJKH1ny4mGwdUd5/5ur8zS7IUtBCXFi/8ml4mb0VCaVoF1N+TZ5",
-	"YqSjWTJLGHR0ANaGd3D94ilIVIwZPlPg2ZvLfJkv40GdJ6u8wQKv8st8iRkm0Vgcpuw1lVjcvcnj3f1J",
-	"Eu7up1QMcUfCvz1GzAG4OYJqFrSnB1Dew9lK1fUIwQ1RarVQ3iye/6tAXIIpb85jNIbQYYHz6yVO99Of",
-	"AQA=",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

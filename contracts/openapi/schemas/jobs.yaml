@@ -1,0 +1,44 @@
+# Generic async job status, shared by reports (this domain) and research
+# exports (admin). The job row is the source of truth; `kind` tells the
+# client which download endpoint applies once the job is `done`.
+Job:
+  type: object
+  required: [id, kind, status, created_at, started_at, finished_at, expires_at, error]
+  properties:
+    id:
+      $ref: common.yaml#/schemas/Uuid
+    kind:
+      $ref: common.yaml#/schemas/JobKind
+    status:
+      $ref: common.yaml#/schemas/JobStatus
+    created_at:
+      $ref: common.yaml#/schemas/Timestamp
+    started_at:
+      description: Null while `queued`.
+      oneOf:
+        - $ref: common.yaml#/schemas/Timestamp
+        - type: 'null'
+    finished_at:
+      description: Null while `queued` or `running`.
+      oneOf:
+        - $ref: common.yaml#/schemas/Timestamp
+        - type: 'null'
+    expires_at:
+      description: Exports only; null for reports, which do not expire.
+      oneOf:
+        - $ref: common.yaml#/schemas/Timestamp
+        - type: 'null'
+    error:
+      description: Developer-facing failure detail, set only when `failed`. The web app shows its own Thai text.
+      oneOf:
+        - type: string
+        - type: 'null'
+  examples:
+    - id: 0193f6a2-7c1e-7b52-9a0d-3f1c2a4b5d6e
+      kind: report
+      status: running
+      created_at: '2026-11-24T08:00:00Z'
+      started_at: '2026-11-24T08:00:02Z'
+      finished_at: null
+      expires_at: null
+      error: null

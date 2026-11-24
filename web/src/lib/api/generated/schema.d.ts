@@ -3,10 +3,119 @@
  * Do not make direct changes to the file.
  */
 
-export type paths = Record<string, never>;
+export interface paths {
+    "/jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get the status of a job
+         * @description Poll until `status` is `done`, `failed` or `expired`. Visible to the
+         *     requester only; any other caller (admins included) gets 404.
+         */
+        get: operations["getJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/versions/{version_id}/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request a PDF report for the last submission of a version
+         * @description Enqueues a report job. A repeated request for the same submission
+         *     returns the existing job id instead of creating another job.
+         */
+        post: operations["requestReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/{job_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Download a finished report
+         * @description Streams the PDF through the api after the session and ownership check.
+         *     404 when the job is not the caller's, is not a report, or its version
+         *     is deleted. 409 when the job is not `done` or the file is missing in
+         *     storage (the user may request the report again).
+         */
+        get: operations["downloadReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+}
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @example {
+         *       "id": "0193f6a2-7c1e-7b52-9a0d-3f1c2a4b5d6e",
+         *       "kind": "report",
+         *       "status": "running",
+         *       "created_at": "2026-11-24T08:00:00Z",
+         *       "started_at": "2026-11-24T08:00:02Z",
+         *       "finished_at": null,
+         *       "expires_at": null,
+         *       "error": null
+         *     }
+         */
+        Job: {
+            id: components["schemas"]["Uuid"];
+            kind: components["schemas"]["JobKind"];
+            status: components["schemas"]["JobStatus"];
+            created_at: components["schemas"]["Timestamp"];
+            /** @description Null while `queued`. */
+            started_at: components["schemas"]["Timestamp"] | null;
+            /** @description Null while `queued` or `running`. */
+            finished_at: components["schemas"]["Timestamp"] | null;
+            /** @description Exports only; null for reports, which do not expire. */
+            expires_at: components["schemas"]["Timestamp"] | null;
+            /** @description Developer-facing failure detail, set only when `failed`. The web app shows its own Thai text. */
+            error: string | null;
+        };
+        /** Format: uuid */
+        Uuid: string;
+        /** @enum {string} */
+        JobKind: "report" | "export";
+        /** @enum {string} */
+        JobStatus: "queued" | "running" | "done" | "failed" | "expired";
+        /**
+         * Format: date-time
+         * @description UTC instant, RFC 3339.
+         */
+        Timestamp: string;
         ErrorBody: {
             /** @description Stable machine code, e.g. `not_found`. */
             code: string;
@@ -16,6 +125,10 @@ export interface components {
         };
         ErrorEnvelope: {
             error: components["schemas"]["ErrorBody"];
+        };
+        /** @description Body of a 202 response; poll the job with this id. */
+        JobAccepted: {
+            job_id: components["schemas"]["Uuid"];
         };
         FieldError: {
             /** @description JSON pointer of the offending field. */
@@ -103,4 +216,81 @@ export interface components {
     pathItems: never;
 }
 export type $defs = Record<string, never>;
-export type operations = Record<string, never>;
+export interface operations {
+    getJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The job. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    requestReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Job accepted (new or existing); poll `GET /jobs/{id}`. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    downloadReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The PDF file. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+}
