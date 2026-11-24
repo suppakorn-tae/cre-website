@@ -13,3 +13,15 @@ func TestValkeyURL(t *testing.T) {
 		}
 	}
 }
+
+func TestValkeyHostPort(t *testing.T) {
+	for in, want := range map[string]string{
+		"valkey:6379":              "valkey:6379",
+		"redis://valkey:6379/1":    "valkey:6379",
+		"rediss://u:p@host:6380/0": "host:6380",
+	} {
+		if got := valkeyHostPort(in); got != want {
+			t.Errorf("valkeyHostPort(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
