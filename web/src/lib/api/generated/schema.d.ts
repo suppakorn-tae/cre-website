@@ -4,6 +4,467 @@
  */
 
 export interface paths {
+    "/admin/advice/{indicator_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the advice lists of an indicator
+         * @description Admin only. Returns all four lists (RL, RI_C, RI_T, RI_E).
+         */
+        get: operations["adminGetAdvice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/advice/{indicator_code}/{list}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace one advice list
+         * @description Admin only. Replaces the whole list in one transaction and writes an
+         *     audit entry with the old and new list. 1 to 5 items, each with Thai
+         *     (`th`) text; otherwise 422.
+         */
+        put: operations["adminReplaceAdviceList"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List audit log entries
+         * @description Admin only. Read-only, newest first. Entries cannot be edited or deleted.
+         */
+        get: operations["adminListAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/audit-log/{audit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one audit entry with old and new values
+         * @description Admin only.
+         */
+        get: operations["adminGetAuditEntry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request a pseudonymised research export
+         * @description Admin only. Enqueues an export job and returns 202 with the job id.
+         *     Track the job with `GET /jobs/{id}` (defined with the jobs endpoints).
+         *     The request is written to the audit log.
+         */
+        post: operations["adminRequestExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/exports/{job_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a finished export
+         * @description Admin only. Streams the ZIP through the api. Each download is written
+         *     to the audit log before the stream starts. 409 while the job is not
+         *     done; 410 after the file expired (7 days after the job finished).
+         */
+        get: operations["adminDownloadExport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rl-thresholds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List RL thresholds of all indicators
+         * @description Admin only.
+         */
+        get: operations["adminListRlThresholds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rl-thresholds/{indicator_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indicator_code: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Get the RL thresholds of an indicator
+         * @description Admin only.
+         */
+        get: operations["adminGetRlThreshold"];
+        /**
+         * Update the RL thresholds of an indicator
+         * @description Admin only. Valid pattern (a..e, a..c only, or c..e only), values at
+         *     least 0, strictly increasing (decreasing for inverse indicators);
+         *     otherwise 422. Applies only to versions created afterwards. Writes an
+         *     audit entry with old and new values.
+         */
+        put: operations["adminUpdateRlThreshold"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/impact-tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the RI_C and RI_T tables
+         * @description Admin only. Both shared tables in one response.
+         */
+        get: operations["adminGetImpactTables"];
+        /**
+         * Update the RI_C and RI_T tables
+         * @description Admin only. Edits one or both tables in one call. Each changed table
+         *     needs all five values, at least 0 and strictly increasing; otherwise
+         *     422. Applies only to versions created afterwards. Writes one audit
+         *     entry per changed table.
+         */
+        put: operations["adminUpdateImpactTables"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List and search users
+         * @description Admin only. Search matches e-mail or organisation. Newest first.
+         */
+        get: operations["adminListUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get one user
+         * @description Admin only. Returns the two counts, never the user's projects or versions.
+         */
+        get: operations["adminGetUser"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete (anonymise) a user
+         * @description Admin only. Anonymises the account; projects and versions are retained.
+         *     Writes an audit entry. An admin cannot delete their own account (409).
+         */
+        delete: operations["adminDeleteUser"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{user_id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change a user's role
+         * @description Admin only. Writes an audit entry. An admin cannot change their own
+         *     role (409).
+         */
+        put: operations["adminChangeUserRole"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{user_id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deactivate a user
+         * @description Admin only. A deactivated user cannot sign in. Writes an audit entry.
+         *     Conflict (409) when deactivating own account or a user that is not active.
+         */
+        post: operations["adminDeactivateUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{user_id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reactivate a user
+         * @description Admin only. Writes an audit entry. Conflict (409) when the user is not deactivated.
+         */
+        post: operations["adminReactivateUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/versions/{version_id}/answers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /** Get all answers of a version. */
+        get: operations["listAnswers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Upsert one or many answers (partial allowed). */
+        patch: operations["upsertAnswers"];
+        trace?: never;
+    };
+    "/projects/{project_id}/versions/{version_id}/answers/{indicator_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+                indicator_code: components["schemas"]["IndicatorCode"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Upsert the answer of one indicator. */
+        put: operations["putAnswer"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/versions/{version_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit (or resubmit) the version and score every complete indicator.
+         * @description 422 with code `no_complete_indicator` when no indicator is complete.
+         *     Previous results of the version are replaced.
+         */
+        post: operations["submitVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/catalogue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the indicator catalogue
+         * @description The 55 indicators grouped dimension, factor, indicator, with the four questions of each, and the options A to I of the environmental impact.
+         *
+         *     Caching: the response carries a strong `ETag` and
+         *     `Cache-Control: private, no-cache`, so a client may keep a copy but
+         *     must revalidate with `If-None-Match`; an unchanged answer is `304`
+         *     with no body. The api renews the ETag when an admin edit invalidates
+         *     its cache.
+         */
+        get: operations["getCatalogue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/islands": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List islands
+         * @description Island and location codes for the project form, `other` last.
+         *
+         *     Caching: the response carries a strong `ETag` and
+         *     `Cache-Control: private, no-cache`, so a client may keep a copy but
+         *     must revalidate with `If-None-Match`; an unchanged answer is `304`
+         *     with no body. The api renews the ETag when an admin edit invalidates
+         *     its cache.
+         */
+        get: operations["listIslands"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/project-types": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List project types
+         * @description Project type codes for the project form, `other` last.
+         *
+         *     Caching: the response carries a strong `ETag` and
+         *     `Cache-Control: private, no-cache`, so a client may keep a copy but
+         *     must revalidate with `If-None-Match`; an unchanged answer is `304`
+         *     with no body. The api renews the ETag when an admin edit invalidates
+         *     its cache.
+         */
+        get: operations["listProjectTypes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects/{project_id}/compare": {
         parameters: {
             query?: never;
@@ -134,17 +595,552 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get the status of a job
+         * @description Poll until `status` is `done`, `failed` or `expired`. Visible to the
+         *     requester only; any other caller (admins included) gets 404.
+         */
+        get: operations["getJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List own projects
+         * @description Own non-deleted projects, newest first, searchable by name, nickname or island.
+         */
+        get: operations["listProjects"];
+        put?: never;
+        /** Create a project */
+        post: operations["createProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /** Get a project */
+        get: operations["getProject"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a project (soft)
+         * @description Hides the project and all its versions and reports. There is no restore.
+         */
+        delete: operations["deleteProject"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a project
+         * @description Value and dates apply only to versions created afterwards.
+         */
+        patch: operations["updateProject"];
+        trace?: never;
+    };
+    "/projects/{project_id}/versions/{version_id}/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request a PDF report for the last submission of a version
+         * @description Enqueues a report job. A repeated request for the same submission
+         *     returns the existing job id instead of creating another job.
+         *     404 when the project or version is not the caller's or is deleted.
+         */
+        post: operations["requestReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/{job_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Download a finished report
+         * @description Streams the PDF through the api after the session and ownership check.
+         *     404 when the job is not the caller's, is not a report, or its version
+         *     is deleted. 409 when the job is not `done` or the file is missing in
+         *     storage (the user may request the report again).
+         */
+        get: operations["downloadReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/versions/{version_id}/results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get the results of the last submission.
+         * @description 404 when the version was never submitted, deleted or not owned.
+         */
+        get: operations["getResults"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/versions/{version_id}/results/{indicator_code}/strategy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+                indicator_code: components["schemas"]["IndicatorCode"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set or change the strategy of an H or VH indicator.
+         * @description 409 when the version is not the latest. 422 with code `not_high_risk`
+         *     when the indicator is not H or VH.
+         */
+        put: operations["putStrategy"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /** List the versions of a project */
+        get: operations["listVersions"];
+        put?: never;
+        /**
+         * Start a new blank version
+         * @description Takes no body. The next number is assigned, the project value, dates,
+         *     thresholds and rounding are copied into the version, and the previous
+         *     version becomes read-only.
+         */
+        post: operations["createVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/versions/{version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /** Get a version */
+        get: operations["getVersion"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a version (soft)
+         * @description Hides the version and its reports. There is no restore and its number is not reused.
+         */
+        delete: operations["deleteVersion"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** @description Number of scored indicators per risk level. */
+        /** @enum {string} */
+        AdminSignInMethod: "password" | "google";
+        AdminUser: {
+            id: components["schemas"]["Uuid"];
+            /**
+             * Format: email
+             * @description Null once the account is anonymised.
+             */
+            email: string | null;
+            /** @description Empty once the account is anonymised. */
+            sign_in_methods: components["schemas"]["AdminSignInMethod"][];
+            organisation: string | null;
+            role: components["schemas"]["UserRole"];
+            status: components["schemas"]["AccountStatus"];
+            /** @description Number of projects, soft-deleted ones excluded. Count only. */
+            project_count: number;
+            /** @description Number of assessment versions, soft-deleted ones excluded. Count only. */
+            version_count: number;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        AdminUserPage: {
+            items: components["schemas"]["AdminUser"][];
+            meta: components["schemas"]["PageMeta"];
+        };
+        AdminChangeRoleRequest: {
+            role: components["schemas"]["UserRole"];
+        };
+        /** @description One text per locale. Only `th` is edited today; it may contain English terms. */
+        AdminAdviceText: {
+            th: string;
+        } & {
+            [key: string]: string;
+        };
+        AdminAdviceItem: {
+            text: components["schemas"]["AdminAdviceText"];
+        };
+        /** @description Ordered items; the array index is the position. */
+        AdminAdviceItemList: components["schemas"]["AdminAdviceItem"][];
+        /** @description The four advice lists of one indicator. */
+        AdminAdviceLists: {
+            indicator_code: string;
+            lists: {
+                RL: components["schemas"]["AdminAdviceItemList"];
+                RI_C: components["schemas"]["AdminAdviceItemList"];
+                RI_T: components["schemas"]["AdminAdviceItemList"];
+                RI_E: components["schemas"]["AdminAdviceItemList"];
+            };
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        AdminAdviceListResponse: {
+            indicator_code: string;
+            list: components["schemas"]["AdviceList"];
+            items: components["schemas"]["AdminAdviceItemList"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        AdminReplaceAdviceRequest: {
+            items: components["schemas"]["AdminAdviceItemList"];
+        };
+        AdminThresholdValue: number | null;
+        /**
+         * @description Valid patterns: all of a..e set, only a..c set, or only c..e set. Set
+         *     values are strictly increasing, or strictly decreasing for an inverse
+         *     indicator. Unused thresholds are null. Violations return 422.
+         */
+        AdminRlThresholdValues: {
+            a: components["schemas"]["AdminThresholdValue"];
+            b: components["schemas"]["AdminThresholdValue"];
+            c: components["schemas"]["AdminThresholdValue"];
+            d: components["schemas"]["AdminThresholdValue"];
+            e: components["schemas"]["AdminThresholdValue"];
+        };
+        AdminRlThreshold: {
+            indicator_code: string;
+            /** @description Display unit from the indicator catalogue. */
+            unit: string;
+            direction: components["schemas"]["IndicatorDirection"];
+            thresholds: components["schemas"]["AdminRlThresholdValues"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        AdminRlThresholdList: {
+            items: components["schemas"]["AdminRlThreshold"][];
+        };
+        AdminUpdateRlThresholdRequest: {
+            thresholds: components["schemas"]["AdminRlThresholdValues"];
+        };
+        /** @description All five set, at least 0 and strictly increasing; otherwise 422. */
+        AdminImpactThresholdValues: {
+            a: number;
+            b: number;
+            c: number;
+            d: number;
+            e: number;
+        };
+        AdminImpactTable: {
+            code: components["schemas"]["ImpactCode"];
+            thresholds: components["schemas"]["AdminImpactThresholdValues"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        AdminImpactTables: {
+            ri_c: components["schemas"]["AdminImpactTable"];
+            ri_t: components["schemas"]["AdminImpactTable"];
+        };
+        /** @description Edit one or both tables in a single call; omitted tables stay unchanged. */
+        AdminUpdateImpactTablesRequest: {
+            ri_c?: components["schemas"]["AdminImpactThresholdValues"];
+            ri_t?: components["schemas"]["AdminImpactThresholdValues"];
+        };
+        AdminAuditEntrySummary: {
+            /** Format: int64 */
+            id: number;
+            occurred_at: components["schemas"]["Timestamp"];
+            admin_id: components["schemas"]["Uuid"];
+            /** @description Null when the admin account was later anonymised; `admin_id` remains. */
+            admin_email: string | null;
+            action: components["schemas"]["AuditAction"];
+            /** @description e.g. `account`, `indicator`, `impact_table`, `job`. */
+            target_type: string;
+            target_id: string;
+        };
+        AdminAuditEntry: components["schemas"]["AdminAuditEntrySummary"] & {
+            /** @description State of the target before the change; null when not a change. */
+            old_value: unknown;
+            /** @description State of the target after the change; null when not a change. */
+            new_value: unknown;
+            request_id: string;
+            ip_address: string | null;
+        };
+        AdminAuditPage: {
+            items: components["schemas"]["AdminAuditEntrySummary"][];
+            meta: components["schemas"]["PageMeta"];
+        };
+        /** @description Request a pseudonymised research export (no e-mail or Google id). */
+        AdminExportRequest: {
+            scope: components["schemas"]["ExportScope"];
+            /** @description Required and non-empty when `scope` is `selected`; must be omitted for `all`. */
+            user_ids?: components["schemas"]["Uuid"][];
+            /** @description Include soft-deleted projects and versions. */
+            include_deleted: boolean;
+        };
+        /**
+         * @description Indicator code, e.g. `EC-HS-2`.
+         * @example EC-HS-2
+         */
+        IndicatorCode: string;
+        /**
+         * @description Option of y3. `A` is exclusive and cannot be combined with another option.
+         * @enum {string}
+         */
+        Y3Option: "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I";
+        /** @description y1, the cost impact. When `unit` is `percent` the value is 0-100. */
+        CostImpact: {
+            value: number;
+            unit: components["schemas"]["CostUnit"];
+        };
+        /** @description y2, the time impact. When `unit` is `percent` the value is 0-100. */
+        TimeImpact: {
+            value: number;
+            unit: components["schemas"]["TimeUnit"];
+        };
+        /**
+         * @description The full answer of one indicator. Fields that are omitted are cleared,
+         *     so a partial answer is allowed. The API rejects a percent value above
+         *     100 (`out_of_range`) and `A` combined with another y3 option
+         *     (`exclusive_option`) with a 422.
+         */
+        AnswerInput: {
+            indicator_code: components["schemas"]["IndicatorCode"];
+            /** @description In the indicator's own unit. */
+            x?: number;
+            y1?: components["schemas"]["CostImpact"];
+            y2?: components["schemas"]["TimeImpact"];
+            y3?: components["schemas"]["Y3Option"][];
+        };
+        Answer: components["schemas"]["AnswerInput"] & {
+            /** @description True when x, y1, y2 and y3 are all given. */
+            complete: boolean;
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        AnswerList: {
+            version_id: components["schemas"]["Uuid"];
+            /** @description False when a newer version exists (read-only). */
+            editable: boolean;
+            /** @description Answers recorded so far; indicators never answered are absent. */
+            items: components["schemas"]["Answer"][];
+        };
+        AnswerBatchRequest: {
+            /** @description Each entry replaces the stored answer of its indicator; other indicators are untouched. */
+            answers: components["schemas"]["AnswerInput"][];
+        };
         LevelCounts: {
             VL: number;
             L: number;
             M: number;
             H: number;
             VH: number;
+        };
+        ResultsSummary: {
+            /** @description Number of complete indicators scored at the last submission. */
+            scored_count: number;
+            level_counts: components["schemas"]["LevelCounts"];
+            /** @description Mean RM of the scored indicators. */
+            average_rm?: number;
+        };
+        AdviceListItems: {
+            list: components["schemas"]["AdviceList"];
+            /** @description Current advice text in admin-defined order. Do not assume a length. */
+            items: string[];
+        };
+        IndicatorResult: {
+            indicator_code: components["schemas"]["IndicatorCode"];
+            x: number;
+            /** @description y1 in percent of the project value snapshot. */
+            y1_pct: number;
+            /** @description y2 in percent of the project duration snapshot. */
+            y2_pct: number;
+            rl: number;
+            ri_c: number;
+            ri_t: number;
+            ri_e: number;
+            ri_max: number;
+            rm: number;
+            level: components["schemas"]["RiskLevel"];
+            /** @description Present only for H and VH. One entry per selected list; ties list every tied list. */
+            advice?: components["schemas"]["AdviceListItems"][];
+            strategy?: components["schemas"]["RiskStrategy"];
+            strategy_updated_at?: components["schemas"]["Timestamp"];
+        };
+        ResultsResponse: {
+            version_id: components["schemas"]["Uuid"];
+            submitted_at: components["schemas"]["Timestamp"];
+            /** @description False when a newer version exists; strategies can then no longer change. */
+            editable: boolean;
+            summary: components["schemas"]["ResultsSummary"];
+            items: components["schemas"]["IndicatorResult"][];
+        };
+        SubmitResponse: {
+            version_id: components["schemas"]["Uuid"];
+            status: components["schemas"]["VersionStatus"];
+            submitted_at: components["schemas"]["Timestamp"];
+            summary: components["schemas"]["ResultsSummary"];
+        };
+        StrategyRequest: {
+            strategy: components["schemas"]["RiskStrategy"];
+        };
+        StrategyChoice: {
+            indicator_code: components["schemas"]["IndicatorCode"];
+            strategy: components["schemas"]["RiskStrategy"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        /**
+         * @description Two-letter locale code, e.g. `th`.
+         * @example th
+         */
+        Locale: string;
+        CatalogueIndicator: {
+            /**
+             * @description Stable indicator code, e.g. `EC-MG-1`.
+             * @example EC-MG-1
+             */
+            code: string;
+            name: string;
+            /** @description Unit of the likelihood input X, as text. */
+            unit: string;
+            /** @description Question for the likelihood input X (a number, 0 or more). */
+            question_x: string | null;
+            /** @description Question for the cost impact y1. */
+            question_y1: string | null;
+            /** @description Question for the time impact y2. */
+            question_y2: string | null;
+            /** @description Question for the environmental impact y3 (multi-select). */
+            question_y3: string | null;
+        };
+        CatalogueFactor: {
+            /** @example EC-MG */
+            code: string;
+            name: string;
+            /** @description Indicators of this factor, in display order. */
+            indicators: components["schemas"]["CatalogueIndicator"][];
+        };
+        CatalogueDimension: {
+            /** @example EC */
+            code: string;
+            name: string;
+            /** @description Factors of this dimension, in display order. */
+            factors: components["schemas"]["CatalogueFactor"][];
+        };
+        /** @description One option of the environmental impact question y3. */
+        RiEOption: {
+            code: string;
+            label: string;
+            /** @description When true the option cannot be combined with any other (A). */
+            is_exclusive: boolean;
+        };
+        Catalogue: {
+            locale: components["schemas"]["Locale"];
+            /** @description Dimensions in display order, each with its factors and indicators. */
+            dimensions: components["schemas"]["CatalogueDimension"][];
+            /** @description Options A to I in order. */
+            ri_e_options: components["schemas"]["RiEOption"][];
+        };
+        /** @description Label comes from the web message catalogue, keyed by `code`. */
+        IslandOption: {
+            /**
+             * @description e.g. `koh_tao`; `other` asks the user to type a place.
+             * @example koh_tao
+             */
+            code: string;
+        };
+        IslandList: {
+            /** @description In display order; `other` is last. */
+            items: components["schemas"]["IslandOption"][];
+        };
+        /** @description Label comes from the web message catalogue, keyed by `code`. */
+        ProjectTypeOption: {
+            /**
+             * @description e.g. `building`; `other` asks the user to type a type.
+             * @example building
+             */
+            code: string;
+        };
+        ProjectTypeList: {
+            /** @description In display order; `other` is last. */
+            items: components["schemas"]["ProjectTypeOption"][];
         };
         DashboardKpis: {
             project_count: number;
@@ -296,15 +1292,143 @@ export interface components {
             versions: components["schemas"]["IndicatorRmVersion"][];
             indicators: components["schemas"]["IndicatorRmRow"][];
         };
-        /** Format: uuid */
-        Uuid: string;
+        /**
+         * @example {
+         *       "id": "0193f6a2-7c1e-7b52-9a0d-3f1c2a4b5d6e",
+         *       "kind": "report",
+         *       "status": "running",
+         *       "created_at": "2026-11-24T08:00:00Z",
+         *       "started_at": "2026-11-24T08:00:02Z",
+         *       "finished_at": null,
+         *       "expires_at": null,
+         *       "error": null
+         *     }
+         */
+        Job: {
+            id: components["schemas"]["Uuid"];
+            kind: components["schemas"]["JobKind"];
+            status: components["schemas"]["JobStatus"];
+            created_at: components["schemas"]["Timestamp"];
+            /** @description Null while `queued`. */
+            started_at: components["schemas"]["Timestamp"] | null;
+            /** @description Null while `queued` or `running`. */
+            finished_at: components["schemas"]["Timestamp"] | null;
+            /** @description Exports only; null for reports, which do not expire. */
+            expires_at: components["schemas"]["Timestamp"] | null;
+            /** @description Developer-facing failure detail, set only when `failed`. The web app shows its own Thai text. */
+            error: string | null;
+        };
+        /**
+         * @description Island / location code. `other` requires `island_other`.
+         * @enum {string}
+         */
+        ProjectIsland: "koh_tao" | "koh_samui" | "koh_phangan" | "koh_phi_phi" | "koh_lanta" | "koh_chang" | "koh_kood" | "other";
+        /**
+         * @description Project type code. `other` requires `type_other`.
+         * @enum {string}
+         */
+        ProjectType: "building" | "pier" | "road" | "utilities" | "coastal" | "other";
+        /**
+         * @description Editable project fields. `end_date` must be after `start_date`;
+         *     `island_other` and `type_other` are set if and only if the matching
+         *     code is `other`. Value and dates apply to versions created afterwards.
+         */
+        ProjectFields: {
+            /** @description Not blank. */
+            name: string;
+            nickname: string;
+            island_code: components["schemas"]["ProjectIsland"];
+            island_other?: string | null;
+            type_code: components["schemas"]["ProjectType"];
+            type_other?: string | null;
+            /** Format: date */
+            start_date: string;
+            /**
+             * Format: date
+             * @description After `start_date`.
+             */
+            end_date: string;
+            /** @description Project value in baht, greater than 0. */
+            value_baht: number;
+            /** @description Entered progress in percent. */
+            progress_pct: number;
+            description?: string | null;
+        };
+        ProjectCreate: components["schemas"]["ProjectFields"] & Record<string, never>;
+        /**
+         * @description Partial update; send only the fields to change, at least one. The
+         *     rules of `ProjectFields` apply to the stored result.
+         */
+        ProjectUpdate: {
+            name?: components["schemas"]["name"];
+            nickname?: components["schemas"]["nickname"];
+            island_code?: components["schemas"]["ProjectIsland"];
+            island_other?: components["schemas"]["island_other"];
+            type_code?: components["schemas"]["ProjectType"];
+            type_other?: components["schemas"]["type_other"];
+            start_date?: components["schemas"]["start_date"];
+            end_date?: components["schemas"]["end_date"];
+            value_baht?: components["schemas"]["value_baht"];
+            progress_pct?: components["schemas"]["progress_pct"];
+            description?: components["schemas"]["description"];
+        };
+        Project: components["schemas"]["ProjectFields"] & {
+            id: components["schemas"]["Uuid"];
+            /**
+             * @description Computed from the project dates, never stored: elapsed
+             *     calendar days over duration, clamped to 0-100 and rounded.
+             */
+            expected_progress_pct: number;
+            /** @description Number of non-deleted versions. */
+            version_count: number;
+            /** @description Number of the latest non-deleted version, null when there is none. */
+            latest_version_no: number | null;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        ProjectList: components["schemas"]["PageMeta"] & {
+            items: components["schemas"]["Project"][];
+        };
+        /** @description One row of a project's version list. */
+        VersionSummary: {
+            id: components["schemas"]["Uuid"];
+            project_id: components["schemas"]["Uuid"];
+            /** @description Sequential per project, never reused. */
+            version_no: number;
+            status: components["schemas"]["VersionStatus"];
+            /** @description True only for the latest non-deleted version of the project. */
+            editable: boolean;
+            created_at: components["schemas"]["Timestamp"];
+            /** @description Time of the last submission, null while the status is `draft`. */
+            submitted_at: components["schemas"]["Timestamp"] | null;
+            /** @description Project progress at the last submission; null while `draft`. */
+            progress_at_submit: number | null;
+            /** @description Number of indicators at level H; null while `draft`. */
+            high_count: number | null;
+            /** @description Number of indicators at level VH; null while `draft`. */
+            very_high_count: number | null;
+            /** @description Mean RM of the scored indicators; null while `draft`. */
+            average_rm: number | null;
+        };
+        Version: components["schemas"]["VersionSummary"] & {
+            /** @description Number of submissions, 0 when never submitted. */
+            submission_no: number;
+            /** @description Project value copied when the version was created. */
+            value_baht: number;
+            /** Format: date */
+            start_date: string;
+            /** Format: date */
+            end_date: string;
+        };
+        /** @description All non-deleted versions of a project, newest first. Not paginated. */
+        VersionList: {
+            items: components["schemas"]["VersionSummary"][];
+        };
         /**
          * Format: date-time
          * @description UTC instant, RFC 3339.
          */
         Timestamp: string;
-        /** @enum {string} */
-        RiskLevel: "VL" | "L" | "M" | "H" | "VH";
         ErrorBody: {
             /** @description Stable machine code, e.g. `not_found`. */
             code: string;
@@ -315,6 +1439,8 @@ export interface components {
         ErrorEnvelope: {
             error: components["schemas"]["ErrorBody"];
         };
+        /** @enum {string} */
+        AdviceList: "RL" | "RI_C" | "RI_T" | "RI_E";
         FieldError: {
             /** @description JSON pointer of the offending field. */
             field: string;
@@ -326,13 +1452,60 @@ export interface components {
         ValidationErrorEnvelope: {
             error: components["schemas"]["ValidationErrorBody"];
         };
+        /** Format: uuid */
+        Uuid: string;
         /** @enum {string} */
-        VersionStatus: "draft" | "submitted";
+        AuditAction: "user_role_change" | "user_deactivate" | "user_reactivate" | "user_delete" | "advice_edit" | "rl_threshold_edit" | "impact_table_edit" | "export_request" | "export_download";
         PageMeta: {
             page: number;
             page_size: number;
             total: number;
         };
+        /** @enum {string} */
+        ExportScope: "all" | "selected";
+        /** @description Body of a 202 response; poll the job with this id. */
+        JobAccepted: {
+            job_id: components["schemas"]["Uuid"];
+        };
+        /** @enum {string} */
+        IndicatorDirection: "normal" | "inverse";
+        /** @enum {string} */
+        ImpactCode: "RI_C" | "RI_T";
+        /** @enum {string} */
+        UserRole: "user" | "admin";
+        /** @enum {string} */
+        AccountStatus: "active" | "deactivated" | "deleted";
+        /** @enum {string} */
+        CostUnit: "baht" | "percent";
+        /** @enum {string} */
+        TimeUnit: "day" | "percent";
+        /** @enum {string} */
+        VersionStatus: "draft" | "submitted";
+        /** @enum {string} */
+        RiskLevel: "VL" | "L" | "M" | "H" | "VH";
+        /** @enum {string} */
+        JobKind: "report" | "export";
+        /** @enum {string} */
+        JobStatus: "queued" | "running" | "done" | "failed" | "expired";
+        /** @description Not blank. */
+        name: string;
+        nickname: string;
+        island_other: string | null;
+        type_other: string | null;
+        /** Format: date */
+        start_date: string;
+        /**
+         * Format: date
+         * @description After `start_date`.
+         */
+        end_date: string;
+        /** @description Project value in baht, greater than 0. */
+        value_baht: number;
+        /** @description Entered progress in percent. */
+        progress_pct: number;
+        description: string | null;
+        /** @enum {string} */
+        RiskStrategy: "REDUCE" | "TRANSFER" | "AVOID" | "ACCEPT";
     };
     responses: {
         /** @description Malformed request. */
@@ -409,6 +1582,710 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    adminGetAdvice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indicator_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The advice lists. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAdviceLists"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    adminReplaceAdviceList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indicator_code: string;
+                list: components["schemas"]["AdviceList"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminReplaceAdviceRequest"];
+            };
+        };
+        responses: {
+            /** @description The stored list. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAdviceListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminListAuditLog: {
+        parameters: {
+            query?: {
+                admin_id?: components["schemas"]["Uuid"];
+                action?: components["schemas"]["AuditAction"];
+                target_type?: string;
+                /** @description Used together with `target_type`. */
+                target_id?: string;
+                /** @description Entries at or after this instant. */
+                from?: components["schemas"]["Timestamp"];
+                /** @description Entries before this instant. */
+                to?: components["schemas"]["Timestamp"];
+                page?: components["parameters"]["Page"];
+                page_size?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of entries; empty when nothing matches. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuditPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminGetAuditEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                audit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The entry. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuditEntry"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    adminRequestExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Export job accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminDownloadExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The export ZIP. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description The export file has expired; request a new export. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    adminListRlThresholds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Thresholds a..e per indicator. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRlThresholdList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminGetRlThreshold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indicator_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The thresholds. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRlThreshold"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    adminUpdateRlThreshold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indicator_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdateRlThresholdRequest"];
+            };
+        };
+        responses: {
+            /** @description The stored thresholds. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRlThreshold"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminGetImpactTables: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Both tables. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminImpactTables"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminUpdateImpactTables: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdateImpactTablesRequest"];
+            };
+        };
+        responses: {
+            /** @description Both tables after the update. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminImpactTables"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminListUsers: {
+        parameters: {
+            query?: {
+                /** @description Case-insensitive search on e-mail or organisation. */
+                q?: string;
+                role?: components["schemas"]["UserRole"];
+                status?: components["schemas"]["AccountStatus"];
+                page?: components["parameters"]["Page"];
+                page_size?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of users with project and version counts only. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminGetUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    adminDeleteUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Account anonymised. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    adminChangeUserRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminChangeRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminDeactivateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The updated user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    adminReactivateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The updated user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listAnswers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Answers recorded so far. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnswerList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    upsertAnswers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description The saved answers of the request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnswerList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    putAnswer: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+                indicator_code: components["schemas"]["IndicatorCode"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnswerInput"];
+            };
+        };
+        responses: {
+            /** @description The saved answer. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Answer"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    submitVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Submitted; results summary. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SubmitResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getCatalogue: {
+        parameters: {
+            query?: {
+                /** @description Locale of the text; texts missing in it fall back to `th`. */
+                locale?: components["schemas"]["Locale"];
+            };
+            header?: {
+                /** @description ETag from an earlier response. */
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK. */
+            200: {
+                headers: {
+                    /** @description Strong validator of this representation. */
+                    ETag?: string;
+                    /** @description `private, no-cache`. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Catalogue"];
+                };
+            };
+            /** @description Not modified; the copy matching `If-None-Match` is current. */
+            304: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listIslands: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description ETag from an earlier response. */
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK. */
+            200: {
+                headers: {
+                    /** @description Strong validator of this representation. */
+                    ETag?: string;
+                    /** @description `private, no-cache`. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IslandList"];
+                };
+            };
+            /** @description Not modified; the copy matching `If-None-Match` is current. */
+            304: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    listProjectTypes: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description ETag from an earlier response. */
+                "If-None-Match"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK. */
+            200: {
+                headers: {
+                    /** @description Strong validator of this representation. */
+                    ETag?: string;
+                    /** @description `private, no-cache`. */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectTypeList"];
+                };
+            };
+            /** @description Not modified; the copy matching `If-None-Match` is current. */
+            304: {
+                headers: {
+                    ETag?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
     compareProjectVersions: {
         parameters: {
             query: {
@@ -434,6 +2311,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
             422: components["responses"]["ValidationFailed"];
@@ -460,6 +2338,7 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
         };
     };
@@ -490,6 +2369,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationFailed"];
         };
@@ -583,6 +2463,373 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+        };
+    };
+    getJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The job. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    listProjects: {
+        parameters: {
+            query?: {
+                /** @description Case-insensitive search over name, nickname and island (code or other text). */
+                q?: string;
+                page?: components["parameters"]["Page"];
+                page_size?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of projects. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCreate"];
+            };
+        };
+        responses: {
+            /** @description The created project. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The project, with expected progress. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectUpdate"];
+            };
+        };
+        responses: {
+            /** @description The updated project. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    requestReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Job accepted (new or existing); poll `GET /jobs/{id}`. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    downloadReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The PDF file. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getResults: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Per-indicator results, advice and strategies, with counts per level. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResultsResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    putStrategy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+                indicator_code: components["schemas"]["IndicatorCode"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StrategyRequest"];
+            };
+        };
+        responses: {
+            /** @description The saved strategy. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StrategyChoice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    listVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Non-deleted versions, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new, blank draft version. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Version"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The version; `editable` is true only for the latest one. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Version"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
         };
     };
 }

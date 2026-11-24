@@ -1,1 +1,24 @@
-{}
+/jobs/{id}:
+  parameters:
+    - name: id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+  get:
+    operationId: getJob
+    summary: Get the status of a job
+    description: |
+      Poll until `status` is `done`, `failed` or `expired`. Visible to the
+      requester only; any other caller (admins included) gets 404.
+    responses:
+      '200':
+        description: The job.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/jobs.yaml#/Job
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound

@@ -1,0 +1,75 @@
+/admin/audit-log:
+  get:
+    operationId: adminListAuditLog
+    summary: List audit log entries
+    description: Admin only. Read-only, newest first. Entries cannot be edited or deleted.
+    parameters:
+      - name: admin_id
+        in: query
+        schema:
+          $ref: ../schemas/common.yaml#/schemas/Uuid
+      - name: action
+        in: query
+        schema:
+          $ref: ../schemas/common.yaml#/schemas/AuditAction
+      - name: target_type
+        in: query
+        schema:
+          type: string
+      - name: target_id
+        in: query
+        description: Used together with `target_type`.
+        schema:
+          type: string
+      - name: from
+        in: query
+        description: Entries at or after this instant.
+        schema:
+          $ref: ../schemas/common.yaml#/schemas/Timestamp
+      - name: to
+        in: query
+        description: Entries before this instant.
+        schema:
+          $ref: ../schemas/common.yaml#/schemas/Timestamp
+      - $ref: ../schemas/common.yaml#/parameters/Page
+      - $ref: ../schemas/common.yaml#/parameters/PageSize
+    responses:
+      '200':
+        description: A page of entries; empty when nothing matches.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminAuditPage
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+/admin/audit-log/{audit_id}:
+  get:
+    operationId: adminGetAuditEntry
+    summary: Get one audit entry with old and new values
+    description: Admin only.
+    parameters:
+      - name: audit_id
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+    responses:
+      '200':
+        description: The entry.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminAuditEntry
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound

@@ -3,26 +3,6 @@
 # the dashboard, from each non-deleted project's latest submitted version
 # (BR-26). `RM` is the stored risk magnitude, rounded to the version's
 # `snap_rm_decimals`.
-LevelCounts:
-  type: object
-  description: Number of scored indicators per risk level.
-  required: [VL, L, M, H, VH]
-  properties:
-    VL:
-      type: integer
-      minimum: 0
-    L:
-      type: integer
-      minimum: 0
-    M:
-      type: integer
-      minimum: 0
-    H:
-      type: integer
-      minimum: 0
-    VH:
-      type: integer
-      minimum: 0
 DashboardKpis:
   type: object
   required: [project_count, version_count, h_vh_indicator_count, island_count, total_value_baht]
@@ -74,7 +54,7 @@ DashboardSummary:
     kpis:
       $ref: '#/DashboardKpis'
     level_distribution:
-      $ref: '#/LevelCounts'
+      $ref: assessments.yaml#/LevelCounts
     project_risks:
       type: array
       description: One entry per project that has a submitted version.
@@ -307,7 +287,7 @@ TrendPoint:
       minimum: 0
     level_distribution:
       oneOf:
-        - $ref: '#/LevelCounts'
+        - $ref: assessments.yaml#/LevelCounts
         - type: 'null'
 VersionTrend:
   type: object
