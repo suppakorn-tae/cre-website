@@ -1,0 +1,66 @@
+/admin/advice/{indicator_code}:
+  get:
+    operationId: adminGetAdvice
+    summary: Get the advice lists of an indicator
+    description: Admin only. Returns all four lists (RL, RI_C, RI_T, RI_E).
+    parameters:
+      - name: indicator_code
+        in: path
+        required: true
+        schema:
+          type: string
+    responses:
+      '200':
+        description: The advice lists.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminAdviceLists
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+/admin/advice/{indicator_code}/{list}:
+  put:
+    operationId: adminReplaceAdviceList
+    summary: Replace one advice list
+    description: |
+      Admin only. Replaces the whole list in one transaction and writes an
+      audit entry with the old and new list. 1 to 5 items, each with Thai
+      (`th`) text; otherwise 422.
+    parameters:
+      - name: indicator_code
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: list
+        in: path
+        required: true
+        schema:
+          $ref: ../schemas/common.yaml#/schemas/AdviceList
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/admin.yaml#/AdminReplaceAdviceRequest
+    responses:
+      '200':
+        description: The stored list.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminAdviceListResponse
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
