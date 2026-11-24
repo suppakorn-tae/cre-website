@@ -7,11 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "format:check": "prettier --check ."
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.108.4",
     "next": "16.4.6",
+    "next-intl": "^4.16.1",
     "openapi-fetch": "^0.17.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
@@ -26,7 +29,8 @@
     "openapi-msw": "^2.1.1",
     "openapi-typescript": "^7.13.0",
     "prettier": "^3.10.1",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.1.1"
   },
   "engines": {
     "node": ">=24.22.3 <25"
