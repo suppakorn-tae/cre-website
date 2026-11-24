@@ -1,0 +1,170 @@
+/admin/users:
+  get:
+    operationId: adminListUsers
+    summary: List and search users
+    description: Admin only. Search matches e-mail or organisation. Newest first.
+    parameters:
+      - name: q
+        in: query
+        description: Case-insensitive search on e-mail or organisation.
+        schema:
+          type: string
+          maxLength: 200
+      - name: role
+        in: query
+        schema:
+          $ref: ../schemas/common.yaml#/schemas/UserRole
+      - name: status
+        in: query
+        schema:
+          $ref: ../schemas/common.yaml#/schemas/AccountStatus
+      - $ref: ../schemas/common.yaml#/parameters/Page
+      - $ref: ../schemas/common.yaml#/parameters/PageSize
+    responses:
+      '200':
+        description: A page of users with project and version counts only.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminUserPage
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+/admin/users/{user_id}:
+  parameters:
+    - name: user_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+  get:
+    operationId: adminGetUser
+    summary: Get one user
+    description: Admin only. Returns the two counts, never the user's projects or versions.
+    responses:
+      '200':
+        description: The user.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminUser
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+  delete:
+    operationId: adminDeleteUser
+    summary: Delete (anonymise) a user
+    description: |
+      Admin only. Anonymises the account; projects and versions are retained.
+      Writes an audit entry. An admin cannot delete their own account (409).
+    responses:
+      '204':
+        description: Account anonymised.
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
+/admin/users/{user_id}/role:
+  parameters:
+    - name: user_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+  put:
+    operationId: adminChangeUserRole
+    summary: Change a user's role
+    description: |
+      Admin only. Writes an audit entry. An admin cannot change their own
+      role (409).
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/admin.yaml#/AdminChangeRoleRequest
+    responses:
+      '200':
+        description: The updated user.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminUser
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+/admin/users/{user_id}/deactivate:
+  parameters:
+    - name: user_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+  post:
+    operationId: adminDeactivateUser
+    summary: Deactivate a user
+    description: |
+      Admin only. A deactivated user cannot sign in. Writes an audit entry.
+      Conflict (409) when deactivating own account or a user that is not active.
+    responses:
+      '200':
+        description: The updated user.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminUser
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
+/admin/users/{user_id}/reactivate:
+  parameters:
+    - name: user_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+  post:
+    operationId: adminReactivateUser
+    summary: Reactivate a user
+    description: Admin only. Writes an audit entry. Conflict (409) when the user is not deactivated.
+    responses:
+      '200':
+        description: The updated user.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminUser
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
