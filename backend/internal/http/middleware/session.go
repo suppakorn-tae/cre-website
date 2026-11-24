@@ -5,6 +5,9 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/google/uuid"
+
+	"github.com/suppakorn-tae/cre-website/backend/internal/service/audit"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/session"
 )
 
@@ -31,7 +34,15 @@ func Session(svc *session.Service) func(http.Handler) http.Handler {
 			p, err := svc.Authenticate(r.Context(), c.Value)
 			switch {
 			case err == nil:
-				next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), principalKey{}, p)))
+				ctx := context.WithValue(r.Context(), principalKey{}, p)
+				if p.Role == session.RoleAdmin {
+					// Admin services write audit rows from this context.
+					if id, perr := uuid.Parse(p.AccountID); perr == nil {
+						ctx = audit.WithAdmin(ctx, id)
+						ctx = audit.WithClientIP(ctx, ClientIP(ctx))
+					}
+				}
+				next.ServeHTTP(w, r.WithContext(ctx))
 			case errors.Is(err, session.ErrInvalidToken),
 				errors.Is(err, session.ErrExpired),
 				errors.Is(err, session.ErrRevoked):

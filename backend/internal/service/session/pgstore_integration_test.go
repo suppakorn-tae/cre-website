@@ -91,7 +91,7 @@ func TestPGStoreWithValkey(t *testing.T) {
 
 	svc, err := session.New(session.Config{
 		Secret: []byte(strings.Repeat("k", 32)), CacheTTL: time.Minute,
-	}, session.PGStore{Pool: pool}, cache)
+	}, session.PGStore{DB: pool}, cache)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -118,7 +118,7 @@ func TestPGStoreWithValkey(t *testing.T) {
 		t.Fatalf("after bump: %v", err)
 	}
 
-	if _, err := (session.PGStore{Pool: pool}).GetRecord(ctx, "00000000-0000-0000-0000-000000000000"); !errors.Is(err, session.ErrNoAccount) {
+	if _, err := (session.PGStore{DB: pool}).GetRecord(ctx, "00000000-0000-0000-0000-000000000000"); !errors.Is(err, session.ErrNoAccount) {
 		t.Fatalf("missing: %v", err)
 	}
 }

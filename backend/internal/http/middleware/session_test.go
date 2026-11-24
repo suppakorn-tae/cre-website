@@ -96,7 +96,7 @@ func app(svc *session.Service) http.Handler {
 	return mux
 }
 
-func do(h http.Handler, path, token string) *httptest.ResponseRecorder {
+func doGet(h http.Handler, path, token string) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	if token != "" {
 		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token})
@@ -111,13 +111,13 @@ func TestSessionMiddleware(t *testing.T) {
 	h := app(svc)
 	tok, _ := svc.Issue("user", 1, false)
 
-	if w := do(h, "/me", ""); w.Code != 401 || !strings.Contains(w.Body.String(), `"unauthenticated"`) {
+	if w := doGet(h, "/me", ""); w.Code != 401 || !strings.Contains(w.Body.String(), `"unauthenticated"`) {
 		t.Fatalf("no cookie: %d %s", w.Code, w.Body)
 	}
-	if w := do(h, "/me", "garbage"); w.Code != 401 {
+	if w := doGet(h, "/me", "garbage"); w.Code != 401 {
 		t.Fatalf("garbage: %d", w.Code)
 	}
-	if w := do(h, "/me", tok); w.Code != 200 || w.Body.String() != "user:user" {
+	if w := doGet(h, "/me", tok); w.Code != 200 || w.Body.String() != "user:user" {
 		t.Fatalf("ok: %d %s", w.Code, w.Body)
 	}
 }
@@ -126,13 +126,13 @@ func TestBumpGivesOldCookie401(t *testing.T) {
 	svc := newSvc(t)
 	h := app(svc)
 	tok, _ := svc.Issue("user", 1, false)
-	if w := do(h, "/me", tok); w.Code != 200 {
+	if w := doGet(h, "/me", tok); w.Code != 200 {
 		t.Fatalf("before: %d", w.Code)
 	}
 	if _, err := svc.BumpVersion(context.Background(), "user"); err != nil {
 		t.Fatal(err)
 	}
-	if w := do(h, "/me", tok); w.Code != 401 {
+	if w := doGet(h, "/me", tok); w.Code != 401 {
 		t.Fatalf("after bump: %d", w.Code)
 	}
 }
@@ -142,18 +142,18 @@ func TestRequireRole(t *testing.T) {
 	h := app(svc)
 	u, _ := svc.Issue("user", 1, false)
 	a, _ := svc.Issue("admin", 1, false)
-	if w := do(h, "/admin/x", u); w.Code != 403 || !strings.Contains(w.Body.String(), `"forbidden"`) {
+	if w := doGet(h, "/admin/x", u); w.Code != 403 || !strings.Contains(w.Body.String(), `"forbidden"`) {
 		t.Fatalf("user: %d %s", w.Code, w.Body)
 	}
-	if w := do(h, "/admin/x", a); w.Code != 200 {
+	if w := doGet(h, "/admin/x", a); w.Code != 200 {
 		t.Fatalf("admin: %d", w.Code)
 	}
-	if w := do(h, "/admin/x", ""); w.Code != 401 {
+	if w := doGet(h, "/admin/x", ""); w.Code != 401 {
 		t.Fatalf("anon: %d", w.Code)
 	}
 	// RequireRole without Session in front never lets a request through.
 	bare := middleware.RequireRole(session.RoleAdmin)(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {}))
-	if w := do(bare, "/", ""); w.Code != 401 {
+	if w := doGet(bare, "/", ""); w.Code != 401 {
 		t.Fatalf("bare: %d", w.Code)
 	}
 }
