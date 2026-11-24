@@ -24,7 +24,7 @@ const (
 
 // Errors returned by the impact scoring functions.
 var (
-	ErrImpactPercent    = errors.New("engine: impact percentage must be within 0 to 100")
+	ErrImpactPercent    = errors.New("engine: impact percentage must be a finite number, 0 or more")
 	ErrImpactTable      = errors.New("engine: impact table must be strictly increasing and not negative")
 	ErrNoOptions        = errors.New("engine: at least one environmental option is required")
 	ErrOptionAExclusive = errors.New("engine: option A cannot be combined with other options")
@@ -87,7 +87,8 @@ func scoreImpactPct(pct float64, t ImpactTable) (float64, error) {
 	if err := t.validate(); err != nil {
 		return 0, err
 	}
-	if math.IsNaN(pct) || pct < 0 || pct > 100 {
+	// An amount converted to a percentage may exceed 100; above e it scores 5.
+	if math.IsNaN(pct) || math.IsInf(pct, 0) || pct < 0 {
 		return 0, fmt.Errorf("%w: %v", ErrImpactPercent, pct)
 	}
 	pts := [5]float64{t.A, t.B, t.C, t.D, t.E}

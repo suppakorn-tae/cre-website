@@ -40,6 +40,8 @@ func TestScoreRICAndRIT(t *testing.T) {
 		{"time at d", testImpactTime, 60.83, 4},
 		{"time at e", testImpactTime, 79.33, 5},
 		{"time hundred", testImpactTime, 100, 5},
+		{"above 100", testImpactCost, 150, 5},
+		{"far above 100", testImpactTime, 1000, 5},
 		{"spec example y1", testImpactCost, 24.44, 2 + (24.44-23.92)/(47.5-23.92)},
 		{"spec example y2", testImpactTime, 16.44, 1 + (16.44-13.79)/(23.33-13.79)},
 	}
@@ -65,7 +67,7 @@ func TestScoreImpactRejectsBadInput(t *testing.T) {
 		want  error
 	}{
 		{"negative pct", testImpactCost, -0.01, ErrImpactPercent},
-		{"over 100", testImpactCost, 100.01, ErrImpactPercent},
+		{"-Inf", testImpactCost, math.Inf(-1), ErrImpactPercent},
 		{"NaN", testImpactCost, math.NaN(), ErrImpactPercent},
 		{"Inf", testImpactCost, math.Inf(1), ErrImpactPercent},
 		{"negative a", ImpactTable{A: -1, B: 2, C: 3, D: 4, E: 5}, 1, ErrImpactTable},
