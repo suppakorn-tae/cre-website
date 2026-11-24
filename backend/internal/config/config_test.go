@@ -18,8 +18,17 @@ func TestLoadAPIDefaults(t *testing.T) {
 	if c.HTTPAddr != ":4000" || c.ShutdownTimeout != 25*time.Second || c.RequestTimeout != 30*time.Second || c.LogLevel != "info" {
 		t.Fatalf("unexpected defaults: %+v", c)
 	}
-	if len(c.TrustedProxies) == 0 {
-		t.Fatal("expected default trusted proxies")
+	if len(c.TrustedProxies) != 0 {
+		t.Fatalf("no proxy may be trusted by default: %v", c.TrustedProxies)
+	}
+}
+
+func TestLoadAPITrustedProxies(t *testing.T) {
+	c, err := LoadAPI(env(map[string]string{
+		"DATABASE_URL": "p", "VALKEY_ADDR": "v", "TRUSTED_PROXIES": "10.1.0.0/16, 192.168.5.7/32",
+	}))
+	if err != nil || len(c.TrustedProxies) != 2 {
+		t.Fatalf("got %v %v", c.TrustedProxies, err)
 	}
 }
 

@@ -2,10 +2,7 @@
 package http
 
 import (
-	"log/slog"
 	"net/http"
-	"net/netip"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -21,26 +18,27 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/handler/results"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/handler/versions"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/middleware"
+	"github.com/suppakorn-tae/cre-website/backend/internal/platform/app"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/health"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/metrics"
 )
 
-// Deps are the platform pieces the router needs.
+// Deps are what the router needs: the shared app.Deps handed to every domain
+// plus the probe and metrics handlers it serves itself.
 type Deps struct {
-	Logger         *slog.Logger
-	Metrics        *metrics.Metrics
-	Health         *health.Checker
-	TrustedProxies []netip.Prefix
-	RequestTimeout time.Duration
+	app.Deps
+	Metrics *metrics.Metrics
+	Health  *health.Checker
 }
 
 // NewRouter builds the api handler. Probes and /metrics sit at the root (not
-// routed by Caddy); everything else lives under /api/v1.
+// routed by Caddy); everything else lives under /api/v1. Domains get their
+// dependencies through Routes(r, d), so feature branches never edit this file.
 func NewRouter(d Deps) http.Handler {
 	r := chi.NewRouter()
 	r.Use(
 		middleware.RequestID,
-		middleware.RealIP(d.TrustedProxies),
+		middleware.RealIP(d.Config.TrustedProxies),
 		d.Metrics.Middleware,
 		middleware.Logger(d.Logger),
 		middleware.Recoverer(d.Logger),
@@ -51,18 +49,18 @@ func NewRouter(d Deps) http.Handler {
 	r.Method(http.MethodGet, "/metrics", d.Metrics.Handler())
 
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Use(middleware.Timeout(d.RequestTimeout))
-		r.Route("/auth", auth.Routes)
-		r.Route("/account", account.Routes)
-		r.Route("/catalogue", catalogue.Routes)
-		r.Route("/projects", projects.Routes)
-		r.Route("/versions", versions.Routes)
-		r.Route("/assessments", assessments.Routes)
-		r.Route("/results", results.Routes)
-		r.Route("/dashboard", dashboard.Routes)
-		r.Route("/jobs", jobs.Routes)
-		r.Route("/reports", reports.Routes)
-		r.Route("/admin", admin.Routes)
+		r.Use(middleware.Timeout(d.Config.RequestTimeout))
+		r.Route("/auth", func(r chi.Router) { auth.Routes(r, d.Deps) })
+		r.Route("/account", func(r chi.Router) { account.Routes(r, d.Deps) })
+		r.Route("/catalogue", func(r chi.Router) { catalogue.Routes(r, d.Deps) })
+		r.Route("/projects", func(r chi.Router) { projects.Routes(r, d.Deps) })
+		r.Route("/versions", func(r chi.Router) { versions.Routes(r, d.Deps) })
+		r.Route("/assessments", func(r chi.Router) { assessments.Routes(r, d.Deps) })
+		r.Route("/results", func(r chi.Router) { results.Routes(r, d.Deps) })
+		r.Route("/dashboard", func(r chi.Router) { dashboard.Routes(r, d.Deps) })
+		r.Route("/jobs", func(r chi.Router) { jobs.Routes(r, d.Deps) })
+		r.Route("/reports", func(r chi.Router) { reports.Routes(r, d.Deps) })
+		r.Route("/admin", func(r chi.Router) { admin.Routes(r, d.Deps) })
 	})
 
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {

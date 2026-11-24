@@ -11,6 +11,7 @@ import (
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/config"
 	apihttp "github.com/suppakorn-tae/cre-website/backend/internal/http"
+	"github.com/suppakorn-tae/cre-website/backend/internal/platform/app"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/health"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/httpserver"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
@@ -40,18 +41,16 @@ func main() {
 	srv := &http.Server{
 		Addr: cfg.HTTPAddr,
 		Handler: apihttp.NewRouter(apihttp.Deps{
-			Logger:         l,
-			Metrics:        metrics.New(),
-			Health:         hc,
-			TrustedProxies: cfg.TrustedProxies,
-			RequestTimeout: cfg.RequestTimeout,
+			Deps:    app.Deps{Config: cfg, Logger: l, Auth: app.PassThrough},
+			Metrics: metrics.New(),
+			Health:  hc,
 		}),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
-	if err := httpserver.ListenAndServe(ctx, srv, cfg.ShutdownTimeout, l); err != nil {
+	if err := httpserver.ListenAndServe(ctx, srv, cfg.ShutdownTimeout, l, hc.SetDraining); err != nil {
 		l.Error("api stopped with error", "error", err.Error())
 		os.Exit(1)
 	}

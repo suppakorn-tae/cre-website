@@ -12,6 +12,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/suppakorn-tae/cre-website/backend/internal/config"
+	"github.com/suppakorn-tae/cre-website/backend/internal/platform/app"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/health"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/metrics"
@@ -20,11 +22,16 @@ import (
 func newDeps(buf *bytes.Buffer) (Deps, *health.Checker) {
 	h := health.New(time.Second)
 	return Deps{
-		Logger:         log.New(buf, "info"),
-		Metrics:        metrics.New(),
-		Health:         h,
-		TrustedProxies: []netip.Prefix{netip.MustParsePrefix("10.0.0.0/8")},
-		RequestTimeout: time.Second,
+		Deps: app.Deps{
+			Config: config.API{
+				TrustedProxies: []netip.Prefix{netip.MustParsePrefix("10.0.0.0/8")},
+				RequestTimeout: time.Second,
+			},
+			Logger: log.New(buf, "info"),
+			Auth:   app.PassThrough,
+		},
+		Metrics: metrics.New(),
+		Health:  h,
 	}, h
 }
 

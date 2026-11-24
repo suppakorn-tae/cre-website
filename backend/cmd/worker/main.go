@@ -45,7 +45,7 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer stop()
-	if err := httpserver.ListenAndServe(ctx, srv, cfg.ShutdownTimeout, l); err != nil {
+	if err := httpserver.ListenAndServe(ctx, srv, cfg.ShutdownTimeout, l, hc.SetDraining); err != nil {
 		l.Error("worker stopped with error", "error", err.Error())
 		os.Exit(1)
 	}

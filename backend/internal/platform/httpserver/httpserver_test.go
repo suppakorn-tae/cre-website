@@ -20,7 +20,7 @@ func start(t *testing.T, h http.HandlerFunc, drain time.Duration) (url string, c
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	done = make(chan error, 1)
-	go func() { done <- Serve(ctx, &http.Server{Handler: h}, ln, drain, quiet) }()
+	go func() { done <- Serve(ctx, &http.Server{Handler: h}, ln, drain, quiet, nil) }()
 	return "http://" + ln.Addr().String() + "/", cancel, done
 }
 
@@ -51,6 +51,23 @@ func TestShutdownDrainsInFlight(t *testing.T) {
 	}
 	if err := <-done; err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestOnDrainRunsBeforeShutdown(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	called := false
+	done := make(chan error, 1)
+	go func() {
+		done <- Serve(ctx, &http.Server{Handler: http.NotFoundHandler()}, ln, time.Second, quiet, func() { called = true })
+	}()
+	cancel()
+	if err := <-done; err != nil || !called {
+		t.Fatalf("err=%v called=%v", err, called)
 	}
 }
 

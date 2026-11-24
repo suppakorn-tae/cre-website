@@ -41,6 +41,18 @@ func TestReadyzFailsWhenCheckFails(t *testing.T) {
 	}
 }
 
+func TestReadyzFailsWhenDraining(t *testing.T) {
+	c := New(time.Second)
+	c.Add("db", func(context.Context) error { return nil })
+	c.SetDraining()
+	if rec := get(c.Readyz()); rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("got %d", rec.Code)
+	}
+	if rec := get(c.Healthz()); rec.Code != http.StatusOK {
+		t.Fatalf("liveness must stay up while draining: %d", rec.Code)
+	}
+}
+
 func TestReadyzTimeout(t *testing.T) {
 	c := New(10 * time.Millisecond)
 	c.Add("slow", func(ctx context.Context) error { <-ctx.Done(); return ctx.Err() })

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sort"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -18,12 +19,18 @@ type Checker struct {
 	mu      sync.RWMutex
 	checks  map[string]Check
 	timeout time.Duration
+
+	draining atomic.Bool
 }
 
 // New returns a Checker; each check gets timeout to answer.
 func New(timeout time.Duration) *Checker {
 	return &Checker{checks: map[string]Check{}, timeout: timeout}
 }
+
+// SetDraining makes /readyz fail from now on. Call it when SIGTERM arrives so
+// the load balancer stops sending traffic while in-flight requests finish.
+func (c *Checker) SetDraining() { c.draining.Store(true) }
 
 // Add registers a check under name, replacing any earlier one.
 func (c *Checker) Add(name string, fn Check) {
@@ -43,6 +50,10 @@ func (c *Checker) Healthz() http.Handler {
 // Failure details stay in the logs of the check, not in the response.
 func (c *Checker) Readyz() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if c.draining.Load() {
+			write(w, http.StatusServiceUnavailable, map[string]any{"status": "draining"})
+			return
+		}
 		c.mu.RLock()
 		names := make([]string, 0, len(c.checks))
 		for n := range c.checks {

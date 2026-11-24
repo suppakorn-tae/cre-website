@@ -8,13 +8,15 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
 )
 
-// ErrorBody is the standard JSON error envelope: {"error":{...}}.
+// ErrorBody is the standard JSON error envelope (ErrorEnvelope in the contract).
 type ErrorBody struct {
 	Error ErrorDetail `json:"error"`
 }
 
-// ErrorDetail describes one error. Code is a stable machine-readable
-// identifier; Message is safe to show; RequestID matches the log lines.
+// ErrorDetail mirrors ErrorBody in contracts/openapi/schemas/common.yaml.
+// Code is a stable machine-readable identifier. Message is developer-facing
+// and never shown to users (the web app maps Code to Thai text). RequestID
+// matches the log lines.
 type ErrorDetail struct {
 	Code      string `json:"code"`
 	Message   string `json:"message"`

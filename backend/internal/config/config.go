@@ -25,7 +25,8 @@ type API struct {
 	Common
 	HTTPAddr       string
 	RequestTimeout time.Duration
-	// TrustedProxies are the networks (Caddy) whose forwarding headers are believed.
+	// TrustedProxies are the networks (Caddy) whose forwarding headers are
+	// believed. Empty by default: the TCP peer is the client. Deploy sets it.
 	TrustedProxies []netip.Prefix
 }
 
@@ -43,7 +44,7 @@ func LoadAPI(get Getenv) (API, error) {
 		Common:         r.common(),
 		HTTPAddr:       r.str("HTTP_ADDR", ":4000"),
 		RequestTimeout: r.duration("REQUEST_TIMEOUT", 30*time.Second),
-		TrustedProxies: r.prefixes("TRUSTED_PROXIES", "172.16.0.0/12,10.0.0.0/8,192.168.0.0/16,127.0.0.1/32"),
+		TrustedProxies: r.prefixes("TRUSTED_PROXIES", ""),
 	}
 	return c, r.err()
 }
