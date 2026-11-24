@@ -66,6 +66,16 @@ export async function ensureCsrf(): Promise<void> {
   memoToken = data.csrf_token;
 }
 
+/** Asks for a new token after the session changed (log in or sign-up). */
+export async function refreshCsrf(): Promise<void> {
+  memoToken = undefined;
+  try {
+    memoToken = unwrap(await client.GET('/auth/csrf')).csrf_token;
+  } catch {
+    // The next unsafe call fetches it again.
+  }
+}
+
 export async function startRegistration(body: RegisterStartBody): Promise<OtpChallenge> {
   await ensureCsrf();
   return unwrap(await client.POST('/auth/register/start', { body }));
