@@ -20,6 +20,8 @@ const (
 	secretKey = "rustfsadmin-secret"
 )
 
+// startStore runs RustFS, not MinIO: the minio/minio and quay.io/minio/minio
+// images can no longer be pulled. RustFS is also the store we deploy.
 func startStore(t *testing.T) *s3.Store {
 	t.Helper()
 	if testing.Short() {
