@@ -75,6 +75,12 @@ type Querier interface {
 	MarkJobFailed(ctx context.Context, arg MarkJobFailedParams) (int64, error)
 	// A job left running by a crashed worker may be claimed again.
 	MarkJobRunning(ctx context.Context, id uuid.UUID) (Job, error)
+	// Advice items of the lists stored with each H or VH result.
+	ReportDataAdvice(ctx context.Context, arg ReportDataAdviceParams) ([]ReportDataAdviceRow, error)
+	// Project and snapshot fields of the version a report job is for.
+	ReportDataHead(ctx context.Context, jobID uuid.UUID) (ReportDataHeadRow, error)
+	// Stored results with the chosen strategy, in factor order.
+	ReportDataResults(ctx context.Context, arg ReportDataResultsParams) ([]ReportDataResultsRow, error)
 	SnapshotImpactThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
 	SnapshotRLThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
 	SoftDeleteVersion(ctx context.Context, arg SoftDeleteVersionParams) (int64, error)
