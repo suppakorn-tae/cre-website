@@ -1,0 +1,221 @@
+# Answers, results and strategies of one assessment version. Decimals
+# (`number`) are returned as entered or as stored by the last submission;
+# nothing is recalculated on read.
+IndicatorCode:
+  type: string
+  pattern: '^[A-Z]{2}-[A-Z]{2}-[0-9]+$'
+  description: Indicator code, e.g. `EC-HS-2`.
+  examples: [EC-HS-2]
+Y3Option:
+  type: string
+  enum: [A, B, C, D, E, F, G, H, I]
+  description: Option of y3. `A` is exclusive and cannot be combined with another option.
+CostImpact:
+  type: object
+  description: y1, the cost impact. When `unit` is `percent` the value is 0-100.
+  required: [value, unit]
+  properties:
+    value:
+      type: number
+      minimum: 0
+    unit:
+      $ref: common.yaml#/schemas/CostUnit
+TimeImpact:
+  type: object
+  description: y2, the time impact. When `unit` is `percent` the value is 0-100.
+  required: [value, unit]
+  properties:
+    value:
+      type: number
+      minimum: 0
+    unit:
+      $ref: common.yaml#/schemas/TimeUnit
+AnswerInput:
+  type: object
+  description: |
+    The full answer of one indicator. Fields that are omitted are cleared,
+    so a partial answer is allowed. The API rejects a percent value above
+    100 (`out_of_range`) and `A` combined with another y3 option
+    (`exclusive_option`) with a 422.
+  required: [indicator_code]
+  properties:
+    indicator_code:
+      $ref: '#/IndicatorCode'
+    x:
+      type: number
+      minimum: 0
+      description: In the indicator's own unit.
+    y1:
+      $ref: '#/CostImpact'
+    y2:
+      $ref: '#/TimeImpact'
+    y3:
+      type: array
+      uniqueItems: true
+      items:
+        $ref: '#/Y3Option'
+Answer:
+  allOf:
+    - $ref: '#/AnswerInput'
+    - type: object
+      required: [complete, updated_at]
+      properties:
+        complete:
+          type: boolean
+          description: True when x, y1, y2 and y3 are all given.
+        updated_at:
+          $ref: common.yaml#/schemas/Timestamp
+AnswerList:
+  type: object
+  required: [version_id, editable, items]
+  properties:
+    version_id:
+      $ref: common.yaml#/schemas/Uuid
+    editable:
+      type: boolean
+      description: False when a newer version exists (read-only).
+    items:
+      type: array
+      description: Answers recorded so far; indicators never answered are absent.
+      items:
+        $ref: '#/Answer'
+AnswerBatchRequest:
+  type: object
+  required: [answers]
+  properties:
+    answers:
+      type: array
+      minItems: 1
+      maxItems: 55
+      description: Each entry replaces the stored answer of its indicator; other indicators are untouched.
+      items:
+        $ref: '#/AnswerInput'
+LevelCounts:
+  type: object
+  required: [VL, L, M, H, VH]
+  properties:
+    VL:
+      type: integer
+      minimum: 0
+    L:
+      type: integer
+      minimum: 0
+    M:
+      type: integer
+      minimum: 0
+    H:
+      type: integer
+      minimum: 0
+    VH:
+      type: integer
+      minimum: 0
+ResultsSummary:
+  type: object
+  required: [scored_count, level_counts]
+  properties:
+    scored_count:
+      type: integer
+      minimum: 1
+      description: Number of complete indicators scored at the last submission.
+    level_counts:
+      $ref: '#/LevelCounts'
+    average_rm:
+      type: number
+      description: Mean RM of the scored indicators.
+AdviceListItems:
+  type: object
+  required: [list, items]
+  properties:
+    list:
+      $ref: common.yaml#/schemas/AdviceList
+    items:
+      type: array
+      minItems: 1
+      maxItems: 5
+      description: Current advice text in admin-defined order. Do not assume a length.
+      items:
+        type: string
+IndicatorResult:
+  type: object
+  required: [indicator_code, x, y1_pct, y2_pct, rl, ri_c, ri_t, ri_e, ri_max, rm, level]
+  properties:
+    indicator_code:
+      $ref: '#/IndicatorCode'
+    x:
+      type: number
+    y1_pct:
+      type: number
+      description: y1 in percent of the project value snapshot.
+    y2_pct:
+      type: number
+      description: y2 in percent of the project duration snapshot.
+    rl:
+      type: number
+    ri_c:
+      type: number
+    ri_t:
+      type: number
+    ri_e:
+      type: number
+    ri_max:
+      type: number
+    rm:
+      type: number
+    level:
+      $ref: common.yaml#/schemas/RiskLevel
+    advice:
+      type: array
+      minItems: 1
+      maxItems: 3
+      description: Present only for H and VH. One entry per selected list; ties list every tied list.
+      items:
+        $ref: '#/AdviceListItems'
+    strategy:
+      $ref: common.yaml#/schemas/RiskStrategy
+    strategy_updated_at:
+      $ref: common.yaml#/schemas/Timestamp
+ResultsResponse:
+  type: object
+  required: [version_id, submitted_at, editable, summary, items]
+  properties:
+    version_id:
+      $ref: common.yaml#/schemas/Uuid
+    submitted_at:
+      $ref: common.yaml#/schemas/Timestamp
+    editable:
+      type: boolean
+      description: False when a newer version exists; strategies can then no longer change.
+    summary:
+      $ref: '#/ResultsSummary'
+    items:
+      type: array
+      items:
+        $ref: '#/IndicatorResult'
+SubmitResponse:
+  type: object
+  required: [version_id, status, submitted_at, summary]
+  properties:
+    version_id:
+      $ref: common.yaml#/schemas/Uuid
+    status:
+      $ref: common.yaml#/schemas/VersionStatus
+    submitted_at:
+      $ref: common.yaml#/schemas/Timestamp
+    summary:
+      $ref: '#/ResultsSummary'
+StrategyRequest:
+  type: object
+  required: [strategy]
+  properties:
+    strategy:
+      $ref: common.yaml#/schemas/RiskStrategy
+StrategyChoice:
+  type: object
+  required: [indicator_code, strategy, updated_at]
+  properties:
+    indicator_code:
+      $ref: '#/IndicatorCode'
+    strategy:
+      $ref: common.yaml#/schemas/RiskStrategy
+    updated_at:
+      $ref: common.yaml#/schemas/Timestamp

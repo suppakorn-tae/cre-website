@@ -126,6 +126,24 @@ func (e AuditAction) Valid() bool {
 	}
 }
 
+// Defines values for CostUnit.
+const (
+	CostUnitBaht    CostUnit = "baht"
+	CostUnitPercent CostUnit = "percent"
+)
+
+// Valid indicates whether the value is a known member of the CostUnit enum.
+func (e CostUnit) Valid() bool {
+	switch e {
+	case CostUnitBaht:
+		return true
+	case CostUnitPercent:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for ExportScope.
 const (
 	All      ExportScope = "all"
@@ -291,6 +309,75 @@ func (e ProjectType) Valid() bool {
 	}
 }
 
+// Defines values for RiskLevel.
+const (
+	RiskLevelH  RiskLevel = "H"
+	RiskLevelL  RiskLevel = "L"
+	RiskLevelM  RiskLevel = "M"
+	RiskLevelVH RiskLevel = "VH"
+	RiskLevelVL RiskLevel = "VL"
+)
+
+// Valid indicates whether the value is a known member of the RiskLevel enum.
+func (e RiskLevel) Valid() bool {
+	switch e {
+	case RiskLevelH:
+		return true
+	case RiskLevelL:
+		return true
+	case RiskLevelM:
+		return true
+	case RiskLevelVH:
+		return true
+	case RiskLevelVL:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RiskStrategy.
+const (
+	ACCEPT   RiskStrategy = "ACCEPT"
+	AVOID    RiskStrategy = "AVOID"
+	REDUCE   RiskStrategy = "REDUCE"
+	TRANSFER RiskStrategy = "TRANSFER"
+)
+
+// Valid indicates whether the value is a known member of the RiskStrategy enum.
+func (e RiskStrategy) Valid() bool {
+	switch e {
+	case ACCEPT:
+		return true
+	case AVOID:
+		return true
+	case REDUCE:
+		return true
+	case TRANSFER:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TimeUnit.
+const (
+	TimeUnitDay     TimeUnit = "day"
+	TimeUnitPercent TimeUnit = "percent"
+)
+
+// Valid indicates whether the value is a known member of the TimeUnit enum.
+func (e TimeUnit) Valid() bool {
+	switch e {
+	case TimeUnitDay:
+		return true
+	case TimeUnitPercent:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for UserRole.
 const (
 	Admin UserRole = "admin"
@@ -321,6 +408,45 @@ func (e VersionStatus) Valid() bool {
 	case Draft:
 		return true
 	case Submitted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for Y3Option.
+const (
+	Y3OptionA Y3Option = "A"
+	Y3OptionB Y3Option = "B"
+	Y3OptionC Y3Option = "C"
+	Y3OptionD Y3Option = "D"
+	Y3OptionE Y3Option = "E"
+	Y3OptionF Y3Option = "F"
+	Y3OptionG Y3Option = "G"
+	Y3OptionH Y3Option = "H"
+	Y3OptionI Y3Option = "I"
+)
+
+// Valid indicates whether the value is a known member of the Y3Option enum.
+func (e Y3Option) Valid() bool {
+	switch e {
+	case Y3OptionA:
+		return true
+	case Y3OptionB:
+		return true
+	case Y3OptionC:
+		return true
+	case Y3OptionD:
+		return true
+	case Y3OptionE:
+		return true
+	case Y3OptionF:
+		return true
+	case Y3OptionG:
+		return true
+	case Y3OptionH:
+		return true
+	case Y3OptionI:
 		return true
 	default:
 		return false
@@ -563,6 +689,74 @@ type AdminUserPage struct {
 // AdviceList defines model for AdviceList.
 type AdviceList string
 
+// AdviceListItems defines model for AdviceListItems.
+type AdviceListItems struct {
+	// Items Current advice text in admin-defined order. Do not assume a length.
+	Items []string   `json:"items"`
+	List  AdviceList `json:"list"`
+}
+
+// Answer defines model for Answer.
+type Answer struct {
+	// Complete True when x, y1, y2 and y3 are all given.
+	Complete bool `json:"complete"`
+
+	// IndicatorCode Indicator code, e.g. `EC-HS-2`.
+	//
+	// Examples: EC-HS-2
+	IndicatorCode IndicatorCode `json:"indicator_code"`
+
+	// UpdatedAt UTC instant, RFC 3339.
+	UpdatedAt Timestamp `json:"updated_at"`
+
+	// X In the indicator's own unit.
+	X *float32 `json:"x,omitempty"`
+
+	// Y1 y1, the cost impact. When `unit` is `percent` the value is 0-100.
+	Y1 *CostImpact `json:"y1,omitempty"`
+
+	// Y2 y2, the time impact. When `unit` is `percent` the value is 0-100.
+	Y2 *TimeImpact `json:"y2,omitempty"`
+	Y3 *[]Y3Option `json:"y3,omitempty"`
+}
+
+// AnswerBatchRequest defines model for AnswerBatchRequest.
+type AnswerBatchRequest struct {
+	// Answers Each entry replaces the stored answer of its indicator; other indicators are untouched.
+	Answers []AnswerInput `json:"answers"`
+}
+
+// AnswerInput The full answer of one indicator. Fields that are omitted are cleared,
+// so a partial answer is allowed. The API rejects a percent value above
+// 100 (`out_of_range`) and `A` combined with another y3 option
+// (`exclusive_option`) with a 422.
+type AnswerInput struct {
+	// IndicatorCode Indicator code, e.g. `EC-HS-2`.
+	//
+	// Examples: EC-HS-2
+	IndicatorCode IndicatorCode `json:"indicator_code"`
+
+	// X In the indicator's own unit.
+	X *float32 `json:"x,omitempty"`
+
+	// Y1 y1, the cost impact. When `unit` is `percent` the value is 0-100.
+	Y1 *CostImpact `json:"y1,omitempty"`
+
+	// Y2 y2, the time impact. When `unit` is `percent` the value is 0-100.
+	Y2 *TimeImpact `json:"y2,omitempty"`
+	Y3 *[]Y3Option `json:"y3,omitempty"`
+}
+
+// AnswerList defines model for AnswerList.
+type AnswerList struct {
+	// Editable False when a newer version exists (read-only).
+	Editable bool `json:"editable"`
+
+	// Items Answers recorded so far; indicators never answered are absent.
+	Items     []Answer `json:"items"`
+	VersionId Uuid     `json:"version_id"`
+}
+
 // AuditAction defines model for AuditAction.
 type AuditAction string
 
@@ -624,6 +818,15 @@ type CatalogueIndicator struct {
 	Unit string `json:"unit"`
 }
 
+// CostImpact y1, the cost impact. When `unit` is `percent` the value is 0-100.
+type CostImpact struct {
+	Unit  CostUnit `json:"unit"`
+	Value float32  `json:"value"`
+}
+
+// CostUnit defines model for CostUnit.
+type CostUnit string
+
 // ErrorBody defines model for ErrorBody.
 type ErrorBody struct {
 	// Code Stable machine code, e.g. `not_found`.
@@ -653,8 +856,42 @@ type FieldError struct {
 // ImpactCode defines model for ImpactCode.
 type ImpactCode string
 
+// IndicatorCode Indicator code, e.g. `EC-HS-2`.
+//
+// Examples: EC-HS-2
+type IndicatorCode = string
+
 // IndicatorDirection defines model for IndicatorDirection.
 type IndicatorDirection string
+
+// IndicatorResult defines model for IndicatorResult.
+type IndicatorResult struct {
+	// Advice Present only for H and VH. One entry per selected list; ties list every tied list.
+	Advice *[]AdviceListItems `json:"advice,omitempty"`
+
+	// IndicatorCode Indicator code, e.g. `EC-HS-2`.
+	//
+	// Examples: EC-HS-2
+	IndicatorCode IndicatorCode `json:"indicator_code"`
+	Level         RiskLevel     `json:"level"`
+	RiC           float32       `json:"ri_c"`
+	RiE           float32       `json:"ri_e"`
+	RiMax         float32       `json:"ri_max"`
+	RiT           float32       `json:"ri_t"`
+	Rl            float32       `json:"rl"`
+	Rm            float32       `json:"rm"`
+	Strategy      *RiskStrategy `json:"strategy,omitempty"`
+
+	// StrategyUpdatedAt UTC instant, RFC 3339.
+	StrategyUpdatedAt *Timestamp `json:"strategy_updated_at,omitempty"`
+	X                 float32    `json:"x"`
+
+	// Y1Pct y1 in percent of the project value snapshot.
+	Y1Pct float32 `json:"y1_pct"`
+
+	// Y2Pct y2 in percent of the project duration snapshot.
+	Y2Pct float32 `json:"y2_pct"`
+}
 
 // IslandList defines model for IslandList.
 type IslandList struct {
@@ -701,6 +938,15 @@ type JobKind string
 
 // JobStatus defines model for JobStatus.
 type JobStatus string
+
+// LevelCounts defines model for LevelCounts.
+type LevelCounts struct {
+	H  int `json:"H"`
+	L  int `json:"L"`
+	M  int `json:"M"`
+	VH int `json:"VH"`
+	VL int `json:"VL"`
+}
 
 // Locale Two-letter locale code, e.g. `th`.
 //
@@ -869,6 +1115,28 @@ type ProjectUpdate struct {
 	ValueBaht *ValueBaht `json:"value_baht,omitempty"`
 }
 
+// ResultsResponse defines model for ResultsResponse.
+type ResultsResponse struct {
+	// Editable False when a newer version exists; strategies can then no longer change.
+	Editable bool              `json:"editable"`
+	Items    []IndicatorResult `json:"items"`
+
+	// SubmittedAt UTC instant, RFC 3339.
+	SubmittedAt Timestamp      `json:"submitted_at"`
+	Summary     ResultsSummary `json:"summary"`
+	VersionId   Uuid           `json:"version_id"`
+}
+
+// ResultsSummary defines model for ResultsSummary.
+type ResultsSummary struct {
+	// AverageRm Mean RM of the scored indicators.
+	AverageRm   *float32    `json:"average_rm,omitempty"`
+	LevelCounts LevelCounts `json:"level_counts"`
+
+	// ScoredCount Number of complete indicators scored at the last submission.
+	ScoredCount int `json:"scored_count"`
+}
+
 // RiEOption One option of the environmental impact question y3.
 type RiEOption struct {
 	Code string `json:"code"`
@@ -877,6 +1145,48 @@ type RiEOption struct {
 	IsExclusive bool   `json:"is_exclusive"`
 	Label       string `json:"label"`
 }
+
+// RiskLevel defines model for RiskLevel.
+type RiskLevel string
+
+// RiskStrategy defines model for RiskStrategy.
+type RiskStrategy string
+
+// StrategyChoice defines model for StrategyChoice.
+type StrategyChoice struct {
+	// IndicatorCode Indicator code, e.g. `EC-HS-2`.
+	//
+	// Examples: EC-HS-2
+	IndicatorCode IndicatorCode `json:"indicator_code"`
+	Strategy      RiskStrategy  `json:"strategy"`
+
+	// UpdatedAt UTC instant, RFC 3339.
+	UpdatedAt Timestamp `json:"updated_at"`
+}
+
+// StrategyRequest defines model for StrategyRequest.
+type StrategyRequest struct {
+	Strategy RiskStrategy `json:"strategy"`
+}
+
+// SubmitResponse defines model for SubmitResponse.
+type SubmitResponse struct {
+	Status VersionStatus `json:"status"`
+
+	// SubmittedAt UTC instant, RFC 3339.
+	SubmittedAt Timestamp      `json:"submitted_at"`
+	Summary     ResultsSummary `json:"summary"`
+	VersionId   Uuid           `json:"version_id"`
+}
+
+// TimeImpact y2, the time impact. When `unit` is `percent` the value is 0-100.
+type TimeImpact struct {
+	Unit  TimeUnit `json:"unit"`
+	Value float32  `json:"value"`
+}
+
+// TimeUnit defines model for TimeUnit.
+type TimeUnit string
 
 // Timestamp UTC instant, RFC 3339.
 type Timestamp = time.Time
@@ -978,6 +1288,9 @@ type VersionSummary struct {
 	// VeryHighCount Number of indicators at level VH; null while `draft`.
 	VeryHighCount *int `json:"very_high_count"`
 }
+
+// Y3Option Option of y3. `A` is exclusive and cannot be combined with another option.
+type Y3Option string
 
 // Description defines model for description.
 type Description = string
@@ -1110,6 +1423,15 @@ type CreateProjectJSONRequestBody = ProjectCreate
 
 // UpdateProjectJSONRequestBody defines body for UpdateProject for application/json ContentType.
 type UpdateProjectJSONRequestBody = ProjectUpdate
+
+// UpsertAnswersJSONRequestBody defines body for UpsertAnswers for application/json ContentType.
+type UpsertAnswersJSONRequestBody = AnswerBatchRequest
+
+// PutAnswerJSONRequestBody defines body for PutAnswer for application/json ContentType.
+type PutAnswerJSONRequestBody = AnswerInput
+
+// PutStrategyJSONRequestBody defines body for PutStrategy for application/json ContentType.
+type PutStrategyJSONRequestBody = StrategyRequest
 
 // Getter for additional properties for AdminAdviceText. Returns the specified
 // element and whether it was found
@@ -1269,9 +1591,27 @@ type ServerInterface interface {
 	// GetVersion Get a version
 	// (GET /projects/{project_id}/versions/{version_id})
 	GetVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
+	// ListAnswers Get all answers of a version.
+	// (GET /projects/{project_id}/versions/{version_id}/answers)
+	ListAnswers(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
+	// UpsertAnswers Upsert one or many answers (partial allowed).
+	// (PATCH /projects/{project_id}/versions/{version_id}/answers)
+	UpsertAnswers(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
+	// PutAnswer Upsert the answer of one indicator.
+	// (PUT /projects/{project_id}/versions/{version_id}/answers/{indicator_code})
+	PutAnswer(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid, indicatorCode IndicatorCode)
 	// RequestReport Request a PDF report for the last submission of a version
 	// (POST /projects/{project_id}/versions/{version_id}/reports)
 	RequestReport(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
+	// GetResults Get the results of the last submission.
+	// (GET /projects/{project_id}/versions/{version_id}/results)
+	GetResults(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
+	// PutStrategy Set or change the strategy of an H or VH indicator.
+	// (PUT /projects/{project_id}/versions/{version_id}/results/{indicator_code}/strategy)
+	PutStrategy(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid, indicatorCode IndicatorCode)
+	// SubmitVersion Submit (or resubmit) the version and score every complete indicator.
+	// (POST /projects/{project_id}/versions/{version_id}/submit)
+	SubmitVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
 	// DownloadReport Download a finished report
 	// (GET /reports/{job_id}/download)
 	DownloadReport(w http.ResponseWriter, r *http.Request, jobId Uuid)
@@ -1460,9 +1800,45 @@ func (_ Unimplemented) GetVersion(w http.ResponseWriter, r *http.Request, projec
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ListAnswers Get all answers of a version.
+// (GET /projects/{project_id}/versions/{version_id}/answers)
+func (_ Unimplemented) ListAnswers(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpsertAnswers Upsert one or many answers (partial allowed).
+// (PATCH /projects/{project_id}/versions/{version_id}/answers)
+func (_ Unimplemented) UpsertAnswers(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PutAnswer Upsert the answer of one indicator.
+// (PUT /projects/{project_id}/versions/{version_id}/answers/{indicator_code})
+func (_ Unimplemented) PutAnswer(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid, indicatorCode IndicatorCode) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // RequestReport Request a PDF report for the last submission of a version
 // (POST /projects/{project_id}/versions/{version_id}/reports)
 func (_ Unimplemented) RequestReport(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetResults Get the results of the last submission.
+// (GET /projects/{project_id}/versions/{version_id}/results)
+func (_ Unimplemented) GetResults(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PutStrategy Set or change the strategy of an H or VH indicator.
+// (PUT /projects/{project_id}/versions/{version_id}/results/{indicator_code}/strategy)
+func (_ Unimplemented) PutStrategy(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid, indicatorCode IndicatorCode) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SubmitVersion Submit (or resubmit) the version and score every complete indicator.
+// (POST /projects/{project_id}/versions/{version_id}/submit)
+func (_ Unimplemented) SubmitVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -2476,6 +2852,120 @@ func (siw *ServerInterfaceWrapper) GetVersion(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
+// ListAnswers operation middleware
+func (siw *ServerInterfaceWrapper) ListAnswers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version_id" -------------
+	var versionId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAnswers(w, r, projectId, versionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpsertAnswers operation middleware
+func (siw *ServerInterfaceWrapper) UpsertAnswers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version_id" -------------
+	var versionId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpsertAnswers(w, r, projectId, versionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutAnswer operation middleware
+func (siw *ServerInterfaceWrapper) PutAnswer(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version_id" -------------
+	var versionId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "indicator_code" -------------
+	var indicatorCode IndicatorCode
+
+	err = runtime.BindStyledParameterWithOptions("simple", "indicator_code", chi.URLParam(r, "indicator_code"), &indicatorCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "indicator_code", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutAnswer(w, r, projectId, versionId, indicatorCode)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // RequestReport operation middleware
 func (siw *ServerInterfaceWrapper) RequestReport(w http.ResponseWriter, r *http.Request) {
 
@@ -2502,6 +2992,120 @@ func (siw *ServerInterfaceWrapper) RequestReport(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RequestReport(w, r, projectId, versionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetResults operation middleware
+func (siw *ServerInterfaceWrapper) GetResults(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version_id" -------------
+	var versionId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetResults(w, r, projectId, versionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutStrategy operation middleware
+func (siw *ServerInterfaceWrapper) PutStrategy(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version_id" -------------
+	var versionId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "indicator_code" -------------
+	var indicatorCode IndicatorCode
+
+	err = runtime.BindStyledParameterWithOptions("simple", "indicator_code", chi.URLParam(r, "indicator_code"), &indicatorCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "indicator_code", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutStrategy(w, r, projectId, versionId, indicatorCode)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SubmitVersion operation middleware
+func (siw *ServerInterfaceWrapper) SubmitVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version_id" -------------
+	var versionId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SubmitVersion(w, r, projectId, versionId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2703,6 +3307,18 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/admin/users/{user_id}/reactivate", wrapper.AdminReactivateUser)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{project_id}/versions/{version_id}/answers", wrapper.ListAnswers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/projects/{project_id}/versions/{version_id}/answers", wrapper.UpsertAnswers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/projects/{project_id}/versions/{version_id}/answers/{indicator_code}", wrapper.PutAnswer)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{project_id}/versions/{version_id}/submit", wrapper.SubmitVersion)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/catalogue", wrapper.GetCatalogue)
 	})
 	r.Group(func(r chi.Router) {
@@ -2734,6 +3350,12 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/reports/{job_id}/download", wrapper.DownloadReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{project_id}/versions/{version_id}/results", wrapper.GetResults)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/projects/{project_id}/versions/{version_id}/results/{indicator_code}/strategy", wrapper.PutStrategy)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/projects/{project_id}/versions", wrapper.ListVersions)
@@ -4906,6 +5528,274 @@ func (response GetVersion404JSONResponse) VisitGetVersionResponse(w http.Respons
 	return err
 }
 
+type ListAnswersRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+	VersionId Uuid `json:"version_id"`
+}
+
+type ListAnswersResponseObject interface {
+	VisitListAnswersResponse(w http.ResponseWriter) error
+}
+
+type ListAnswers200JSONResponse AnswerList
+
+func (response ListAnswers200JSONResponse) VisitListAnswersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAnswers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListAnswers401JSONResponse) VisitListAnswersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListAnswers404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListAnswers404JSONResponse) VisitListAnswersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertAnswersRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+	VersionId Uuid `json:"version_id"`
+	Body      *UpsertAnswersJSONRequestBody
+}
+
+type UpsertAnswersResponseObject interface {
+	VisitUpsertAnswersResponse(w http.ResponseWriter) error
+}
+
+type UpsertAnswers200JSONResponse AnswerList
+
+func (response UpsertAnswers200JSONResponse) VisitUpsertAnswersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertAnswers400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpsertAnswers400JSONResponse) VisitUpsertAnswersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertAnswers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpsertAnswers401JSONResponse) VisitUpsertAnswersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertAnswers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpsertAnswers403JSONResponse) VisitUpsertAnswersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertAnswers404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpsertAnswers404JSONResponse) VisitUpsertAnswersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertAnswers409JSONResponse struct{ ConflictJSONResponse }
+
+func (response UpsertAnswers409JSONResponse) VisitUpsertAnswersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpsertAnswers422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response UpsertAnswers422JSONResponse) VisitUpsertAnswersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAnswerRequestObject struct {
+	ProjectId     Uuid          `json:"project_id"`
+	VersionId     Uuid          `json:"version_id"`
+	IndicatorCode IndicatorCode `json:"indicator_code"`
+	Body          *PutAnswerJSONRequestBody
+}
+
+type PutAnswerResponseObject interface {
+	VisitPutAnswerResponse(w http.ResponseWriter) error
+}
+
+type PutAnswer200JSONResponse Answer
+
+func (response PutAnswer200JSONResponse) VisitPutAnswerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAnswer400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response PutAnswer400JSONResponse) VisitPutAnswerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAnswer401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PutAnswer401JSONResponse) VisitPutAnswerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAnswer403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response PutAnswer403JSONResponse) VisitPutAnswerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAnswer404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PutAnswer404JSONResponse) VisitPutAnswerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAnswer409JSONResponse struct{ ConflictJSONResponse }
+
+func (response PutAnswer409JSONResponse) VisitPutAnswerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutAnswer422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response PutAnswer422JSONResponse) VisitPutAnswerResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type RequestReportRequestObject struct {
 	ProjectId Uuid `json:"project_id"`
 	VersionId Uuid `json:"version_id"`
@@ -4995,6 +5885,259 @@ func (response RequestReport429JSONResponse) VisitRequestReportResponse(w http.R
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetResultsRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+	VersionId Uuid `json:"version_id"`
+}
+
+type GetResultsResponseObject interface {
+	VisitGetResultsResponse(w http.ResponseWriter) error
+}
+
+type GetResults200JSONResponse ResultsResponse
+
+func (response GetResults200JSONResponse) VisitGetResultsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetResults401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetResults401JSONResponse) VisitGetResultsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetResults404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetResults404JSONResponse) VisitGetResultsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStrategyRequestObject struct {
+	ProjectId     Uuid          `json:"project_id"`
+	VersionId     Uuid          `json:"version_id"`
+	IndicatorCode IndicatorCode `json:"indicator_code"`
+	Body          *PutStrategyJSONRequestBody
+}
+
+type PutStrategyResponseObject interface {
+	VisitPutStrategyResponse(w http.ResponseWriter) error
+}
+
+type PutStrategy200JSONResponse StrategyChoice
+
+func (response PutStrategy200JSONResponse) VisitPutStrategyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStrategy400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response PutStrategy400JSONResponse) VisitPutStrategyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStrategy401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response PutStrategy401JSONResponse) VisitPutStrategyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStrategy403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response PutStrategy403JSONResponse) VisitPutStrategyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStrategy404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response PutStrategy404JSONResponse) VisitPutStrategyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStrategy409JSONResponse struct{ ConflictJSONResponse }
+
+func (response PutStrategy409JSONResponse) VisitPutStrategyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutStrategy422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response PutStrategy422JSONResponse) VisitPutStrategyResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitVersionRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+	VersionId Uuid `json:"version_id"`
+}
+
+type SubmitVersionResponseObject interface {
+	VisitSubmitVersionResponse(w http.ResponseWriter) error
+}
+
+type SubmitVersion200JSONResponse SubmitResponse
+
+func (response SubmitVersion200JSONResponse) VisitSubmitVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitVersion401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response SubmitVersion401JSONResponse) VisitSubmitVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitVersion403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response SubmitVersion403JSONResponse) VisitSubmitVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitVersion404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response SubmitVersion404JSONResponse) VisitSubmitVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitVersion409JSONResponse struct{ ConflictJSONResponse }
+
+func (response SubmitVersion409JSONResponse) VisitSubmitVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type SubmitVersion422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response SubmitVersion422JSONResponse) VisitSubmitVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
 	_, err := buf.WriteTo(w)
 	return err
 }
@@ -5161,9 +6304,27 @@ type StrictServerInterface interface {
 	// GetVersion Get a version
 	// (GET /projects/{project_id}/versions/{version_id})
 	GetVersion(ctx context.Context, request GetVersionRequestObject) (GetVersionResponseObject, error)
+	// ListAnswers Get all answers of a version.
+	// (GET /projects/{project_id}/versions/{version_id}/answers)
+	ListAnswers(ctx context.Context, request ListAnswersRequestObject) (ListAnswersResponseObject, error)
+	// UpsertAnswers Upsert one or many answers (partial allowed).
+	// (PATCH /projects/{project_id}/versions/{version_id}/answers)
+	UpsertAnswers(ctx context.Context, request UpsertAnswersRequestObject) (UpsertAnswersResponseObject, error)
+	// PutAnswer Upsert the answer of one indicator.
+	// (PUT /projects/{project_id}/versions/{version_id}/answers/{indicator_code})
+	PutAnswer(ctx context.Context, request PutAnswerRequestObject) (PutAnswerResponseObject, error)
 	// RequestReport Request a PDF report for the last submission of a version
 	// (POST /projects/{project_id}/versions/{version_id}/reports)
 	RequestReport(ctx context.Context, request RequestReportRequestObject) (RequestReportResponseObject, error)
+	// GetResults Get the results of the last submission.
+	// (GET /projects/{project_id}/versions/{version_id}/results)
+	GetResults(ctx context.Context, request GetResultsRequestObject) (GetResultsResponseObject, error)
+	// PutStrategy Set or change the strategy of an H or VH indicator.
+	// (PUT /projects/{project_id}/versions/{version_id}/results/{indicator_code}/strategy)
+	PutStrategy(ctx context.Context, request PutStrategyRequestObject) (PutStrategyResponseObject, error)
+	// SubmitVersion Submit (or resubmit) the version and score every complete indicator.
+	// (POST /projects/{project_id}/versions/{version_id}/submit)
+	SubmitVersion(ctx context.Context, request SubmitVersionRequestObject) (SubmitVersionResponseObject, error)
 	// DownloadReport Download a finished report
 	// (GET /reports/{job_id}/download)
 	DownloadReport(ctx context.Context, request DownloadReportRequestObject) (DownloadReportResponseObject, error)
@@ -6033,6 +7194,102 @@ func (sh *strictHandler) GetVersion(w http.ResponseWriter, r *http.Request, proj
 	}
 }
 
+// ListAnswers operation middleware
+func (sh *strictHandler) ListAnswers(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	var request ListAnswersRequestObject
+
+	request.ProjectId = projectId
+	request.VersionId = versionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.ListAnswers(ctx, request.(ListAnswersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListAnswers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListAnswersResponseObject); ok {
+		if err := validResponse.VisitListAnswersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpsertAnswers operation middleware
+func (sh *strictHandler) UpsertAnswers(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	var request UpsertAnswersRequestObject
+
+	request.ProjectId = projectId
+	request.VersionId = versionId
+
+	var body UpsertAnswersJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.UpsertAnswers(ctx, request.(UpsertAnswersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpsertAnswers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpsertAnswersResponseObject); ok {
+		if err := validResponse.VisitUpsertAnswersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutAnswer operation middleware
+func (sh *strictHandler) PutAnswer(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid, indicatorCode IndicatorCode) {
+	var request PutAnswerRequestObject
+
+	request.ProjectId = projectId
+	request.VersionId = versionId
+	request.IndicatorCode = indicatorCode
+
+	var body PutAnswerJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.PutAnswer(ctx, request.(PutAnswerRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutAnswer")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutAnswerResponseObject); ok {
+		if err := validResponse.VisitPutAnswerResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // RequestReport operation middleware
 func (sh *strictHandler) RequestReport(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
 	var request RequestReportRequestObject
@@ -6053,6 +7310,95 @@ func (sh *strictHandler) RequestReport(w http.ResponseWriter, r *http.Request, p
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(RequestReportResponseObject); ok {
 		if err := validResponse.VisitRequestReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetResults operation middleware
+func (sh *strictHandler) GetResults(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	var request GetResultsRequestObject
+
+	request.ProjectId = projectId
+	request.VersionId = versionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetResults(ctx, request.(GetResultsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetResults")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetResultsResponseObject); ok {
+		if err := validResponse.VisitGetResultsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutStrategy operation middleware
+func (sh *strictHandler) PutStrategy(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid, indicatorCode IndicatorCode) {
+	var request PutStrategyRequestObject
+
+	request.ProjectId = projectId
+	request.VersionId = versionId
+	request.IndicatorCode = indicatorCode
+
+	var body PutStrategyJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.PutStrategy(ctx, request.(PutStrategyRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutStrategy")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutStrategyResponseObject); ok {
+		if err := validResponse.VisitPutStrategyResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// SubmitVersion operation middleware
+func (sh *strictHandler) SubmitVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	var request SubmitVersionRequestObject
+
+	request.ProjectId = projectId
+	request.VersionId = versionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.SubmitVersion(ctx, request.(SubmitVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "SubmitVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(SubmitVersionResponseObject); ok {
+		if err := validResponse.VisitSubmitVersionResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
@@ -6091,141 +7437,173 @@ func (sh *strictHandler) DownloadReport(w http.ResponseWriter, r *http.Request, 
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"ynX//wEA",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,
