@@ -8,11 +8,18 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Querier interface {
+	// Sign-up start and verify: is the e-mail taken? Deleted accounts have no
+	// e-mail, so they never match.
+	AccountEmailExists(ctx context.Context, email pgtype.Text) (bool, error)
 	// Ends every session of the account (password reset, deactivate, delete).
 	BumpSessionVersion(ctx context.Context, id uuid.UUID) (int32, error)
+	// Created only after the OTP was verified. Role and status take their
+	// defaults (user, active); the e-mail counts as verified.
+	CreateRegisteredAccount(ctx context.Context, arg CreateRegisteredAccountParams) (CreateRegisteredAccountRow, error)
 	// What GET /auth/me returns about the signed-in account.
 	GetAccountProfile(ctx context.Context, id uuid.UUID) (GetAccountProfileRow, error)
 	// The record the session middleware checks on every request. Role, status

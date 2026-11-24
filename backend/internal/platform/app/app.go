@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/mailer"
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
 	"github.com/suppakorn-tae/cre-website/backend/internal/config"
 	"github.com/suppakorn-tae/cre-website/backend/internal/dal"
@@ -36,6 +37,10 @@ type Deps struct {
 	// nil in tests that do not need them.
 	DB     dal.DBTX
 	Valkey valkey.StateStore
+
+	// Mailer sends OTP e-mail. Nil when SMTP_HOST is not set (development);
+	// handlers that need it answer 503 then.
+	Mailer mailer.Mailer
 
 	// Sessions issues and checks sessions (login handlers call Issue and
 	// SetCookie, password reset calls BumpVersion).
