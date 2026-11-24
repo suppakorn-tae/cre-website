@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	accessKey = "minioadmin"
-	secretKey = "minioadmin-secret"
+	accessKey = "rustfsadmin"
+	secretKey = "rustfsadmin-secret"
 )
 
 func startStore(t *testing.T) *s3.Store {
@@ -28,19 +28,18 @@ func startStore(t *testing.T) *s3.Store {
 	ctx := context.Background()
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "quay.io/minio/minio:latest",
-			Cmd:          []string{"server", "/data"},
+			Image:        "rustfs/rustfs:latest",
 			ExposedPorts: []string{"9000/tcp"},
 			Env: map[string]string{
-				"MINIO_ROOT_USER":     accessKey,
-				"MINIO_ROOT_PASSWORD": secretKey,
+				"RUSTFS_ACCESS_KEY": accessKey,
+				"RUSTFS_SECRET_KEY": secretKey,
 			},
-			WaitingFor: wait.ForHTTP("/minio/health/ready").WithPort("9000/tcp").WithStartupTimeout(2 * time.Minute),
+			WaitingFor: wait.ForHTTP("/health").WithPort("9000/tcp").WithStartupTimeout(2 * time.Minute),
 		},
 		Started: true,
 	})
 	if err != nil {
-		t.Fatalf("start minio: %v", err)
+		t.Fatalf("start rustfs: %v", err)
 	}
 	t.Cleanup(func() { _ = testcontainers.TerminateContainer(c) })
 
