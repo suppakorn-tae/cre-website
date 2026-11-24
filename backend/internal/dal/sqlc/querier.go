@@ -46,6 +46,9 @@ type Querier interface {
 	// Created only after the OTP was verified. Role and status take their
 	// defaults (user, active); the e-mail counts as verified.
 	CreateRegisteredAccount(ctx context.Context, arg CreateRegisteredAccountParams) (CreateRegisteredAccountRow, error)
+	// The live job for a submission; a failed job does not count, so the user
+	// may ask again.
+	FindReportJob(ctx context.Context, arg FindReportJobParams) (uuid.UUID, error)
 	// What GET /auth/me returns about the signed-in account.
 	GetAccountProfile(ctx context.Context, id uuid.UUID) (GetAccountProfileRow, error)
 	// The record the session middleware checks on every request. Role, status
@@ -54,9 +57,16 @@ type Querier interface {
 	GetJob(ctx context.Context, id uuid.UUID) (Job, error)
 	// The owner check lives in the query: another account's job looks absent.
 	GetJobForRequester(ctx context.Context, arg GetJobForRequesterParams) (Job, error)
+	// Owner check in SQL (admins get no access); absent when the version or its
+	// project is deleted.
+	GetReportForDownload(ctx context.Context, arg GetReportForDownloadParams) (GetReportForDownloadRow, error)
+	// Owner and deletion checks live in the query: a version of another
+	// account, or a deleted version or project, looks absent.
+	GetVersionForReport(ctx context.Context, arg GetVersionForReportParams) (GetVersionForReportRow, error)
 	// Append-only: the application role has INSERT and SELECT on audit_log only.
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
+	InsertReportJob(ctx context.Context, arg InsertReportJobParams) error
 	// The number counts deleted versions too, so it is never reused.
 	InsertVersion(ctx context.Context, arg InsertVersionParams) (uuid.UUID, error)
 	// Advice items with one row per locale of text, in list order.
@@ -79,6 +89,9 @@ type Querier interface {
 	// Owner check and the lock that serialises version creation per project.
 	// Another account's project, or a deleted one, looks absent.
 	LockOwnedProject(ctx context.Context, arg LockOwnedProjectParams) (uuid.UUID, error)
+	// Serialises report requests for one version, so that two requests for the
+	// same submission cannot both insert a job.
+	LockReportRequest(ctx context.Context, versionID string) error
 	MarkJobDone(ctx context.Context, arg MarkJobDoneParams) (int64, error)
 	MarkJobExpired(ctx context.Context, id uuid.UUID) (int64, error)
 	MarkJobFailed(ctx context.Context, arg MarkJobFailedParams) (int64, error)
