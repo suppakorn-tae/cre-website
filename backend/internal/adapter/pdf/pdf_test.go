@@ -18,8 +18,8 @@ func fastClient(url string, opts ...pdf.Option) *pdf.Client {
 }
 
 func TestRenderSendsHTMLAssetsAndLayout(t *testing.T) {
-	var gotFiles = map[string]string{}
-	var gotFields = map[string]string{}
+	gotFiles := map[string]string{}
+	gotFields := map[string]string{}
 	var gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
@@ -124,7 +124,7 @@ func TestRenderDoesNotRetry4xx(t *testing.T) {
 }
 
 func TestRenderTimesOut(t *testing.T) {
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		select {
 		case <-r.Context().Done():
 		case <-time.After(2 * time.Second):

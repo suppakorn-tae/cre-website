@@ -133,7 +133,7 @@ func (c *Client) post(ctx context.Context, body []byte, contentType string) ([]b
 	if err != nil {
 		return nil, 0, fmt.Errorf("pdf: post to gotenberg: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -163,7 +163,7 @@ func (c *Client) Ready(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("pdf: gotenberg not reachable: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	_, _ = io.Copy(io.Discard, resp.Body)
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("pdf: gotenberg not ready: status %d", resp.StatusCode)
