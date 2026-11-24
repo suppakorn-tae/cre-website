@@ -8,7 +8,10 @@ import (
 	"compress/flate"
 	"context"
 	"encoding/base64"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"path"
@@ -21,24 +24,102 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AccountStatus.
+const (
+	Active      AccountStatus = "active"
+	Deactivated AccountStatus = "deactivated"
+	Deleted     AccountStatus = "deleted"
+)
+
+// Valid indicates whether the value is a known member of the AccountStatus enum.
+func (e AccountStatus) Valid() bool {
+	switch e {
+	case Active:
+		return true
+	case Deactivated:
+		return true
+	case Deleted:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AdminSignInMethod.
+const (
+	Google   AdminSignInMethod = "google"
+	Password AdminSignInMethod = "password"
+)
+
+// Valid indicates whether the value is a known member of the AdminSignInMethod enum.
+func (e AdminSignInMethod) Valid() bool {
+	switch e {
+	case Google:
+		return true
+	case Password:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AdviceList.
 const (
-	RIC AdviceList = "RI_C"
-	RIE AdviceList = "RI_E"
-	RIT AdviceList = "RI_T"
-	RL  AdviceList = "RL"
+	AdviceListRIC AdviceList = "RI_C"
+	AdviceListRIE AdviceList = "RI_E"
+	AdviceListRIT AdviceList = "RI_T"
+	AdviceListRL  AdviceList = "RL"
 )
 
 // Valid indicates whether the value is a known member of the AdviceList enum.
 func (e AdviceList) Valid() bool {
 	switch e {
-	case RIC:
+	case AdviceListRIC:
 		return true
-	case RIE:
+	case AdviceListRIE:
 		return true
-	case RIT:
+	case AdviceListRIT:
 		return true
-	case RL:
+	case AdviceListRL:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for AuditAction.
+const (
+	AdviceEdit      AuditAction = "advice_edit"
+	ExportDownload  AuditAction = "export_download"
+	ExportRequest   AuditAction = "export_request"
+	ImpactTableEdit AuditAction = "impact_table_edit"
+	RlThresholdEdit AuditAction = "rl_threshold_edit"
+	UserDeactivate  AuditAction = "user_deactivate"
+	UserDelete      AuditAction = "user_delete"
+	UserReactivate  AuditAction = "user_reactivate"
+	UserRoleChange  AuditAction = "user_role_change"
+)
+
+// Valid indicates whether the value is a known member of the AuditAction enum.
+func (e AuditAction) Valid() bool {
+	switch e {
+	case AdviceEdit:
+		return true
+	case ExportDownload:
+		return true
+	case ExportRequest:
+		return true
+	case ImpactTableEdit:
+		return true
+	case RlThresholdEdit:
+		return true
+	case UserDeactivate:
+		return true
+	case UserDelete:
+		return true
+	case UserReactivate:
+		return true
+	case UserRoleChange:
 		return true
 	default:
 		return false
@@ -57,6 +138,171 @@ func (e CostUnit) Valid() bool {
 	case CostUnitBaht:
 		return true
 	case CostUnitPercent:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ExportScope.
+const (
+	All      ExportScope = "all"
+	Selected ExportScope = "selected"
+)
+
+// Valid indicates whether the value is a known member of the ExportScope enum.
+func (e ExportScope) Valid() bool {
+	switch e {
+	case All:
+		return true
+	case Selected:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ImpactCode.
+const (
+	ImpactCodeRIC ImpactCode = "RI_C"
+	ImpactCodeRIT ImpactCode = "RI_T"
+)
+
+// Valid indicates whether the value is a known member of the ImpactCode enum.
+func (e ImpactCode) Valid() bool {
+	switch e {
+	case ImpactCodeRIC:
+		return true
+	case ImpactCodeRIT:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for IndicatorDirection.
+const (
+	Inverse IndicatorDirection = "inverse"
+	Normal  IndicatorDirection = "normal"
+)
+
+// Valid indicates whether the value is a known member of the IndicatorDirection enum.
+func (e IndicatorDirection) Valid() bool {
+	switch e {
+	case Inverse:
+		return true
+	case Normal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for JobKind.
+const (
+	Export JobKind = "export"
+	Report JobKind = "report"
+)
+
+// Valid indicates whether the value is a known member of the JobKind enum.
+func (e JobKind) Valid() bool {
+	switch e {
+	case Export:
+		return true
+	case Report:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for JobStatus.
+const (
+	Done    JobStatus = "done"
+	Expired JobStatus = "expired"
+	Failed  JobStatus = "failed"
+	Queued  JobStatus = "queued"
+	Running JobStatus = "running"
+)
+
+// Valid indicates whether the value is a known member of the JobStatus enum.
+func (e JobStatus) Valid() bool {
+	switch e {
+	case Done:
+		return true
+	case Expired:
+		return true
+	case Failed:
+		return true
+	case Queued:
+		return true
+	case Running:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectIsland.
+const (
+	ProjectIslandKohChang   ProjectIsland = "koh_chang"
+	ProjectIslandKohKood    ProjectIsland = "koh_kood"
+	ProjectIslandKohLanta   ProjectIsland = "koh_lanta"
+	ProjectIslandKohPhangan ProjectIsland = "koh_phangan"
+	ProjectIslandKohPhiPhi  ProjectIsland = "koh_phi_phi"
+	ProjectIslandKohSamui   ProjectIsland = "koh_samui"
+	ProjectIslandKohTao     ProjectIsland = "koh_tao"
+	ProjectIslandOther      ProjectIsland = "other"
+)
+
+// Valid indicates whether the value is a known member of the ProjectIsland enum.
+func (e ProjectIsland) Valid() bool {
+	switch e {
+	case ProjectIslandKohChang:
+		return true
+	case ProjectIslandKohKood:
+		return true
+	case ProjectIslandKohLanta:
+		return true
+	case ProjectIslandKohPhangan:
+		return true
+	case ProjectIslandKohPhiPhi:
+		return true
+	case ProjectIslandKohSamui:
+		return true
+	case ProjectIslandKohTao:
+		return true
+	case ProjectIslandOther:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ProjectType.
+const (
+	ProjectTypeBuilding  ProjectType = "building"
+	ProjectTypeCoastal   ProjectType = "coastal"
+	ProjectTypeOther     ProjectType = "other"
+	ProjectTypePier      ProjectType = "pier"
+	ProjectTypeRoad      ProjectType = "road"
+	ProjectTypeUtilities ProjectType = "utilities"
+)
+
+// Valid indicates whether the value is a known member of the ProjectType enum.
+func (e ProjectType) Valid() bool {
+	switch e {
+	case ProjectTypeBuilding:
+		return true
+	case ProjectTypeCoastal:
+		return true
+	case ProjectTypeOther:
+		return true
+	case ProjectTypePier:
+		return true
+	case ProjectTypeRoad:
+		return true
+	case ProjectTypeUtilities:
 		return true
 	default:
 		return false
@@ -132,6 +378,24 @@ func (e TimeUnit) Valid() bool {
 	}
 }
 
+// Defines values for UserRole.
+const (
+	Admin UserRole = "admin"
+	User  UserRole = "user"
+)
+
+// Valid indicates whether the value is a known member of the UserRole enum.
+func (e UserRole) Valid() bool {
+	switch e {
+	case Admin:
+		return true
+	case User:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for VersionStatus.
 const (
 	Draft     VersionStatus = "draft"
@@ -187,6 +451,239 @@ func (e Y3Option) Valid() bool {
 	default:
 		return false
 	}
+}
+
+// AccountStatus defines model for AccountStatus.
+type AccountStatus string
+
+// AdminAdviceItem defines model for AdminAdviceItem.
+type AdminAdviceItem struct {
+	// Text One text per locale. Only `th` is edited today; it may contain English terms.
+	Text AdminAdviceText `json:"text"`
+}
+
+// AdminAdviceItemList Ordered items; the array index is the position.
+type AdminAdviceItemList = []AdminAdviceItem
+
+// AdminAdviceListResponse defines model for AdminAdviceListResponse.
+type AdminAdviceListResponse struct {
+	IndicatorCode string `json:"indicator_code"`
+
+	// Items Ordered items; the array index is the position.
+	Items AdminAdviceItemList `json:"items"`
+	List  AdviceList          `json:"list"`
+
+	// UpdatedAt UTC instant, RFC 3339.
+	UpdatedAt Timestamp `json:"updated_at"`
+}
+
+// AdminAdviceLists The four advice lists of one indicator.
+type AdminAdviceLists struct {
+	IndicatorCode string `json:"indicator_code"`
+	Lists         struct {
+		// RIC Ordered items; the array index is the position.
+		RIC AdminAdviceItemList `json:"RI_C"`
+
+		// RIE Ordered items; the array index is the position.
+		RIE AdminAdviceItemList `json:"RI_E"`
+
+		// RIT Ordered items; the array index is the position.
+		RIT AdminAdviceItemList `json:"RI_T"`
+
+		// RL Ordered items; the array index is the position.
+		RL AdminAdviceItemList `json:"RL"`
+	} `json:"lists"`
+
+	// UpdatedAt UTC instant, RFC 3339.
+	UpdatedAt Timestamp `json:"updated_at"`
+}
+
+// AdminAdviceText One text per locale. Only `th` is edited today; it may contain English terms.
+type AdminAdviceText struct {
+	Th                   string            `json:"th"`
+	AdditionalProperties map[string]string `json:"-"`
+}
+
+// AdminAuditEntry defines model for AdminAuditEntry.
+type AdminAuditEntry struct {
+	Action AuditAction `json:"action"`
+
+	// AdminEmail Null when the admin account was later anonymised; `admin_id` remains.
+	AdminEmail *string `json:"admin_email"`
+	AdminId    Uuid    `json:"admin_id"`
+	Id         int64   `json:"id"`
+	IpAddress  *string `json:"ip_address"`
+
+	// NewValue State of the target after the change; null when not a change.
+	NewValue any `json:"new_value"`
+
+	// OccurredAt UTC instant, RFC 3339.
+	OccurredAt Timestamp `json:"occurred_at"`
+
+	// OldValue State of the target before the change; null when not a change.
+	OldValue  any    `json:"old_value"`
+	RequestId string `json:"request_id"`
+	TargetId  string `json:"target_id"`
+
+	// TargetType e.g. `account`, `indicator`, `impact_table`, `job`.
+	TargetType string `json:"target_type"`
+}
+
+// AdminAuditEntrySummary defines model for AdminAuditEntrySummary.
+type AdminAuditEntrySummary struct {
+	Action AuditAction `json:"action"`
+
+	// AdminEmail Null when the admin account was later anonymised; `admin_id` remains.
+	AdminEmail *string `json:"admin_email"`
+	AdminId    Uuid    `json:"admin_id"`
+	Id         int64   `json:"id"`
+
+	// OccurredAt UTC instant, RFC 3339.
+	OccurredAt Timestamp `json:"occurred_at"`
+	TargetId   string    `json:"target_id"`
+
+	// TargetType e.g. `account`, `indicator`, `impact_table`, `job`.
+	TargetType string `json:"target_type"`
+}
+
+// AdminAuditPage defines model for AdminAuditPage.
+type AdminAuditPage struct {
+	Items []AdminAuditEntrySummary `json:"items"`
+	Meta  PageMeta                 `json:"meta"`
+}
+
+// AdminChangeRoleRequest defines model for AdminChangeRoleRequest.
+type AdminChangeRoleRequest struct {
+	Role UserRole `json:"role"`
+}
+
+// AdminExportRequest Request a pseudonymised research export (no e-mail or Google id).
+type AdminExportRequest struct {
+	// IncludeDeleted Include soft-deleted projects and versions.
+	IncludeDeleted bool        `json:"include_deleted"`
+	Scope          ExportScope `json:"scope"`
+
+	// UserIds Required and non-empty when `scope` is `selected`; must be omitted for `all`.
+	UserIds *[]Uuid `json:"user_ids,omitempty"`
+}
+
+// AdminImpactTable defines model for AdminImpactTable.
+type AdminImpactTable struct {
+	Code ImpactCode `json:"code"`
+
+	// Thresholds All five set, at least 0 and strictly increasing; otherwise 422.
+	Thresholds AdminImpactThresholdValues `json:"thresholds"`
+
+	// UpdatedAt UTC instant, RFC 3339.
+	UpdatedAt Timestamp `json:"updated_at"`
+}
+
+// AdminImpactTables defines model for AdminImpactTables.
+type AdminImpactTables struct {
+	RiC AdminImpactTable `json:"ri_c"`
+	RiT AdminImpactTable `json:"ri_t"`
+}
+
+// AdminImpactThresholdValues All five set, at least 0 and strictly increasing; otherwise 422.
+type AdminImpactThresholdValues struct {
+	A float32 `json:"a"`
+	B float32 `json:"b"`
+	C float32 `json:"c"`
+	D float32 `json:"d"`
+	E float32 `json:"e"`
+}
+
+// AdminReplaceAdviceRequest defines model for AdminReplaceAdviceRequest.
+type AdminReplaceAdviceRequest struct {
+	// Items Ordered items; the array index is the position.
+	Items AdminAdviceItemList `json:"items"`
+}
+
+// AdminRlThreshold defines model for AdminRlThreshold.
+type AdminRlThreshold struct {
+	Direction     IndicatorDirection `json:"direction"`
+	IndicatorCode string             `json:"indicator_code"`
+
+	// Thresholds Valid patterns: all of a..e set, only a..c set, or only c..e set. Set
+	// values are strictly increasing, or strictly decreasing for an inverse
+	// indicator. Unused thresholds are null. Violations return 422.
+	Thresholds AdminRlThresholdValues `json:"thresholds"`
+
+	// Unit Display unit from the indicator catalogue.
+	Unit string `json:"unit"`
+
+	// UpdatedAt UTC instant, RFC 3339.
+	UpdatedAt Timestamp `json:"updated_at"`
+}
+
+// AdminRlThresholdList defines model for AdminRlThresholdList.
+type AdminRlThresholdList struct {
+	Items []AdminRlThreshold `json:"items"`
+}
+
+// AdminRlThresholdValues Valid patterns: all of a..e set, only a..c set, or only c..e set. Set
+// values are strictly increasing, or strictly decreasing for an inverse
+// indicator. Unused thresholds are null. Violations return 422.
+type AdminRlThresholdValues struct {
+	A *AdminThresholdValue `json:"a"`
+	B *AdminThresholdValue `json:"b"`
+	C *AdminThresholdValue `json:"c"`
+	D *AdminThresholdValue `json:"d"`
+	E *AdminThresholdValue `json:"e"`
+}
+
+// AdminSignInMethod defines model for AdminSignInMethod.
+type AdminSignInMethod string
+
+// AdminThresholdValue defines model for AdminThresholdValue.
+type AdminThresholdValue = float32
+
+// AdminUpdateImpactTablesRequest Edit one or both tables in a single call; omitted tables stay unchanged.
+type AdminUpdateImpactTablesRequest struct {
+	// RiC All five set, at least 0 and strictly increasing; otherwise 422.
+	RiC *AdminImpactThresholdValues `json:"ri_c,omitempty"`
+
+	// RiT All five set, at least 0 and strictly increasing; otherwise 422.
+	RiT *AdminImpactThresholdValues `json:"ri_t,omitempty"`
+}
+
+// AdminUpdateRlThresholdRequest defines model for AdminUpdateRlThresholdRequest.
+type AdminUpdateRlThresholdRequest struct {
+	// Thresholds Valid patterns: all of a..e set, only a..c set, or only c..e set. Set
+	// values are strictly increasing, or strictly decreasing for an inverse
+	// indicator. Unused thresholds are null. Violations return 422.
+	Thresholds AdminRlThresholdValues `json:"thresholds"`
+}
+
+// AdminUser defines model for AdminUser.
+type AdminUser struct {
+	// CreatedAt UTC instant, RFC 3339.
+	CreatedAt Timestamp `json:"created_at"`
+
+	// Email Null once the account is anonymised.
+	Email        *openapi_types.Email `json:"email"`
+	Id           Uuid                 `json:"id"`
+	Organisation *string              `json:"organisation"`
+
+	// ProjectCount Number of projects, soft-deleted ones excluded. Count only.
+	ProjectCount int      `json:"project_count"`
+	Role         UserRole `json:"role"`
+
+	// SignInMethods Empty once the account is anonymised.
+	SignInMethods []AdminSignInMethod `json:"sign_in_methods"`
+	Status        AccountStatus       `json:"status"`
+
+	// UpdatedAt UTC instant, RFC 3339.
+	UpdatedAt Timestamp `json:"updated_at"`
+
+	// VersionCount Number of assessment versions, soft-deleted ones excluded. Count only.
+	VersionCount int `json:"version_count"`
+}
+
+// AdminUserPage defines model for AdminUserPage.
+type AdminUserPage struct {
+	Items []AdminUser `json:"items"`
+	Meta  PageMeta    `json:"meta"`
 }
 
 // AdviceList defines model for AdviceList.
@@ -260,6 +757,67 @@ type AnswerList struct {
 	VersionId Uuid     `json:"version_id"`
 }
 
+// AuditAction defines model for AuditAction.
+type AuditAction string
+
+// Catalogue defines model for Catalogue.
+type Catalogue struct {
+	// Dimensions Dimensions in display order, each with its factors and indicators.
+	Dimensions []CatalogueDimension `json:"dimensions"`
+
+	// Locale Two-letter locale code, e.g. `th`.
+	//
+	// Examples: th
+	Locale Locale `json:"locale"`
+
+	// RiEOptions Options A to I in order.
+	RiEOptions []RiEOption `json:"ri_e_options"`
+}
+
+// CatalogueDimension defines model for CatalogueDimension.
+type CatalogueDimension struct {
+	// Code Examples: EC
+	Code string `json:"code"`
+
+	// Factors Factors of this dimension, in display order.
+	Factors []CatalogueFactor `json:"factors"`
+	Name    string            `json:"name"`
+}
+
+// CatalogueFactor defines model for CatalogueFactor.
+type CatalogueFactor struct {
+	// Code Examples: EC-MG
+	Code string `json:"code"`
+
+	// Indicators Indicators of this factor, in display order.
+	Indicators []CatalogueIndicator `json:"indicators"`
+	Name       string               `json:"name"`
+}
+
+// CatalogueIndicator defines model for CatalogueIndicator.
+type CatalogueIndicator struct {
+	// Code Stable indicator code, e.g. `EC-MG-1`.
+	//
+	// Examples: EC-MG-1
+	Code string `json:"code"`
+	Name string `json:"name"`
+
+	// QuestionX Question for the likelihood input X (a number, 0 or more).
+	QuestionX *string `json:"question_x"`
+
+	// QuestionY1 Question for the cost impact y1.
+	QuestionY1 *string `json:"question_y1"`
+
+	// QuestionY2 Question for the time impact y2.
+	QuestionY2 *string `json:"question_y2"`
+
+	// QuestionY3 Question for the environmental impact y3 (multi-select).
+	QuestionY3 *string `json:"question_y3"`
+
+	// Unit Unit of the likelihood input X, as text.
+	Unit string `json:"unit"`
+}
+
 // CostImpact y1, the cost impact. When `unit` is `percent` the value is 0-100.
 type CostImpact struct {
 	Unit  CostUnit `json:"unit"`
@@ -284,6 +842,9 @@ type ErrorEnvelope struct {
 	Error ErrorBody `json:"error"`
 }
 
+// ExportScope defines model for ExportScope.
+type ExportScope string
+
 // FieldError defines model for FieldError.
 type FieldError struct {
 	Code string `json:"code"`
@@ -292,10 +853,16 @@ type FieldError struct {
 	Field string `json:"field"`
 }
 
+// ImpactCode defines model for ImpactCode.
+type ImpactCode string
+
 // IndicatorCode Indicator code, e.g. `EC-HS-2`.
 //
 // Examples: EC-HS-2
 type IndicatorCode = string
+
+// IndicatorDirection defines model for IndicatorDirection.
+type IndicatorDirection string
 
 // IndicatorResult defines model for IndicatorResult.
 type IndicatorResult struct {
@@ -326,6 +893,52 @@ type IndicatorResult struct {
 	Y2Pct float32 `json:"y2_pct"`
 }
 
+// IslandList defines model for IslandList.
+type IslandList struct {
+	// Items In display order; `other` is last.
+	Items []IslandOption `json:"items"`
+}
+
+// IslandOption Label comes from the web message catalogue, keyed by `code`.
+type IslandOption struct {
+	// Code e.g. `koh_tao`; `other` asks the user to type a place.
+	//
+	// Examples: koh_tao
+	Code string `json:"code"`
+}
+
+// Job Examples: {"created_at":"2026-11-24T08:00:00Z","error":null,"expires_at":null,"finished_at":null,"id":"0193f6a2-7c1e-7b52-9a0d-3f1c2a4b5d6e","kind":"report","started_at":"2026-11-24T08:00:02Z","status":"running"}
+type Job struct {
+	// CreatedAt UTC instant, RFC 3339.
+	CreatedAt Timestamp `json:"created_at"`
+
+	// Error Developer-facing failure detail, set only when `failed`. The web app shows its own Thai text.
+	Error *string `json:"error"`
+
+	// ExpiresAt Exports only; null for reports, which do not expire.
+	ExpiresAt *Timestamp `json:"expires_at"`
+
+	// FinishedAt Null while `queued` or `running`.
+	FinishedAt *Timestamp `json:"finished_at"`
+	Id         Uuid       `json:"id"`
+	Kind       JobKind    `json:"kind"`
+
+	// StartedAt Null while `queued`.
+	StartedAt *Timestamp `json:"started_at"`
+	Status    JobStatus  `json:"status"`
+}
+
+// JobAccepted Body of a 202 response; poll the job with this id.
+type JobAccepted struct {
+	JobId Uuid `json:"job_id"`
+}
+
+// JobKind defines model for JobKind.
+type JobKind string
+
+// JobStatus defines model for JobStatus.
+type JobStatus string
+
 // LevelCounts defines model for LevelCounts.
 type LevelCounts struct {
 	H  int `json:"H"`
@@ -333,6 +946,173 @@ type LevelCounts struct {
 	M  int `json:"M"`
 	VH int `json:"VH"`
 	VL int `json:"VL"`
+}
+
+// Locale Two-letter locale code, e.g. `th`.
+//
+// Examples: th
+type Locale = string
+
+// PageMeta defines model for PageMeta.
+type PageMeta struct {
+	Page     int `json:"page"`
+	PageSize int `json:"page_size"`
+	Total    int `json:"total"`
+}
+
+// Project defines model for Project.
+type Project struct {
+	// CreatedAt UTC instant, RFC 3339.
+	CreatedAt   Timestamp `json:"created_at"`
+	Description *string   `json:"description"`
+
+	// EndDate After `start_date`.
+	EndDate openapi_types.Date `json:"end_date"`
+
+	// ExpectedProgressPct Computed from the project dates, never stored: elapsed
+	// calendar days over duration, clamped to 0-100 and rounded.
+	ExpectedProgressPct int  `json:"expected_progress_pct"`
+	Id                  Uuid `json:"id"`
+
+	// IslandCode Island / location code. `other` requires `island_other`.
+	IslandCode  ProjectIsland `json:"island_code"`
+	IslandOther *string       `json:"island_other"`
+
+	// LatestVersionNo Number of the latest non-deleted version, null when there is none.
+	LatestVersionNo *int `json:"latest_version_no"`
+
+	// Name Not blank.
+	Name     string `json:"name"`
+	Nickname string `json:"nickname"`
+
+	// ProgressPct Entered progress in percent.
+	ProgressPct int                `json:"progress_pct"`
+	StartDate   openapi_types.Date `json:"start_date"`
+
+	// TypeCode Project type code. `other` requires `type_other`.
+	TypeCode  ProjectType `json:"type_code"`
+	TypeOther *string     `json:"type_other"`
+
+	// UpdatedAt UTC instant, RFC 3339.
+	UpdatedAt Timestamp `json:"updated_at"`
+
+	// ValueBaht Project value in baht, greater than 0.
+	ValueBaht float32 `json:"value_baht"`
+
+	// VersionCount Number of non-deleted versions.
+	VersionCount int `json:"version_count"`
+}
+
+// ProjectCreate defines model for ProjectCreate.
+type ProjectCreate struct {
+	Description *string `json:"description"`
+
+	// EndDate After `start_date`.
+	EndDate openapi_types.Date `json:"end_date"`
+
+	// IslandCode Island / location code. `other` requires `island_other`.
+	IslandCode  ProjectIsland `json:"island_code"`
+	IslandOther *string       `json:"island_other"`
+
+	// Name Not blank.
+	Name     string `json:"name"`
+	Nickname string `json:"nickname"`
+
+	// ProgressPct Entered progress in percent.
+	ProgressPct int                `json:"progress_pct"`
+	StartDate   openapi_types.Date `json:"start_date"`
+
+	// TypeCode Project type code. `other` requires `type_other`.
+	TypeCode  ProjectType `json:"type_code"`
+	TypeOther *string     `json:"type_other"`
+
+	// ValueBaht Project value in baht, greater than 0.
+	ValueBaht float32 `json:"value_baht"`
+}
+
+// ProjectFields Editable project fields. `end_date` must be after `start_date`;
+// `island_other` and `type_other` are set if and only if the matching
+// code is `other`. Value and dates apply to versions created afterwards.
+type ProjectFields struct {
+	Description *string `json:"description"`
+
+	// EndDate After `start_date`.
+	EndDate openapi_types.Date `json:"end_date"`
+
+	// IslandCode Island / location code. `other` requires `island_other`.
+	IslandCode  ProjectIsland `json:"island_code"`
+	IslandOther *string       `json:"island_other"`
+
+	// Name Not blank.
+	Name     string `json:"name"`
+	Nickname string `json:"nickname"`
+
+	// ProgressPct Entered progress in percent.
+	ProgressPct int                `json:"progress_pct"`
+	StartDate   openapi_types.Date `json:"start_date"`
+
+	// TypeCode Project type code. `other` requires `type_other`.
+	TypeCode  ProjectType `json:"type_code"`
+	TypeOther *string     `json:"type_other"`
+
+	// ValueBaht Project value in baht, greater than 0.
+	ValueBaht float32 `json:"value_baht"`
+}
+
+// ProjectIsland Island / location code. `other` requires `island_other`.
+type ProjectIsland string
+
+// ProjectList defines model for ProjectList.
+type ProjectList struct {
+	Items    []Project `json:"items"`
+	Page     int       `json:"page"`
+	PageSize int       `json:"page_size"`
+	Total    int       `json:"total"`
+}
+
+// ProjectType Project type code. `other` requires `type_other`.
+type ProjectType string
+
+// ProjectTypeList defines model for ProjectTypeList.
+type ProjectTypeList struct {
+	// Items In display order; `other` is last.
+	Items []ProjectTypeOption `json:"items"`
+}
+
+// ProjectTypeOption Label comes from the web message catalogue, keyed by `code`.
+type ProjectTypeOption struct {
+	// Code e.g. `building`; `other` asks the user to type a type.
+	//
+	// Examples: building
+	Code string `json:"code"`
+}
+
+// ProjectUpdate Partial update; send only the fields to change, at least one. The
+// rules of `ProjectFields` apply to the stored result.
+type ProjectUpdate struct {
+	Description *Description `json:"description"`
+
+	// EndDate After `start_date`.
+	EndDate *EndDate `json:"end_date,omitempty"`
+
+	// IslandCode Island / location code. `other` requires `island_other`.
+	IslandCode  *ProjectIsland `json:"island_code,omitempty"`
+	IslandOther *IslandOther   `json:"island_other"`
+
+	// Name Not blank.
+	Name     *Name     `json:"name,omitempty"`
+	Nickname *Nickname `json:"nickname,omitempty"`
+
+	// ProgressPct Entered progress in percent.
+	ProgressPct *ProgressPct `json:"progress_pct,omitempty"`
+	StartDate   *StartDate   `json:"start_date,omitempty"`
+
+	// TypeCode Project type code. `other` requires `type_other`.
+	TypeCode  *ProjectType `json:"type_code,omitempty"`
+	TypeOther *TypeOther   `json:"type_other"`
+
+	// ValueBaht Project value in baht, greater than 0.
+	ValueBaht *ValueBaht `json:"value_baht,omitempty"`
 }
 
 // ResultsResponse defines model for ResultsResponse.
@@ -355,6 +1135,15 @@ type ResultsSummary struct {
 
 	// ScoredCount Number of complete indicators scored at the last submission.
 	ScoredCount int `json:"scored_count"`
+}
+
+// RiEOption One option of the environmental impact question y3.
+type RiEOption struct {
+	Code string `json:"code"`
+
+	// IsExclusive When true the option cannot be combined with any other (A).
+	IsExclusive bool   `json:"is_exclusive"`
+	Label       string `json:"label"`
 }
 
 // RiskLevel defines model for RiskLevel.
@@ -402,6 +1191,9 @@ type TimeUnit string
 // Timestamp UTC instant, RFC 3339.
 type Timestamp = time.Time
 
+// UserRole defines model for UserRole.
+type UserRole string
+
 // Uuid defines model for Uuid.
 type Uuid = openapi_types.UUID
 
@@ -421,11 +1213,117 @@ type ValidationErrorEnvelope struct {
 	Error ValidationErrorBody `json:"error"`
 }
 
+// Version defines model for Version.
+type Version struct {
+	// AverageRm Mean RM of the scored indicators; null while `draft`.
+	AverageRm *float32 `json:"average_rm"`
+
+	// CreatedAt UTC instant, RFC 3339.
+	CreatedAt Timestamp `json:"created_at"`
+
+	// Editable True only for the latest non-deleted version of the project.
+	Editable bool               `json:"editable"`
+	EndDate  openapi_types.Date `json:"end_date"`
+
+	// HighCount Number of indicators at level H; null while `draft`.
+	HighCount *int `json:"high_count"`
+	Id        Uuid `json:"id"`
+
+	// ProgressAtSubmit Project progress at the last submission; null while `draft`.
+	ProgressAtSubmit *int               `json:"progress_at_submit"`
+	ProjectId        Uuid               `json:"project_id"`
+	StartDate        openapi_types.Date `json:"start_date"`
+	Status           VersionStatus      `json:"status"`
+
+	// SubmissionNo Number of submissions, 0 when never submitted.
+	SubmissionNo int `json:"submission_no"`
+
+	// SubmittedAt Time of the last submission, null while the status is `draft`.
+	SubmittedAt *Timestamp `json:"submitted_at"`
+
+	// ValueBaht Project value copied when the version was created.
+	ValueBaht float32 `json:"value_baht"`
+
+	// VersionNo Sequential per project, never reused.
+	VersionNo int `json:"version_no"`
+
+	// VeryHighCount Number of indicators at level VH; null while `draft`.
+	VeryHighCount *int `json:"very_high_count"`
+}
+
+// VersionList All non-deleted versions of a project, newest first. Not paginated.
+type VersionList struct {
+	Items []VersionSummary `json:"items"`
+}
+
 // VersionStatus defines model for VersionStatus.
 type VersionStatus string
 
+// VersionSummary One row of a project's version list.
+type VersionSummary struct {
+	// AverageRm Mean RM of the scored indicators; null while `draft`.
+	AverageRm *float32 `json:"average_rm"`
+
+	// CreatedAt UTC instant, RFC 3339.
+	CreatedAt Timestamp `json:"created_at"`
+
+	// Editable True only for the latest non-deleted version of the project.
+	Editable bool `json:"editable"`
+
+	// HighCount Number of indicators at level H; null while `draft`.
+	HighCount *int `json:"high_count"`
+	Id        Uuid `json:"id"`
+
+	// ProgressAtSubmit Project progress at the last submission; null while `draft`.
+	ProgressAtSubmit *int          `json:"progress_at_submit"`
+	ProjectId        Uuid          `json:"project_id"`
+	Status           VersionStatus `json:"status"`
+
+	// SubmittedAt Time of the last submission, null while the status is `draft`.
+	SubmittedAt *Timestamp `json:"submitted_at"`
+
+	// VersionNo Sequential per project, never reused.
+	VersionNo int `json:"version_no"`
+
+	// VeryHighCount Number of indicators at level VH; null while `draft`.
+	VeryHighCount *int `json:"very_high_count"`
+}
+
 // Y3Option Option of y3. `A` is exclusive and cannot be combined with another option.
 type Y3Option string
+
+// Description defines model for description.
+type Description = string
+
+// EndDate After `start_date`.
+type EndDate = openapi_types.Date
+
+// IslandOther defines model for island_other.
+type IslandOther = string
+
+// Name Not blank.
+type Name = string
+
+// Nickname defines model for nickname.
+type Nickname = string
+
+// ProgressPct Entered progress in percent.
+type ProgressPct = int
+
+// StartDate defines model for start_date.
+type StartDate = openapi_types.Date
+
+// TypeOther defines model for type_other.
+type TypeOther = string
+
+// ValueBaht Project value in baht, greater than 0.
+type ValueBaht = float32
+
+// Page defines model for Page.
+type Page = int
+
+// PageSize defines model for PageSize.
+type PageSize = int
 
 // BadRequest defines model for BadRequest.
 type BadRequest = ErrorEnvelope
@@ -439,11 +1337,92 @@ type Forbidden = ErrorEnvelope
 // NotFound defines model for NotFound.
 type NotFound = ErrorEnvelope
 
+// TooManyRequests defines model for TooManyRequests.
+type TooManyRequests = ErrorEnvelope
+
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = ErrorEnvelope
 
 // ValidationFailed defines model for ValidationFailed.
 type ValidationFailed = ValidationErrorEnvelope
+
+// AdminListAuditLogParams defines parameters for AdminListAuditLog.
+type AdminListAuditLogParams struct {
+	AdminId    *Uuid        `form:"admin_id,omitempty" json:"admin_id,omitempty"`
+	Action     *AuditAction `form:"action,omitempty" json:"action,omitempty"`
+	TargetType *string      `form:"target_type,omitempty" json:"target_type,omitempty"`
+
+	// TargetId Used together with `target_type`.
+	TargetId *string `form:"target_id,omitempty" json:"target_id,omitempty"`
+
+	// From Entries at or after this instant.
+	From *Timestamp `form:"from,omitempty" json:"from,omitempty"`
+
+	// To Entries before this instant.
+	To       *Timestamp `form:"to,omitempty" json:"to,omitempty"`
+	Page     *Page      `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize  `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// AdminListUsersParams defines parameters for AdminListUsers.
+type AdminListUsersParams struct {
+	// Q Case-insensitive search on e-mail or organisation.
+	Q        *string        `form:"q,omitempty" json:"q,omitempty"`
+	Role     *UserRole      `form:"role,omitempty" json:"role,omitempty"`
+	Status   *AccountStatus `form:"status,omitempty" json:"status,omitempty"`
+	Page     *Page          `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize      `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// GetCatalogueParams defines parameters for GetCatalogue.
+type GetCatalogueParams struct {
+	// Locale Locale of the text; texts missing in it fall back to `th`.
+	Locale *Locale `form:"locale,omitempty" json:"locale,omitempty"`
+
+	// IfNoneMatch ETag from an earlier response.
+	IfNoneMatch *string `json:"If-None-Match,omitempty"`
+}
+
+// ListIslandsParams defines parameters for ListIslands.
+type ListIslandsParams struct {
+	// IfNoneMatch ETag from an earlier response.
+	IfNoneMatch *string `json:"If-None-Match,omitempty"`
+}
+
+// ListProjectTypesParams defines parameters for ListProjectTypes.
+type ListProjectTypesParams struct {
+	// IfNoneMatch ETag from an earlier response.
+	IfNoneMatch *string `json:"If-None-Match,omitempty"`
+}
+
+// ListProjectsParams defines parameters for ListProjects.
+type ListProjectsParams struct {
+	// Q Case-insensitive search over name, nickname and island (code or other text).
+	Q        *string   `form:"q,omitempty" json:"q,omitempty"`
+	Page     *Page     `form:"page,omitempty" json:"page,omitempty"`
+	PageSize *PageSize `form:"page_size,omitempty" json:"page_size,omitempty"`
+}
+
+// AdminReplaceAdviceListJSONRequestBody defines body for AdminReplaceAdviceList for application/json ContentType.
+type AdminReplaceAdviceListJSONRequestBody = AdminReplaceAdviceRequest
+
+// AdminRequestExportJSONRequestBody defines body for AdminRequestExport for application/json ContentType.
+type AdminRequestExportJSONRequestBody = AdminExportRequest
+
+// AdminUpdateImpactTablesJSONRequestBody defines body for AdminUpdateImpactTables for application/json ContentType.
+type AdminUpdateImpactTablesJSONRequestBody = AdminUpdateImpactTablesRequest
+
+// AdminUpdateRlThresholdJSONRequestBody defines body for AdminUpdateRlThreshold for application/json ContentType.
+type AdminUpdateRlThresholdJSONRequestBody = AdminUpdateRlThresholdRequest
+
+// AdminChangeUserRoleJSONRequestBody defines body for AdminChangeUserRole for application/json ContentType.
+type AdminChangeUserRoleJSONRequestBody = AdminChangeRoleRequest
+
+// CreateProjectJSONRequestBody defines body for CreateProject for application/json ContentType.
+type CreateProjectJSONRequestBody = ProjectCreate
+
+// UpdateProjectJSONRequestBody defines body for UpdateProject for application/json ContentType.
+type UpdateProjectJSONRequestBody = ProjectUpdate
 
 // UpsertAnswersJSONRequestBody defines body for UpsertAnswers for application/json ContentType.
 type UpsertAnswersJSONRequestBody = AnswerBatchRequest
@@ -454,8 +1433,164 @@ type PutAnswerJSONRequestBody = AnswerInput
 // PutStrategyJSONRequestBody defines body for PutStrategy for application/json ContentType.
 type PutStrategyJSONRequestBody = StrategyRequest
 
+// Getter for additional properties for AdminAdviceText. Returns the specified
+// element and whether it was found
+func (a AdminAdviceText) Get(fieldName string) (value string, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for AdminAdviceText
+func (a *AdminAdviceText) Set(fieldName string, value string) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]string)
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for AdminAdviceText to handle AdditionalProperties
+func (a *AdminAdviceText) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := runtime.JSONUnmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["th"]; found {
+		err = runtime.JSONUnmarshal(raw, &a.Th)
+		if err != nil {
+			return fmt.Errorf("error reading 'th': %w", err)
+		}
+		delete(object, "th")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]string)
+		for fieldName, fieldBuf := range object {
+			var fieldVal string
+			err := runtime.JSONUnmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for AdminAdviceText to handle AdditionalProperties
+func (a AdminAdviceText) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["th"], err = runtime.JSONMarshal(a.Th)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'th': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = runtime.JSONMarshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return runtime.JSONMarshal(object)
+}
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// AdminGetAdvice Get the advice lists of an indicator
+	// (GET /admin/advice/{indicator_code})
+	AdminGetAdvice(w http.ResponseWriter, r *http.Request, indicatorCode string)
+	// AdminReplaceAdviceList Replace one advice list
+	// (PUT /admin/advice/{indicator_code}/{list})
+	AdminReplaceAdviceList(w http.ResponseWriter, r *http.Request, indicatorCode string, list AdviceList)
+	// AdminListAuditLog List audit log entries
+	// (GET /admin/audit-log)
+	AdminListAuditLog(w http.ResponseWriter, r *http.Request, params AdminListAuditLogParams)
+	// AdminGetAuditEntry Get one audit entry with old and new values
+	// (GET /admin/audit-log/{audit_id})
+	AdminGetAuditEntry(w http.ResponseWriter, r *http.Request, auditId int64)
+	// AdminRequestExport Request a pseudonymised research export
+	// (POST /admin/exports)
+	AdminRequestExport(w http.ResponseWriter, r *http.Request)
+	// AdminDownloadExport Download a finished export
+	// (GET /admin/exports/{job_id}/download)
+	AdminDownloadExport(w http.ResponseWriter, r *http.Request, jobId Uuid)
+	// AdminGetImpactTables Get the RI_C and RI_T tables
+	// (GET /admin/impact-tables)
+	AdminGetImpactTables(w http.ResponseWriter, r *http.Request)
+	// AdminUpdateImpactTables Update the RI_C and RI_T tables
+	// (PUT /admin/impact-tables)
+	AdminUpdateImpactTables(w http.ResponseWriter, r *http.Request)
+	// AdminListRlThresholds List RL thresholds of all indicators
+	// (GET /admin/rl-thresholds)
+	AdminListRlThresholds(w http.ResponseWriter, r *http.Request)
+	// AdminGetRlThreshold Get the RL thresholds of an indicator
+	// (GET /admin/rl-thresholds/{indicator_code})
+	AdminGetRlThreshold(w http.ResponseWriter, r *http.Request, indicatorCode string)
+	// AdminUpdateRlThreshold Update the RL thresholds of an indicator
+	// (PUT /admin/rl-thresholds/{indicator_code})
+	AdminUpdateRlThreshold(w http.ResponseWriter, r *http.Request, indicatorCode string)
+	// AdminListUsers List and search users
+	// (GET /admin/users)
+	AdminListUsers(w http.ResponseWriter, r *http.Request, params AdminListUsersParams)
+	// AdminDeleteUser Delete (anonymise) a user
+	// (DELETE /admin/users/{user_id})
+	AdminDeleteUser(w http.ResponseWriter, r *http.Request, userId Uuid)
+	// AdminGetUser Get one user
+	// (GET /admin/users/{user_id})
+	AdminGetUser(w http.ResponseWriter, r *http.Request, userId Uuid)
+	// AdminDeactivateUser Deactivate a user
+	// (POST /admin/users/{user_id}/deactivate)
+	AdminDeactivateUser(w http.ResponseWriter, r *http.Request, userId Uuid)
+	// AdminReactivateUser Reactivate a user
+	// (POST /admin/users/{user_id}/reactivate)
+	AdminReactivateUser(w http.ResponseWriter, r *http.Request, userId Uuid)
+	// AdminChangeUserRole Change a user's role
+	// (PUT /admin/users/{user_id}/role)
+	AdminChangeUserRole(w http.ResponseWriter, r *http.Request, userId Uuid)
+	// GetCatalogue Get the indicator catalogue
+	// (GET /catalogue)
+	GetCatalogue(w http.ResponseWriter, r *http.Request, params GetCatalogueParams)
+	// ListIslands List islands
+	// (GET /islands)
+	ListIslands(w http.ResponseWriter, r *http.Request, params ListIslandsParams)
+	// GetJob Get the status of a job
+	// (GET /jobs/{id})
+	GetJob(w http.ResponseWriter, r *http.Request, id Uuid)
+	// ListProjectTypes List project types
+	// (GET /project-types)
+	ListProjectTypes(w http.ResponseWriter, r *http.Request, params ListProjectTypesParams)
+	// ListProjects List own projects
+	// (GET /projects)
+	ListProjects(w http.ResponseWriter, r *http.Request, params ListProjectsParams)
+	// CreateProject Create a project
+	// (POST /projects)
+	CreateProject(w http.ResponseWriter, r *http.Request)
+	// DeleteProject Delete a project (soft)
+	// (DELETE /projects/{project_id})
+	DeleteProject(w http.ResponseWriter, r *http.Request, projectId Uuid)
+	// GetProject Get a project
+	// (GET /projects/{project_id})
+	GetProject(w http.ResponseWriter, r *http.Request, projectId Uuid)
+	// UpdateProject Edit a project
+	// (PATCH /projects/{project_id})
+	UpdateProject(w http.ResponseWriter, r *http.Request, projectId Uuid)
+	// ListVersions List the versions of a project
+	// (GET /projects/{project_id}/versions)
+	ListVersions(w http.ResponseWriter, r *http.Request, projectId Uuid)
+	// CreateVersion Start a new blank version
+	// (POST /projects/{project_id}/versions)
+	CreateVersion(w http.ResponseWriter, r *http.Request, projectId Uuid)
+	// DeleteVersion Delete a version (soft)
+	// (DELETE /projects/{project_id}/versions/{version_id})
+	DeleteVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
+	// GetVersion Get a version
+	// (GET /projects/{project_id}/versions/{version_id})
+	GetVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
 	// ListAnswers Get all answers of a version.
 	// (GET /projects/{project_id}/versions/{version_id}/answers)
 	ListAnswers(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
@@ -465,6 +1600,9 @@ type ServerInterface interface {
 	// PutAnswer Upsert the answer of one indicator.
 	// (PUT /projects/{project_id}/versions/{version_id}/answers/{indicator_code})
 	PutAnswer(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid, indicatorCode IndicatorCode)
+	// RequestReport Request a PDF report for the last submission of a version
+	// (POST /projects/{project_id}/versions/{version_id}/reports)
+	RequestReport(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
 	// GetResults Get the results of the last submission.
 	// (GET /projects/{project_id}/versions/{version_id}/results)
 	GetResults(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
@@ -474,10 +1612,193 @@ type ServerInterface interface {
 	// SubmitVersion Submit (or resubmit) the version and score every complete indicator.
 	// (POST /projects/{project_id}/versions/{version_id}/submit)
 	SubmitVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
+	// DownloadReport Download a finished report
+	// (GET /reports/{job_id}/download)
+	DownloadReport(w http.ResponseWriter, r *http.Request, jobId Uuid)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 type Unimplemented struct{}
+
+// AdminGetAdvice Get the advice lists of an indicator
+// (GET /admin/advice/{indicator_code})
+func (_ Unimplemented) AdminGetAdvice(w http.ResponseWriter, r *http.Request, indicatorCode string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminReplaceAdviceList Replace one advice list
+// (PUT /admin/advice/{indicator_code}/{list})
+func (_ Unimplemented) AdminReplaceAdviceList(w http.ResponseWriter, r *http.Request, indicatorCode string, list AdviceList) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminListAuditLog List audit log entries
+// (GET /admin/audit-log)
+func (_ Unimplemented) AdminListAuditLog(w http.ResponseWriter, r *http.Request, params AdminListAuditLogParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminGetAuditEntry Get one audit entry with old and new values
+// (GET /admin/audit-log/{audit_id})
+func (_ Unimplemented) AdminGetAuditEntry(w http.ResponseWriter, r *http.Request, auditId int64) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminRequestExport Request a pseudonymised research export
+// (POST /admin/exports)
+func (_ Unimplemented) AdminRequestExport(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminDownloadExport Download a finished export
+// (GET /admin/exports/{job_id}/download)
+func (_ Unimplemented) AdminDownloadExport(w http.ResponseWriter, r *http.Request, jobId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminGetImpactTables Get the RI_C and RI_T tables
+// (GET /admin/impact-tables)
+func (_ Unimplemented) AdminGetImpactTables(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminUpdateImpactTables Update the RI_C and RI_T tables
+// (PUT /admin/impact-tables)
+func (_ Unimplemented) AdminUpdateImpactTables(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminListRlThresholds List RL thresholds of all indicators
+// (GET /admin/rl-thresholds)
+func (_ Unimplemented) AdminListRlThresholds(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminGetRlThreshold Get the RL thresholds of an indicator
+// (GET /admin/rl-thresholds/{indicator_code})
+func (_ Unimplemented) AdminGetRlThreshold(w http.ResponseWriter, r *http.Request, indicatorCode string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminUpdateRlThreshold Update the RL thresholds of an indicator
+// (PUT /admin/rl-thresholds/{indicator_code})
+func (_ Unimplemented) AdminUpdateRlThreshold(w http.ResponseWriter, r *http.Request, indicatorCode string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminListUsers List and search users
+// (GET /admin/users)
+func (_ Unimplemented) AdminListUsers(w http.ResponseWriter, r *http.Request, params AdminListUsersParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminDeleteUser Delete (anonymise) a user
+// (DELETE /admin/users/{user_id})
+func (_ Unimplemented) AdminDeleteUser(w http.ResponseWriter, r *http.Request, userId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminGetUser Get one user
+// (GET /admin/users/{user_id})
+func (_ Unimplemented) AdminGetUser(w http.ResponseWriter, r *http.Request, userId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminDeactivateUser Deactivate a user
+// (POST /admin/users/{user_id}/deactivate)
+func (_ Unimplemented) AdminDeactivateUser(w http.ResponseWriter, r *http.Request, userId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminReactivateUser Reactivate a user
+// (POST /admin/users/{user_id}/reactivate)
+func (_ Unimplemented) AdminReactivateUser(w http.ResponseWriter, r *http.Request, userId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// AdminChangeUserRole Change a user's role
+// (PUT /admin/users/{user_id}/role)
+func (_ Unimplemented) AdminChangeUserRole(w http.ResponseWriter, r *http.Request, userId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetCatalogue Get the indicator catalogue
+// (GET /catalogue)
+func (_ Unimplemented) GetCatalogue(w http.ResponseWriter, r *http.Request, params GetCatalogueParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListIslands List islands
+// (GET /islands)
+func (_ Unimplemented) ListIslands(w http.ResponseWriter, r *http.Request, params ListIslandsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetJob Get the status of a job
+// (GET /jobs/{id})
+func (_ Unimplemented) GetJob(w http.ResponseWriter, r *http.Request, id Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListProjectTypes List project types
+// (GET /project-types)
+func (_ Unimplemented) ListProjectTypes(w http.ResponseWriter, r *http.Request, params ListProjectTypesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListProjects List own projects
+// (GET /projects)
+func (_ Unimplemented) ListProjects(w http.ResponseWriter, r *http.Request, params ListProjectsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateProject Create a project
+// (POST /projects)
+func (_ Unimplemented) CreateProject(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteProject Delete a project (soft)
+// (DELETE /projects/{project_id})
+func (_ Unimplemented) DeleteProject(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetProject Get a project
+// (GET /projects/{project_id})
+func (_ Unimplemented) GetProject(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateProject Edit a project
+// (PATCH /projects/{project_id})
+func (_ Unimplemented) UpdateProject(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListVersions List the versions of a project
+// (GET /projects/{project_id}/versions)
+func (_ Unimplemented) ListVersions(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateVersion Start a new blank version
+// (POST /projects/{project_id}/versions)
+func (_ Unimplemented) CreateVersion(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteVersion Delete a version (soft)
+// (DELETE /projects/{project_id}/versions/{version_id})
+func (_ Unimplemented) DeleteVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetVersion Get a version
+// (GET /projects/{project_id}/versions/{version_id})
+func (_ Unimplemented) GetVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // ListAnswers Get all answers of a version.
 // (GET /projects/{project_id}/versions/{version_id}/answers)
@@ -494,6 +1815,12 @@ func (_ Unimplemented) UpsertAnswers(w http.ResponseWriter, r *http.Request, pro
 // PutAnswer Upsert the answer of one indicator.
 // (PUT /projects/{project_id}/versions/{version_id}/answers/{indicator_code})
 func (_ Unimplemented) PutAnswer(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid, indicatorCode IndicatorCode) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RequestReport Request a PDF report for the last submission of a version
+// (POST /projects/{project_id}/versions/{version_id}/reports)
+func (_ Unimplemented) RequestReport(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -515,6 +1842,12 @@ func (_ Unimplemented) SubmitVersion(w http.ResponseWriter, r *http.Request, pro
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// DownloadReport Download a finished report
+// (GET /reports/{job_id}/download)
+func (_ Unimplemented) DownloadReport(w http.ResponseWriter, r *http.Request, jobId Uuid) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler            ServerInterface
@@ -523,6 +1856,1001 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// AdminGetAdvice operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetAdvice(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "indicator_code" -------------
+	var indicatorCode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "indicator_code", chi.URLParam(r, "indicator_code"), &indicatorCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "indicator_code", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetAdvice(w, r, indicatorCode)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminReplaceAdviceList operation middleware
+func (siw *ServerInterfaceWrapper) AdminReplaceAdviceList(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "indicator_code" -------------
+	var indicatorCode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "indicator_code", chi.URLParam(r, "indicator_code"), &indicatorCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "indicator_code", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "list" -------------
+	var list AdviceList
+
+	err = runtime.BindStyledParameterWithOptions("simple", "list", chi.URLParam(r, "list"), &list, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "list", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminReplaceAdviceList(w, r, indicatorCode, list)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminListAuditLog operation middleware
+func (siw *ServerInterfaceWrapper) AdminListAuditLog(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AdminListAuditLogParams
+
+	// ------------- Optional query parameter "admin_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "admin_id", r.URL.Query(), &params.AdminId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "admin_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "admin_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "action" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "action", r.URL.Query(), &params.Action, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "action"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "action", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "target_type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "target_type", r.URL.Query(), &params.TargetType, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "target_type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "target_id" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "target_id", r.URL.Query(), &params.TargetId, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "target_id"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "target_id", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date-time"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", r.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminListAuditLog(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetAuditEntry operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetAuditEntry(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "audit_id" -------------
+	var auditId int64
+
+	err = runtime.BindStyledParameterWithOptions("simple", "audit_id", chi.URLParam(r, "audit_id"), &auditId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: "int64", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "audit_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetAuditEntry(w, r, auditId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminRequestExport operation middleware
+func (siw *ServerInterfaceWrapper) AdminRequestExport(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminRequestExport(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminDownloadExport operation middleware
+func (siw *ServerInterfaceWrapper) AdminDownloadExport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "job_id" -------------
+	var jobId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "job_id", chi.URLParam(r, "job_id"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "job_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminDownloadExport(w, r, jobId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetImpactTables operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetImpactTables(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetImpactTables(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminUpdateImpactTables operation middleware
+func (siw *ServerInterfaceWrapper) AdminUpdateImpactTables(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminUpdateImpactTables(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminListRlThresholds operation middleware
+func (siw *ServerInterfaceWrapper) AdminListRlThresholds(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminListRlThresholds(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetRlThreshold operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetRlThreshold(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "indicator_code" -------------
+	var indicatorCode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "indicator_code", chi.URLParam(r, "indicator_code"), &indicatorCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "indicator_code", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetRlThreshold(w, r, indicatorCode)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminUpdateRlThreshold operation middleware
+func (siw *ServerInterfaceWrapper) AdminUpdateRlThreshold(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "indicator_code" -------------
+	var indicatorCode string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "indicator_code", chi.URLParam(r, "indicator_code"), &indicatorCode, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "indicator_code", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminUpdateRlThreshold(w, r, indicatorCode)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminListUsers operation middleware
+func (siw *ServerInterfaceWrapper) AdminListUsers(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params AdminListUsersParams
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "role" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "role", r.URL.Query(), &params.Role, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "role"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "role", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "status", r.URL.Query(), &params.Status, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "status"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "status", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", r.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminListUsers(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminDeleteUser operation middleware
+func (siw *ServerInterfaceWrapper) AdminDeleteUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", chi.URLParam(r, "user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminDeleteUser(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminGetUser operation middleware
+func (siw *ServerInterfaceWrapper) AdminGetUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", chi.URLParam(r, "user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminGetUser(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminDeactivateUser operation middleware
+func (siw *ServerInterfaceWrapper) AdminDeactivateUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", chi.URLParam(r, "user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminDeactivateUser(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminReactivateUser operation middleware
+func (siw *ServerInterfaceWrapper) AdminReactivateUser(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", chi.URLParam(r, "user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminReactivateUser(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// AdminChangeUserRole operation middleware
+func (siw *ServerInterfaceWrapper) AdminChangeUserRole(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "user_id" -------------
+	var userId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "user_id", chi.URLParam(r, "user_id"), &userId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "user_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.AdminChangeUserRole(w, r, userId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCatalogue operation middleware
+func (siw *ServerInterfaceWrapper) GetCatalogue(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetCatalogueParams
+
+	// ------------- Optional query parameter "locale" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "locale", r.URL.Query(), &params.Locale, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "locale"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "locale", Err: err})
+		}
+		return
+	}
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCatalogue(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListIslands operation middleware
+func (siw *ServerInterfaceWrapper) ListIslands(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListIslandsParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListIslands(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetJob operation middleware
+func (siw *ServerInterfaceWrapper) GetJob(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "id" -------------
+	var id Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetJob(w, r, id)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProjectTypes operation middleware
+func (siw *ServerInterfaceWrapper) ListProjectTypes(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProjectTypesParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "If-None-Match" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("If-None-Match")]; found {
+		var IfNoneMatch string
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "If-None-Match", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "If-None-Match", valueList[0], &IfNoneMatch, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "If-None-Match", Err: err})
+			return
+		}
+
+		params.IfNoneMatch = &IfNoneMatch
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjectTypes(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListProjects operation middleware
+func (siw *ServerInterfaceWrapper) ListProjects(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListProjectsParams
+
+	// ------------- Optional query parameter "q" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "q", r.URL.Query(), &params.Q, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "q"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "q", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page", r.URL.Query(), &params.Page, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "page_size" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "page_size", r.URL.Query(), &params.PageSize, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "page_size"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "page_size", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListProjects(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateProject operation middleware
+func (siw *ServerInterfaceWrapper) CreateProject(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateProject(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteProject operation middleware
+func (siw *ServerInterfaceWrapper) DeleteProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteProject(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetProject operation middleware
+func (siw *ServerInterfaceWrapper) GetProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetProject(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProject operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProject(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProject(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListVersions operation middleware
+func (siw *ServerInterfaceWrapper) ListVersions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListVersions(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateVersion operation middleware
+func (siw *ServerInterfaceWrapper) CreateVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateVersion(w, r, projectId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteVersion operation middleware
+func (siw *ServerInterfaceWrapper) DeleteVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version_id" -------------
+	var versionId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteVersion(w, r, projectId, versionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetVersion operation middleware
+func (siw *ServerInterfaceWrapper) GetVersion(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version_id" -------------
+	var versionId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetVersion(w, r, projectId, versionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // ListAnswers operation middleware
 func (siw *ServerInterfaceWrapper) ListAnswers(w http.ResponseWriter, r *http.Request) {
@@ -638,6 +2966,41 @@ func (siw *ServerInterfaceWrapper) PutAnswer(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// RequestReport operation middleware
+func (siw *ServerInterfaceWrapper) RequestReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version_id" -------------
+	var versionId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestReport(w, r, projectId, versionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetResults operation middleware
 func (siw *ServerInterfaceWrapper) GetResults(w http.ResponseWriter, r *http.Request) {
 
@@ -743,6 +3106,32 @@ func (siw *ServerInterfaceWrapper) SubmitVersion(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.SubmitVersion(w, r, projectId, versionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DownloadReport operation middleware
+func (siw *ServerInterfaceWrapper) DownloadReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "job_id" -------------
+	var jobId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "job_id", chi.URLParam(r, "job_id"), &jobId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "job_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DownloadReport(w, r, jobId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -867,6 +3256,57 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	}
 
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/advice/{indicator_code}", wrapper.AdminGetAdvice)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/advice/{indicator_code}/{list}", wrapper.AdminReplaceAdviceList)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/audit-log", wrapper.AdminListAuditLog)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/audit-log/{audit_id}", wrapper.AdminGetAuditEntry)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/exports", wrapper.AdminRequestExport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/exports/{job_id}/download", wrapper.AdminDownloadExport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/rl-thresholds", wrapper.AdminListRlThresholds)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/rl-thresholds/{indicator_code}", wrapper.AdminGetRlThreshold)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/rl-thresholds/{indicator_code}", wrapper.AdminUpdateRlThreshold)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/impact-tables", wrapper.AdminGetImpactTables)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/impact-tables", wrapper.AdminUpdateImpactTables)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/users", wrapper.AdminListUsers)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/admin/users/{user_id}", wrapper.AdminDeleteUser)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/admin/users/{user_id}", wrapper.AdminGetUser)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/admin/users/{user_id}/role", wrapper.AdminChangeUserRole)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/users/{user_id}/deactivate", wrapper.AdminDeactivateUser)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/admin/users/{user_id}/reactivate", wrapper.AdminReactivateUser)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/projects/{project_id}/versions/{version_id}/answers", wrapper.ListAnswers)
 	})
 	r.Group(func(r chi.Router) {
@@ -879,10 +3319,55 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/projects/{project_id}/versions/{version_id}/submit", wrapper.SubmitVersion)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/catalogue", wrapper.GetCatalogue)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/islands", wrapper.ListIslands)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/project-types", wrapper.ListProjectTypes)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/jobs/{id}", wrapper.GetJob)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects", wrapper.ListProjects)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects", wrapper.CreateProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/projects/{project_id}", wrapper.DeleteProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{project_id}", wrapper.GetProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/projects/{project_id}", wrapper.UpdateProject)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{project_id}/versions/{version_id}/reports", wrapper.RequestReport)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/reports/{job_id}/download", wrapper.DownloadReport)
+	})
+	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/projects/{project_id}/versions/{version_id}/results", wrapper.GetResults)
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/projects/{project_id}/versions/{version_id}/results/{indicator_code}/strategy", wrapper.PutStrategy)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{project_id}/versions", wrapper.ListVersions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/projects/{project_id}/versions", wrapper.CreateVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/projects/{project_id}/versions/{version_id}", wrapper.DeleteVersion)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/projects/{project_id}/versions/{version_id}", wrapper.GetVersion)
 	})
 
 	return r
@@ -896,9 +3381,2152 @@ type ForbiddenJSONResponse ErrorEnvelope
 
 type NotFoundJSONResponse ErrorEnvelope
 
+type TooManyRequestsJSONResponse ErrorEnvelope
+
 type UnauthorizedJSONResponse ErrorEnvelope
 
 type ValidationFailedJSONResponse ValidationErrorEnvelope
+
+type AdminGetAdviceRequestObject struct {
+	IndicatorCode string `json:"indicator_code"`
+}
+
+type AdminGetAdviceResponseObject interface {
+	VisitAdminGetAdviceResponse(w http.ResponseWriter) error
+}
+
+type AdminGetAdvice200JSONResponse AdminAdviceLists
+
+func (response AdminGetAdvice200JSONResponse) VisitAdminGetAdviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetAdvice401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminGetAdvice401JSONResponse) VisitAdminGetAdviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetAdvice403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminGetAdvice403JSONResponse) VisitAdminGetAdviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetAdvice404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AdminGetAdvice404JSONResponse) VisitAdminGetAdviceResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminReplaceAdviceListRequestObject struct {
+	IndicatorCode string     `json:"indicator_code"`
+	List          AdviceList `json:"list"`
+	Body          *AdminReplaceAdviceListJSONRequestBody
+}
+
+type AdminReplaceAdviceListResponseObject interface {
+	VisitAdminReplaceAdviceListResponse(w http.ResponseWriter) error
+}
+
+type AdminReplaceAdviceList200JSONResponse AdminAdviceListResponse
+
+func (response AdminReplaceAdviceList200JSONResponse) VisitAdminReplaceAdviceListResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminReplaceAdviceList400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AdminReplaceAdviceList400JSONResponse) VisitAdminReplaceAdviceListResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminReplaceAdviceList401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminReplaceAdviceList401JSONResponse) VisitAdminReplaceAdviceListResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminReplaceAdviceList403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminReplaceAdviceList403JSONResponse) VisitAdminReplaceAdviceListResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminReplaceAdviceList404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AdminReplaceAdviceList404JSONResponse) VisitAdminReplaceAdviceListResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminReplaceAdviceList422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response AdminReplaceAdviceList422JSONResponse) VisitAdminReplaceAdviceListResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminListAuditLogRequestObject struct {
+	Params AdminListAuditLogParams
+}
+
+type AdminListAuditLogResponseObject interface {
+	VisitAdminListAuditLogResponse(w http.ResponseWriter) error
+}
+
+type AdminListAuditLog200JSONResponse AdminAuditPage
+
+func (response AdminListAuditLog200JSONResponse) VisitAdminListAuditLogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminListAuditLog400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AdminListAuditLog400JSONResponse) VisitAdminListAuditLogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminListAuditLog401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminListAuditLog401JSONResponse) VisitAdminListAuditLogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminListAuditLog403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminListAuditLog403JSONResponse) VisitAdminListAuditLogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminListAuditLog422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response AdminListAuditLog422JSONResponse) VisitAdminListAuditLogResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetAuditEntryRequestObject struct {
+	AuditId int64 `json:"audit_id"`
+}
+
+type AdminGetAuditEntryResponseObject interface {
+	VisitAdminGetAuditEntryResponse(w http.ResponseWriter) error
+}
+
+type AdminGetAuditEntry200JSONResponse AdminAuditEntry
+
+func (response AdminGetAuditEntry200JSONResponse) VisitAdminGetAuditEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetAuditEntry401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminGetAuditEntry401JSONResponse) VisitAdminGetAuditEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetAuditEntry403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminGetAuditEntry403JSONResponse) VisitAdminGetAuditEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetAuditEntry404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AdminGetAuditEntry404JSONResponse) VisitAdminGetAuditEntryResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminRequestExportRequestObject struct {
+	Body *AdminRequestExportJSONRequestBody
+}
+
+type AdminRequestExportResponseObject interface {
+	VisitAdminRequestExportResponse(w http.ResponseWriter) error
+}
+
+type AdminRequestExport202JSONResponse JobAccepted
+
+func (response AdminRequestExport202JSONResponse) VisitAdminRequestExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminRequestExport400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AdminRequestExport400JSONResponse) VisitAdminRequestExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminRequestExport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminRequestExport401JSONResponse) VisitAdminRequestExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminRequestExport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminRequestExport403JSONResponse) VisitAdminRequestExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminRequestExport422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response AdminRequestExport422JSONResponse) VisitAdminRequestExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDownloadExportRequestObject struct {
+	JobId Uuid `json:"job_id"`
+}
+
+type AdminDownloadExportResponseObject interface {
+	VisitAdminDownloadExportResponse(w http.ResponseWriter) error
+}
+
+type AdminDownloadExport200ApplicationzipResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response AdminDownloadExport200ApplicationzipResponse) VisitAdminDownloadExportResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/zip")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type AdminDownloadExport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminDownloadExport401JSONResponse) VisitAdminDownloadExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDownloadExport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminDownloadExport403JSONResponse) VisitAdminDownloadExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDownloadExport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AdminDownloadExport404JSONResponse) VisitAdminDownloadExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDownloadExport409JSONResponse struct{ ConflictJSONResponse }
+
+func (response AdminDownloadExport409JSONResponse) VisitAdminDownloadExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDownloadExport410JSONResponse ErrorEnvelope
+
+func (response AdminDownloadExport410JSONResponse) VisitAdminDownloadExportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(410)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetImpactTablesRequestObject struct {
+}
+
+type AdminGetImpactTablesResponseObject interface {
+	VisitAdminGetImpactTablesResponse(w http.ResponseWriter) error
+}
+
+type AdminGetImpactTables200JSONResponse AdminImpactTables
+
+func (response AdminGetImpactTables200JSONResponse) VisitAdminGetImpactTablesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetImpactTables401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminGetImpactTables401JSONResponse) VisitAdminGetImpactTablesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetImpactTables403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminGetImpactTables403JSONResponse) VisitAdminGetImpactTablesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminUpdateImpactTablesRequestObject struct {
+	Body *AdminUpdateImpactTablesJSONRequestBody
+}
+
+type AdminUpdateImpactTablesResponseObject interface {
+	VisitAdminUpdateImpactTablesResponse(w http.ResponseWriter) error
+}
+
+type AdminUpdateImpactTables200JSONResponse AdminImpactTables
+
+func (response AdminUpdateImpactTables200JSONResponse) VisitAdminUpdateImpactTablesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminUpdateImpactTables400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AdminUpdateImpactTables400JSONResponse) VisitAdminUpdateImpactTablesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminUpdateImpactTables401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminUpdateImpactTables401JSONResponse) VisitAdminUpdateImpactTablesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminUpdateImpactTables403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminUpdateImpactTables403JSONResponse) VisitAdminUpdateImpactTablesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminUpdateImpactTables422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response AdminUpdateImpactTables422JSONResponse) VisitAdminUpdateImpactTablesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminListRlThresholdsRequestObject struct {
+}
+
+type AdminListRlThresholdsResponseObject interface {
+	VisitAdminListRlThresholdsResponse(w http.ResponseWriter) error
+}
+
+type AdminListRlThresholds200JSONResponse AdminRlThresholdList
+
+func (response AdminListRlThresholds200JSONResponse) VisitAdminListRlThresholdsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminListRlThresholds401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminListRlThresholds401JSONResponse) VisitAdminListRlThresholdsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminListRlThresholds403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminListRlThresholds403JSONResponse) VisitAdminListRlThresholdsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetRlThresholdRequestObject struct {
+	IndicatorCode string `json:"indicator_code"`
+}
+
+type AdminGetRlThresholdResponseObject interface {
+	VisitAdminGetRlThresholdResponse(w http.ResponseWriter) error
+}
+
+type AdminGetRlThreshold200JSONResponse AdminRlThreshold
+
+func (response AdminGetRlThreshold200JSONResponse) VisitAdminGetRlThresholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetRlThreshold401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminGetRlThreshold401JSONResponse) VisitAdminGetRlThresholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetRlThreshold403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminGetRlThreshold403JSONResponse) VisitAdminGetRlThresholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetRlThreshold404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AdminGetRlThreshold404JSONResponse) VisitAdminGetRlThresholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminUpdateRlThresholdRequestObject struct {
+	IndicatorCode string `json:"indicator_code"`
+	Body          *AdminUpdateRlThresholdJSONRequestBody
+}
+
+type AdminUpdateRlThresholdResponseObject interface {
+	VisitAdminUpdateRlThresholdResponse(w http.ResponseWriter) error
+}
+
+type AdminUpdateRlThreshold200JSONResponse AdminRlThreshold
+
+func (response AdminUpdateRlThreshold200JSONResponse) VisitAdminUpdateRlThresholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminUpdateRlThreshold400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AdminUpdateRlThreshold400JSONResponse) VisitAdminUpdateRlThresholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminUpdateRlThreshold401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminUpdateRlThreshold401JSONResponse) VisitAdminUpdateRlThresholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminUpdateRlThreshold403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminUpdateRlThreshold403JSONResponse) VisitAdminUpdateRlThresholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminUpdateRlThreshold404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AdminUpdateRlThreshold404JSONResponse) VisitAdminUpdateRlThresholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminUpdateRlThreshold422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response AdminUpdateRlThreshold422JSONResponse) VisitAdminUpdateRlThresholdResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminListUsersRequestObject struct {
+	Params AdminListUsersParams
+}
+
+type AdminListUsersResponseObject interface {
+	VisitAdminListUsersResponse(w http.ResponseWriter) error
+}
+
+type AdminListUsers200JSONResponse AdminUserPage
+
+func (response AdminListUsers200JSONResponse) VisitAdminListUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminListUsers400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AdminListUsers400JSONResponse) VisitAdminListUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminListUsers401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminListUsers401JSONResponse) VisitAdminListUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminListUsers403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminListUsers403JSONResponse) VisitAdminListUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminListUsers422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response AdminListUsers422JSONResponse) VisitAdminListUsersResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDeleteUserRequestObject struct {
+	UserId Uuid `json:"user_id"`
+}
+
+type AdminDeleteUserResponseObject interface {
+	VisitAdminDeleteUserResponse(w http.ResponseWriter) error
+}
+
+type AdminDeleteUser204Response struct {
+}
+
+func (response AdminDeleteUser204Response) VisitAdminDeleteUserResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type AdminDeleteUser401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminDeleteUser401JSONResponse) VisitAdminDeleteUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDeleteUser403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminDeleteUser403JSONResponse) VisitAdminDeleteUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDeleteUser404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AdminDeleteUser404JSONResponse) VisitAdminDeleteUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDeleteUser409JSONResponse struct{ ConflictJSONResponse }
+
+func (response AdminDeleteUser409JSONResponse) VisitAdminDeleteUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetUserRequestObject struct {
+	UserId Uuid `json:"user_id"`
+}
+
+type AdminGetUserResponseObject interface {
+	VisitAdminGetUserResponse(w http.ResponseWriter) error
+}
+
+type AdminGetUser200JSONResponse AdminUser
+
+func (response AdminGetUser200JSONResponse) VisitAdminGetUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetUser401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminGetUser401JSONResponse) VisitAdminGetUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetUser403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminGetUser403JSONResponse) VisitAdminGetUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminGetUser404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AdminGetUser404JSONResponse) VisitAdminGetUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDeactivateUserRequestObject struct {
+	UserId Uuid `json:"user_id"`
+}
+
+type AdminDeactivateUserResponseObject interface {
+	VisitAdminDeactivateUserResponse(w http.ResponseWriter) error
+}
+
+type AdminDeactivateUser200JSONResponse AdminUser
+
+func (response AdminDeactivateUser200JSONResponse) VisitAdminDeactivateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDeactivateUser401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminDeactivateUser401JSONResponse) VisitAdminDeactivateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDeactivateUser403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminDeactivateUser403JSONResponse) VisitAdminDeactivateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDeactivateUser404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AdminDeactivateUser404JSONResponse) VisitAdminDeactivateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminDeactivateUser409JSONResponse struct{ ConflictJSONResponse }
+
+func (response AdminDeactivateUser409JSONResponse) VisitAdminDeactivateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminReactivateUserRequestObject struct {
+	UserId Uuid `json:"user_id"`
+}
+
+type AdminReactivateUserResponseObject interface {
+	VisitAdminReactivateUserResponse(w http.ResponseWriter) error
+}
+
+type AdminReactivateUser200JSONResponse AdminUser
+
+func (response AdminReactivateUser200JSONResponse) VisitAdminReactivateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminReactivateUser401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminReactivateUser401JSONResponse) VisitAdminReactivateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminReactivateUser403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminReactivateUser403JSONResponse) VisitAdminReactivateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminReactivateUser404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AdminReactivateUser404JSONResponse) VisitAdminReactivateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminReactivateUser409JSONResponse struct{ ConflictJSONResponse }
+
+func (response AdminReactivateUser409JSONResponse) VisitAdminReactivateUserResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminChangeUserRoleRequestObject struct {
+	UserId Uuid `json:"user_id"`
+	Body   *AdminChangeUserRoleJSONRequestBody
+}
+
+type AdminChangeUserRoleResponseObject interface {
+	VisitAdminChangeUserRoleResponse(w http.ResponseWriter) error
+}
+
+type AdminChangeUserRole200JSONResponse AdminUser
+
+func (response AdminChangeUserRole200JSONResponse) VisitAdminChangeUserRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminChangeUserRole400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response AdminChangeUserRole400JSONResponse) VisitAdminChangeUserRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminChangeUserRole401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response AdminChangeUserRole401JSONResponse) VisitAdminChangeUserRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminChangeUserRole403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response AdminChangeUserRole403JSONResponse) VisitAdminChangeUserRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminChangeUserRole404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response AdminChangeUserRole404JSONResponse) VisitAdminChangeUserRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminChangeUserRole409JSONResponse struct{ ConflictJSONResponse }
+
+func (response AdminChangeUserRole409JSONResponse) VisitAdminChangeUserRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type AdminChangeUserRole422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response AdminChangeUserRole422JSONResponse) VisitAdminChangeUserRoleResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCatalogueRequestObject struct {
+	Params GetCatalogueParams
+}
+
+type GetCatalogueResponseObject interface {
+	VisitGetCatalogueResponse(w http.ResponseWriter) error
+}
+
+type GetCatalogue200ResponseHeaders struct {
+	CacheControl *string
+	ETag         *string
+}
+
+type GetCatalogue200JSONResponse struct {
+	Body    Catalogue
+	Headers GetCatalogue200ResponseHeaders
+}
+
+func (response GetCatalogue200JSONResponse) VisitGetCatalogueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "Cache-Control", *response.Headers.CacheControl, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header Cache-Control: %w", err)
+			}
+			w.Header().Set("Cache-Control", v)
+		}
+	}
+	if response.Headers.ETag != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "ETag", *response.Headers.ETag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header ETag: %w", err)
+			}
+			w.Header().Set("ETag", v)
+		}
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetCatalogue304ResponseHeaders struct {
+	ETag *string
+}
+
+type GetCatalogue304Response struct {
+	Headers GetCatalogue304ResponseHeaders
+}
+
+func (response GetCatalogue304Response) VisitGetCatalogueResponse(w http.ResponseWriter) error {
+	if response.Headers.ETag != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "ETag", *response.Headers.ETag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header ETag: %w", err)
+			}
+			w.Header().Set("ETag", v)
+		}
+	}
+	w.WriteHeader(304)
+	return nil
+}
+
+type GetCatalogue401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetCatalogue401JSONResponse) VisitGetCatalogueResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIslandsRequestObject struct {
+	Params ListIslandsParams
+}
+
+type ListIslandsResponseObject interface {
+	VisitListIslandsResponse(w http.ResponseWriter) error
+}
+
+type ListIslands200ResponseHeaders struct {
+	CacheControl *string
+	ETag         *string
+}
+
+type ListIslands200JSONResponse struct {
+	Body    IslandList
+	Headers ListIslands200ResponseHeaders
+}
+
+func (response ListIslands200JSONResponse) VisitListIslandsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "Cache-Control", *response.Headers.CacheControl, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header Cache-Control: %w", err)
+			}
+			w.Header().Set("Cache-Control", v)
+		}
+	}
+	if response.Headers.ETag != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "ETag", *response.Headers.ETag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header ETag: %w", err)
+			}
+			w.Header().Set("ETag", v)
+		}
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListIslands304ResponseHeaders struct {
+	ETag *string
+}
+
+type ListIslands304Response struct {
+	Headers ListIslands304ResponseHeaders
+}
+
+func (response ListIslands304Response) VisitListIslandsResponse(w http.ResponseWriter) error {
+	if response.Headers.ETag != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "ETag", *response.Headers.ETag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header ETag: %w", err)
+			}
+			w.Header().Set("ETag", v)
+		}
+	}
+	w.WriteHeader(304)
+	return nil
+}
+
+type ListIslands401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListIslands401JSONResponse) VisitListIslandsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetJobRequestObject struct {
+	Id Uuid `json:"id"`
+}
+
+type GetJobResponseObject interface {
+	VisitGetJobResponse(w http.ResponseWriter) error
+}
+
+type GetJob200JSONResponse Job
+
+func (response GetJob200JSONResponse) VisitGetJobResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetJob401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetJob401JSONResponse) VisitGetJobResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetJob404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetJob404JSONResponse) VisitGetJobResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectTypesRequestObject struct {
+	Params ListProjectTypesParams
+}
+
+type ListProjectTypesResponseObject interface {
+	VisitListProjectTypesResponse(w http.ResponseWriter) error
+}
+
+type ListProjectTypes200ResponseHeaders struct {
+	CacheControl *string
+	ETag         *string
+}
+
+type ListProjectTypes200JSONResponse struct {
+	Body    ProjectTypeList
+	Headers ListProjectTypes200ResponseHeaders
+}
+
+func (response ListProjectTypes200JSONResponse) VisitListProjectTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.Body); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	if response.Headers.CacheControl != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "Cache-Control", *response.Headers.CacheControl, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header Cache-Control: %w", err)
+			}
+			w.Header().Set("Cache-Control", v)
+		}
+	}
+	if response.Headers.ETag != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "ETag", *response.Headers.ETag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header ETag: %w", err)
+			}
+			w.Header().Set("ETag", v)
+		}
+	}
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectTypes304ResponseHeaders struct {
+	ETag *string
+}
+
+type ListProjectTypes304Response struct {
+	Headers ListProjectTypes304ResponseHeaders
+}
+
+func (response ListProjectTypes304Response) VisitListProjectTypesResponse(w http.ResponseWriter) error {
+	if response.Headers.ETag != nil {
+		{
+			v, err := runtime.StyleParamWithOptions("simple", false, "ETag", *response.Headers.ETag, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationHeader, Type: "string", Format: ""})
+			if err != nil {
+				return fmt.Errorf("error styling response header ETag: %w", err)
+			}
+			w.Header().Set("ETag", v)
+		}
+	}
+	w.WriteHeader(304)
+	return nil
+}
+
+type ListProjectTypes401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListProjectTypes401JSONResponse) VisitListProjectTypesResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjectsRequestObject struct {
+	Params ListProjectsParams
+}
+
+type ListProjectsResponseObject interface {
+	VisitListProjectsResponse(w http.ResponseWriter) error
+}
+
+type ListProjects200JSONResponse ProjectList
+
+func (response ListProjects200JSONResponse) VisitListProjectsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjects400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response ListProjects400JSONResponse) VisitListProjectsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListProjects401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListProjects401JSONResponse) VisitListProjectsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProjectRequestObject struct {
+	Body *CreateProjectJSONRequestBody
+}
+
+type CreateProjectResponseObject interface {
+	VisitCreateProjectResponse(w http.ResponseWriter) error
+}
+
+type CreateProject201JSONResponse Project
+
+func (response CreateProject201JSONResponse) VisitCreateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProject400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response CreateProject400JSONResponse) VisitCreateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProject401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateProject401JSONResponse) VisitCreateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProject403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateProject403JSONResponse) VisitCreateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateProject422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response CreateProject422JSONResponse) VisitCreateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProjectRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+}
+
+type DeleteProjectResponseObject interface {
+	VisitDeleteProjectResponse(w http.ResponseWriter) error
+}
+
+type DeleteProject204Response struct {
+}
+
+func (response DeleteProject204Response) VisitDeleteProjectResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteProject401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteProject401JSONResponse) VisitDeleteProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProject403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteProject403JSONResponse) VisitDeleteProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteProject404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteProject404JSONResponse) VisitDeleteProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProjectRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+}
+
+type GetProjectResponseObject interface {
+	VisitGetProjectResponse(w http.ResponseWriter) error
+}
+
+type GetProject200JSONResponse Project
+
+func (response GetProject200JSONResponse) VisitGetProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProject401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetProject401JSONResponse) VisitGetProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetProject404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetProject404JSONResponse) VisitGetProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProjectRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+	Body      *UpdateProjectJSONRequestBody
+}
+
+type UpdateProjectResponseObject interface {
+	VisitUpdateProjectResponse(w http.ResponseWriter) error
+}
+
+type UpdateProject200JSONResponse Project
+
+func (response UpdateProject200JSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProject400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response UpdateProject400JSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.BadRequestJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProject401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response UpdateProject401JSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProject403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response UpdateProject403JSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProject404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response UpdateProject404JSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type UpdateProject422JSONResponse struct{ ValidationFailedJSONResponse }
+
+func (response UpdateProject422JSONResponse) VisitUpdateProjectResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ValidationFailedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(422)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListVersionsRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+}
+
+type ListVersionsResponseObject interface {
+	VisitListVersionsResponse(w http.ResponseWriter) error
+}
+
+type ListVersions200JSONResponse VersionList
+
+func (response ListVersions200JSONResponse) VisitListVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListVersions401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response ListVersions401JSONResponse) VisitListVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type ListVersions404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response ListVersions404JSONResponse) VisitListVersionsResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateVersionRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+}
+
+type CreateVersionResponseObject interface {
+	VisitCreateVersionResponse(w http.ResponseWriter) error
+}
+
+type CreateVersion201JSONResponse Version
+
+func (response CreateVersion201JSONResponse) VisitCreateVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateVersion401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response CreateVersion401JSONResponse) VisitCreateVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateVersion403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response CreateVersion403JSONResponse) VisitCreateVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type CreateVersion404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response CreateVersion404JSONResponse) VisitCreateVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteVersionRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+	VersionId Uuid `json:"version_id"`
+}
+
+type DeleteVersionResponseObject interface {
+	VisitDeleteVersionResponse(w http.ResponseWriter) error
+}
+
+type DeleteVersion204Response struct {
+}
+
+func (response DeleteVersion204Response) VisitDeleteVersionResponse(w http.ResponseWriter) error {
+	w.WriteHeader(204)
+	return nil
+}
+
+type DeleteVersion401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DeleteVersion401JSONResponse) VisitDeleteVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteVersion403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response DeleteVersion403JSONResponse) VisitDeleteVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DeleteVersion404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DeleteVersion404JSONResponse) VisitDeleteVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetVersionRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+	VersionId Uuid `json:"version_id"`
+}
+
+type GetVersionResponseObject interface {
+	VisitGetVersionResponse(w http.ResponseWriter) error
+}
+
+type GetVersion200JSONResponse Version
+
+func (response GetVersion200JSONResponse) VisitGetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetVersion401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response GetVersion401JSONResponse) VisitGetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type GetVersion404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response GetVersion404JSONResponse) VisitGetVersionResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
 
 type ListAnswersRequestObject struct {
 	ProjectId Uuid `json:"project_id"`
@@ -1168,6 +5796,99 @@ func (response PutAnswer422JSONResponse) VisitPutAnswerResponse(w http.ResponseW
 	return err
 }
 
+type RequestReportRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
+	VersionId Uuid `json:"version_id"`
+}
+
+type RequestReportResponseObject interface {
+	VisitRequestReportResponse(w http.ResponseWriter) error
+}
+
+type RequestReport202JSONResponse JobAccepted
+
+func (response RequestReport202JSONResponse) VisitRequestReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(202)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestReport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response RequestReport401JSONResponse) VisitRequestReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestReport403JSONResponse struct{ ForbiddenJSONResponse }
+
+func (response RequestReport403JSONResponse) VisitRequestReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ForbiddenJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(403)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestReport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response RequestReport404JSONResponse) VisitRequestReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestReport409JSONResponse struct{ ConflictJSONResponse }
+
+func (response RequestReport409JSONResponse) VisitRequestReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type RequestReport429JSONResponse struct{ TooManyRequestsJSONResponse }
+
+func (response RequestReport429JSONResponse) VisitRequestReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.TooManyRequestsJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(429)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type GetResultsRequestObject struct {
 	ProjectId Uuid `json:"project_id"`
 	VersionId Uuid `json:"version_id"`
@@ -1421,8 +6142,168 @@ func (response SubmitVersion422JSONResponse) VisitSubmitVersionResponse(w http.R
 	return err
 }
 
+type DownloadReportRequestObject struct {
+	JobId Uuid `json:"job_id"`
+}
+
+type DownloadReportResponseObject interface {
+	VisitDownloadReportResponse(w http.ResponseWriter) error
+}
+
+type DownloadReport200ApplicationpdfResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response DownloadReport200ApplicationpdfResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/pdf")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DownloadReport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DownloadReport401JSONResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadReport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DownloadReport404JSONResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadReport409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DownloadReport409JSONResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
+	// AdminGetAdvice Get the advice lists of an indicator
+	// (GET /admin/advice/{indicator_code})
+	AdminGetAdvice(ctx context.Context, request AdminGetAdviceRequestObject) (AdminGetAdviceResponseObject, error)
+	// AdminReplaceAdviceList Replace one advice list
+	// (PUT /admin/advice/{indicator_code}/{list})
+	AdminReplaceAdviceList(ctx context.Context, request AdminReplaceAdviceListRequestObject) (AdminReplaceAdviceListResponseObject, error)
+	// AdminListAuditLog List audit log entries
+	// (GET /admin/audit-log)
+	AdminListAuditLog(ctx context.Context, request AdminListAuditLogRequestObject) (AdminListAuditLogResponseObject, error)
+	// AdminGetAuditEntry Get one audit entry with old and new values
+	// (GET /admin/audit-log/{audit_id})
+	AdminGetAuditEntry(ctx context.Context, request AdminGetAuditEntryRequestObject) (AdminGetAuditEntryResponseObject, error)
+	// AdminRequestExport Request a pseudonymised research export
+	// (POST /admin/exports)
+	AdminRequestExport(ctx context.Context, request AdminRequestExportRequestObject) (AdminRequestExportResponseObject, error)
+	// AdminDownloadExport Download a finished export
+	// (GET /admin/exports/{job_id}/download)
+	AdminDownloadExport(ctx context.Context, request AdminDownloadExportRequestObject) (AdminDownloadExportResponseObject, error)
+	// AdminGetImpactTables Get the RI_C and RI_T tables
+	// (GET /admin/impact-tables)
+	AdminGetImpactTables(ctx context.Context, request AdminGetImpactTablesRequestObject) (AdminGetImpactTablesResponseObject, error)
+	// AdminUpdateImpactTables Update the RI_C and RI_T tables
+	// (PUT /admin/impact-tables)
+	AdminUpdateImpactTables(ctx context.Context, request AdminUpdateImpactTablesRequestObject) (AdminUpdateImpactTablesResponseObject, error)
+	// AdminListRlThresholds List RL thresholds of all indicators
+	// (GET /admin/rl-thresholds)
+	AdminListRlThresholds(ctx context.Context, request AdminListRlThresholdsRequestObject) (AdminListRlThresholdsResponseObject, error)
+	// AdminGetRlThreshold Get the RL thresholds of an indicator
+	// (GET /admin/rl-thresholds/{indicator_code})
+	AdminGetRlThreshold(ctx context.Context, request AdminGetRlThresholdRequestObject) (AdminGetRlThresholdResponseObject, error)
+	// AdminUpdateRlThreshold Update the RL thresholds of an indicator
+	// (PUT /admin/rl-thresholds/{indicator_code})
+	AdminUpdateRlThreshold(ctx context.Context, request AdminUpdateRlThresholdRequestObject) (AdminUpdateRlThresholdResponseObject, error)
+	// AdminListUsers List and search users
+	// (GET /admin/users)
+	AdminListUsers(ctx context.Context, request AdminListUsersRequestObject) (AdminListUsersResponseObject, error)
+	// AdminDeleteUser Delete (anonymise) a user
+	// (DELETE /admin/users/{user_id})
+	AdminDeleteUser(ctx context.Context, request AdminDeleteUserRequestObject) (AdminDeleteUserResponseObject, error)
+	// AdminGetUser Get one user
+	// (GET /admin/users/{user_id})
+	AdminGetUser(ctx context.Context, request AdminGetUserRequestObject) (AdminGetUserResponseObject, error)
+	// AdminDeactivateUser Deactivate a user
+	// (POST /admin/users/{user_id}/deactivate)
+	AdminDeactivateUser(ctx context.Context, request AdminDeactivateUserRequestObject) (AdminDeactivateUserResponseObject, error)
+	// AdminReactivateUser Reactivate a user
+	// (POST /admin/users/{user_id}/reactivate)
+	AdminReactivateUser(ctx context.Context, request AdminReactivateUserRequestObject) (AdminReactivateUserResponseObject, error)
+	// AdminChangeUserRole Change a user's role
+	// (PUT /admin/users/{user_id}/role)
+	AdminChangeUserRole(ctx context.Context, request AdminChangeUserRoleRequestObject) (AdminChangeUserRoleResponseObject, error)
+	// GetCatalogue Get the indicator catalogue
+	// (GET /catalogue)
+	GetCatalogue(ctx context.Context, request GetCatalogueRequestObject) (GetCatalogueResponseObject, error)
+	// ListIslands List islands
+	// (GET /islands)
+	ListIslands(ctx context.Context, request ListIslandsRequestObject) (ListIslandsResponseObject, error)
+	// GetJob Get the status of a job
+	// (GET /jobs/{id})
+	GetJob(ctx context.Context, request GetJobRequestObject) (GetJobResponseObject, error)
+	// ListProjectTypes List project types
+	// (GET /project-types)
+	ListProjectTypes(ctx context.Context, request ListProjectTypesRequestObject) (ListProjectTypesResponseObject, error)
+	// ListProjects List own projects
+	// (GET /projects)
+	ListProjects(ctx context.Context, request ListProjectsRequestObject) (ListProjectsResponseObject, error)
+	// CreateProject Create a project
+	// (POST /projects)
+	CreateProject(ctx context.Context, request CreateProjectRequestObject) (CreateProjectResponseObject, error)
+	// DeleteProject Delete a project (soft)
+	// (DELETE /projects/{project_id})
+	DeleteProject(ctx context.Context, request DeleteProjectRequestObject) (DeleteProjectResponseObject, error)
+	// GetProject Get a project
+	// (GET /projects/{project_id})
+	GetProject(ctx context.Context, request GetProjectRequestObject) (GetProjectResponseObject, error)
+	// UpdateProject Edit a project
+	// (PATCH /projects/{project_id})
+	UpdateProject(ctx context.Context, request UpdateProjectRequestObject) (UpdateProjectResponseObject, error)
+	// ListVersions List the versions of a project
+	// (GET /projects/{project_id}/versions)
+	ListVersions(ctx context.Context, request ListVersionsRequestObject) (ListVersionsResponseObject, error)
+	// CreateVersion Start a new blank version
+	// (POST /projects/{project_id}/versions)
+	CreateVersion(ctx context.Context, request CreateVersionRequestObject) (CreateVersionResponseObject, error)
+	// DeleteVersion Delete a version (soft)
+	// (DELETE /projects/{project_id}/versions/{version_id})
+	DeleteVersion(ctx context.Context, request DeleteVersionRequestObject) (DeleteVersionResponseObject, error)
+	// GetVersion Get a version
+	// (GET /projects/{project_id}/versions/{version_id})
+	GetVersion(ctx context.Context, request GetVersionRequestObject) (GetVersionResponseObject, error)
 	// ListAnswers Get all answers of a version.
 	// (GET /projects/{project_id}/versions/{version_id}/answers)
 	ListAnswers(ctx context.Context, request ListAnswersRequestObject) (ListAnswersResponseObject, error)
@@ -1432,6 +6313,9 @@ type StrictServerInterface interface {
 	// PutAnswer Upsert the answer of one indicator.
 	// (PUT /projects/{project_id}/versions/{version_id}/answers/{indicator_code})
 	PutAnswer(ctx context.Context, request PutAnswerRequestObject) (PutAnswerResponseObject, error)
+	// RequestReport Request a PDF report for the last submission of a version
+	// (POST /projects/{project_id}/versions/{version_id}/reports)
+	RequestReport(ctx context.Context, request RequestReportRequestObject) (RequestReportResponseObject, error)
 	// GetResults Get the results of the last submission.
 	// (GET /projects/{project_id}/versions/{version_id}/results)
 	GetResults(ctx context.Context, request GetResultsRequestObject) (GetResultsResponseObject, error)
@@ -1441,6 +6325,9 @@ type StrictServerInterface interface {
 	// SubmitVersion Submit (or resubmit) the version and score every complete indicator.
 	// (POST /projects/{project_id}/versions/{version_id}/submit)
 	SubmitVersion(ctx context.Context, request SubmitVersionRequestObject) (SubmitVersionResponseObject, error)
+	// DownloadReport Download a finished report
+	// (GET /reports/{job_id}/download)
+	DownloadReport(ctx context.Context, request DownloadReportRequestObject) (DownloadReportResponseObject, error)
 }
 
 // StrictHandlerFunc and StrictMiddlewareFunc are type aliases rather than
@@ -1483,6 +6370,828 @@ type strictHandler struct {
 	ssi         StrictServerInterface
 	middlewares []StrictMiddlewareFunc
 	options     StrictHTTPServerOptions
+}
+
+// AdminGetAdvice operation middleware
+func (sh *strictHandler) AdminGetAdvice(w http.ResponseWriter, r *http.Request, indicatorCode string) {
+	var request AdminGetAdviceRequestObject
+
+	request.IndicatorCode = indicatorCode
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminGetAdvice(ctx, request.(AdminGetAdviceRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminGetAdvice")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminGetAdviceResponseObject); ok {
+		if err := validResponse.VisitAdminGetAdviceResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminReplaceAdviceList operation middleware
+func (sh *strictHandler) AdminReplaceAdviceList(w http.ResponseWriter, r *http.Request, indicatorCode string, list AdviceList) {
+	var request AdminReplaceAdviceListRequestObject
+
+	request.IndicatorCode = indicatorCode
+	request.List = list
+
+	var body AdminReplaceAdviceListJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminReplaceAdviceList(ctx, request.(AdminReplaceAdviceListRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminReplaceAdviceList")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminReplaceAdviceListResponseObject); ok {
+		if err := validResponse.VisitAdminReplaceAdviceListResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminListAuditLog operation middleware
+func (sh *strictHandler) AdminListAuditLog(w http.ResponseWriter, r *http.Request, params AdminListAuditLogParams) {
+	var request AdminListAuditLogRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminListAuditLog(ctx, request.(AdminListAuditLogRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminListAuditLog")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminListAuditLogResponseObject); ok {
+		if err := validResponse.VisitAdminListAuditLogResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminGetAuditEntry operation middleware
+func (sh *strictHandler) AdminGetAuditEntry(w http.ResponseWriter, r *http.Request, auditId int64) {
+	var request AdminGetAuditEntryRequestObject
+
+	request.AuditId = auditId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminGetAuditEntry(ctx, request.(AdminGetAuditEntryRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminGetAuditEntry")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminGetAuditEntryResponseObject); ok {
+		if err := validResponse.VisitAdminGetAuditEntryResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminRequestExport operation middleware
+func (sh *strictHandler) AdminRequestExport(w http.ResponseWriter, r *http.Request) {
+	var request AdminRequestExportRequestObject
+
+	var body AdminRequestExportJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminRequestExport(ctx, request.(AdminRequestExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminRequestExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminRequestExportResponseObject); ok {
+		if err := validResponse.VisitAdminRequestExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminDownloadExport operation middleware
+func (sh *strictHandler) AdminDownloadExport(w http.ResponseWriter, r *http.Request, jobId Uuid) {
+	var request AdminDownloadExportRequestObject
+
+	request.JobId = jobId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminDownloadExport(ctx, request.(AdminDownloadExportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminDownloadExport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminDownloadExportResponseObject); ok {
+		if err := validResponse.VisitAdminDownloadExportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminGetImpactTables operation middleware
+func (sh *strictHandler) AdminGetImpactTables(w http.ResponseWriter, r *http.Request) {
+	var request AdminGetImpactTablesRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminGetImpactTables(ctx, request.(AdminGetImpactTablesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminGetImpactTables")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminGetImpactTablesResponseObject); ok {
+		if err := validResponse.VisitAdminGetImpactTablesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminUpdateImpactTables operation middleware
+func (sh *strictHandler) AdminUpdateImpactTables(w http.ResponseWriter, r *http.Request) {
+	var request AdminUpdateImpactTablesRequestObject
+
+	var body AdminUpdateImpactTablesJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminUpdateImpactTables(ctx, request.(AdminUpdateImpactTablesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminUpdateImpactTables")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminUpdateImpactTablesResponseObject); ok {
+		if err := validResponse.VisitAdminUpdateImpactTablesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminListRlThresholds operation middleware
+func (sh *strictHandler) AdminListRlThresholds(w http.ResponseWriter, r *http.Request) {
+	var request AdminListRlThresholdsRequestObject
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminListRlThresholds(ctx, request.(AdminListRlThresholdsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminListRlThresholds")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminListRlThresholdsResponseObject); ok {
+		if err := validResponse.VisitAdminListRlThresholdsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminGetRlThreshold operation middleware
+func (sh *strictHandler) AdminGetRlThreshold(w http.ResponseWriter, r *http.Request, indicatorCode string) {
+	var request AdminGetRlThresholdRequestObject
+
+	request.IndicatorCode = indicatorCode
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminGetRlThreshold(ctx, request.(AdminGetRlThresholdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminGetRlThreshold")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminGetRlThresholdResponseObject); ok {
+		if err := validResponse.VisitAdminGetRlThresholdResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminUpdateRlThreshold operation middleware
+func (sh *strictHandler) AdminUpdateRlThreshold(w http.ResponseWriter, r *http.Request, indicatorCode string) {
+	var request AdminUpdateRlThresholdRequestObject
+
+	request.IndicatorCode = indicatorCode
+
+	var body AdminUpdateRlThresholdJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminUpdateRlThreshold(ctx, request.(AdminUpdateRlThresholdRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminUpdateRlThreshold")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminUpdateRlThresholdResponseObject); ok {
+		if err := validResponse.VisitAdminUpdateRlThresholdResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminListUsers operation middleware
+func (sh *strictHandler) AdminListUsers(w http.ResponseWriter, r *http.Request, params AdminListUsersParams) {
+	var request AdminListUsersRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminListUsers(ctx, request.(AdminListUsersRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminListUsers")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminListUsersResponseObject); ok {
+		if err := validResponse.VisitAdminListUsersResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminDeleteUser operation middleware
+func (sh *strictHandler) AdminDeleteUser(w http.ResponseWriter, r *http.Request, userId Uuid) {
+	var request AdminDeleteUserRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminDeleteUser(ctx, request.(AdminDeleteUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminDeleteUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminDeleteUserResponseObject); ok {
+		if err := validResponse.VisitAdminDeleteUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminGetUser operation middleware
+func (sh *strictHandler) AdminGetUser(w http.ResponseWriter, r *http.Request, userId Uuid) {
+	var request AdminGetUserRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminGetUser(ctx, request.(AdminGetUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminGetUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminGetUserResponseObject); ok {
+		if err := validResponse.VisitAdminGetUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminDeactivateUser operation middleware
+func (sh *strictHandler) AdminDeactivateUser(w http.ResponseWriter, r *http.Request, userId Uuid) {
+	var request AdminDeactivateUserRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminDeactivateUser(ctx, request.(AdminDeactivateUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminDeactivateUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminDeactivateUserResponseObject); ok {
+		if err := validResponse.VisitAdminDeactivateUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminReactivateUser operation middleware
+func (sh *strictHandler) AdminReactivateUser(w http.ResponseWriter, r *http.Request, userId Uuid) {
+	var request AdminReactivateUserRequestObject
+
+	request.UserId = userId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminReactivateUser(ctx, request.(AdminReactivateUserRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminReactivateUser")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminReactivateUserResponseObject); ok {
+		if err := validResponse.VisitAdminReactivateUserResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// AdminChangeUserRole operation middleware
+func (sh *strictHandler) AdminChangeUserRole(w http.ResponseWriter, r *http.Request, userId Uuid) {
+	var request AdminChangeUserRoleRequestObject
+
+	request.UserId = userId
+
+	var body AdminChangeUserRoleJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.AdminChangeUserRole(ctx, request.(AdminChangeUserRoleRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "AdminChangeUserRole")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(AdminChangeUserRoleResponseObject); ok {
+		if err := validResponse.VisitAdminChangeUserRoleResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetCatalogue operation middleware
+func (sh *strictHandler) GetCatalogue(w http.ResponseWriter, r *http.Request, params GetCatalogueParams) {
+	var request GetCatalogueRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetCatalogue(ctx, request.(GetCatalogueRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetCatalogue")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetCatalogueResponseObject); ok {
+		if err := validResponse.VisitGetCatalogueResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListIslands operation middleware
+func (sh *strictHandler) ListIslands(w http.ResponseWriter, r *http.Request, params ListIslandsParams) {
+	var request ListIslandsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.ListIslands(ctx, request.(ListIslandsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListIslands")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListIslandsResponseObject); ok {
+		if err := validResponse.VisitListIslandsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetJob operation middleware
+func (sh *strictHandler) GetJob(w http.ResponseWriter, r *http.Request, id Uuid) {
+	var request GetJobRequestObject
+
+	request.Id = id
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetJob(ctx, request.(GetJobRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetJob")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetJobResponseObject); ok {
+		if err := validResponse.VisitGetJobResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProjectTypes operation middleware
+func (sh *strictHandler) ListProjectTypes(w http.ResponseWriter, r *http.Request, params ListProjectTypesParams) {
+	var request ListProjectTypesRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.ListProjectTypes(ctx, request.(ListProjectTypesRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProjectTypes")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProjectTypesResponseObject); ok {
+		if err := validResponse.VisitListProjectTypesResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListProjects operation middleware
+func (sh *strictHandler) ListProjects(w http.ResponseWriter, r *http.Request, params ListProjectsParams) {
+	var request ListProjectsRequestObject
+
+	request.Params = params
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.ListProjects(ctx, request.(ListProjectsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListProjects")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListProjectsResponseObject); ok {
+		if err := validResponse.VisitListProjectsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateProject operation middleware
+func (sh *strictHandler) CreateProject(w http.ResponseWriter, r *http.Request) {
+	var request CreateProjectRequestObject
+
+	var body CreateProjectJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.CreateProject(ctx, request.(CreateProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateProjectResponseObject); ok {
+		if err := validResponse.VisitCreateProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteProject operation middleware
+func (sh *strictHandler) DeleteProject(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	var request DeleteProjectRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.DeleteProject(ctx, request.(DeleteProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteProjectResponseObject); ok {
+		if err := validResponse.VisitDeleteProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetProject operation middleware
+func (sh *strictHandler) GetProject(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	var request GetProjectRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetProject(ctx, request.(GetProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetProjectResponseObject); ok {
+		if err := validResponse.VisitGetProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// UpdateProject operation middleware
+func (sh *strictHandler) UpdateProject(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	var request UpdateProjectRequestObject
+
+	request.ProjectId = projectId
+
+	var body UpdateProjectJSONRequestBody
+	if err := runtime.BindJSONBody(r, &body); err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't decode JSON body: %w", err))
+		return
+	}
+	request.Body = &body
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.UpdateProject(ctx, request.(UpdateProjectRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "UpdateProject")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(UpdateProjectResponseObject); ok {
+		if err := validResponse.VisitUpdateProjectResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// ListVersions operation middleware
+func (sh *strictHandler) ListVersions(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	var request ListVersionsRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.ListVersions(ctx, request.(ListVersionsRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "ListVersions")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(ListVersionsResponseObject); ok {
+		if err := validResponse.VisitListVersionsResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// CreateVersion operation middleware
+func (sh *strictHandler) CreateVersion(w http.ResponseWriter, r *http.Request, projectId Uuid) {
+	var request CreateVersionRequestObject
+
+	request.ProjectId = projectId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.CreateVersion(ctx, request.(CreateVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "CreateVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(CreateVersionResponseObject); ok {
+		if err := validResponse.VisitCreateVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// DeleteVersion operation middleware
+func (sh *strictHandler) DeleteVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	var request DeleteVersionRequestObject
+
+	request.ProjectId = projectId
+	request.VersionId = versionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.DeleteVersion(ctx, request.(DeleteVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DeleteVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DeleteVersionResponseObject); ok {
+		if err := validResponse.VisitDeleteVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// GetVersion operation middleware
+func (sh *strictHandler) GetVersion(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	var request GetVersionRequestObject
+
+	request.ProjectId = projectId
+	request.VersionId = versionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.GetVersion(ctx, request.(GetVersionRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "GetVersion")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(GetVersionResponseObject); ok {
+		if err := validResponse.VisitGetVersionResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
 }
 
 // ListAnswers operation middleware
@@ -1581,6 +7290,33 @@ func (sh *strictHandler) PutAnswer(w http.ResponseWriter, r *http.Request, proje
 	}
 }
 
+// RequestReport operation middleware
+func (sh *strictHandler) RequestReport(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	var request RequestReportRequestObject
+
+	request.ProjectId = projectId
+	request.VersionId = versionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.RequestReport(ctx, request.(RequestReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestReportResponseObject); ok {
+		if err := validResponse.VisitRequestReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // GetResults operation middleware
 func (sh *strictHandler) GetResults(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
 	var request GetResultsRequestObject
@@ -1670,68 +7406,204 @@ func (sh *strictHandler) SubmitVersion(w http.ResponseWriter, r *http.Request, p
 	}
 }
 
+// DownloadReport operation middleware
+func (sh *strictHandler) DownloadReport(w http.ResponseWriter, r *http.Request, jobId Uuid) {
+	var request DownloadReportRequestObject
+
+	request.JobId = jobId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.DownloadReport(ctx, request.(DownloadReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "DownloadReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(DownloadReportResponseObject); ok {
+		if err := validResponse.VisitDownloadReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"5i7Uve1j3/X/BgA=",
+	"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",
+	"ynX//wEA",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

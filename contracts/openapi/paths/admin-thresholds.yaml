@@ -1,0 +1,116 @@
+/admin/rl-thresholds:
+  get:
+    operationId: adminListRlThresholds
+    summary: List RL thresholds of all indicators
+    description: Admin only.
+    responses:
+      '200':
+        description: Thresholds a..e per indicator.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminRlThresholdList
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+/admin/rl-thresholds/{indicator_code}:
+  parameters:
+    - name: indicator_code
+      in: path
+      required: true
+      schema:
+        type: string
+  get:
+    operationId: adminGetRlThreshold
+    summary: Get the RL thresholds of an indicator
+    description: Admin only.
+    responses:
+      '200':
+        description: The thresholds.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminRlThreshold
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+  put:
+    operationId: adminUpdateRlThreshold
+    summary: Update the RL thresholds of an indicator
+    description: |
+      Admin only. Valid pattern (a..e, a..c only, or c..e only), values at
+      least 0, strictly increasing (decreasing for inverse indicators);
+      otherwise 422. Applies only to versions created afterwards. Writes an
+      audit entry with old and new values.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/admin.yaml#/AdminUpdateRlThresholdRequest
+    responses:
+      '200':
+        description: The stored thresholds.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminRlThreshold
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+/admin/impact-tables:
+  get:
+    operationId: adminGetImpactTables
+    summary: Get the RI_C and RI_T tables
+    description: Admin only. Both shared tables in one response.
+    responses:
+      '200':
+        description: Both tables.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminImpactTables
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+  put:
+    operationId: adminUpdateImpactTables
+    summary: Update the RI_C and RI_T tables
+    description: |
+      Admin only. Edits one or both tables in one call. Each changed table
+      needs all five values, at least 0 and strictly increasing; otherwise
+      422. Applies only to versions created afterwards. Writes one audit
+      entry per changed table.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/admin.yaml#/AdminUpdateImpactTablesRequest
+    responses:
+      '200':
+        description: Both tables after the update.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/admin.yaml#/AdminImpactTables
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed

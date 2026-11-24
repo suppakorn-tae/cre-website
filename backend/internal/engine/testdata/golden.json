@@ -1,0 +1,9242 @@
+{
+ "cases": [
+  {
+   "name": "EC-MG-1 low",
+   "indicator": "EC-MG-1",
+   "x": 1.66,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 2.55,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-1 middle",
+   "indicator": "EC-MG-1",
+   "x": 5.07,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-1 high",
+   "indicator": "EC-MG-1",
+   "x": 8.41,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-MG-2 low",
+   "indicator": "EC-MG-2",
+   "x": 4.08,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-2 middle",
+   "indicator": "EC-MG-2",
+   "x": 12.03,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-2 high",
+   "indicator": "EC-MG-2",
+   "x": 18.8,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 4.848,
+    "level": "VH",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "EC-MG-3 low",
+   "indicator": "EC-MG-3",
+   "x": 1.57,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-3 middle",
+   "indicator": "EC-MG-3",
+   "x": 5.85,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "EC-MG-3 high",
+   "indicator": "EC-MG-3",
+   "x": 8.84,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-MG-4 low",
+   "indicator": "EC-MG-4",
+   "x": 2.3,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 2.419,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-4 middle",
+   "indicator": "EC-MG-4",
+   "x": 5.91,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-4 high",
+   "indicator": "EC-MG-4",
+   "x": 9.41,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-MG-5 low",
+   "indicator": "EC-MG-5",
+   "x": 9.13,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-5 middle",
+   "indicator": "EC-MG-5",
+   "x": 5.3,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-5 high",
+   "indicator": "EC-MG-5",
+   "x": 2.71,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 4.69,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 4.594,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-TC-1 low",
+   "indicator": "EC-TC-1",
+   "x": 0.85,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-1 middle",
+   "indicator": "EC-TC-1",
+   "x": 5.94,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 3.795,
+    "level": "H",
+    "advice": [
+     "RI_T"
+    ]
+   }
+  },
+  {
+   "name": "EC-TC-1 high",
+   "indicator": "EC-TC-1",
+   "x": 8.68,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-TC-2 low",
+   "indicator": "EC-TC-2",
+   "x": 0.85,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 2.55,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-2 middle",
+   "indicator": "EC-TC-2",
+   "x": 5.94,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-2 high",
+   "indicator": "EC-TC-2",
+   "x": 8.68,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-TC-3 low",
+   "indicator": "EC-TC-3",
+   "x": 0.8,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-3 middle",
+   "indicator": "EC-TC-3",
+   "x": 5.92,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-3 high",
+   "indicator": "EC-TC-3",
+   "x": 8.78,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 4.848,
+    "level": "VH",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "EC-TC-4 low",
+   "indicator": "EC-TC-4",
+   "x": 0.8,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-4 middle",
+   "indicator": "EC-TC-4",
+   "x": 5.92,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "EC-TC-4 high",
+   "indicator": "EC-TC-4",
+   "x": 8.78,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-TC-5 low",
+   "indicator": "EC-TC-5",
+   "x": 5.51,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 2.55,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-5 middle",
+   "indicator": "EC-TC-5",
+   "x": 11.22,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-5 high",
+   "indicator": "EC-TC-5",
+   "x": 17.9,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-CO-1 low",
+   "indicator": "EC-CO-1",
+   "x": 4.57,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-1 middle",
+   "indicator": "EC-CO-1",
+   "x": 11.72,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-1 high",
+   "indicator": "EC-CO-1",
+   "x": 17.33,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 4.848,
+    "level": "VH",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "EC-CO-2 low",
+   "indicator": "EC-CO-2",
+   "x": 4.77,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-2 middle",
+   "indicator": "EC-CO-2",
+   "x": 16.24,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "EC-CO-2 high",
+   "indicator": "EC-CO-2",
+   "x": 27.11,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-CO-3 low",
+   "indicator": "EC-CO-3",
+   "x": 1.99,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 2.419,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-3 middle",
+   "indicator": "EC-CO-3",
+   "x": 7.94,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-3 high",
+   "indicator": "EC-CO-3",
+   "x": 14.65,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-CO-4 low",
+   "indicator": "EC-CO-4",
+   "x": 1.74,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-4 middle",
+   "indicator": "EC-CO-4",
+   "x": 5.34,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-4 high",
+   "indicator": "EC-CO-4",
+   "x": 8.4,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 4.599,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-CO-5 low",
+   "indicator": "EC-CO-5",
+   "x": 82.78,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-5 middle",
+   "indicator": "EC-CO-5",
+   "x": 66.75,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 3.795,
+    "level": "H",
+    "advice": [
+     "RI_T"
+    ]
+   }
+  },
+  {
+   "name": "EC-CO-5 high",
+   "indicator": "EC-CO-5",
+   "x": 51.74,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-RS-1 low",
+   "indicator": "EC-RS-1",
+   "x": 88.86,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 2.55,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-1 middle",
+   "indicator": "EC-RS-1",
+   "x": 70.71,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-1 high",
+   "indicator": "EC-RS-1",
+   "x": 43.44,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-RS-2 low",
+   "indicator": "EC-RS-2",
+   "x": 3.83,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-2 middle",
+   "indicator": "EC-RS-2",
+   "x": 11.24,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-2 high",
+   "indicator": "EC-RS-2",
+   "x": 16.2,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 4.848,
+    "level": "VH",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "EC-RS-3 low",
+   "indicator": "EC-RS-3",
+   "x": 4.22,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-3 middle",
+   "indicator": "EC-RS-3",
+   "x": 11.24,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "EC-RS-3 high",
+   "indicator": "EC-RS-3",
+   "x": 17.6,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-RS-4 low",
+   "indicator": "EC-RS-4",
+   "x": 3.37,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 2.55,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-4 middle",
+   "indicator": "EC-RS-4",
+   "x": 15.33,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-4 high",
+   "indicator": "EC-RS-4",
+   "x": 25.74,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-RS-5 low",
+   "indicator": "EC-RS-5",
+   "x": 3.26,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-5 middle",
+   "indicator": "EC-RS-5",
+   "x": 14.08,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-5 high",
+   "indicator": "EC-RS-5",
+   "x": 23.71,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 4.848,
+    "level": "VH",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "EC-HS-1 low",
+   "indicator": "EC-HS-1",
+   "x": 0.33,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-1 middle",
+   "indicator": "EC-HS-1",
+   "x": 1.77,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "EC-HS-1 high",
+   "indicator": "EC-HS-1",
+   "x": 4.16,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-HS-2 low",
+   "indicator": "EC-HS-2",
+   "x": 1.53,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 2.419,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-2 middle",
+   "indicator": "EC-HS-2",
+   "x": 5.26,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.873,
+    "level": "H",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-HS-2 high",
+   "indicator": "EC-HS-2",
+   "x": 8.32,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.722,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-HS-3 low",
+   "indicator": "EC-HS-3",
+   "x": 0.21,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-3 middle",
+   "indicator": "EC-HS-3",
+   "x": 1.54,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-3 high",
+   "indicator": "EC-HS-3",
+   "x": 3.78,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 4.599,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-HS-4 low",
+   "indicator": "EC-HS-4",
+   "x": 0.87,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-4 middle",
+   "indicator": "EC-HS-4",
+   "x": 4.99,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 3.795,
+    "level": "H",
+    "advice": [
+     "RI_T"
+    ]
+   }
+  },
+  {
+   "name": "EC-HS-4 high",
+   "indicator": "EC-HS-4",
+   "x": 8.26,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-HS-5 low",
+   "indicator": "EC-HS-5",
+   "x": 6.21,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 2.55,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-5 middle",
+   "indicator": "EC-HS-5",
+   "x": 16.85,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.873,
+    "level": "H",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-HS-5 high",
+   "indicator": "EC-HS-5",
+   "x": 24.57,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.722,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-CL-1 low",
+   "indicator": "SO-CL-1",
+   "x": 0.82,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-1 middle",
+   "indicator": "SO-CL-1",
+   "x": 4.96,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-1 high",
+   "indicator": "SO-CL-1",
+   "x": 8.55,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 4.848,
+    "level": "VH",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "SO-CL-2 low",
+   "indicator": "SO-CL-2",
+   "x": 0.85,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-2 middle",
+   "indicator": "SO-CL-2",
+   "x": 4.96,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "SO-CL-2 high",
+   "indicator": "SO-CL-2",
+   "x": 8.55,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-CL-3 low",
+   "indicator": "SO-CL-3",
+   "x": 0.82,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 2.55,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-3 middle",
+   "indicator": "SO-CL-3",
+   "x": 4.96,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-3 high",
+   "indicator": "SO-CL-3",
+   "x": 8.55,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-CL-4 low",
+   "indicator": "SO-CL-4",
+   "x": 0.82,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-4 middle",
+   "indicator": "SO-CL-4",
+   "x": 4.96,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-4 high",
+   "indicator": "SO-CL-4",
+   "x": 8.55,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 4.848,
+    "level": "VH",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "SO-CL-5 low",
+   "indicator": "SO-CL-5",
+   "x": 0.85,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-5 middle",
+   "indicator": "SO-CL-5",
+   "x": 4.96,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "SO-CL-5 high",
+   "indicator": "SO-CL-5",
+   "x": 8.55,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-EF-1 low",
+   "indicator": "SO-EF-1",
+   "x": 3.03,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 2.419,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-1 middle",
+   "indicator": "SO-EF-1",
+   "x": 10.25,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-1 high",
+   "indicator": "SO-EF-1",
+   "x": 16.73,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-EF-2 low",
+   "indicator": "SO-EF-2",
+   "x": 3.15,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-2 middle",
+   "indicator": "SO-EF-2",
+   "x": 10.17,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-2 high",
+   "indicator": "SO-EF-2",
+   "x": 16.64,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 4.599,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-EF-3 low",
+   "indicator": "SO-EF-3",
+   "x": 3.0,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-3 middle",
+   "indicator": "SO-EF-3",
+   "x": 10.17,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 3.795,
+    "level": "H",
+    "advice": [
+     "RI_T"
+    ]
+   }
+  },
+  {
+   "name": "SO-EF-3 high",
+   "indicator": "SO-EF-3",
+   "x": 16.64,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-EF-4 low",
+   "indicator": "SO-EF-4",
+   "x": 3.15,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 2.55,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-4 middle",
+   "indicator": "SO-EF-4",
+   "x": 10.17,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-4 high",
+   "indicator": "SO-EF-4",
+   "x": 16.64,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-EF-5 low",
+   "indicator": "SO-EF-5",
+   "x": 3.15,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-5 middle",
+   "indicator": "SO-EF-5",
+   "x": 10.17,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-5 high",
+   "indicator": "SO-EF-5",
+   "x": 16.64,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 4.848,
+    "level": "VH",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "SO-SO-1 low",
+   "indicator": "SO-SO-1",
+   "x": 4.51,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-1 middle",
+   "indicator": "SO-SO-1",
+   "x": 12.0,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "SO-SO-1 high",
+   "indicator": "SO-SO-1",
+   "x": 18.43,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-SO-2 low",
+   "indicator": "SO-SO-2",
+   "x": 0.69,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 2.55,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-2 middle",
+   "indicator": "SO-SO-2",
+   "x": 4.45,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-2 high",
+   "indicator": "SO-SO-2",
+   "x": 6.95,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-SO-3 low",
+   "indicator": "SO-SO-3",
+   "x": 0.53,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-3 middle",
+   "indicator": "SO-SO-3",
+   "x": 4.55,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-3 high",
+   "indicator": "SO-SO-3",
+   "x": 7.0,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 4.848,
+    "level": "VH",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "SO-SO-4 low",
+   "indicator": "SO-SO-4",
+   "x": 0.43,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-4 middle",
+   "indicator": "SO-SO-4",
+   "x": 4.56,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "SO-SO-4 high",
+   "indicator": "SO-SO-4",
+   "x": 7.61,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-SO-5 low",
+   "indicator": "SO-SO-5",
+   "x": 0.5,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 2.419,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-5 middle",
+   "indicator": "SO-SO-5",
+   "x": 2.75,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-5 high",
+   "indicator": "SO-SO-5",
+   "x": 4.0,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-PL-1 low",
+   "indicator": "SO-PL-1",
+   "x": 2,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-1 middle",
+   "indicator": "SO-PL-1",
+   "x": 4.23,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-1 high",
+   "indicator": "SO-PL-1",
+   "x": 9.63,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 4.599,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-PL-2 low",
+   "indicator": "SO-PL-2",
+   "x": 4.59,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-2 middle",
+   "indicator": "SO-PL-2",
+   "x": 12.84,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 3.795,
+    "level": "H",
+    "advice": [
+     "RI_T"
+    ]
+   }
+  },
+  {
+   "name": "SO-PL-2 high",
+   "indicator": "SO-PL-2",
+   "x": 19.54,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-PL-3 low",
+   "indicator": "SO-PL-3",
+   "x": 3.18,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 2.55,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-3 middle",
+   "indicator": "SO-PL-3",
+   "x": 11.18,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-3 high",
+   "indicator": "SO-PL-3",
+   "x": 17.2,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "SO-PL-4 low",
+   "indicator": "SO-PL-4",
+   "x": 2.83,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-4 middle",
+   "indicator": "SO-PL-4",
+   "x": 11.18,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-4 high",
+   "indicator": "SO-PL-4",
+   "x": 17.2,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 4.848,
+    "level": "VH",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "SO-PL-5 low",
+   "indicator": "SO-PL-5",
+   "x": 3.47,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-5 middle",
+   "indicator": "SO-PL-5",
+   "x": 12.05,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "SO-PL-5 high",
+   "indicator": "SO-PL-5",
+   "x": 18.24,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EV-SC-1 low",
+   "indicator": "EV-SC-1",
+   "x": 3.16,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 2.55,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-1 middle",
+   "indicator": "EV-SC-1",
+   "x": 11.43,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-1 high",
+   "indicator": "EV-SC-1",
+   "x": 17.22,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EV-SC-2 low",
+   "indicator": "EV-SC-2",
+   "x": 3.12,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-2 middle",
+   "indicator": "EV-SC-2",
+   "x": 11.28,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-2 high",
+   "indicator": "EV-SC-2",
+   "x": 17.93,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 4.848,
+    "level": "VH",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "EV-SC-3 low",
+   "indicator": "EV-SC-3",
+   "x": 1.29,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-3 middle",
+   "indicator": "EV-SC-3",
+   "x": 7.91,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "EV-SC-3 high",
+   "indicator": "EV-SC-3",
+   "x": 14.3,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EV-SC-4 low",
+   "indicator": "EV-SC-4",
+   "x": 3.28,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 2.419,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-4 middle",
+   "indicator": "EV-SC-4",
+   "x": 12.01,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-4 high",
+   "indicator": "EV-SC-4",
+   "x": 18.14,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EV-SC-5 low",
+   "indicator": "EV-SC-5",
+   "x": 0.15,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-5 middle",
+   "indicator": "EV-SC-5",
+   "x": 2.02,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-5 high",
+   "indicator": "EV-SC-5",
+   "x": 4.81,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 4.599,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EV-EV-1 low",
+   "indicator": "EV-EV-1",
+   "x": 0.24,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-1 middle",
+   "indicator": "EV-EV-1",
+   "x": 2.48,
+   "y1": 10,
+   "y2": 70,
+   "y3": [
+    "D"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 1.03,
+    "ri_t": 4.5,
+    "ri_e": 2,
+    "ri_max": 4.5,
+    "rm": 3.795,
+    "level": "H",
+    "advice": [
+     "RI_T"
+    ]
+   }
+  },
+  {
+   "name": "EV-EV-1 high",
+   "indicator": "EV-EV-1",
+   "x": 4.78,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EV-EV-2 low",
+   "indicator": "EV-EV-2",
+   "x": 0.33,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 2.236,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-2 middle",
+   "indicator": "EV-EV-2",
+   "x": 1.73,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-2 high",
+   "indicator": "EV-EV-2",
+   "x": 3.86,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.71,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.583,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EV-EV-3 low",
+   "indicator": "EV-EV-3",
+   "x": 0.33,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-3 middle",
+   "indicator": "EV-EV-3",
+   "x": 1.73,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-3 high",
+   "indicator": "EV-EV-3",
+   "x": 3.86,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 4.71,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 4.853,
+    "level": "VH",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "EV-EV-4 low",
+   "indicator": "EV-EV-4",
+   "x": 59.79,
+   "y1": 3,
+   "y2": 5,
+   "y3": [
+    "A"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.14,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-4 middle",
+   "indicator": "EV-EV-4",
+   "x": 35.48,
+   "y1": 30,
+   "y2": 30,
+   "y3": [
+    "H",
+    "D"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.29,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "EV-EV-4 high",
+   "indicator": "EV-EV-4",
+   "x": 18.62,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EV-EV-5 low",
+   "indicator": "EV-EV-5",
+   "x": 1.15,
+   "y1": 85,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1.3,
+    "ri_c": 5,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 2.55,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-5 middle",
+   "indicator": "EV-EV-5",
+   "x": 8.89,
+   "y1": 30,
+   "y2": 40,
+   "y3": [
+    "F",
+    "B"
+   ],
+   "expect": {
+    "rl": 3.2,
+    "ri_c": 2.26,
+    "ri_t": 2.71,
+    "ri_e": 3,
+    "ri_max": 3,
+    "rm": 3.098,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-5 high",
+   "indicator": "EV-EV-5",
+   "x": 15.78,
+   "y1": 70,
+   "y2": 66,
+   "y3": [
+    "G",
+    "C"
+   ],
+   "expect": {
+    "rl": 4.7,
+    "ri_c": 4.46,
+    "ri_t": 4.28,
+    "ri_e": 4,
+    "ri_max": 4.46,
+    "rm": 4.578,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "EC-MG-1 X=threshold a",
+   "indicator": "EC-MG-1",
+   "x": 1.21,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-1 X=threshold b",
+   "indicator": "EC-MG-1",
+   "x": 2.71,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-1 X=threshold c",
+   "indicator": "EC-MG-1",
+   "x": 4.54,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-1 X=threshold d",
+   "indicator": "EC-MG-1",
+   "x": 7.21,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-1 X=threshold e",
+   "indicator": "EC-MG-1",
+   "x": 8.92,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-2 X=threshold a",
+   "indicator": "EC-MG-2",
+   "x": 2.96,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-2 X=threshold b",
+   "indicator": "EC-MG-2",
+   "x": 6.71,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-2 X=threshold c",
+   "indicator": "EC-MG-2",
+   "x": 11.04,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-2 X=threshold d",
+   "indicator": "EC-MG-2",
+   "x": 16,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-2 X=threshold e",
+   "indicator": "EC-MG-2",
+   "x": 20,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-3 X=threshold a",
+   "indicator": "EC-MG-3",
+   "x": 1.21,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-3 X=threshold b",
+   "indicator": "EC-MG-3",
+   "x": 2.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-3 X=threshold c",
+   "indicator": "EC-MG-3",
+   "x": 5.29,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-3 X=threshold d",
+   "indicator": "EC-MG-3",
+   "x": 8.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-3 X=threshold e",
+   "indicator": "EC-MG-3",
+   "x": 9.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-4 X=threshold a",
+   "indicator": "EC-MG-4",
+   "x": 1.96,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-4 X=threshold b",
+   "indicator": "EC-MG-4",
+   "x": 3.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-4 X=threshold c",
+   "indicator": "EC-MG-4",
+   "x": 5.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-4 X=threshold d",
+   "indicator": "EC-MG-4",
+   "x": 8.21,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-4 X=threshold e",
+   "indicator": "EC-MG-4",
+   "x": 9.92,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-5 X=threshold a",
+   "indicator": "EC-MG-5",
+   "x": 9.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-5 X=threshold b",
+   "indicator": "EC-MG-5",
+   "x": 8.67,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-5 X=threshold c",
+   "indicator": "EC-MG-5",
+   "x": 5.88,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-5 X=threshold d",
+   "indicator": "EC-MG-5",
+   "x": 3,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-MG-5 X=threshold e",
+   "indicator": "EC-MG-5",
+   "x": 2.58,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-1 X=threshold b",
+   "indicator": "EC-TC-1",
+   "x": 2.83,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-1 X=threshold c",
+   "indicator": "EC-TC-1",
+   "x": 5.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-1 X=threshold d",
+   "indicator": "EC-TC-1",
+   "x": 8.04,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-1 X=threshold e",
+   "indicator": "EC-TC-1",
+   "x": 8.96,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-2 X=threshold b",
+   "indicator": "EC-TC-2",
+   "x": 2.83,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-2 X=threshold c",
+   "indicator": "EC-TC-2",
+   "x": 5.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-2 X=threshold d",
+   "indicator": "EC-TC-2",
+   "x": 8.04,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-2 X=threshold e",
+   "indicator": "EC-TC-2",
+   "x": 8.96,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-3 X=threshold b",
+   "indicator": "EC-TC-3",
+   "x": 2.67,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-3 X=threshold c",
+   "indicator": "EC-TC-3",
+   "x": 5.38,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-3 X=threshold d",
+   "indicator": "EC-TC-3",
+   "x": 8.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-3 X=threshold e",
+   "indicator": "EC-TC-3",
+   "x": 9.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-4 X=threshold b",
+   "indicator": "EC-TC-4",
+   "x": 2.67,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-4 X=threshold c",
+   "indicator": "EC-TC-4",
+   "x": 5.38,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-4 X=threshold d",
+   "indicator": "EC-TC-4",
+   "x": 8.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-4 X=threshold e",
+   "indicator": "EC-TC-4",
+   "x": 9.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-5 X=threshold a",
+   "indicator": "EC-TC-5",
+   "x": 5.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-5 X=threshold b",
+   "indicator": "EC-TC-5",
+   "x": 6.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-5 X=threshold c",
+   "indicator": "EC-TC-5",
+   "x": 10.29,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-5 X=threshold d",
+   "indicator": "EC-TC-5",
+   "x": 14.92,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-TC-5 X=threshold e",
+   "indicator": "EC-TC-5",
+   "x": 19.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-1 X=threshold a",
+   "indicator": "EC-CO-1",
+   "x": 3.71,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-1 X=threshold b",
+   "indicator": "EC-CO-1",
+   "x": 6.58,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-1 X=threshold c",
+   "indicator": "EC-CO-1",
+   "x": 10.75,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-1 X=threshold d",
+   "indicator": "EC-CO-1",
+   "x": 15.58,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-1 X=threshold e",
+   "indicator": "EC-CO-1",
+   "x": 18.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-2 X=threshold a",
+   "indicator": "EC-CO-2",
+   "x": 3.58,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-2 X=threshold b",
+   "indicator": "EC-CO-2",
+   "x": 7.54,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-2 X=threshold c",
+   "indicator": "EC-CO-2",
+   "x": 14.38,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-2 X=threshold d",
+   "indicator": "EC-CO-2",
+   "x": 23.67,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-2 X=threshold e",
+   "indicator": "EC-CO-2",
+   "x": 28.58,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-3 X=threshold a",
+   "indicator": "EC-CO-3",
+   "x": 1.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-3 X=threshold b",
+   "indicator": "EC-CO-3",
+   "x": 3.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-3 X=threshold c",
+   "indicator": "EC-CO-3",
+   "x": 6.96,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-3 X=threshold d",
+   "indicator": "EC-CO-3",
+   "x": 11.88,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-3 X=threshold e",
+   "indicator": "EC-CO-3",
+   "x": 15.83,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-4 X=threshold a",
+   "indicator": "EC-CO-4",
+   "x": 1.21,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-4 X=threshold b",
+   "indicator": "EC-CO-4",
+   "x": 2.96,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-4 X=threshold c",
+   "indicator": "EC-CO-4",
+   "x": 4.92,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-4 X=threshold d",
+   "indicator": "EC-CO-4",
+   "x": 7,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-4 X=threshold e",
+   "indicator": "EC-CO-4",
+   "x": 9,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-5 X=threshold a",
+   "indicator": "EC-CO-5",
+   "x": 84.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-5 X=threshold b",
+   "indicator": "EC-CO-5",
+   "x": 79.54,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-5 X=threshold c",
+   "indicator": "EC-CO-5",
+   "x": 69.13,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-5 X=threshold d",
+   "indicator": "EC-CO-5",
+   "x": 57.25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-CO-5 X=threshold e",
+   "indicator": "EC-CO-5",
+   "x": 49.38,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-1 X=threshold a",
+   "indicator": "EC-RS-1",
+   "x": 90.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-1 X=threshold b",
+   "indicator": "EC-RS-1",
+   "x": 85.21,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-1 X=threshold c",
+   "indicator": "EC-RS-1",
+   "x": 73.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-1 X=threshold d",
+   "indicator": "EC-RS-1",
+   "x": 60.21,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-1 X=threshold e",
+   "indicator": "EC-RS-1",
+   "x": 36.25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-2 X=threshold a",
+   "indicator": "EC-RS-2",
+   "x": 2.79,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-2 X=threshold b",
+   "indicator": "EC-RS-2",
+   "x": 6.25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-2 X=threshold c",
+   "indicator": "EC-RS-2",
+   "x": 10.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-2 X=threshold d",
+   "indicator": "EC-RS-2",
+   "x": 15.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-2 X=threshold e",
+   "indicator": "EC-RS-2",
+   "x": 16.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-3 X=threshold a",
+   "indicator": "EC-RS-3",
+   "x": 3.46,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-3 X=threshold b",
+   "indicator": "EC-RS-3",
+   "x": 6,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-3 X=threshold c",
+   "indicator": "EC-RS-3",
+   "x": 10.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-3 X=threshold d",
+   "indicator": "EC-RS-3",
+   "x": 15.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-3 X=threshold e",
+   "indicator": "EC-RS-3",
+   "x": 18.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-4 X=threshold a",
+   "indicator": "EC-RS-4",
+   "x": 2,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-4 X=threshold b",
+   "indicator": "EC-RS-4",
+   "x": 6.58,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-4 X=threshold c",
+   "indicator": "EC-RS-4",
+   "x": 13.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-4 X=threshold d",
+   "indicator": "EC-RS-4",
+   "x": 22.63,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-4 X=threshold e",
+   "indicator": "EC-RS-4",
+   "x": 27.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-5 X=threshold a",
+   "indicator": "EC-RS-5",
+   "x": 2,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-5 X=threshold b",
+   "indicator": "EC-RS-5",
+   "x": 6.21,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-5 X=threshold c",
+   "indicator": "EC-RS-5",
+   "x": 12.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-5 X=threshold d",
+   "indicator": "EC-RS-5",
+   "x": 20.71,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-RS-5 X=threshold e",
+   "indicator": "EC-RS-5",
+   "x": 25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-1 X=threshold c",
+   "indicator": "EC-HS-1",
+   "x": 1.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-1 X=threshold d",
+   "indicator": "EC-HS-1",
+   "x": 3.54,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-1 X=threshold e",
+   "indicator": "EC-HS-1",
+   "x": 4.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-2 X=threshold a",
+   "indicator": "EC-HS-2",
+   "x": 0.92,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-2 X=threshold b",
+   "indicator": "EC-HS-2",
+   "x": 2.96,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-2 X=threshold c",
+   "indicator": "EC-HS-2",
+   "x": 4.88,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-3 X=threshold c",
+   "indicator": "EC-HS-3",
+   "x": 1.21,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-3 X=threshold d",
+   "indicator": "EC-HS-3",
+   "x": 2.88,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-3 X=threshold e",
+   "indicator": "EC-HS-3",
+   "x": 4.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-4 X=threshold a",
+   "indicator": "EC-HS-4",
+   "x": 0.46,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-4 X=threshold b",
+   "indicator": "EC-HS-4",
+   "x": 1.83,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-4 X=threshold c",
+   "indicator": "EC-HS-4",
+   "x": 4.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-4 X=threshold d",
+   "indicator": "EC-HS-4",
+   "x": 7.29,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-4 X=threshold e",
+   "indicator": "EC-HS-4",
+   "x": 8.67,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-5 X=threshold a",
+   "indicator": "EC-HS-5",
+   "x": 4.58,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-5 X=threshold b",
+   "indicator": "EC-HS-5",
+   "x": 10,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EC-HS-5 X=threshold c",
+   "indicator": "EC-HS-5",
+   "x": 15.71,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-1 X=threshold a",
+   "indicator": "SO-CL-1",
+   "x": 0.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-1 X=threshold b",
+   "indicator": "SO-CL-1",
+   "x": 1.75,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-1 X=threshold c",
+   "indicator": "SO-CL-1",
+   "x": 4.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-1 X=threshold d",
+   "indicator": "SO-CL-1",
+   "x": 7.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-1 X=threshold e",
+   "indicator": "SO-CL-1",
+   "x": 9,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-2 X=threshold a",
+   "indicator": "SO-CL-2",
+   "x": 0.46,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-2 X=threshold b",
+   "indicator": "SO-CL-2",
+   "x": 1.75,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-2 X=threshold c",
+   "indicator": "SO-CL-2",
+   "x": 4.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-2 X=threshold d",
+   "indicator": "SO-CL-2",
+   "x": 7.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-2 X=threshold e",
+   "indicator": "SO-CL-2",
+   "x": 9,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-3 X=threshold a",
+   "indicator": "SO-CL-3",
+   "x": 0.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-3 X=threshold b",
+   "indicator": "SO-CL-3",
+   "x": 1.75,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-3 X=threshold c",
+   "indicator": "SO-CL-3",
+   "x": 4.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-3 X=threshold d",
+   "indicator": "SO-CL-3",
+   "x": 7.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-3 X=threshold e",
+   "indicator": "SO-CL-3",
+   "x": 9,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-4 X=threshold a",
+   "indicator": "SO-CL-4",
+   "x": 0.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-4 X=threshold b",
+   "indicator": "SO-CL-4",
+   "x": 1.75,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-4 X=threshold c",
+   "indicator": "SO-CL-4",
+   "x": 4.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-4 X=threshold d",
+   "indicator": "SO-CL-4",
+   "x": 7.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-4 X=threshold e",
+   "indicator": "SO-CL-4",
+   "x": 9,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-5 X=threshold a",
+   "indicator": "SO-CL-5",
+   "x": 0.46,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-5 X=threshold b",
+   "indicator": "SO-CL-5",
+   "x": 1.75,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-5 X=threshold c",
+   "indicator": "SO-CL-5",
+   "x": 4.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-5 X=threshold d",
+   "indicator": "SO-CL-5",
+   "x": 7.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-CL-5 X=threshold e",
+   "indicator": "SO-CL-5",
+   "x": 9,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-1 X=threshold a",
+   "indicator": "SO-EF-1",
+   "x": 1.88,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-1 X=threshold b",
+   "indicator": "SO-EF-1",
+   "x": 5.71,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-1 X=threshold c",
+   "indicator": "SO-EF-1",
+   "x": 9.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-1 X=threshold d",
+   "indicator": "SO-EF-1",
+   "x": 14.92,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-1 X=threshold e",
+   "indicator": "SO-EF-1",
+   "x": 17.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-2 X=threshold a",
+   "indicator": "SO-EF-2",
+   "x": 2.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-2 X=threshold b",
+   "indicator": "SO-EF-2",
+   "x": 5.63,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-2 X=threshold c",
+   "indicator": "SO-EF-2",
+   "x": 9,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-2 X=threshold d",
+   "indicator": "SO-EF-2",
+   "x": 14.83,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-2 X=threshold e",
+   "indicator": "SO-EF-2",
+   "x": 17.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-3 X=threshold a",
+   "indicator": "SO-EF-3",
+   "x": 1.88,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-3 X=threshold b",
+   "indicator": "SO-EF-3",
+   "x": 5.63,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-3 X=threshold c",
+   "indicator": "SO-EF-3",
+   "x": 9,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-3 X=threshold d",
+   "indicator": "SO-EF-3",
+   "x": 14.83,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-3 X=threshold e",
+   "indicator": "SO-EF-3",
+   "x": 17.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-4 X=threshold a",
+   "indicator": "SO-EF-4",
+   "x": 2.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-4 X=threshold b",
+   "indicator": "SO-EF-4",
+   "x": 5.63,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-4 X=threshold c",
+   "indicator": "SO-EF-4",
+   "x": 9,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-4 X=threshold d",
+   "indicator": "SO-EF-4",
+   "x": 14.83,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-4 X=threshold e",
+   "indicator": "SO-EF-4",
+   "x": 17.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-5 X=threshold a",
+   "indicator": "SO-EF-5",
+   "x": 2.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-5 X=threshold b",
+   "indicator": "SO-EF-5",
+   "x": 5.63,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-5 X=threshold c",
+   "indicator": "SO-EF-5",
+   "x": 9,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-5 X=threshold d",
+   "indicator": "SO-EF-5",
+   "x": 14.83,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-EF-5 X=threshold e",
+   "indicator": "SO-EF-5",
+   "x": 17.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-1 X=threshold a",
+   "indicator": "SO-SO-1",
+   "x": 3.67,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-1 X=threshold b",
+   "indicator": "SO-SO-1",
+   "x": 6.46,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-1 X=threshold c",
+   "indicator": "SO-SO-1",
+   "x": 10.92,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-1 X=threshold d",
+   "indicator": "SO-SO-1",
+   "x": 16.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-1 X=threshold e",
+   "indicator": "SO-SO-1",
+   "x": 19.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-2 X=threshold b",
+   "indicator": "SO-SO-2",
+   "x": 2.29,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-2 X=threshold c",
+   "indicator": "SO-SO-2",
+   "x": 4,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-2 X=threshold d",
+   "indicator": "SO-SO-2",
+   "x": 6.25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-2 X=threshold e",
+   "indicator": "SO-SO-2",
+   "x": 7.25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-3 X=threshold b",
+   "indicator": "SO-SO-3",
+   "x": 1.75,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-3 X=threshold c",
+   "indicator": "SO-SO-3",
+   "x": 4.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-3 X=threshold d",
+   "indicator": "SO-SO-3",
+   "x": 6.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-3 X=threshold e",
+   "indicator": "SO-SO-3",
+   "x": 7.25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-4 X=threshold b",
+   "indicator": "SO-SO-4",
+   "x": 1.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-4 X=threshold c",
+   "indicator": "SO-SO-4",
+   "x": 4.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-4 X=threshold d",
+   "indicator": "SO-SO-4",
+   "x": 6.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-4 X=threshold e",
+   "indicator": "SO-SO-4",
+   "x": 8.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-5 X=threshold b",
+   "indicator": "SO-SO-5",
+   "x": 1.67,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-5 X=threshold c",
+   "indicator": "SO-SO-5",
+   "x": 2.58,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-5 X=threshold d",
+   "indicator": "SO-SO-5",
+   "x": 3.42,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-SO-5 X=threshold e",
+   "indicator": "SO-SO-5",
+   "x": 4.25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-1 X=threshold c",
+   "indicator": "SO-PL-1",
+   "x": 3,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-1 X=threshold d",
+   "indicator": "SO-PL-1",
+   "x": 9.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-1 X=threshold e",
+   "indicator": "SO-PL-1",
+   "x": 9.83,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-2 X=threshold a",
+   "indicator": "SO-PL-2",
+   "x": 3.67,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-2 X=threshold b",
+   "indicator": "SO-PL-2",
+   "x": 6.75,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-2 X=threshold c",
+   "indicator": "SO-PL-2",
+   "x": 11.71,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-2 X=threshold d",
+   "indicator": "SO-PL-2",
+   "x": 17.38,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-2 X=threshold e",
+   "indicator": "SO-PL-2",
+   "x": 20.46,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-3 X=threshold a",
+   "indicator": "SO-PL-3",
+   "x": 2,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-3 X=threshold b",
+   "indicator": "SO-PL-3",
+   "x": 5.92,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-3 X=threshold c",
+   "indicator": "SO-PL-3",
+   "x": 10.25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-3 X=threshold d",
+   "indicator": "SO-PL-3",
+   "x": 14.92,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-3 X=threshold e",
+   "indicator": "SO-PL-3",
+   "x": 18.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-4 X=threshold a",
+   "indicator": "SO-PL-4",
+   "x": 1.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-4 X=threshold b",
+   "indicator": "SO-PL-4",
+   "x": 5.92,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-4 X=threshold c",
+   "indicator": "SO-PL-4",
+   "x": 10.25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-4 X=threshold d",
+   "indicator": "SO-PL-4",
+   "x": 14.92,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-4 X=threshold e",
+   "indicator": "SO-PL-4",
+   "x": 18.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-5 X=threshold a",
+   "indicator": "SO-PL-5",
+   "x": 2.29,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-5 X=threshold b",
+   "indicator": "SO-PL-5",
+   "x": 6.21,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-5 X=threshold c",
+   "indicator": "SO-PL-5",
+   "x": 11.04,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-5 X=threshold d",
+   "indicator": "SO-PL-5",
+   "x": 16.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "SO-PL-5 X=threshold e",
+   "indicator": "SO-PL-5",
+   "x": 19.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-1 X=threshold a",
+   "indicator": "EV-SC-1",
+   "x": 2.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-1 X=threshold b",
+   "indicator": "EV-SC-1",
+   "x": 5.67,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-1 X=threshold c",
+   "indicator": "EV-SC-1",
+   "x": 10.58,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-1 X=threshold d",
+   "indicator": "EV-SC-1",
+   "x": 14.83,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-1 X=threshold e",
+   "indicator": "EV-SC-1",
+   "x": 18.25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-2 X=threshold a",
+   "indicator": "EV-SC-2",
+   "x": 2,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-2 X=threshold b",
+   "indicator": "EV-SC-2",
+   "x": 5.75,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-2 X=threshold c",
+   "indicator": "EV-SC-2",
+   "x": 10.29,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-2 X=threshold d",
+   "indicator": "EV-SC-2",
+   "x": 15.25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-2 X=threshold e",
+   "indicator": "EV-SC-2",
+   "x": 19.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-3 X=threshold a",
+   "indicator": "EV-SC-3",
+   "x": 0.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-3 X=threshold b",
+   "indicator": "EV-SC-3",
+   "x": 3.13,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-3 X=threshold c",
+   "indicator": "EV-SC-3",
+   "x": 6.92,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-3 X=threshold d",
+   "indicator": "EV-SC-3",
+   "x": 11.88,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-3 X=threshold e",
+   "indicator": "EV-SC-3",
+   "x": 15.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-4 X=threshold a",
+   "indicator": "EV-SC-4",
+   "x": 2,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-4 X=threshold b",
+   "indicator": "EV-SC-4",
+   "x": 6.25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-4 X=threshold c",
+   "indicator": "EV-SC-4",
+   "x": 11.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-4 X=threshold d",
+   "indicator": "EV-SC-4",
+   "x": 15.75,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-4 X=threshold e",
+   "indicator": "EV-SC-4",
+   "x": 19.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-5 X=threshold b",
+   "indicator": "EV-SC-5",
+   "x": 0.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-5 X=threshold c",
+   "indicator": "EV-SC-5",
+   "x": 1.54,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-5 X=threshold d",
+   "indicator": "EV-SC-5",
+   "x": 3.96,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-SC-5 X=threshold e",
+   "indicator": "EV-SC-5",
+   "x": 5.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-1 X=threshold b",
+   "indicator": "EV-EV-1",
+   "x": 0.79,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-1 X=threshold c",
+   "indicator": "EV-EV-1",
+   "x": 2.13,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-1 X=threshold d",
+   "indicator": "EV-EV-1",
+   "x": 3.88,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-1 X=threshold e",
+   "indicator": "EV-EV-1",
+   "x": 5.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-2 X=threshold c",
+   "indicator": "EV-EV-2",
+   "x": 1.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-2 X=threshold d",
+   "indicator": "EV-EV-2",
+   "x": 3.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-2 X=threshold e",
+   "indicator": "EV-EV-2",
+   "x": 4.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-3 X=threshold c",
+   "indicator": "EV-EV-3",
+   "x": 1.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-3 X=threshold d",
+   "indicator": "EV-EV-3",
+   "x": 3.33,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-3 X=threshold e",
+   "indicator": "EV-EV-3",
+   "x": 4.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-4 X=threshold a",
+   "indicator": "EV-EV-4",
+   "x": 64.25,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-4 X=threshold b",
+   "indicator": "EV-EV-4",
+   "x": 49.38,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-4 X=threshold c",
+   "indicator": "EV-EV-4",
+   "x": 38.46,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-4 X=threshold d",
+   "indicator": "EV-EV-4",
+   "x": 23.58,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-4 X=threshold e",
+   "indicator": "EV-EV-4",
+   "x": 16.5,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-5 X=threshold a",
+   "indicator": "EV-EV-5",
+   "x": 0.29,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 1,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.315,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-5 X=threshold b",
+   "indicator": "EV-EV-5",
+   "x": 3.17,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 2,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 1.86,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-5 X=threshold c",
+   "indicator": "EV-EV-5",
+   "x": 7.92,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 3,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.278,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-5 X=threshold d",
+   "indicator": "EV-EV-5",
+   "x": 12.75,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 4,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.631,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "EV-EV-5 X=threshold e",
+   "indicator": "EV-EV-5",
+   "x": 17.08,
+   "y1": 20,
+   "y2": 20,
+   "y3": [
+    "B"
+   ],
+   "expect": {
+    "rl": 5,
+    "ri_c": 1.73,
+    "ri_t": 1.65,
+    "ri_e": 1,
+    "ri_max": 1.73,
+    "rm": 2.941,
+    "level": "M",
+    "advice": []
+   }
+  }
+ ],
+ "worked": [
+  {
+   "name": "worked example EC-MG-2",
+   "indicator": "EC-MG-2",
+   "x": 8.68,
+   "y1": 24.44,
+   "y2": 48.03,
+   "y3": [
+    "C",
+    "F",
+    "H"
+   ],
+   "expect": {
+    "rl": 2.45,
+    "ri_c": 2.02,
+    "ri_t": 3.1,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 3.5,
+    "level": "H",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "worked example conversion y1 24.44 y2 16.44",
+   "indicator": "EC-MG-2",
+   "x": 8.68,
+   "y1": 24.44,
+   "y2": 16.44,
+   "y3": [
+    "C",
+    "F",
+    "H"
+   ],
+   "expect": {
+    "rl": 2.45,
+    "ri_c": 2.02,
+    "ri_t": 1.28,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 3.5,
+    "level": "H",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  }
+ ],
+ "scores": [
+  {
+   "name": "advice table row 1",
+   "rl": 5,
+   "ri_c": 4,
+   "ri_t": 2,
+   "ri_e": 1,
+   "expect": {
+    "rl": 5,
+    "ri_c": 4,
+    "ri_t": 2,
+    "ri_e": 1,
+    "ri_max": 4,
+    "rm": 4.472,
+    "level": "H",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "advice table row 2",
+   "rl": 4,
+   "ri_c": 4,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 4,
+    "ri_c": 4,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 4,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "advice table row 3",
+   "rl": 2.45,
+   "ri_c": 2.02,
+   "ri_t": 3.1,
+   "ri_e": 5,
+   "expect": {
+    "rl": 2.45,
+    "ri_c": 2.02,
+    "ri_t": 3.1,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 3.5,
+    "level": "H",
+    "advice": [
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "advice table row 4",
+   "rl": 3,
+   "ri_c": 5,
+   "ri_t": 5,
+   "ri_e": 5,
+   "expect": {
+    "rl": 3,
+    "ri_c": 5,
+    "ri_t": 5,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 3.873,
+    "level": "H",
+    "advice": [
+     "RI_C",
+     "RI_T",
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "advice table row 5",
+   "rl": 4,
+   "ri_c": 2,
+   "ri_t": 5,
+   "ri_e": 5,
+   "expect": {
+    "rl": 4,
+    "ri_c": 2,
+    "ri_t": 5,
+    "ri_e": 5,
+    "ri_max": 5,
+    "rm": 4.472,
+    "level": "H",
+    "advice": [
+     "RI_T",
+     "RI_E"
+    ]
+   }
+  },
+  {
+   "name": "advice table row 6",
+   "rl": 2,
+   "ri_c": 3,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 2,
+    "ri_c": 3,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 3,
+    "rm": 2.449,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=5 RI_max=1",
+   "rl": 5,
+   "ri_c": 1,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 5,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 2.236,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=5 RI_max=2",
+   "rl": 5,
+   "ri_c": 2,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 5,
+    "ri_c": 2,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 2,
+    "rm": 3.162,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=5 RI_max=3",
+   "rl": 5,
+   "ri_c": 3,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 5,
+    "ri_c": 3,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 3,
+    "rm": 3.873,
+    "level": "H",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "RM grid RL=5 RI_max=4",
+   "rl": 5,
+   "ri_c": 4,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 5,
+    "ri_c": 4,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 4,
+    "rm": 4.472,
+    "level": "H",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "RM grid RL=5 RI_max=5",
+   "rl": 5,
+   "ri_c": 5,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 5,
+    "ri_c": 5,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 5,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "RM grid RL=4 RI_max=1",
+   "rl": 4,
+   "ri_c": 1,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 4,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 2,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=4 RI_max=2",
+   "rl": 4,
+   "ri_c": 2,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 4,
+    "ri_c": 2,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 2,
+    "rm": 2.828,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=4 RI_max=3",
+   "rl": 4,
+   "ri_c": 3,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 4,
+    "ri_c": 3,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 3,
+    "rm": 3.464,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=4 RI_max=4",
+   "rl": 4,
+   "ri_c": 4,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 4,
+    "ri_c": 4,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 4,
+    "rm": 4,
+    "level": "H",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "RM grid RL=4 RI_max=5",
+   "rl": 4,
+   "ri_c": 5,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 4,
+    "ri_c": 5,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 4.472,
+    "level": "H",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "RM grid RL=3 RI_max=1",
+   "rl": 3,
+   "ri_c": 1,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 3,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.732,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=3 RI_max=2",
+   "rl": 3,
+   "ri_c": 2,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 3,
+    "ri_c": 2,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 2,
+    "rm": 2.449,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=3 RI_max=3",
+   "rl": 3,
+   "ri_c": 3,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 3,
+    "ri_c": 3,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 3,
+    "rm": 3,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=3 RI_max=4",
+   "rl": 3,
+   "ri_c": 4,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 3,
+    "ri_c": 4,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 4,
+    "rm": 3.464,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=3 RI_max=5",
+   "rl": 3,
+   "ri_c": 5,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 3,
+    "ri_c": 5,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 3.873,
+    "level": "H",
+    "advice": [
+     "RI_C"
+    ]
+   }
+  },
+  {
+   "name": "RM grid RL=2 RI_max=1",
+   "rl": 2,
+   "ri_c": 1,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 2,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1.414,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=2 RI_max=2",
+   "rl": 2,
+   "ri_c": 2,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 2,
+    "ri_c": 2,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 2,
+    "rm": 2,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=2 RI_max=3",
+   "rl": 2,
+   "ri_c": 3,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 2,
+    "ri_c": 3,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 3,
+    "rm": 2.449,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=2 RI_max=4",
+   "rl": 2,
+   "ri_c": 4,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 2,
+    "ri_c": 4,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 4,
+    "rm": 2.828,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=2 RI_max=5",
+   "rl": 2,
+   "ri_c": 5,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 2,
+    "ri_c": 5,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 3.162,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=1 RI_max=1",
+   "rl": 1,
+   "ri_c": 1,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 1,
+    "ri_c": 1,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1,
+    "rm": 1,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=1 RI_max=2",
+   "rl": 1,
+   "ri_c": 2,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 1,
+    "ri_c": 2,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 2,
+    "rm": 1.414,
+    "level": "VL",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=1 RI_max=3",
+   "rl": 1,
+   "ri_c": 3,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 1,
+    "ri_c": 3,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 3,
+    "rm": 1.732,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=1 RI_max=4",
+   "rl": 1,
+   "ri_c": 4,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 1,
+    "ri_c": 4,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 4,
+    "rm": 2,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "RM grid RL=1 RI_max=5",
+   "rl": 1,
+   "ri_c": 5,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 1,
+    "ri_c": 5,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 5,
+    "rm": 2.236,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "border RM=1.5",
+   "rl": 1.5,
+   "ri_c": 1.5,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 1.5,
+    "ri_c": 1.5,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 1.5,
+    "rm": 1.5,
+    "level": "L",
+    "advice": []
+   }
+  },
+  {
+   "name": "border RM=2.5",
+   "rl": 2.5,
+   "ri_c": 2.5,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 2.5,
+    "ri_c": 2.5,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 2.5,
+    "rm": 2.5,
+    "level": "M",
+    "advice": []
+   }
+  },
+  {
+   "name": "border RM=3.5",
+   "rl": 3.5,
+   "ri_c": 3.5,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 3.5,
+    "ri_c": 3.5,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 3.5,
+    "rm": 3.5,
+    "level": "H",
+    "advice": [
+     "RL"
+    ]
+   }
+  },
+  {
+   "name": "border RM=4.5",
+   "rl": 4.5,
+   "ri_c": 4.5,
+   "ri_t": 1,
+   "ri_e": 1,
+   "expect": {
+    "rl": 4.5,
+    "ri_c": 4.5,
+    "ri_t": 1,
+    "ri_e": 1,
+    "ri_max": 4.5,
+    "rm": 4.5,
+    "level": "VH",
+    "advice": [
+     "RL"
+    ]
+   }
+  }
+ ]
+}

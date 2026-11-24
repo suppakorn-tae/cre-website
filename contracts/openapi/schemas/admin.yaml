@@ -1,0 +1,288 @@
+# Admin domain schemas (UC-14..UC-19). Admin responses never carry another
+# user's projects, versions, answers or results (BR-21): per user only the
+# two counts are exposed.
+AdminSignInMethod:
+  type: string
+  enum: [password, google]
+AdminUser:
+  type: object
+  required:
+    - id
+    - email
+    - sign_in_methods
+    - organisation
+    - role
+    - status
+    - project_count
+    - version_count
+    - created_at
+    - updated_at
+  properties:
+    id:
+      $ref: common.yaml#/schemas/Uuid
+    email:
+      type: [string, 'null']
+      format: email
+      description: Null once the account is anonymised.
+    sign_in_methods:
+      type: array
+      description: Empty once the account is anonymised.
+      items:
+        $ref: '#/AdminSignInMethod'
+    organisation:
+      type: [string, 'null']
+    role:
+      $ref: common.yaml#/schemas/UserRole
+    status:
+      $ref: common.yaml#/schemas/AccountStatus
+    project_count:
+      type: integer
+      minimum: 0
+      description: Number of projects, soft-deleted ones excluded. Count only.
+    version_count:
+      type: integer
+      minimum: 0
+      description: Number of assessment versions, soft-deleted ones excluded. Count only.
+    created_at:
+      $ref: common.yaml#/schemas/Timestamp
+    updated_at:
+      $ref: common.yaml#/schemas/Timestamp
+AdminUserPage:
+  type: object
+  required: [items, meta]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/AdminUser'
+    meta:
+      $ref: common.yaml#/schemas/PageMeta
+AdminChangeRoleRequest:
+  type: object
+  required: [role]
+  properties:
+    role:
+      $ref: common.yaml#/schemas/UserRole
+AdminAdviceText:
+  type: object
+  description: One text per locale. Only `th` is edited today; it may contain English terms.
+  required: [th]
+  properties:
+    th:
+      type: string
+      minLength: 1
+      pattern: '\S'
+  additionalProperties:
+    type: string
+    minLength: 1
+AdminAdviceItem:
+  type: object
+  required: [text]
+  properties:
+    text:
+      $ref: '#/AdminAdviceText'
+AdminAdviceItemList:
+  type: array
+  description: Ordered items; the array index is the position.
+  minItems: 1
+  maxItems: 5
+  items:
+    $ref: '#/AdminAdviceItem'
+AdminAdviceLists:
+  type: object
+  description: The four advice lists of one indicator.
+  required: [indicator_code, lists, updated_at]
+  properties:
+    indicator_code:
+      type: string
+    lists:
+      type: object
+      required: [RL, RI_C, RI_T, RI_E]
+      properties:
+        RL:
+          $ref: '#/AdminAdviceItemList'
+        RI_C:
+          $ref: '#/AdminAdviceItemList'
+        RI_T:
+          $ref: '#/AdminAdviceItemList'
+        RI_E:
+          $ref: '#/AdminAdviceItemList'
+    updated_at:
+      $ref: common.yaml#/schemas/Timestamp
+AdminAdviceListResponse:
+  type: object
+  required: [indicator_code, list, items, updated_at]
+  properties:
+    indicator_code:
+      type: string
+    list:
+      $ref: common.yaml#/schemas/AdviceList
+    items:
+      $ref: '#/AdminAdviceItemList'
+    updated_at:
+      $ref: common.yaml#/schemas/Timestamp
+AdminReplaceAdviceRequest:
+  type: object
+  required: [items]
+  properties:
+    items:
+      $ref: '#/AdminAdviceItemList'
+AdminThresholdValue:
+  type: [number, 'null']
+  minimum: 0
+AdminRlThresholdValues:
+  type: object
+  description: |
+    Valid patterns: all of a..e set, only a..c set, or only c..e set. Set
+    values are strictly increasing, or strictly decreasing for an inverse
+    indicator. Unused thresholds are null. Violations return 422.
+  required: [a, b, c, d, e]
+  properties:
+    a:
+      $ref: '#/AdminThresholdValue'
+    b:
+      $ref: '#/AdminThresholdValue'
+    c:
+      $ref: '#/AdminThresholdValue'
+    d:
+      $ref: '#/AdminThresholdValue'
+    e:
+      $ref: '#/AdminThresholdValue'
+AdminRlThreshold:
+  type: object
+  required: [indicator_code, unit, direction, thresholds, updated_at]
+  properties:
+    indicator_code:
+      type: string
+    unit:
+      type: string
+      description: Display unit from the indicator catalogue.
+    direction:
+      $ref: common.yaml#/schemas/IndicatorDirection
+    thresholds:
+      $ref: '#/AdminRlThresholdValues'
+    updated_at:
+      $ref: common.yaml#/schemas/Timestamp
+AdminRlThresholdList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/AdminRlThreshold'
+AdminUpdateRlThresholdRequest:
+  type: object
+  required: [thresholds]
+  properties:
+    thresholds:
+      $ref: '#/AdminRlThresholdValues'
+AdminImpactThresholdValues:
+  type: object
+  description: All five set, at least 0 and strictly increasing; otherwise 422.
+  required: [a, b, c, d, e]
+  properties:
+    a:
+      type: number
+      minimum: 0
+    b:
+      type: number
+      minimum: 0
+    c:
+      type: number
+      minimum: 0
+    d:
+      type: number
+      minimum: 0
+    e:
+      type: number
+      minimum: 0
+AdminImpactTable:
+  type: object
+  required: [code, thresholds, updated_at]
+  properties:
+    code:
+      $ref: common.yaml#/schemas/ImpactCode
+    thresholds:
+      $ref: '#/AdminImpactThresholdValues'
+    updated_at:
+      $ref: common.yaml#/schemas/Timestamp
+AdminImpactTables:
+  type: object
+  required: [ri_c, ri_t]
+  properties:
+    ri_c:
+      $ref: '#/AdminImpactTable'
+    ri_t:
+      $ref: '#/AdminImpactTable'
+AdminUpdateImpactTablesRequest:
+  type: object
+  description: Edit one or both tables in a single call; omitted tables stay unchanged.
+  minProperties: 1
+  properties:
+    ri_c:
+      $ref: '#/AdminImpactThresholdValues'
+    ri_t:
+      $ref: '#/AdminImpactThresholdValues'
+  additionalProperties: false
+AdminAuditEntrySummary:
+  type: object
+  required: [id, occurred_at, admin_id, admin_email, action, target_type, target_id]
+  properties:
+    id:
+      type: integer
+      format: int64
+    occurred_at:
+      $ref: common.yaml#/schemas/Timestamp
+    admin_id:
+      $ref: common.yaml#/schemas/Uuid
+    admin_email:
+      type: [string, 'null']
+      description: Null when the admin account was later anonymised; `admin_id` remains.
+    action:
+      $ref: common.yaml#/schemas/AuditAction
+    target_type:
+      type: string
+      description: e.g. `account`, `indicator`, `impact_table`, `job`.
+    target_id:
+      type: string
+AdminAuditEntry:
+  allOf:
+    - $ref: '#/AdminAuditEntrySummary'
+    - type: object
+      required: [old_value, new_value, request_id, ip_address]
+      properties:
+        old_value:
+          description: State of the target before the change; null when not a change.
+        new_value:
+          description: State of the target after the change; null when not a change.
+        request_id:
+          type: string
+        ip_address:
+          type: [string, 'null']
+AdminAuditPage:
+  type: object
+  required: [items, meta]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/AdminAuditEntrySummary'
+    meta:
+      $ref: common.yaml#/schemas/PageMeta
+AdminExportRequest:
+  type: object
+  description: Request a pseudonymised research export (no e-mail or Google id).
+  required: [scope, include_deleted]
+  properties:
+    scope:
+      $ref: common.yaml#/schemas/ExportScope
+    user_ids:
+      type: array
+      description: Required and non-empty when `scope` is `selected`; must be omitted for `all`.
+      uniqueItems: true
+      items:
+        $ref: common.yaml#/schemas/Uuid
+    include_deleted:
+      type: boolean
+      description: Include soft-deleted projects and versions.

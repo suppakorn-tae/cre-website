@@ -1,0 +1,3 @@
+#!/bin/sh
+printf 'Content-Type: text/plain; version=0.0.4\r\n\r\n'
+cat /var/lib/backup/metrics.prom 2>/dev/null
