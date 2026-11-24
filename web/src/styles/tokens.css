@@ -1,0 +1,142 @@
+/* Design tokens from hi-fi page "00 Foundations". Import once at the app root. */
+:root {
+  /* Brand */
+  --color-blue-50: #eaf1fd;
+  --color-blue-100: #dce8fc;
+  --color-blue-200: #c9dbfa;
+  --color-blue-400: #6e9be6;
+  --color-blue-600: #1e5bc6;
+  --color-blue-700: #174a9f;
+  --color-blue-800: #133b77;
+  --color-navy-900: #0f2a4a;
+  --color-orange-50: #fff1e6;
+  --color-orange-500: #f28c28;
+
+  /* Neutrals */
+  --color-canvas: #f1f4f8;
+  --color-surface: #fbfcfe;
+  --color-white: #ffffff;
+  --color-subtle: #f6f8fb;
+  --color-divider: #edf1f5;
+  --color-border: #e3e8ef;
+  --color-field-border: #c3cdd9;
+  --color-disabled-bg: #eef1f5;
+  --color-disabled: #9aa6b6;
+  --color-placeholder: #8a97a8;
+  --color-text-muted: #64748b;
+  --color-text-secondary: #475569;
+  --color-text: #0f1e33;
+
+  /* Status: text, background, border */
+  --color-success: #15803d;
+  --color-success-bg: #e9f7ef;
+  --color-success-border: #b7e2c6;
+  --color-warning: #b45309;
+  --color-warning-bg: #fef4e2;
+  --color-warning-border: #f6d9a8;
+  --color-error: #b91c1c;
+  --color-error-bg: #fdecec;
+  --color-error-border: #f5c2c2;
+  --color-info: #1e5bc6;
+  --color-info-bg: #eaf1fd;
+  --color-info-border: #c9dbfa;
+  --color-danger-hover: #b91c1c;
+  --color-danger-pressed: #991b1b;
+
+  /* One-hue risk scale VL to VH: solid for charts, tint and text for chips */
+  --level-vl: #10b981;
+  --level-vl-on: #ffffff;
+  --level-vl-tint: #e6f6ee;
+  --level-vl-text: #0e7a4f;
+  --level-l: #84cc16;
+  --level-l-on: #1f3305;
+  --level-l-tint: #eef7e0;
+  --level-l-text: #4d7c0f;
+  --level-m: #facc15;
+  --level-m-on: #4a3500;
+  --level-m-tint: #fdf6d8;
+  --level-m-text: #8a6100;
+  --level-h: #f97316;
+  --level-h-on: #ffffff;
+  --level-h-tint: #fff1e6;
+  --level-h-text: #c2410c;
+  --level-vh: #dc2626;
+  --level-vh-on: #ffffff;
+  --level-vh-tint: #fde7e5;
+  --level-vh-text: #b42318;
+
+  /* Type scale: size and line-height (Thai needs line-height of 1.5 or more) */
+  --text-display: 2rem;
+  --leading-display: 2.5rem;
+  --text-h1: 1.5rem;
+  --leading-h1: 2rem;
+  --text-h2: 1.25rem;
+  --leading-h2: 1.75rem;
+  --text-h3: 1rem;
+  --leading-h3: 1.5rem;
+  --text-body: 0.875rem;
+  --leading-body: 1.375rem;
+  --text-small: 0.8125rem;
+  --leading-small: 1.25rem;
+  --text-caption: 0.75rem;
+  --leading-caption: 1.125rem;
+  --text-overline: 0.6875rem;
+  --leading-overline: 1rem;
+  --text-kpi: 1.875rem;
+  --leading-kpi: 2.5rem;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Spacing, 4-point grid */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radius */
+  --radius-badge: 6px;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --radius-dialog: 16px;
+  --radius-pill: 999px;
+
+  /* Elevation: cards are flat with a border, floating layers get a shadow */
+  --shadow-card: none;
+  --shadow-floating: 0 8px 24px rgba(15, 42, 74, 0.1);
+
+  /* Controls */
+  --control-sm: 32px;
+  --control-md: 40px;
+  --control-lg: 48px;
+  --field-height: 44px;
+  --hit-area: 40px;
+  --focus-ring: 0 0 0 3px var(--color-blue-200);
+
+  /* Layout */
+  --container-max: 1200px;
+  --gutter: 24px;
+  --margin-page: 48px;
+  --nav-height: 64px;
+}
+
+@media (max-width: 1279px) {
+  :root {
+    --margin-page: 32px;
+    --gutter: 20px;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --margin-page: 16px;
+    --gutter: 16px;
+  }
+}
