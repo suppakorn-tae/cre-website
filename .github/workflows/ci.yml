@@ -144,9 +144,14 @@ jobs:
             ruleset="$RUNNER_TEMP/spectral.yaml"
             printf 'extends: ["spectral:oas"]\n' > "$ruleset"
           fi
+          # Lint root documents only; path and schema fragments are not OpenAPI documents.
+          mapfile -t roots < <(grep -rlE '^openapi:' contracts/openapi --include='*.yaml' --include='*.yml' || true)
+          if [ "${#roots[@]}" -eq 0 ]; then
+            echo "No OpenAPI root document yet, nothing to lint"
+            exit 0
+          fi
           npx --yes @stoplight/spectral-cli@6.15.0 lint \
-            --ruleset "$ruleset" --fail-severity=warn \
-            "contracts/openapi/**/*.{yaml,yml}"
+            --ruleset "$ruleset" --fail-severity=warn "${roots[@]}"
 
   codegen:
     name: codegen
