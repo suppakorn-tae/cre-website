@@ -33,7 +33,7 @@ type fakeAdvice struct{ replaced []svc.AdviceItem }
 
 func (f *fakeAdvice) Get(_ context.Context, code string) (svc.AdviceSet, error) {
 	if code != "EC-HS-2" {
-		return svc.AdviceSet{}, svc.ErrNotFound
+		return svc.AdviceSet{}, svc.ErrIndicatorNotFound
 	}
 	item := svc.AdviceItem{Text: map[string]string{"th": "ข้อ 1"}}
 	set := svc.AdviceSet{IndicatorCode: code, UpdatedAt: time.Date(2026, 11, 24, 8, 0, 0, 0, time.UTC), Lists: map[string][]svc.AdviceItem{}}
@@ -48,7 +48,7 @@ func (f *fakeAdvice) Replace(_ context.Context, _ uuid.UUID, code, list string, 
 		return svc.AdviceList{}, err
 	}
 	if code != "EC-HS-2" {
-		return svc.AdviceList{}, svc.ErrNotFound
+		return svc.AdviceList{}, svc.ErrIndicatorNotFound
 	}
 	f.replaced = items
 	return svc.AdviceList{IndicatorCode: code, List: list, Items: items, UpdatedAt: time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)}, nil

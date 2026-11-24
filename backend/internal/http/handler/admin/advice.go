@@ -102,7 +102,7 @@ func adviceFail(w http.ResponseWriter, r *http.Request, err error) {
 		writeAdviceJSON(w, http.StatusUnprocessableEntity, api.ValidationErrorEnvelope{Error: api.ValidationErrorBody{
 			Code: "validation_failed", Message: "the request failed validation", Fields: fields, RequestId: ridp,
 		}})
-	case errors.Is(err, svc.ErrNotFound):
+	case errors.Is(err, svc.ErrIndicatorNotFound):
 		middleware.WriteError(w, r, http.StatusNotFound, "not_found", "indicator not found")
 	default:
 		slog.ErrorContext(r.Context(), "advice request failed", "error", err)

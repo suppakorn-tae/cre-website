@@ -88,8 +88,8 @@ func TestReplaceRejectsAndRollsBack(t *testing.T) {
 	if _, err := s.Replace(ctx, admin, code, "RL", bad); !errors.As(err, &v) {
 		t.Fatalf("unknown locale: err = %v", err)
 	}
-	if _, err := s.Replace(ctx, admin, "NOPE", "RL", th("ok")); !errors.Is(err, svc.ErrNotFound) {
-		t.Fatalf("err = %v, want ErrNotFound", err)
+	if _, err := s.Replace(ctx, admin, "NOPE", "RL", th("ok")); !errors.Is(err, svc.ErrIndicatorNotFound) {
+		t.Fatalf("err = %v, want ErrIndicatorNotFound", err)
 	}
 	after, _ := s.Get(ctx, code)
 	if len(after.Lists["RL"]) != len(before.Lists["RL"]) || inv.n != 0 {

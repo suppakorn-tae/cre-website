@@ -1,4 +1,3 @@
-// Package admin holds the admin services.
 package admin
 
 import (
@@ -32,8 +31,8 @@ const DefaultLocale = "th"
 
 // Errors returned by AdviceService.
 var (
-	// ErrNotFound means the indicator does not exist.
-	ErrNotFound = errors.New("admin: indicator not found")
+	// ErrIndicatorNotFound means the indicator does not exist.
+	ErrIndicatorNotFound = errors.New("admin: indicator not found")
 )
 
 // FieldError names one invalid field.
@@ -64,20 +63,9 @@ type AdviceList struct {
 	UpdatedAt     time.Time
 }
 
-// Auditor records an admin action on the caller's transaction.
-type Auditor interface {
-	Record(ctx context.Context, tx dal.DBTX, e audit.Entry) error
-}
-
 // Invalidator drops the catalogue cache on every replica (catalogue.Service).
 type Invalidator interface {
 	Invalidate(ctx context.Context) error
-}
-
-// DB is a pool: queries plus transactions.
-type DB interface {
-	dal.DBTX
-	dal.Beginner
 }
 
 // AdviceService edits advice lists (UC-15).
@@ -92,7 +80,7 @@ func NewAdviceService(db DB, a Auditor, inv Invalidator) *AdviceService {
 	return &AdviceService{db: db, audit: a, inv: inv}
 }
 
-// Get returns the four lists of an indicator, or ErrNotFound.
+// Get returns the four lists of an indicator, or ErrIndicatorNotFound.
 func (s *AdviceService) Get(ctx context.Context, code string) (AdviceSet, error) {
 	q := sqlc.New(s.db)
 	ok, err := q.AdminAdviceIndicatorExists(ctx, code)
@@ -100,7 +88,7 @@ func (s *AdviceService) Get(ctx context.Context, code string) (AdviceSet, error)
 		return AdviceSet{}, fmt.Errorf("admin: advice exists: %w", err)
 	}
 	if !ok {
-		return AdviceSet{}, ErrNotFound
+		return AdviceSet{}, ErrIndicatorNotFound
 	}
 	return loadAdvice(ctx, q, code)
 }
@@ -171,7 +159,7 @@ func (s *AdviceService) Replace(ctx context.Context, actor uuid.UUID, code, list
 			return fmt.Errorf("admin: advice exists: %w", err)
 		}
 		if !ok {
-			return ErrNotFound
+			return ErrIndicatorNotFound
 		}
 		before, err := loadAdvice(ctx, q, code)
 		if err != nil {
