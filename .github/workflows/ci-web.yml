@@ -1,0 +1,65 @@
+name: ci-web
+
+on:
+  pull_request:
+    paths: &paths
+      - "web/**"
+      - "contracts/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".nvmrc"
+      - ".github/workflows/ci-web.yml"
+  push:
+    branches: [main]
+    paths: *paths
+
+concurrency:
+  group: ci-web-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    name: web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: ESLint
+        run: pnpm --dir web lint
+      - name: Prettier
+        run: pnpm --dir web format:check
+      - name: Typecheck
+        run: pnpm --dir web typecheck
+      - name: Vitest
+        run: pnpm --dir web --if-present test
+      - name: Build
+        run: pnpm --dir web build
+
+  codegen:
+    name: codegen-web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache: false
+      - run: pnpm install --frozen-lockfile
+      - name: make gen
+        run: make gen
+      - name: Fail when generated code is stale
+        run: git diff --exit-code

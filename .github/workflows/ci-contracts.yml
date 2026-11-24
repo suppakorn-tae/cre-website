@@ -1,0 +1,37 @@
+name: ci-contracts
+
+on:
+  pull_request:
+    paths: &paths
+      - "contracts/**"
+      - ".github/workflows/ci-contracts.yml"
+  push:
+    branches: [main]
+    paths: *paths
+
+concurrency:
+  group: ci-contracts-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  contracts:
+    name: contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Spectral
+        run: |
+          ruleset=.spectral.yaml
+          if [ ! -f "$ruleset" ]; then
+            ruleset="$RUNNER_TEMP/spectral.yaml"
+            printf 'extends: ["spectral:oas"]\n' > "$ruleset"
+          fi
+          npx --yes @stoplight/spectral-cli@6.15.0 lint \
+            --ruleset "$ruleset" --fail-severity=warn \
+            "contracts/openapi/**/*.{yaml,yml}"

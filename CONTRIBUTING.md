@@ -54,6 +54,22 @@ GitHub must show which teammate is responsible for each commit and PR, not a gen
 - Body: use the pull request template.
 - Open a draft PR after the first commit.
 
+## Required checks
+
+Configure these as required status checks on `main`. Path filters mean a PR only runs the checks for what it touches; the path-filtered checks are required only when they run.
+
+| Check | Workflow | Runs when | What it does |
+| --- | --- | --- | --- |
+| `pr-title` | `pr-lint.yml` | every PR | Title matches the PR title regex above |
+| `commitlint` | `pr-lint.yml` | every PR | commitlint on every commit in the PR |
+| `backend` | `ci-backend.yml` | `backend/**`, `contracts/**` | gofumpt, golangci-lint, `go test ./...` with Postgres and Valkey |
+| `codegen` | `ci-backend.yml` | `backend/**`, `contracts/**` | `make gen` then `git diff --exit-code` (fails on stale generated code) |
+| `web` | `ci-web.yml` | `web/**`, `contracts/**` | ESLint, Prettier, typecheck, Vitest, build |
+| `codegen-web` | `ci-web.yml` | `web/**`, `contracts/**` | Same stale-codegen check, for web-only changes |
+| `contracts` | `ci-contracts.yml` | `contracts/**` | Spectral lint of the OpenAPI files |
+
+Toolchain versions come from the repo: `backend/go.mod`, `.nvmrc` and `packageManager` in `package.json`.
+
 ## Merge rules
 
 - CI green and PR title check passing.
