@@ -1,0 +1,239 @@
+# Projects and assessment versions (UC-05, UC-06). Field rules follow the
+# project fields table of the requirements and the `project` and
+# `assessment_version` tables of the database design.
+ProjectIsland:
+  type: string
+  description: Island / location code. `other` requires `island_other`.
+  enum:
+    - koh_tao
+    - koh_samui
+    - koh_phangan
+    - koh_phi_phi
+    - koh_lanta
+    - koh_chang
+    - koh_kood
+    - other
+ProjectType:
+  type: string
+  description: Project type code. `other` requires `type_other`.
+  enum: [building, pier, road, utilities, coastal, other]
+ProjectFields:
+  type: object
+  description: |
+    Editable project fields. `end_date` must be after `start_date`;
+    `island_other` and `type_other` are set if and only if the matching
+    code is `other`. Value and dates apply to versions created afterwards.
+  required:
+    - name
+    - nickname
+    - island_code
+    - type_code
+    - start_date
+    - end_date
+    - value_baht
+    - progress_pct
+  properties:
+    name:
+      type: string
+      minLength: 1
+      maxLength: 200
+      pattern: '\S'
+      description: Not blank.
+    nickname:
+      type: string
+      minLength: 3
+      maxLength: 4
+    island_code:
+      $ref: '#/ProjectIsland'
+    island_other:
+      type: [string, 'null']
+      minLength: 1
+      maxLength: 200
+    type_code:
+      $ref: '#/ProjectType'
+    type_other:
+      type: [string, 'null']
+      minLength: 1
+      maxLength: 200
+    start_date:
+      type: string
+      format: date
+    end_date:
+      type: string
+      format: date
+      description: After `start_date`.
+    value_baht:
+      type: number
+      exclusiveMinimum: 0
+      maximum: 9999999999999.99
+      description: Project value in baht, greater than 0.
+    progress_pct:
+      type: integer
+      minimum: 0
+      maximum: 100
+      description: Entered progress in percent.
+    description:
+      type: [string, 'null']
+      maxLength: 5000
+ProjectCreate:
+  allOf:
+    - $ref: '#/ProjectFields'
+    - type: object
+      description: On create, `progress_pct` defaults to 0 and may be omitted.
+      required: [name, nickname, island_code, type_code, start_date, end_date, value_baht]
+ProjectUpdate:
+  type: object
+  description: |
+    Partial update; send only the fields to change, at least one. The
+    rules of `ProjectFields` apply to the stored result.
+  minProperties: 1
+  additionalProperties: false
+  properties:
+    name:
+      $ref: '#/ProjectFields/properties/name'
+    nickname:
+      $ref: '#/ProjectFields/properties/nickname'
+    island_code:
+      $ref: '#/ProjectIsland'
+    island_other:
+      $ref: '#/ProjectFields/properties/island_other'
+    type_code:
+      $ref: '#/ProjectType'
+    type_other:
+      $ref: '#/ProjectFields/properties/type_other'
+    start_date:
+      $ref: '#/ProjectFields/properties/start_date'
+    end_date:
+      $ref: '#/ProjectFields/properties/end_date'
+    value_baht:
+      $ref: '#/ProjectFields/properties/value_baht'
+    progress_pct:
+      $ref: '#/ProjectFields/properties/progress_pct'
+    description:
+      $ref: '#/ProjectFields/properties/description'
+Project:
+  allOf:
+    - $ref: '#/ProjectFields'
+    - type: object
+      required:
+        - id
+        - expected_progress_pct
+        - version_count
+        - latest_version_no
+        - created_at
+        - updated_at
+      properties:
+        id:
+          $ref: common.yaml#/schemas/Uuid
+        expected_progress_pct:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: |
+            Computed from the project dates, never stored: elapsed
+            calendar days over duration, clamped to 0-100 and rounded.
+        version_count:
+          type: integer
+          minimum: 0
+          description: Number of non-deleted versions.
+        latest_version_no:
+          type: [integer, 'null']
+          minimum: 1
+          description: Number of the latest non-deleted version, null when there is none.
+        created_at:
+          $ref: common.yaml#/schemas/Timestamp
+        updated_at:
+          $ref: common.yaml#/schemas/Timestamp
+ProjectList:
+  allOf:
+    - $ref: common.yaml#/schemas/PageMeta
+    - type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/Project'
+VersionSummary:
+  type: object
+  description: One row of a project's version list.
+  required:
+    - id
+    - project_id
+    - version_no
+    - status
+    - editable
+    - created_at
+    - submitted_at
+    - progress_at_submit
+    - high_count
+    - very_high_count
+    - average_rm
+  properties:
+    id:
+      $ref: common.yaml#/schemas/Uuid
+    project_id:
+      $ref: common.yaml#/schemas/Uuid
+    version_no:
+      type: integer
+      minimum: 1
+      description: Sequential per project, never reused.
+    status:
+      $ref: common.yaml#/schemas/VersionStatus
+    editable:
+      type: boolean
+      description: True only for the latest non-deleted version of the project.
+    created_at:
+      $ref: common.yaml#/schemas/Timestamp
+    submitted_at:
+      description: Time of the last submission, null while the status is `draft`.
+      oneOf:
+        - $ref: common.yaml#/schemas/Timestamp
+        - type: 'null'
+    progress_at_submit:
+      type: [integer, 'null']
+      minimum: 0
+      maximum: 100
+      description: Project progress at the last submission; null while `draft`.
+    high_count:
+      type: [integer, 'null']
+      minimum: 0
+      description: Number of indicators at level H; null while `draft`.
+    very_high_count:
+      type: [integer, 'null']
+      minimum: 0
+      description: Number of indicators at level VH; null while `draft`.
+    average_rm:
+      type: [number, 'null']
+      minimum: 0
+      description: Mean RM of the scored indicators; null while `draft`.
+Version:
+  allOf:
+    - $ref: '#/VersionSummary'
+    - type: object
+      description: Version with the project value and dates it was created with.
+      required: [submission_no, value_baht, start_date, end_date]
+      properties:
+        submission_no:
+          type: integer
+          minimum: 0
+          description: Number of submissions, 0 when never submitted.
+        value_baht:
+          type: number
+          exclusiveMinimum: 0
+          description: Project value copied when the version was created.
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+VersionList:
+  type: object
+  description: All non-deleted versions of a project, newest first. Not paginated.
+  required: [items]
+  properties:
+    items:
+      type: array
+      items:
+        $ref: '#/VersionSummary'

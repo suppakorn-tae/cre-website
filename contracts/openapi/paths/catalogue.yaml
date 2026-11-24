@@ -1,1 +1,133 @@
-{}
+/catalogue:
+  get:
+    operationId: getCatalogue
+    summary: Get the indicator catalogue
+    description: |
+      The 55 indicators grouped dimension, factor, indicator, with the four questions of each, and the options A to I of the environmental impact.
+
+      Caching: the response carries a strong `ETag` and
+      `Cache-Control: private, no-cache`, so a client may keep a copy but
+      must revalidate with `If-None-Match`; an unchanged answer is `304`
+      with no body. The api renews the ETag when an admin edit invalidates
+      its cache.
+    parameters:
+      - name: locale
+        in: query
+        description: Locale of the text; texts missing in it fall back to `th`.
+        schema:
+          $ref: '../schemas/catalogue.yaml#/Locale'
+      - name: If-None-Match
+        in: header
+        description: ETag from an earlier response.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: OK.
+        headers:
+          ETag:
+            description: Strong validator of this representation.
+            schema:
+              type: string
+          Cache-Control:
+            description: '`private, no-cache`.'
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/catalogue.yaml#/Catalogue'
+      '304':
+        description: Not modified; the copy matching `If-None-Match` is current.
+        headers:
+          ETag:
+            schema:
+              type: string
+      '401':
+        $ref: '../schemas/common.yaml#/responses/Unauthorized'
+
+/islands:
+  get:
+    operationId: listIslands
+    summary: List islands
+    description: |
+      Island and location codes for the project form, `other` last.
+
+      Caching: the response carries a strong `ETag` and
+      `Cache-Control: private, no-cache`, so a client may keep a copy but
+      must revalidate with `If-None-Match`; an unchanged answer is `304`
+      with no body. The api renews the ETag when an admin edit invalidates
+      its cache.
+    parameters:
+      - name: If-None-Match
+        in: header
+        description: ETag from an earlier response.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: OK.
+        headers:
+          ETag:
+            description: Strong validator of this representation.
+            schema:
+              type: string
+          Cache-Control:
+            description: '`private, no-cache`.'
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/catalogue.yaml#/IslandList'
+      '304':
+        description: Not modified; the copy matching `If-None-Match` is current.
+        headers:
+          ETag:
+            schema:
+              type: string
+      '401':
+        $ref: '../schemas/common.yaml#/responses/Unauthorized'
+
+/project-types:
+  get:
+    operationId: listProjectTypes
+    summary: List project types
+    description: |
+      Project type codes for the project form, `other` last.
+
+      Caching: the response carries a strong `ETag` and
+      `Cache-Control: private, no-cache`, so a client may keep a copy but
+      must revalidate with `If-None-Match`; an unchanged answer is `304`
+      with no body. The api renews the ETag when an admin edit invalidates
+      its cache.
+    parameters:
+      - name: If-None-Match
+        in: header
+        description: ETag from an earlier response.
+        schema:
+          type: string
+    responses:
+      '200':
+        description: OK.
+        headers:
+          ETag:
+            description: Strong validator of this representation.
+            schema:
+              type: string
+          Cache-Control:
+            description: '`private, no-cache`.'
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              $ref: '../schemas/catalogue.yaml#/ProjectTypeList'
+      '304':
+        description: Not modified; the copy matching `If-None-Match` is current.
+        headers:
+          ETag:
+            schema:
+              type: string
+      '401':
+        $ref: '../schemas/common.yaml#/responses/Unauthorized'
