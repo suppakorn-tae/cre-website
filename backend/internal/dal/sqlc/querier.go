@@ -53,6 +53,7 @@ type Querier interface {
 	AdminUpdateRlThreshold(ctx context.Context, arg AdminUpdateRlThresholdParams) error
 	// Ends every session of the account (password reset, deactivate, delete).
 	BumpSessionVersion(ctx context.Context, id uuid.UUID) (int32, error)
+	CountAuditLog(ctx context.Context, arg CountAuditLogParams) (int64, error)
 	// Created only after the OTP was verified. Role and status take their
 	// defaults (user, active); the e-mail counts as verified.
 	CreateRegisteredAccount(ctx context.Context, arg CreateRegisteredAccountParams) (CreateRegisteredAccountRow, error)
@@ -64,6 +65,7 @@ type Querier interface {
 	// The record the session middleware checks on every request. Role, status
 	// and session version come from here, never from the token.
 	GetAccountSession(ctx context.Context, id uuid.UUID) (GetAccountSessionRow, error)
+	GetAuditEntry(ctx context.Context, id int64) (GetAuditEntryRow, error)
 	GetJob(ctx context.Context, id uuid.UUID) (Job, error)
 	// The owner check lives in the query: another account's job looks absent.
 	GetJobForRequester(ctx context.Context, arg GetJobForRequesterParams) (Job, error)
@@ -79,6 +81,11 @@ type Querier interface {
 	InsertReportJob(ctx context.Context, arg InsertReportJobParams) error
 	// The number counts deleted versions too, so it is never reused.
 	InsertVersion(ctx context.Context, arg InsertVersionParams) (uuid.UUID, error)
+	// Newest first. Each filter is optional. The sort matches audit_log_time_ix,
+	// the admin and target filters match audit_log_admin_ix and
+	// audit_log_target_ix. The admin e-mail is '' (mapped to null by the service) once the account is
+	// anonymised.
+	ListAuditLog(ctx context.Context, arg ListAuditLogParams) ([]ListAuditLogRow, error)
 	// Advice items with one row per locale of text, in list order.
 	ListCatalogueAdvice(ctx context.Context) ([]ListCatalogueAdviceRow, error)
 	// Dimensions with one row per locale of text, in display order.
