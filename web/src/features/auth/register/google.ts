@@ -2,8 +2,8 @@ import type { components } from '@/lib/api/generated/schema';
 
 export type GoogleCallbackResult = components['schemas']['GoogleCallbackResult'];
 
-/** Where a signed-in user lands after sign-up. */
-export const AFTER_SIGNUP_PATH = '/';
+/** Where a signed-in user lands after sign-up: the create-project frame of the hi-fi (route assumed). */
+export const AFTER_SIGNUP_PATH = '/projects/new';
 export const LOGIN_PATH = '/login';
 export const REGISTER_PATH = '/register';
 export const GOOGLE_FINISH_PATH = '/register/google';
