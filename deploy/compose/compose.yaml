@@ -1,0 +1,162 @@
+name: cre
+
+x-app-env: &app-env
+  DATABASE_URL: ${DATABASE_URL}
+  VALKEY_ADDR: ${VALKEY_ADDR}
+  S3_ENDPOINT: ${S3_ENDPOINT}
+  S3_REGION: ${S3_REGION}
+  S3_BUCKET: ${S3_BUCKET}
+  S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+  S3_SECRET_KEY: ${S3_SECRET_KEY}
+  GOTENBERG_URL: ${GOTENBERG_URL}
+  SESSION_TTL: ${SESSION_TTL}
+  REMEMBER_TTL: ${REMEMBER_TTL}
+  SCORE_DECIMALS: ${SCORE_DECIMALS}
+  RM_DECIMALS: ${RM_DECIMALS}
+  PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    networks: [public-net, private-net]
+    depends_on: [web, api]
+
+  web:
+    build:
+      context: ../../web
+    restart: unless-stopped
+    environment:
+      API_INTERNAL_URL: http://api:4000
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+    networks: [private-net]
+
+  api:
+    build:
+      context: ../../backend
+      target: api
+    restart: unless-stopped
+    environment:
+      <<: *app-env
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      SMTP_FROM: ${SMTP_FROM}
+    networks: [private-net, egress-net]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      db: { condition: service_healthy }
+      valkey: { condition: service_healthy }
+      rustfs: { condition: service_healthy }
+
+  worker:
+    build:
+      context: ../../backend
+      target: worker
+    restart: unless-stopped
+    environment: *app-env
+    networks: [private-net]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      valkey: { condition: service_healthy }
+      rustfs: { condition: service_healthy }
+      gotenberg: { condition: service_healthy }
+
+  migrate:
+    build:
+      context: ../../backend
+      target: migrate
+    restart: "no"
+    environment:
+      DATABASE_URL: ${MIGRATE_DATABASE_URL}
+    networks: [private-net]
+    depends_on:
+      db: { condition: service_healthy }
+
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [private-net]
+
+  valkey:
+    image: valkey/valkey:8-alpine
+    restart: unless-stopped
+    command: ["valkey-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    volumes:
+      - valkey-data:/data
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [private-net]
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    restart: unless-stopped
+    environment:
+      RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY}
+      RUSTFS_SECRET_KEY: ${S3_SECRET_KEY}
+    volumes:
+      - rustfs-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks: [private-net]
+
+  gotenberg:
+    image: gotenberg/gotenberg:8
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks: [private-net]
+
+  mailpit:
+    profiles: [dev]
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [private-net]
+
+networks:
+  public-net: {}
+  private-net:
+    internal: true
+  egress-net: {}
+
+volumes:
+  pgdata:
+  valkey-data:
+  rustfs-data:
+  caddy-data:

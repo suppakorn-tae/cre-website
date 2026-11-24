@@ -1,0 +1,14 @@
+{
+	# Local TLS: Caddy's internal CA issues the localhost certificate.
+	local_certs
+}
+
+localhost {
+	handle /api/v* {
+		reverse_proxy api:4000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}
