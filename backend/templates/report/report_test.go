@@ -15,8 +15,8 @@ func sample() report.Data {
 		ValueBaht: 100000000, StartDate: time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC),
 		EndDate:     time.Date(2028, 12, 31, 0, 0, 0, 0, time.UTC),
 		ProgressPct: 40, VersionNo: 2,
-		SubmittedAt: time.Date(2026, 11, 24, 18, 0, 0, 0, time.UTC), // 01:00 on the 25th in Thailand
-		GeneratedAt: time.Date(2026, 11, 25, 3, 0, 0, 0, time.UTC),
+		SubmittedAt:   time.Date(2026, 11, 24, 18, 0, 0, 0, time.UTC), // 01:00 on the 25th in Thailand
+		GeneratedAt:   time.Date(2026, 11, 25, 3, 0, 0, 0, time.UTC),
 		ScoreDecimals: 2, RMDecimals: 2,
 		Indicators: []report.Indicator{
 			{
@@ -27,8 +27,10 @@ func sample() report.Data {
 				},
 				Strategy: "REDUCE",
 			},
-			{Code: "SO-1", Name: "ตัวชี้วัดต่ำ", RL: 1, RIC: 1, RIT: 1, RIE: 1, RIMax: 1, RM: 1, Level: "VL",
-				Advice: []report.AdviceList{{List: "RL", Items: []string{"ไม่ควรแสดง"}}}},
+			{
+				Code: "SO-1", Name: "ตัวชี้วัดต่ำ", RL: 1, RIC: 1, RIT: 1, RIE: 1, RIMax: 1, RM: 1, Level: "VL",
+				Advice: []report.AdviceList{{List: "RL", Items: []string{"ไม่ควรแสดง"}}},
+			},
 			{Code: "EV-9", Name: "ตัวชี้วัดสูงมาก", RL: 5, RIC: 5, RIT: 5, RIE: 5, RIMax: 5, RM: 5, Level: "VH"},
 		},
 	}

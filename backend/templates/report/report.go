@@ -38,12 +38,12 @@ type AdviceList struct {
 
 // Indicator is one stored result with its advice and chosen strategy.
 type Indicator struct {
-	Code, Name                string
-	RL, RIC, RIT, RIE, RIMax  float64
-	RM                        float64
-	Level                     string
-	Advice                    []AdviceList // only filled for H and VH
-	Strategy                  string       // "" when none chosen
+	Code, Name               string
+	RL, RIC, RIT, RIE, RIMax float64
+	RM                       float64
+	Level                    string
+	Advice                   []AdviceList // only filled for H and VH
+	Strategy                 string       // "" when none chosen
 }
 
 // Data is everything the report shows. It is built from stored results only.
@@ -101,10 +101,10 @@ type adviceView struct {
 }
 
 type indicatorView struct {
-	Code, Name                         string
+	Code, Name                          string
 	RL, RIC, RIT, RIE, RIMax, RM, Level string
-	Advice                             []adviceView
-	Strategy                           string
+	Advice                              []adviceView
+	Strategy                            string
 }
 
 type view struct {
@@ -158,10 +158,10 @@ func buildView(d Data) (view, error) {
 
 	v := view{
 		ProjectName: d.ProjectName, Nickname: d.Nickname,
-		Island:   catalogueOrOther(m, "island.", d.Island, d.IslandOther),
-		Type:     catalogueOrOther(m, "type.", d.Type, d.TypeOther),
-		Value:    baht(d.ValueBaht),
-		Start:    beDate(m, d.StartDate, time.UTC), End: beDate(m, d.EndDate, time.UTC),
+		Island: catalogueOrOther(m, "island.", d.Island, d.IslandOther),
+		Type:   catalogueOrOther(m, "type.", d.Type, d.TypeOther),
+		Value:  baht(d.ValueBaht),
+		Start:  beDate(m, d.StartDate, time.UTC), End: beDate(m, d.EndDate, time.UTC),
 		Progress: d.ProgressPct, VersionNo: d.VersionNo,
 		Submitted: beDate(m, d.SubmittedAt, thai), Generated: beDate(m, d.GeneratedAt, thai),
 		Total: len(d.Indicators),
