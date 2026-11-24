@@ -185,25 +185,48 @@ func (s *Service) floor(ctx context.Context, id string) (int, error) {
 	return strconv.Atoi(string(b))
 }
 
+// cacheEntry is what goes into the cache: the record plus the time its
+// database read started.
+type cacheEntry struct {
+	Record
+	ReadAt int64 `json:"readAt"` // unix seconds; 0 means unknown
+}
+
 // record loads the account record, from the cache when it is there and not
 // older than the version floor.
+//
+// Two gates keep a bump from being undone by a racing database read. A
+// reader that loaded the row just before a bump may hand the old record over
+// after BumpVersion dropped the cache entry:
+//
+//   - Reads and writes pass the version floor, so an entry below the floor
+//     is neither served nor stored.
+//   - A read that started more than a CacheTTL ago may finish after the
+//     floor itself has expired. Its record can predate the bump, so it is
+//     not stored; caching only records whose read started within the last
+//     CacheTTL keeps the lifetime of every entry inside the reach of the
+//     floors that protect it.
 func (s *Service) record(ctx context.Context, id string) (Record, error) {
 	if b, err := s.cache.Get(ctx, cacheKey(id)); err == nil {
-		var r Record
-		if json.Unmarshal(b, &r) == nil {
-			// A reader that loaded the row just before a bump may write the
-			// old record after BumpVersion dropped the entry. The floor
-			// outlives any such write, so a stale entry is never served.
-			if f, ferr := s.floor(ctx, id); ferr == nil && r.Version >= f {
-				return r, nil
+		var e cacheEntry
+		if json.Unmarshal(b, &e) == nil {
+			if f, ferr := s.floor(ctx, id); ferr == nil && e.Version >= f {
+				return e.Record, nil
 			}
 		}
 	}
+	readAt := s.now()
 	r, err := s.store.GetRecord(ctx, id)
 	if err != nil {
 		return Record{}, err
 	}
-	if b, err := json.Marshal(r); err == nil {
+	if f, ferr := s.floor(ctx, id); ferr != nil || r.Version < f {
+		return r, nil // too old to store, fresh enough to serve this time
+	}
+	if s.now().Sub(readAt) > s.cfg.CacheTTL {
+		return r, nil // stalled read: may predate a bump whose floor expired
+	}
+	if b, err := json.Marshal(cacheEntry{Record: r, ReadAt: readAt.Unix()}); err == nil {
 		// A cache failure only costs a database read next time.
 		_ = s.cache.Set(ctx, cacheKey(id), b, s.cfg.CacheTTL)
 	}

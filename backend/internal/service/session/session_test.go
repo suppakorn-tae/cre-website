@@ -50,14 +50,22 @@ func (f *fakeStore) BumpVersion(_ context.Context, id string) (int, error) {
 }
 
 type fakeCache struct {
-	mu sync.Mutex
-	m  map[string][]byte
+	mu  sync.Mutex
+	m   map[string][]byte
+	now func() time.Time // optional clock; nil means entries never expire
+	ttl map[string]time.Time
 }
 
-func (c *fakeCache) Set(_ context.Context, k string, v []byte, _ time.Duration) error {
+func (c *fakeCache) Set(_ context.Context, k string, v []byte, d time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.m[k] = v
+	if c.now != nil {
+		if c.ttl == nil {
+			c.ttl = map[string]time.Time{}
+		}
+		c.ttl[k] = c.now().Add(d)
+	}
 	return nil
 }
 
@@ -68,6 +76,13 @@ func (c *fakeCache) Get(_ context.Context, k string) ([]byte, error) {
 	if !ok {
 		return nil, valkey.ErrNotFound
 	}
+	if c.now != nil {
+		if e, exp := c.ttl[k]; exp && !c.now().Before(e) {
+			delete(c.m, k)
+			delete(c.ttl, k)
+			return nil, valkey.ErrNotFound
+		}
+	}
 	return v, nil
 }
 
@@ -76,6 +91,7 @@ func (c *fakeCache) Del(_ context.Context, ks ...string) error {
 	defer c.mu.Unlock()
 	for _, k := range ks {
 		delete(c.m, k)
+		delete(c.ttl, k)
 	}
 	return nil
 }
@@ -285,5 +301,56 @@ func TestPrincipalCarriesExpiryAndRemember(t *testing.T) {
 		if err != nil || !p.Expires.Equal(exp) || p.Remember != remember {
 			t.Fatalf("remember=%v: %+v %v", remember, p, err)
 		}
+	}
+}
+
+// stalledStore hands out the record read at read time only after gate has
+// run, like a database read that stalls for minutes.
+type stalledStore struct {
+	*fakeStore
+	gate func()
+}
+
+func (s *stalledStore) GetRecord(ctx context.Context, id string) (Record, error) {
+	rec, err := s.fakeStore.GetRecord(ctx, id)
+	if s.gate != nil {
+		g := s.gate
+		s.gate = nil
+		g()
+	}
+	return rec, err
+}
+
+// The request reads version 1; the bump commits while the read is stalled,
+// and the cache write would land after the floor has expired. Without the
+// freshness gate the stale record would revive the revoked session.
+func TestBumpDuringStalledReadDoesNotReviveOldSession(t *testing.T) {
+	ctx := context.Background()
+	clock := time.Date(2026, 11, 25, 12, 0, 0, 0, time.UTC)
+	fs := &fakeStore{recs: map[string]Record{"a1": {Role: RoleUser, Status: StatusActive, Version: 1}}}
+	ss := &stalledStore{fakeStore: fs}
+	cache := &fakeCache{m: map[string][]byte{}, now: func() time.Time { return clock }}
+	svc, err := New(Config{Secret: []byte(strings.Repeat("k", 32))}, ss, cache)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc.now = func() time.Time { return clock }
+	old, _ := svc.Issue("a1", 1, false)
+	ss.gate = func() {
+		if _, err := svc.BumpVersion(ctx, "a1"); err != nil {
+			t.Error(err)
+			return
+		}
+		clock = clock.Add(3 * time.Minute) // CacheTTL is 30s, floors live 60s
+	}
+	if _, err := svc.Authenticate(ctx, old); err != nil {
+		t.Fatalf("in-flight request before the bump was visible: %v", err)
+	}
+	fresh, _ := svc.Issue("a1", 2, false)
+	if _, err := svc.Authenticate(ctx, fresh); err != nil {
+		t.Fatalf("new cookie after the bump: %v", err)
+	}
+	if _, err := svc.Authenticate(ctx, old); !errors.Is(err, ErrRevoked) {
+		t.Fatalf("stalled read revived the revoked session: %v", err)
 	}
 }
