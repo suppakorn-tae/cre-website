@@ -172,6 +172,11 @@ func TestGoldenReport(t *testing.T) {
 	}
 	text, _ := pdfText(t, out)
 	got := norm(text)
+	defer func() {
+		if t.Failed() {
+			t.Logf("extracted text (first 1500 bytes): %.1500q", text)
+		}
+	}()
 
 	want := []string{"TST1", "ผลลัพธ์เป็นข้อมูลเบื้องต้นสำหรับใช้ประกอบการพิจารณาเท่านั้น", "ผู้ประเมิน", "ผู้ตรวจสอบ", "ผู้อนุมัติ", "ลดความเสี่ยง", "โอนความเสี่ยง"}
 	for _, c := range codes[:2] { // H and VH: code, name and every advice item of the stored lists
