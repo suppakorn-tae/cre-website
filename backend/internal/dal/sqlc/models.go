@@ -651,6 +651,40 @@ type AdviceItemText struct {
 	Text   string
 }
 
+type Answer struct {
+	VersionID     uuid.UUID
+	IndicatorCode string
+	X             pgtype.Numeric
+	Y1Value       pgtype.Numeric
+	Y1Unit        NullCostUnit
+	Y2Value       pgtype.Numeric
+	Y2Unit        NullTimeUnit
+	UpdatedAt     time.Time
+}
+
+type AnswerY3 struct {
+	VersionID     uuid.UUID
+	IndicatorCode string
+	OptionCode    string
+}
+
+type AssessmentVersion struct {
+	ID                uuid.UUID
+	ProjectID         uuid.UUID
+	VersionNo         int32
+	Status            VersionStatus
+	SubmissionNo      int32
+	SnapValueBaht     pgtype.Numeric
+	SnapStartDate     pgtype.Date
+	SnapEndDate       pgtype.Date
+	SnapScoreDecimals int16
+	SnapRmDecimals    int16
+	ProgressAtSubmit  pgtype.Int2
+	CreatedAt         time.Time
+	SubmittedAt       *time.Time
+	DeletedAt         *time.Time
+}
+
 type AuditLog struct {
 	ID         int64
 	OccurredAt time.Time
@@ -735,6 +769,11 @@ type IndicatorText struct {
 	QuestionY3    pgtype.Text
 }
 
+type Island struct {
+	Code   string
+	SortNo int16
+}
+
 type Job struct {
 	ID          uuid.UUID
 	Kind        JobKind
@@ -753,11 +792,41 @@ type Locale struct {
 	IsDefault bool
 }
 
+type Project struct {
+	ID          uuid.UUID
+	OwnerID     uuid.UUID
+	Name        string
+	Nickname    string
+	IslandCode  string
+	IslandOther pgtype.Text
+	TypeCode    string
+	TypeOther   pgtype.Text
+	StartDate   pgtype.Date
+	EndDate     pgtype.Date
+	ValueBaht   pgtype.Numeric
+	ProgressPct int16
+	Description pgtype.Text
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	DeletedAt   *time.Time
+}
+
+type ProjectType struct {
+	Code   string
+	SortNo int16
+}
+
 type ReportJob struct {
 	JobID        uuid.UUID
 	Kind         JobKind
 	VersionID    uuid.UUID
 	SubmissionNo int32
+}
+
+type ResultAdviceList struct {
+	VersionID     uuid.UUID
+	IndicatorCode string
+	List          AdviceList
 }
 
 type RiEOption struct {
@@ -770,4 +839,46 @@ type RiEOptionText struct {
 	OptionCode string
 	Locale     string
 	Label      string
+}
+
+type RiskResult struct {
+	VersionID     uuid.UUID
+	IndicatorCode string
+	X             pgtype.Numeric
+	Y1Pct         pgtype.Numeric
+	Y2Pct         pgtype.Numeric
+	Rl            pgtype.Numeric
+	RiC           pgtype.Numeric
+	RiT           pgtype.Numeric
+	RiE           pgtype.Numeric
+	RiMax         pgtype.Numeric
+	Rm            pgtype.Numeric
+	Level         RiskLevel
+}
+
+type StrategyChoice struct {
+	VersionID     uuid.UUID
+	IndicatorCode string
+	Strategy      RiskStrategy
+	UpdatedAt     time.Time
+}
+
+type VersionImpactThreshold struct {
+	VersionID  uuid.UUID
+	ImpactCode ImpactCode
+	A          pgtype.Numeric
+	B          pgtype.Numeric
+	C          pgtype.Numeric
+	D          pgtype.Numeric
+	E          pgtype.Numeric
+}
+
+type VersionRlThreshold struct {
+	VersionID     uuid.UUID
+	IndicatorCode string
+	A             pgtype.Numeric
+	B             pgtype.Numeric
+	C             pgtype.Numeric
+	D             pgtype.Numeric
+	E             pgtype.Numeric
 }
