@@ -43,7 +43,7 @@ CRON
 log "starting pgbackrest tls server"
 su-exec postgres pgbackrest server &
 log "starting metrics on :9099/cgi-bin/metrics"
-su-exec postgres busybox httpd -f -p 9099 -h /opt/backup/www &
+su-exec postgres httpd -f -p 9099 -h /opt/backup/www &
 su-exec postgres /opt/backup/metrics.sh loop &
 su-exec postgres /opt/backup/bootstrap.sh &
 

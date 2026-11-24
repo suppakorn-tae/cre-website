@@ -15,7 +15,7 @@ while :; do
   wal=$(psql -h "$sock" -U "$user" -d "$db" -Atc \
     "select coalesce(extract(epoch from last_archived_time),0)::bigint from pg_stat_archiver" 2>/dev/null || echo 0)
   [ -n "$wal" ] || wal=0
-  if [ $((i % 5)) -eq 0 ]; then
+  if [ $((i % 5)) -eq 0 ] || [ "$check_ok" -eq 0 ]; then
     if pgbackrest --stanza=cre check >/dev/null 2>&1; then check_ok=1; else check_ok=0; fi
   fi
   lb=-1

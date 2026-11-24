@@ -63,7 +63,8 @@ Goal: every change up to the failure, including account deletions.
    first with `deploy/backup/deploy.sh build backup`):
 
    ```
-   docker run --rm --env-file .env -v cre_pgdata:/var/lib/postgresql/data \
+   docker run --rm --env-file .env --network cre_egress-net \
+     -v cre_pgdata:/var/lib/postgresql/data \
      --entrypoint sh cre-pgbackrest:local -c '
        /opt/backup/render-config.sh /etc/pgbackrest/pgbackrest.conf &&
        chown -R postgres:postgres /etc/pgbackrest &&
@@ -72,8 +73,19 @@ Goal: every change up to the failure, including account deletions.
    ```
 
    The default restore replays WAL to the end of the archive.
-   The off-site endpoint must be reachable from this container.
-4. `deploy/backup/deploy.sh up -d`. PostgreSQL replays WAL and opens.
+   The off-site endpoint must be reachable from this container. Use
+   `--network <project>_egress-net` (replace `cre` with your Compose
+   project name), or any network that reaches the endpoint.
+4. Start `backup` first, without its dependencies. `db` replays WAL
+   through `backup` (`archive-get`), and `backup` normally waits for a
+   healthy `db`, so a plain `up -d` deadlocks:
+
+   ```
+   deploy/backup/deploy.sh up -d --no-deps backup
+   deploy/backup/deploy.sh up -d
+   ```
+
+   PostgreSQL replays WAL and opens.
    Check `select pg_is_in_recovery();` returns `f`.
 5. Restore `reports/` if the RustFS volume is lost (see Reports below).
 6. A new timeline starts. Run `pgbackrest check`, then take a new full:
@@ -96,7 +108,8 @@ mistake in a separate instance and copy the affected rows back.
 
    ```
    docker volume create pitr-data
-   docker run --rm --env-file .env -v pitr-data:/var/lib/postgresql/data \
+   docker run --rm --env-file .env --network cre_egress-net \
+     -v pitr-data:/var/lib/postgresql/data \
      --entrypoint sh cre-pgbackrest:local -c '
        /opt/backup/render-config.sh /etc/pgbackrest/pgbackrest.conf &&
        chown -R postgres:postgres /etc/pgbackrest &&
@@ -106,15 +119,25 @@ mistake in a separate instance and copy the affected rows back.
          --target-action=promote restore'
    ```
 
-3. Start it on another port, not on `private-net`, with archiving off
-   so it cannot write into the production repository:
+3. Start it on another port with archiving off so it cannot write
+   into the production repository. It needs the same `.env` and a
+   network that reaches the off-site endpoint, because recovery to the
+   target reads WAL from the repository (`restore_command`), and it
+   needs a rendered `pgbackrest.conf`:
 
    ```
-   docker run -d --name pitr -v pitr-data:/var/lib/postgresql/data \
-     -p 127.0.0.1:55432:5432 --entrypoint docker-entrypoint.sh \
-     cre-pgbackrest:local postgres -c archive_mode=off \
-     -c unix_socket_directories=/tmp
+   docker run -d --name pitr --env-file .env --network cre_egress-net \
+     -v pitr-data:/var/lib/postgresql/data \
+     -p 127.0.0.1:55432:5432 --entrypoint sh cre-pgbackrest:local -c '
+       /opt/backup/render-config.sh /etc/pgbackrest/pgbackrest.conf &&
+       chown -R postgres:postgres /etc/pgbackrest &&
+       exec su-exec postgres postgres -c archive_mode=off \
+         -c unix_socket_directories=/tmp'
    ```
+
+   The target must lie before the last archived transaction, otherwise
+   recovery stops with `recovery ended before configured recovery
+   target was reached`.
 
 4. Inspect and export the rows, then load them into production
    with `psql`/`COPY` inside a transaction, reviewed by a second person:
