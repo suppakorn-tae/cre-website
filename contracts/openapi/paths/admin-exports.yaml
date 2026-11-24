@@ -1,0 +1,65 @@
+/admin/exports:
+  post:
+    operationId: adminRequestExport
+    summary: Request a pseudonymised research export
+    description: |
+      Admin only. Enqueues an export job and returns 202 with the job id.
+      Track the job with `GET /jobs/{id}` (defined with the jobs endpoints).
+      The request is written to the audit log.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/admin.yaml#/AdminExportRequest
+    responses:
+      '202':
+        description: Export job accepted.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/common.yaml#/schemas/JobAccepted
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+/admin/exports/{job_id}/download:
+  get:
+    operationId: adminDownloadExport
+    summary: Download a finished export
+    description: |
+      Admin only. Streams the ZIP through the api. Each download is written
+      to the audit log before the stream starts. 409 while the job is not
+      done; 410 after the file expired (7 days after the job finished).
+    parameters:
+      - name: job_id
+        in: path
+        required: true
+        schema:
+          $ref: ../schemas/common.yaml#/schemas/Uuid
+    responses:
+      '200':
+        description: The export ZIP.
+        content:
+          application/zip:
+            schema:
+              type: string
+              format: binary
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
+      '410':
+        description: The export file has expired; request a new export.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/common.yaml#/schemas/ErrorEnvelope

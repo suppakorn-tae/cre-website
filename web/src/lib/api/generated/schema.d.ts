@@ -4,6 +4,323 @@
  */
 
 export interface paths {
+    "/admin/advice/{indicator_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the advice lists of an indicator
+         * @description Admin only. Returns all four lists (RL, RI_C, RI_T, RI_E).
+         */
+        get: operations["adminGetAdvice"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/advice/{indicator_code}/{list}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Replace one advice list
+         * @description Admin only. Replaces the whole list in one transaction and writes an
+         *     audit entry with the old and new list. 1 to 5 items, each with Thai
+         *     (`th`) text; otherwise 422.
+         */
+        put: operations["adminReplaceAdviceList"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/audit-log": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List audit log entries
+         * @description Admin only. Read-only, newest first. Entries cannot be edited or deleted.
+         */
+        get: operations["adminListAuditLog"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/audit-log/{audit_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get one audit entry with old and new values
+         * @description Admin only.
+         */
+        get: operations["adminGetAuditEntry"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request a pseudonymised research export
+         * @description Admin only. Enqueues an export job and returns 202 with the job id.
+         *     Track the job with `GET /jobs/{id}` (defined with the jobs endpoints).
+         *     The request is written to the audit log.
+         */
+        post: operations["adminRequestExport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/exports/{job_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download a finished export
+         * @description Admin only. Streams the ZIP through the api. Each download is written
+         *     to the audit log before the stream starts. 409 while the job is not
+         *     done; 410 after the file expired (7 days after the job finished).
+         */
+        get: operations["adminDownloadExport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rl-thresholds": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List RL thresholds of all indicators
+         * @description Admin only.
+         */
+        get: operations["adminListRlThresholds"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/rl-thresholds/{indicator_code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indicator_code: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * Get the RL thresholds of an indicator
+         * @description Admin only.
+         */
+        get: operations["adminGetRlThreshold"];
+        /**
+         * Update the RL thresholds of an indicator
+         * @description Admin only. Valid pattern (a..e, a..c only, or c..e only), values at
+         *     least 0, strictly increasing (decreasing for inverse indicators);
+         *     otherwise 422. Applies only to versions created afterwards. Writes an
+         *     audit entry with old and new values.
+         */
+        put: operations["adminUpdateRlThreshold"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/impact-tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the RI_C and RI_T tables
+         * @description Admin only. Both shared tables in one response.
+         */
+        get: operations["adminGetImpactTables"];
+        /**
+         * Update the RI_C and RI_T tables
+         * @description Admin only. Edits one or both tables in one call. Each changed table
+         *     needs all five values, at least 0 and strictly increasing; otherwise
+         *     422. Applies only to versions created afterwards. Writes one audit
+         *     entry per changed table.
+         */
+        put: operations["adminUpdateImpactTables"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List and search users
+         * @description Admin only. Search matches e-mail or organisation. Newest first.
+         */
+        get: operations["adminListUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get one user
+         * @description Admin only. Returns the two counts, never the user's projects or versions.
+         */
+        get: operations["adminGetUser"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete (anonymise) a user
+         * @description Admin only. Anonymises the account; projects and versions are retained.
+         *     Writes an audit entry. An admin cannot delete their own account (409).
+         */
+        delete: operations["adminDeleteUser"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{user_id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change a user's role
+         * @description Admin only. Writes an audit entry. An admin cannot change their own
+         *     role (409).
+         */
+        put: operations["adminChangeUserRole"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{user_id}/deactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Deactivate a user
+         * @description Admin only. A deactivated user cannot sign in. Writes an audit entry.
+         *     Conflict (409) when deactivating own account or a user that is not active.
+         */
+        post: operations["adminDeactivateUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/users/{user_id}/reactivate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reactivate a user
+         * @description Admin only. Writes an audit entry. Conflict (409) when the user is not deactivated.
+         */
+        post: operations["adminReactivateUser"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects": {
         parameters: {
             query?: never;
@@ -105,6 +422,146 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @enum {string} */
+        AdminSignInMethod: "password" | "google";
+        AdminUser: {
+            id: components["schemas"]["Uuid"];
+            /**
+             * Format: email
+             * @description Null once the account is anonymised.
+             */
+            email: string | null;
+            /** @description Empty once the account is anonymised. */
+            sign_in_methods: components["schemas"]["AdminSignInMethod"][];
+            organisation: string | null;
+            role: components["schemas"]["UserRole"];
+            status: components["schemas"]["AccountStatus"];
+            /** @description Number of projects, soft-deleted ones excluded. Count only. */
+            project_count: number;
+            /** @description Number of assessment versions, soft-deleted ones excluded. Count only. */
+            version_count: number;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        AdminUserPage: {
+            items: components["schemas"]["AdminUser"][];
+            meta: components["schemas"]["PageMeta"];
+        };
+        AdminChangeRoleRequest: {
+            role: components["schemas"]["UserRole"];
+        };
+        /** @description One text per locale. Only `th` is edited today; it may contain English terms. */
+        AdminAdviceText: {
+            th: string;
+        } & {
+            [key: string]: string;
+        };
+        AdminAdviceItem: {
+            text: components["schemas"]["AdminAdviceText"];
+        };
+        /** @description Ordered items; the array index is the position. */
+        AdminAdviceItemList: components["schemas"]["AdminAdviceItem"][];
+        /** @description The four advice lists of one indicator. */
+        AdminAdviceLists: {
+            indicator_code: string;
+            lists: {
+                RL: components["schemas"]["AdminAdviceItemList"];
+                RI_C: components["schemas"]["AdminAdviceItemList"];
+                RI_T: components["schemas"]["AdminAdviceItemList"];
+                RI_E: components["schemas"]["AdminAdviceItemList"];
+            };
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        AdminAdviceListResponse: {
+            indicator_code: string;
+            list: components["schemas"]["AdviceList"];
+            items: components["schemas"]["AdminAdviceItemList"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        AdminReplaceAdviceRequest: {
+            items: components["schemas"]["AdminAdviceItemList"];
+        };
+        AdminThresholdValue: number | null;
+        /**
+         * @description Valid patterns: all of a..e set, only a..c set, or only c..e set. Set
+         *     values are strictly increasing, or strictly decreasing for an inverse
+         *     indicator. Unused thresholds are null. Violations return 422.
+         */
+        AdminRlThresholdValues: {
+            a: components["schemas"]["AdminThresholdValue"];
+            b: components["schemas"]["AdminThresholdValue"];
+            c: components["schemas"]["AdminThresholdValue"];
+            d: components["schemas"]["AdminThresholdValue"];
+            e: components["schemas"]["AdminThresholdValue"];
+        };
+        AdminRlThreshold: {
+            indicator_code: string;
+            /** @description Display unit from the indicator catalogue. */
+            unit: string;
+            direction: components["schemas"]["IndicatorDirection"];
+            thresholds: components["schemas"]["AdminRlThresholdValues"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        AdminRlThresholdList: {
+            items: components["schemas"]["AdminRlThreshold"][];
+        };
+        AdminUpdateRlThresholdRequest: {
+            thresholds: components["schemas"]["AdminRlThresholdValues"];
+        };
+        /** @description All five set, at least 0 and strictly increasing; otherwise 422. */
+        AdminImpactThresholdValues: {
+            a: number;
+            b: number;
+            c: number;
+            d: number;
+            e: number;
+        };
+        AdminImpactTable: {
+            code: components["schemas"]["ImpactCode"];
+            thresholds: components["schemas"]["AdminImpactThresholdValues"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        AdminImpactTables: {
+            ri_c: components["schemas"]["AdminImpactTable"];
+            ri_t: components["schemas"]["AdminImpactTable"];
+        };
+        /** @description Edit one or both tables in a single call; omitted tables stay unchanged. */
+        AdminUpdateImpactTablesRequest: {
+            ri_c?: components["schemas"]["AdminImpactThresholdValues"];
+            ri_t?: components["schemas"]["AdminImpactThresholdValues"];
+        };
+        AdminAuditEntrySummary: {
+            /** Format: int64 */
+            id: number;
+            occurred_at: components["schemas"]["Timestamp"];
+            admin_id: components["schemas"]["Uuid"];
+            /** @description Null when the admin account was later anonymised; `admin_id` remains. */
+            admin_email: string | null;
+            action: components["schemas"]["AuditAction"];
+            /** @description e.g. `account`, `indicator`, `impact_table`, `job`. */
+            target_type: string;
+            target_id: string;
+        };
+        AdminAuditEntry: components["schemas"]["AdminAuditEntrySummary"] & {
+            /** @description State of the target before the change; null when not a change. */
+            old_value: unknown;
+            /** @description State of the target after the change; null when not a change. */
+            new_value: unknown;
+            request_id: string;
+            ip_address: string | null;
+        };
+        AdminAuditPage: {
+            items: components["schemas"]["AdminAuditEntrySummary"][];
+            meta: components["schemas"]["PageMeta"];
+        };
+        /** @description Request a pseudonymised research export (no e-mail or Google id). */
+        AdminExportRequest: {
+            scope: components["schemas"]["ExportScope"];
+            /** @description Required and non-empty when `scope` is `selected`; must be omitted for `all`. */
+            user_ids?: components["schemas"]["Uuid"][];
+            /** @description Include soft-deleted projects and versions. */
+            include_deleted: boolean;
+        };
         /**
          * @description Island / location code. `other` requires `island_other`.
          * @enum {string}
@@ -211,13 +668,6 @@ export interface components {
         VersionList: {
             items: components["schemas"]["VersionSummary"][];
         };
-        PageMeta: {
-            page: number;
-            page_size: number;
-            total: number;
-        };
-        /** Format: uuid */
-        Uuid: string;
         /**
          * Format: date-time
          * @description UTC instant, RFC 3339.
@@ -233,6 +683,8 @@ export interface components {
         ErrorEnvelope: {
             error: components["schemas"]["ErrorBody"];
         };
+        /** @enum {string} */
+        AdviceList: "RL" | "RI_C" | "RI_T" | "RI_E";
         FieldError: {
             /** @description JSON pointer of the offending field. */
             field: string;
@@ -244,6 +696,29 @@ export interface components {
         ValidationErrorEnvelope: {
             error: components["schemas"]["ValidationErrorBody"];
         };
+        /** Format: uuid */
+        Uuid: string;
+        /** @enum {string} */
+        AuditAction: "user_role_change" | "user_deactivate" | "user_reactivate" | "user_delete" | "advice_edit" | "rl_threshold_edit" | "impact_table_edit" | "export_request" | "export_download";
+        PageMeta: {
+            page: number;
+            page_size: number;
+            total: number;
+        };
+        /** @enum {string} */
+        ExportScope: "all" | "selected";
+        /** @description Body of a 202 response; poll the job with this id. */
+        JobAccepted: {
+            job_id: components["schemas"]["Uuid"];
+        };
+        /** @enum {string} */
+        IndicatorDirection: "normal" | "inverse";
+        /** @enum {string} */
+        ImpactCode: "RI_C" | "RI_T";
+        /** @enum {string} */
+        UserRole: "user" | "admin";
+        /** @enum {string} */
+        AccountStatus: "active" | "deactivated" | "deleted";
         /** @description Not blank. */
         name: string;
         nickname: string;
@@ -339,6 +814,479 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    adminGetAdvice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indicator_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The advice lists. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAdviceLists"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    adminReplaceAdviceList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indicator_code: string;
+                list: components["schemas"]["AdviceList"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminReplaceAdviceRequest"];
+            };
+        };
+        responses: {
+            /** @description The stored list. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAdviceListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminListAuditLog: {
+        parameters: {
+            query?: {
+                admin_id?: components["schemas"]["Uuid"];
+                action?: components["schemas"]["AuditAction"];
+                target_type?: string;
+                /** @description Used together with `target_type`. */
+                target_id?: string;
+                /** @description Entries at or after this instant. */
+                from?: components["schemas"]["Timestamp"];
+                /** @description Entries before this instant. */
+                to?: components["schemas"]["Timestamp"];
+                page?: components["parameters"]["Page"];
+                page_size?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of entries; empty when nothing matches. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuditPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminGetAuditEntry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                audit_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The entry. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminAuditEntry"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    adminRequestExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminExportRequest"];
+            };
+        };
+        responses: {
+            /** @description Export job accepted. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminDownloadExport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The export ZIP. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            /** @description The export file has expired; request a new export. */
+            410: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    adminListRlThresholds: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Thresholds a..e per indicator. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRlThresholdList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminGetRlThreshold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indicator_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The thresholds. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRlThreshold"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    adminUpdateRlThreshold: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                indicator_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdateRlThresholdRequest"];
+            };
+        };
+        responses: {
+            /** @description The stored thresholds. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRlThreshold"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminGetImpactTables: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Both tables. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminImpactTables"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    adminUpdateImpactTables: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminUpdateImpactTablesRequest"];
+            };
+        };
+        responses: {
+            /** @description Both tables after the update. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminImpactTables"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminListUsers: {
+        parameters: {
+            query?: {
+                /** @description Case-insensitive search on e-mail or organisation. */
+                q?: string;
+                role?: components["schemas"]["UserRole"];
+                status?: components["schemas"]["AccountStatus"];
+                page?: components["parameters"]["Page"];
+                page_size?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of users with project and version counts only. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserPage"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminGetUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    adminDeleteUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Account anonymised. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    adminChangeUserRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminChangeRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    adminDeactivateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The updated user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    adminReactivateUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The updated user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     listProjects: {
         parameters: {
             query?: {
