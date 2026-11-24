@@ -20,6 +20,7 @@ type Querier interface {
 	// IO-39 (user self-delete) should reuse this query.
 	AdminAnonymiseAccount(ctx context.Context, id uuid.UUID) error
 	AdminCountUsers(ctx context.Context, arg AdminCountUsersParams) (int32, error)
+	AdminGetImpactTables(ctx context.Context) ([]AdminGetImpactTablesRow, error)
 	AdminGetRlThreshold(ctx context.Context, code string) (AdminGetRlThresholdRow, error)
 	AdminGetUser(ctx context.Context, id uuid.UUID) (AdminGetUserRow, error)
 	// Thresholds of every indicator with the display unit in Thai, in catalogue
@@ -33,11 +34,15 @@ type Querier interface {
 	// Locks every active admin row so two concurrent demotions cannot both pass
 	// the last-admin check.
 	AdminLockActiveAdmins(ctx context.Context) ([]uuid.UUID, error)
+	// Locks both rows, in key order, for the edit.
+	AdminLockImpactTables(ctx context.Context) ([]AdminLockImpactTablesRow, error)
 	// Locks the indicator row for the edit and returns its current thresholds.
 	AdminLockRlThreshold(ctx context.Context, code string) (AdminLockRlThresholdRow, error)
 	AdminSetRole(ctx context.Context, arg AdminSetRoleParams) error
 	// Deactivate or reactivate. Deleted accounts are never touched here.
 	AdminSetStatus(ctx context.Context, arg AdminSetStatusParams) error
+	// Writes the catalogue row only, never version_impact_threshold.
+	AdminUpdateImpactTable(ctx context.Context, arg AdminUpdateImpactTableParams) error
 	// Writes the catalogue row only. Version snapshots (version_rl_threshold)
 	// are separate tables and are never touched.
 	AdminUpdateRlThreshold(ctx context.Context, arg AdminUpdateRlThresholdParams) error
