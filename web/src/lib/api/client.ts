@@ -8,6 +8,8 @@ export const SERVER_BASE_URL = 'http://api:4000/api/v1';
 
 /** Header named by the contract (`csrfToken` security scheme). */
 export const CSRF_HEADER = 'X-CSRF-Token';
+/** Session cookie named by the contract (`sessionCookie` security scheme). */
+export const SESSION_COOKIE = 'cre_session';
 /** Cookie the api sets with the CSRF token (double-submit); readable by script. */
 export const CSRF_COOKIE = 'cre_csrf';
 

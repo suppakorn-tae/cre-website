@@ -2,6 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 
+import { startMocks } from './start-mocks';
+
 export const MOCKS_ENABLED = process.env.NEXT_PUBLIC_API_MOCKS === '1';
 
 /**
@@ -14,11 +16,12 @@ export function MockGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!MOCKS_ENABLED) return;
     let cancelled = false;
-    import('@/mocks/browser')
-      .then(({ worker }) => worker.start({ onUnhandledFrame: 'bypass' }))
-      .then(() => {
-        if (!cancelled) setReady(true);
-      });
+    startMocks(async () => {
+      const { worker } = await import('@/mocks/browser');
+      await worker.start({ onUnhandledFrame: 'bypass' });
+    }).then(() => {
+      if (!cancelled) setReady(true);
+    });
     return () => {
       cancelled = true;
     };

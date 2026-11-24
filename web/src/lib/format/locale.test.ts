@@ -15,6 +15,15 @@ describe('formatDate', () => {
     expect(formatDate('2026-11-23T18:00:00Z')).toBe('24 พ.ย. 2569');
   });
 
+  it('flips the day at 17:00Z (midnight Bangkok)', () => {
+    expect(formatDate('2026-11-24T16:59:59Z')).toBe('24 พ.ย. 2569');
+    expect(formatDate('2026-11-24T17:00:00Z')).toBe('25 พ.ย. 2569');
+  });
+
+  it('flips the Buddhist year at new year in Bangkok', () => {
+    expect(formatDate('2026-12-31T17:00:00Z')).toBe('1 ม.ค. 2570');
+  });
+
   it('accepts Date and epoch input', () => {
     const d = new Date('2026-01-01T05:00:00Z');
     expect(formatDate(d)).toBe('1 ม.ค. 2569');
