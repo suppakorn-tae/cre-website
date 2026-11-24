@@ -7,5 +7,7 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/app"
 )
 
-// Routes registers the versions endpoints. Stub: filled by the feature issue.
+// Routes is a no-op. The version paths live under /projects/{project_id}/
+// versions, which router.go mounts for the projects handler, so they are
+// registered by Mount from the projects routes (see Mount).
 func Routes(_ chi.Router, _ app.Deps) {}

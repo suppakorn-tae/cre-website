@@ -48,6 +48,8 @@ type Querier interface {
 	// Append-only: the application role has INSERT and SELECT on audit_log only.
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
+	// The number counts deleted versions too, so it is never reused.
+	InsertVersion(ctx context.Context, arg InsertVersionParams) (uuid.UUID, error)
 	// Advice items with one row per locale of text, in list order.
 	ListCatalogueAdvice(ctx context.Context) ([]ListCatalogueAdviceRow, error)
 	// Dimensions with one row per locale of text, in display order.
@@ -61,11 +63,21 @@ type Querier interface {
 	ListCatalogueProjectTypes(ctx context.Context) ([]string, error)
 	ListCatalogueRiEOptions(ctx context.Context) ([]ListCatalogueRiEOptionsRow, error)
 	ListUnfinishedJobs(ctx context.Context) ([]Job, error)
+	// Non-deleted versions of an owned project, newest first; version_id narrows
+	// it to one. editable is true only for the highest number ever created,
+	// deleted rows included (BR-11). Stats are 0 for a draft; callers ignore them.
+	ListVersions(ctx context.Context, arg ListVersionsParams) ([]ListVersionsRow, error)
+	// Owner check and the lock that serialises version creation per project.
+	// Another account's project, or a deleted one, looks absent.
+	LockOwnedProject(ctx context.Context, arg LockOwnedProjectParams) (uuid.UUID, error)
 	MarkJobDone(ctx context.Context, arg MarkJobDoneParams) (int64, error)
 	MarkJobExpired(ctx context.Context, id uuid.UUID) (int64, error)
 	MarkJobFailed(ctx context.Context, arg MarkJobFailedParams) (int64, error)
 	// A job left running by a crashed worker may be claimed again.
 	MarkJobRunning(ctx context.Context, id uuid.UUID) (Job, error)
+	SnapshotImpactThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
+	SnapshotRLThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
+	SoftDeleteVersion(ctx context.Context, arg SoftDeleteVersionParams) (int64, error)
 }
 
 var _ Querier = (*Queries)(nil)
