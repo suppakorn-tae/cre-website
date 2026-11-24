@@ -172,7 +172,7 @@ func (s *Service) Request(ctx context.Context, adminID uuid.UUID, p Params) (uui
 		}
 		return s.audit.Record(ctx, tx, audit.Entry{
 			Action: audit.ExportRequest, TargetType: "export", TargetID: job.ID.String(),
-			New: requestAudit{Scope: p.Scope, UserIDs: p.UserIDs, IncludeDeleted: p.IncludeDeleted},
+			New: requestAudit(p),
 		})
 	})
 	if err != nil {
