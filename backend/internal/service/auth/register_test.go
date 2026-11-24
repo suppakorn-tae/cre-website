@@ -47,12 +47,14 @@ func (c *memCache) live(k string) (memEntry, bool) {
 	}
 	return e, ok
 }
+
 func (c *memCache) Set(_ context.Context, k string, v []byte, ttl time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.m[k] = memEntry{v, c.clk.now().Add(ttl)}
 	return nil
 }
+
 func (c *memCache) Get(_ context.Context, k string) ([]byte, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -61,6 +63,7 @@ func (c *memCache) Get(_ context.Context, k string) ([]byte, error) {
 	}
 	return nil, valkey.ErrNotFound
 }
+
 func (c *memCache) Del(_ context.Context, ks ...string) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -69,6 +72,7 @@ func (c *memCache) Del(_ context.Context, ks ...string) error {
 	}
 	return nil
 }
+
 func (c *memCache) Incr(_ context.Context, k string, ttl time.Duration) (int64, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -82,6 +86,7 @@ func (c *memCache) Incr(_ context.Context, k string, ttl time.Duration) (int64, 
 	c.m[k] = memEntry{make([]byte, n), e.exp}
 	return n, nil
 }
+
 func (c *memCache) SetNX(_ context.Context, k string, v []byte, ttl time.Duration) (bool, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()

@@ -13,4 +13,5 @@ import (
 func Routes(r chi.Router, d app.Deps) {
 	r.Get("/csrf", csrfToken(d.Config.Insecure()))
 	r.With(d.Auth).Get("/me", me(d.Sessions))
+	registerRoutes(r, d) // sign-up (register_handler.go)
 }
