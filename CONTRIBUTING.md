@@ -54,6 +54,29 @@ GitHub must show which teammate is responsible for each commit and PR, not a gen
 - Body: use the pull request template.
 - Open a draft PR after the first commit.
 
+## Required checks
+
+Require exactly these three status checks on `main`:
+
+| Check | Workflow | What it does |
+| --- | --- | --- |
+| `ci-ok` | `ci.yml` | Always runs. Fails if any area job failed or was cancelled; passes when jobs were skipped by the path filter |
+| `pr-title` | `pr-lint.yml` | Title matches the PR title regex above |
+| `commitlint` | `pr-lint.yml` | commitlint on every commit in the PR |
+
+Path filtering is done per job inside `ci.yml` (job `changes`, using `dorny/paths-filter`), never with workflow-level `paths:`, so these three names always report. Do not mark the area jobs as required: when skipped they would stay Pending.
+
+Area jobs behind `ci-ok`:
+
+| Job | Runs when | What it does |
+| --- | --- | --- |
+| `backend` | `backend/**`, `contracts/**`, `Makefile` | gofumpt, golangci-lint, `go test ./...` with Postgres and Valkey |
+| `web` | `web/**`, `contracts/**`, `Makefile`, root package files, `.nvmrc` | ESLint, Prettier, typecheck, Vitest, build |
+| `contracts` | `contracts/**` | Spectral lint of the OpenAPI files |
+| `codegen` | any backend or web trigger | `make gen`, then fails if `git status --porcelain` is not empty (stale or untracked generated code) |
+
+Toolchain versions come from the repo: `backend/go.mod`, `.nvmrc` and `packageManager` in `package.json`.
+
 ## Merge rules
 
 - CI green and PR title check passing.

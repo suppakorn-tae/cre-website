@@ -1,0 +1,200 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  # Path filtering happens here, at job level, so the workflow always runs and
+  # `ci-ok` always reports. A workflow-level `paths:` filter would leave required
+  # checks Pending when skipped.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      web: ${{ steps.filter.outputs.web }}
+      contracts: ${{ steps.filter.outputs.contracts }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - "backend/**"
+              - "contracts/**"
+              - "Makefile"
+              - ".github/workflows/ci.yml"
+            web:
+              - "web/**"
+              - "contracts/**"
+              - "Makefile"
+              - "package.json"
+              - "pnpm-lock.yaml"
+              - "pnpm-workspace.yaml"
+              - ".nvmrc"
+              - ".github/workflows/ci.yml"
+            contracts:
+              - "contracts/**"
+              - ".github/workflows/ci.yml"
+
+  backend:
+    name: backend
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: cre
+          POSTGRES_PASSWORD: cre
+          POSTGRES_DB: cre
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cre"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      valkey:
+        image: valkey/valkey:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "valkey-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgres://cre:cre@localhost:5432/cre?sslmode=disable
+      VALKEY_ADDR: localhost:6379
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache: false
+      - name: gofumpt
+        working-directory: backend
+        run: |
+          go install mvdan.cc/gofumpt@v0.12.0
+          unformatted="$("$(go env GOPATH)/bin/gofumpt" -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "gofumpt: these files need formatting:"
+            echo "$unformatted"
+            exit 1
+          fi
+      - uses: golangci/golangci-lint-action@v8
+        with:
+          version: v2.15
+          working-directory: backend
+      - name: go test
+        working-directory: backend
+        run: go test ./...
+
+  web:
+    name: web
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: ESLint
+        run: pnpm --dir web lint
+      - name: Prettier
+        run: pnpm --dir web format:check
+      - name: Typecheck
+        run: pnpm --dir web typecheck
+      - name: Vitest
+        run: pnpm --dir web --if-present test
+      - name: Build
+        run: pnpm --dir web build
+
+  contracts:
+    name: contracts
+    needs: changes
+    if: needs.changes.outputs.contracts == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Spectral
+        run: |
+          ruleset=.spectral.yaml
+          if [ ! -f "$ruleset" ]; then
+            ruleset="$RUNNER_TEMP/spectral.yaml"
+            printf 'extends: ["spectral:oas"]\n' > "$ruleset"
+          fi
+          # Lint root documents only; path and schema fragments are not OpenAPI documents.
+          mapfile -t roots < <(grep -rlE '^openapi:' contracts/openapi --include='*.yaml' --include='*.yml' || true)
+          if [ "${#roots[@]}" -eq 0 ]; then
+            echo "No OpenAPI root document yet, nothing to lint"
+            exit 0
+          fi
+          npx --yes @stoplight/spectral-cli@6.15.0 lint \
+            --ruleset "$ruleset" --fail-severity=error "${roots[@]}"
+
+  codegen:
+    name: codegen
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache: false
+      - run: pnpm install --frozen-lockfile
+      - name: make gen
+        run: make gen
+      - name: Fail when generated code is stale
+        run: |
+          status="$(git status --porcelain)"
+          if [ -n "$status" ]; then
+            echo "Generated code is stale. Run make gen and commit:"
+            echo "$status"
+            exit 1
+          fi
+
+  # The single check to require for the areas above. It always runs, fails if any
+  # needed job failed or was cancelled, and passes when jobs were skipped by the
+  # path filter.
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [changes, backend, web, contracts, codegen]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Results: $RESULTS"
+          case " $RESULTS " in
+            *" failure "* | *" cancelled "*) exit 1 ;;
+          esac
