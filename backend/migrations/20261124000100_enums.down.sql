@@ -1,0 +1,14 @@
+DROP TYPE audit_action;
+DROP TYPE export_scope;
+DROP TYPE job_status;
+DROP TYPE job_kind;
+DROP TYPE risk_strategy;
+DROP TYPE risk_level;
+DROP TYPE time_unit;
+DROP TYPE cost_unit;
+DROP TYPE version_status;
+DROP TYPE advice_list;
+DROP TYPE impact_code;
+DROP TYPE indicator_direction;
+DROP TYPE account_status;
+DROP TYPE user_role;

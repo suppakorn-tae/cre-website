@@ -1,0 +1,12 @@
+DROP TABLE advice_item_text;
+DROP TABLE advice_item;
+DROP TABLE impact_table;
+DROP TABLE ri_e_option_text;
+DROP TABLE ri_e_option;
+DROP TABLE indicator_text;
+DROP TABLE indicator;
+DROP TABLE factor_text;
+DROP TABLE factor;
+DROP TABLE dimension_text;
+DROP TABLE dimension;
+DROP TABLE locale;
