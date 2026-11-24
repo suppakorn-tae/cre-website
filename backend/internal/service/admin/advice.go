@@ -17,7 +17,7 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/audit"
 )
 
-// Advice list codes, in display order.
+// AdviceLists are the advice list codes, in display order.
 var AdviceLists = []string{"RL", "RI_C", "RI_T", "RI_E"}
 
 // Item count limits of one list (BR-20).
