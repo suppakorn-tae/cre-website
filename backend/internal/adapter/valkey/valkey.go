@@ -28,7 +28,8 @@ type StateStore interface {
 	// Del removes keys; missing keys are ignored.
 	Del(ctx context.Context, keys ...string) error
 	// Incr adds one and returns the new value. The key gets ttl when it has
-	// no expiry yet, so a counter window starts at its first increment.
+	// no expiry yet, so a counter window starts at its first increment. The
+	// expiry has whole-second resolution: a sub-second ttl rounds up.
 	Incr(ctx context.Context, key string, ttl time.Duration) (int64, error)
 	// SetNX stores value only when key is absent and reports whether it did.
 	SetNX(ctx context.Context, key string, value []byte, ttl time.Duration) (bool, error)

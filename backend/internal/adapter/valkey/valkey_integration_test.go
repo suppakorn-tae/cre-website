@@ -89,12 +89,12 @@ func TestIncrSetsTTLOnce(t *testing.T) {
 	ctx := context.Background()
 
 	for want := int64(1); want <= 3; want++ {
-		got, err := c.Incr(ctx, "n", 300*time.Millisecond)
+		got, err := c.Incr(ctx, "n", time.Second)
 		if err != nil || got != want {
 			t.Fatalf("incr: %d %v, want %d", got, err, want)
 		}
 	}
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 	got, err := c.Incr(ctx, "n", time.Minute)
 	if err != nil || got != 1 {
 		t.Fatalf("counter did not expire: %d %v", got, err)
