@@ -70,7 +70,7 @@ func do(t *testing.T, h http.Handler, path string, hdr map[string]string) (*http
 // TestResponsesMatchContract checks 200 and 304 of all three endpoints against
 // the OpenAPI document (IO-15).
 func TestResponsesMatchContract(t *testing.T) {
-	spec, err := api.GetSwagger()
+	spec, err := api.GetSpec()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -115,7 +115,7 @@ func TestCatalogueLocaleFallbackAndETag(t *testing.T) {
 }
 
 func decode(resp *http.Response, v any) error {
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	return json.NewDecoder(resp.Body).Decode(v)
 }
 

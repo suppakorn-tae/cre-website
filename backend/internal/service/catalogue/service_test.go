@@ -67,7 +67,7 @@ func (b *memBus) Publish(_ context.Context, ch string, p []byte) error {
 	return nil
 }
 
-func (b *memBus) Subscribe(ctx context.Context, _ string) (<-chan valkey.Message, func() error, error) {
+func (b *memBus) Subscribe(_ context.Context, _ string) (<-chan valkey.Message, func() error, error) {
 	ch := make(chan valkey.Message, 16)
 	b.mu.Lock()
 	b.subs = append(b.subs, ch)
