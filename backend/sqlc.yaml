@@ -1,0 +1,38 @@
+version: "2"
+sql:
+  - engine: postgresql
+    # sqlc reads golang-migrate directories and ignores *.down.sql, so new
+    # migrations are picked up without editing this file.
+    schema: migrations
+    queries: internal/dal/queries
+    gen:
+      go:
+        package: sqlc
+        out: internal/dal/sqlc
+        sql_package: pgx/v5
+        emit_interface: true
+        emit_json_tags: false
+        overrides:
+          - db_type: uuid
+            go_type: github.com/google/uuid.UUID
+          - db_type: uuid
+            nullable: true
+            go_type:
+              import: github.com/google/uuid
+              type: NullUUID
+          - db_type: inet
+            go_type: net/netip.Addr
+          - db_type: inet
+            nullable: true
+            go_type:
+              import: net/netip
+              type: Addr
+              pointer: true
+          - db_type: timestamptz
+            go_type: time.Time
+          - db_type: timestamptz
+            nullable: true
+            go_type:
+              import: time
+              type: Time
+              pointer: true

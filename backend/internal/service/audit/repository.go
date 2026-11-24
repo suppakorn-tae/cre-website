@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/dal"
+	"github.com/suppakorn-tae/cre-website/backend/internal/dal/sqlc"
 )
 
 // Repository is the Audit Repository. It only inserts: the application role
@@ -27,15 +28,21 @@ type row struct {
 	IP         netip.Addr
 }
 
-// insertSQL mirrors InsertAuditLog in dal/queries/audit_write.sql.
-const insertSQL = `INSERT INTO audit_log
-(admin_id, action, target_type, target_id, old_value, new_value, request_id, ip_address)
-VALUES ($1, $2::audit_action, $3, $4, $5::jsonb, $6::jsonb, $7, $8)`
-
-// Insert writes one row on db (normally the caller's pgx.Tx).
+// Insert writes one row on db (normally the caller's pgx.Tx) through the
+// generated InsertAuditLog query.
 func (*Repository) Insert(ctx context.Context, db dal.DBTX, r row) error {
-	_, err := db.Exec(ctx, insertSQL,
-		r.AdminID, string(r.Action), r.TargetType, r.TargetID,
-		r.OldValue, r.NewValue, r.RequestID, r.IP)
-	return err
+	var ip *netip.Addr
+	if r.IP.IsValid() {
+		ip = &r.IP
+	}
+	return sqlc.New(db).InsertAuditLog(ctx, sqlc.InsertAuditLogParams{
+		AdminID:    r.AdminID,
+		Action:     sqlc.AuditAction(r.Action),
+		TargetType: r.TargetType,
+		TargetID:   r.TargetID,
+		OldValue:   r.OldValue,
+		NewValue:   r.NewValue,
+		RequestID:  r.RequestID,
+		IpAddress:  ip,
+	})
 }
