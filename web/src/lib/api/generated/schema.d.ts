@@ -3,10 +3,226 @@
  * Do not make direct changes to the file.
  */
 
-export type paths = Record<string, never>;
+export interface paths {
+    "/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List own projects
+         * @description Own non-deleted projects, newest first, searchable by name, nickname or island.
+         */
+        get: operations["listProjects"];
+        put?: never;
+        /** Create a project */
+        post: operations["createProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /** Get a project */
+        get: operations["getProject"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a project (soft)
+         * @description Hides the project and all its versions and reports. There is no restore.
+         */
+        delete: operations["deleteProject"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a project
+         * @description Value and dates apply only to versions created afterwards.
+         */
+        patch: operations["updateProject"];
+        trace?: never;
+    };
+    "/projects/{project_id}/versions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /** List the versions of a project */
+        get: operations["listVersions"];
+        put?: never;
+        /**
+         * Start a new blank version
+         * @description Takes no body. The next number is assigned, the project value, dates,
+         *     thresholds and rounding are copied into the version, and the previous
+         *     version becomes read-only.
+         */
+        post: operations["createVersion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/projects/{project_id}/versions/{version_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /** Get a version */
+        get: operations["getVersion"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a version (soft)
+         * @description Hides the version and its reports. There is no restore and its number is not reused.
+         */
+        delete: operations["deleteVersion"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+}
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description Island / location code. `other` requires `island_other`.
+         * @enum {string}
+         */
+        ProjectIsland: "koh_tao" | "koh_samui" | "koh_phangan" | "koh_phi_phi" | "koh_lanta" | "koh_chang" | "koh_kood" | "other";
+        /**
+         * @description Project type code. `other` requires `type_other`.
+         * @enum {string}
+         */
+        ProjectType: "building" | "pier" | "road" | "utilities" | "coastal" | "other";
+        /**
+         * @description Editable project fields. `end_date` must be after `start_date`;
+         *     `island_other` and `type_other` are set if and only if the matching
+         *     code is `other`. Value and dates apply to versions created afterwards.
+         */
+        ProjectFields: {
+            /** @description Not blank. */
+            name: string;
+            nickname: string;
+            island_code: components["schemas"]["ProjectIsland"];
+            island_other?: string | null;
+            type_code: components["schemas"]["ProjectType"];
+            type_other?: string | null;
+            /** Format: date */
+            start_date: string;
+            /**
+             * Format: date
+             * @description After `start_date`.
+             */
+            end_date: string;
+            /** @description Project value in baht, greater than 0. */
+            value_baht: number;
+            /** @description Entered progress in percent. */
+            progress_pct: number;
+            description?: string | null;
+        };
+        ProjectCreate: components["schemas"]["ProjectFields"] & Record<string, never>;
+        /**
+         * @description Partial update; send only the fields to change, at least one. The
+         *     rules of `ProjectFields` apply to the stored result.
+         */
+        ProjectUpdate: {
+            name?: components["schemas"]["name"];
+            nickname?: components["schemas"]["nickname"];
+            island_code?: components["schemas"]["ProjectIsland"];
+            island_other?: components["schemas"]["island_other"];
+            type_code?: components["schemas"]["ProjectType"];
+            type_other?: components["schemas"]["type_other"];
+            start_date?: components["schemas"]["start_date"];
+            end_date?: components["schemas"]["end_date"];
+            value_baht?: components["schemas"]["value_baht"];
+            progress_pct?: components["schemas"]["progress_pct"];
+            description?: components["schemas"]["description"];
+        };
+        Project: components["schemas"]["ProjectFields"] & {
+            id: components["schemas"]["Uuid"];
+            /**
+             * @description Computed from the project dates, never stored: elapsed
+             *     calendar days over duration, clamped to 0-100 and rounded.
+             */
+            expected_progress_pct: number;
+            /** @description Number of non-deleted versions. */
+            version_count: number;
+            /** @description Number of the latest non-deleted version, null when there is none. */
+            latest_version_no: number | null;
+            created_at: components["schemas"]["Timestamp"];
+            updated_at: components["schemas"]["Timestamp"];
+        };
+        ProjectList: components["schemas"]["PageMeta"] & {
+            items: components["schemas"]["Project"][];
+        };
+        /** @description One row of a project's version list. */
+        VersionSummary: {
+            id: components["schemas"]["Uuid"];
+            project_id: components["schemas"]["Uuid"];
+            /** @description Sequential per project, never reused. */
+            version_no: number;
+            status: components["schemas"]["VersionStatus"];
+            /** @description True only for the latest non-deleted version of the project. */
+            editable: boolean;
+            created_at: components["schemas"]["Timestamp"];
+            /** @description Time of the last submission, null while the status is `draft`. */
+            submitted_at: components["schemas"]["Timestamp"] | null;
+            /** @description Project progress at the last submission; null while `draft`. */
+            progress_at_submit: number | null;
+            /** @description Number of indicators at level H; null while `draft`. */
+            high_count: number | null;
+            /** @description Number of indicators at level VH; null while `draft`. */
+            very_high_count: number | null;
+            /** @description Mean RM of the scored indicators; null while `draft`. */
+            average_rm: number | null;
+        };
+        Version: components["schemas"]["VersionSummary"] & {
+            /** @description Number of submissions, 0 when never submitted. */
+            submission_no: number;
+            /** @description Project value copied when the version was created. */
+            value_baht: number;
+            /** Format: date */
+            start_date: string;
+            /** Format: date */
+            end_date: string;
+        };
+        /** @description All non-deleted versions of a project, newest first. Not paginated. */
+        VersionList: {
+            items: components["schemas"]["VersionSummary"][];
+        };
+        PageMeta: {
+            page: number;
+            page_size: number;
+            total: number;
+        };
+        /** Format: uuid */
+        Uuid: string;
+        /**
+         * Format: date-time
+         * @description UTC instant, RFC 3339.
+         */
+        Timestamp: string;
         ErrorBody: {
             /** @description Stable machine code, e.g. `not_found`. */
             code: string;
@@ -28,6 +244,25 @@ export interface components {
         ValidationErrorEnvelope: {
             error: components["schemas"]["ValidationErrorBody"];
         };
+        /** @description Not blank. */
+        name: string;
+        nickname: string;
+        island_other: string | null;
+        type_other: string | null;
+        /** Format: date */
+        start_date: string;
+        /**
+         * Format: date
+         * @description After `start_date`.
+         */
+        end_date: string;
+        /** @description Project value in baht, greater than 0. */
+        value_baht: number;
+        /** @description Entered progress in percent. */
+        progress_pct: number;
+        description: string | null;
+        /** @enum {string} */
+        VersionStatus: "draft" | "submitted";
     };
     responses: {
         /** @description Malformed request. */
@@ -103,4 +338,236 @@ export interface components {
     pathItems: never;
 }
 export type $defs = Record<string, never>;
-export type operations = Record<string, never>;
+export interface operations {
+    listProjects: {
+        parameters: {
+            query?: {
+                /** @description Case-insensitive search over name, nickname and island (code or other text). */
+                q?: string;
+                page?: components["parameters"]["Page"];
+                page_size?: components["parameters"]["PageSize"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of projects. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectCreate"];
+            };
+        };
+        responses: {
+            /** @description The created project. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    getProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The project, with expected progress. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectUpdate"];
+            };
+        };
+        responses: {
+            /** @description The updated project. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    listVersions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Non-deleted versions, newest first. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VersionList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new, blank draft version. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Version"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    getVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The version; `editable` is true only for the latest one. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Version"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    deleteVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+}
