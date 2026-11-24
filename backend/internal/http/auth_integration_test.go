@@ -202,8 +202,8 @@ func TestAdminRoutes(t *testing.T) {
 	if w := e.do("GET", "/api/v1/admin/users", e.userTok, nil); w.Code != 403 || !strings.Contains(w.Body.String(), "forbidden") {
 		t.Fatalf("user: %d %s", w.Code, w.Body)
 	}
-	// An admin passes the guard; the stub has no such route, so 404.
-	if w := e.do("GET", "/api/v1/admin/users", e.adminTok, nil); w.Code != 404 {
+	// An admin passes the guard and reaches the users list.
+	if w := e.do("GET", "/api/v1/admin/users", e.adminTok, nil); w.Code != 200 {
 		t.Fatalf("admin: %d %s", w.Code, w.Body)
 	}
 }
