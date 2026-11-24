@@ -3,9 +3,7 @@ package admin
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
-	"log/slog"
 	"net/http"
 	"slices"
 
@@ -14,7 +12,6 @@ import (
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/api"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/middleware"
-	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
 	svc "github.com/suppakorn-tae/cre-website/backend/internal/service/admin"
 )
 
@@ -38,7 +35,7 @@ func getAdvice(s Advice) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		set, err := s.Get(r.Context(), chi.URLParam(r, "indicator_code"))
 		if err != nil {
-			adviceFail(w, r, err)
+			fail(w, r, err)
 			return
 		}
 		out := api.AdminAdviceLists{IndicatorCode: set.IndicatorCode, UpdatedAt: set.UpdatedAt}
@@ -46,20 +43,14 @@ func getAdvice(s Advice) http.HandlerFunc {
 		out.Lists.RIC = toAPIItems(set.Lists["RI_C"])
 		out.Lists.RIT = toAPIItems(set.Lists["RI_T"])
 		out.Lists.RIE = toAPIItems(set.Lists["RI_E"])
-		writeAdviceJSON(w, http.StatusOK, out)
+		writeJSON(w, http.StatusOK, out)
 	}
 }
 
 func replaceAdvice(s Advice) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		p, ok := middleware.PrincipalFrom(r.Context())
+		actor, ok := adminFrom(w, r)
 		if !ok {
-			middleware.WriteError(w, r, http.StatusUnauthorized, "unauthenticated", "session required")
-			return
-		}
-		actor, err := uuid.Parse(p.AccountID)
-		if err != nil {
-			middleware.WriteError(w, r, http.StatusUnauthorized, "unauthenticated", "session is not valid")
 			return
 		}
 		list := chi.URLParam(r, "list")
@@ -76,45 +67,14 @@ func replaceAdvice(s Advice) http.HandlerFunc {
 		code := chi.URLParam(r, "indicator_code")
 		res, err := s.Replace(r.Context(), actor, code, list, fromAPIItems(req.Items))
 		if err != nil {
-			adviceFail(w, r, err)
+			fail(w, r, err)
 			return
 		}
-		writeAdviceJSON(w, http.StatusOK, api.AdminAdviceListResponse{
+		writeJSON(w, http.StatusOK, api.AdminAdviceListResponse{
 			IndicatorCode: res.IndicatorCode, List: api.AdviceList(res.List),
 			Items: toAPIItems(res.Items), UpdatedAt: res.UpdatedAt,
 		})
 	}
-}
-
-func adviceFail(w http.ResponseWriter, r *http.Request, err error) {
-	var v svc.ValidationError
-	switch {
-	case errors.As(err, &v):
-		fields := make([]api.FieldError, len(v))
-		for i, f := range v {
-			fields[i] = api.FieldError{Field: f.Field, Code: f.Code}
-		}
-		rid := log.RequestID(r.Context())
-		var ridp *string
-		if rid != "" {
-			ridp = &rid
-		}
-		writeAdviceJSON(w, http.StatusUnprocessableEntity, api.ValidationErrorEnvelope{Error: api.ValidationErrorBody{
-			Code: "validation_failed", Message: "the request failed validation", Fields: fields, RequestId: ridp,
-		}})
-	case errors.Is(err, svc.ErrIndicatorNotFound):
-		middleware.WriteError(w, r, http.StatusNotFound, "not_found", "indicator not found")
-	default:
-		slog.ErrorContext(r.Context(), "advice request failed", "error", err)
-		middleware.WriteError(w, r, http.StatusInternalServerError, "internal", "advice request failed")
-	}
-}
-
-func writeAdviceJSON(w http.ResponseWriter, status int, v any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "no-store")
-	w.WriteHeader(status)
-	_ = json.NewEncoder(w).Encode(v)
 }
 
 func toAPIItems(items []svc.AdviceItem) api.AdminAdviceItemList {

@@ -29,20 +29,6 @@ const (
 // DefaultLocale is the locale every item must have.
 const DefaultLocale = "th"
 
-// Errors returned by AdviceService.
-var (
-	// ErrIndicatorNotFound means the indicator does not exist.
-	ErrIndicatorNotFound = errors.New("admin: indicator not found")
-)
-
-// FieldError names one invalid field.
-type FieldError struct{ Field, Code string }
-
-// ValidationError lists every invalid field of a request.
-type ValidationError []FieldError
-
-func (v ValidationError) Error() string { return "admin: advice failed validation" }
-
 // AdviceItem is one advice text per locale.
 type AdviceItem struct {
 	Text map[string]string `json:"text"`
@@ -61,11 +47,6 @@ type AdviceList struct {
 	List          string
 	Items         []AdviceItem
 	UpdatedAt     time.Time
-}
-
-// Invalidator drops the catalogue cache on every replica (catalogue.Service).
-type Invalidator interface {
-	Invalidate(ctx context.Context) error
 }
 
 // AdviceService edits advice lists (UC-15).

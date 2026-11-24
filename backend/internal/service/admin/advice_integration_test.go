@@ -14,11 +14,11 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/testutil"
 )
 
-type inval struct{ n int }
+type adviceInval struct{ n int }
 
-func (i *inval) Invalidate(context.Context) error { i.n++; return nil }
+func (i *adviceInval) Invalidate(context.Context) error { i.n++; return nil }
 
-func setup(t *testing.T) (context.Context, *pgxpool.Pool, *svc.AdviceService, *inval, uuid.UUID, string) {
+func adviceSetup(t *testing.T) (context.Context, *pgxpool.Pool, *svc.AdviceService, *adviceInval, uuid.UUID, string) {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("integration test needs Docker")
@@ -32,11 +32,11 @@ func setup(t *testing.T) (context.Context, *pgxpool.Pool, *svc.AdviceService, *i
 	if err := pool.QueryRow(ctx, `SELECT code FROM indicator ORDER BY code LIMIT 1`).Scan(&code); err != nil {
 		t.Fatal(err)
 	}
-	inv := &inval{}
+	inv := &adviceInval{}
 	return ctx, pool, svc.NewAdviceService(pool, audit.New(audit.NewRepository()), inv), inv, admin, code
 }
 
-func th(s ...string) []svc.AdviceItem {
+func adviceItems(s ...string) []svc.AdviceItem {
 	out := make([]svc.AdviceItem, len(s))
 	for i, x := range s {
 		out[i] = svc.AdviceItem{Text: map[string]string{"th": x}}
@@ -45,13 +45,13 @@ func th(s ...string) []svc.AdviceItem {
 }
 
 func TestReplaceReorderAuditAndInvalidate(t *testing.T) {
-	ctx, pool, s, inv, admin, code := setup(t)
+	ctx, pool, s, inv, admin, code := adviceSetup(t)
 
-	if _, err := s.Replace(ctx, admin, code, "RL", th("ก", "ข", "ค")); err != nil {
+	if _, err := s.Replace(ctx, admin, code, "RL", adviceItems("ก", "ข", "ค")); err != nil {
 		t.Fatal(err)
 	}
 	// Reorder the three items in one call.
-	res, err := s.Replace(ctx, admin, code, "RL", th("ค", "ก", "ข"))
+	res, err := s.Replace(ctx, admin, code, "RL", adviceItems("ค", "ก", "ข"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,10 +74,10 @@ func TestReplaceReorderAuditAndInvalidate(t *testing.T) {
 }
 
 func TestReplaceRejectsAndRollsBack(t *testing.T) {
-	ctx, _, s, inv, admin, code := setup(t)
+	ctx, _, s, inv, admin, code := adviceSetup(t)
 	before, _ := s.Get(ctx, code)
 
-	for _, items := range [][]svc.AdviceItem{nil, th("a", "b", "c", "d", "e", "f"), th("ok", " ")} {
+	for _, items := range [][]svc.AdviceItem{nil, adviceItems("a", "b", "c", "d", "e", "f"), adviceItems("ok", " ")} {
 		var v svc.ValidationError
 		if _, err := s.Replace(ctx, admin, code, "RL", items); !errors.As(err, &v) {
 			t.Fatalf("err = %v, want ValidationError", err)
@@ -88,7 +88,7 @@ func TestReplaceRejectsAndRollsBack(t *testing.T) {
 	if _, err := s.Replace(ctx, admin, code, "RL", bad); !errors.As(err, &v) {
 		t.Fatalf("unknown locale: err = %v", err)
 	}
-	if _, err := s.Replace(ctx, admin, "NOPE", "RL", th("ok")); !errors.Is(err, svc.ErrIndicatorNotFound) {
+	if _, err := s.Replace(ctx, admin, "NOPE", "RL", adviceItems("ok")); !errors.Is(err, svc.ErrIndicatorNotFound) {
 		t.Fatalf("err = %v, want ErrIndicatorNotFound", err)
 	}
 	after, _ := s.Get(ctx, code)

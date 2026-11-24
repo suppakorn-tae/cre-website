@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	adminID = "22222222-2222-4222-8222-222222222222"
-	userID  = "11111111-1111-4111-8111-111111111111"
+	advAdmin = "22222222-2222-4222-8222-222222222222"
+	advUser  = "11111111-1111-4111-8111-111111111111"
 )
 
 // fakeAdvice validates like the real service and stores nothing.
@@ -54,31 +54,31 @@ func (f *fakeAdvice) Replace(_ context.Context, _ uuid.UUID, code, list string, 
 	return svc.AdviceList{IndicatorCode: code, List: list, Items: items, UpdatedAt: time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)}, nil
 }
 
-type accounts struct{}
+type advAccounts struct{}
 
-func (accounts) GetRecord(_ context.Context, id string) (session.Record, error) {
+func (advAccounts) GetRecord(_ context.Context, id string) (session.Record, error) {
 	role := session.RoleUser
-	if id == adminID {
+	if id == advAdmin {
 		role = session.RoleAdmin
 	}
 	return session.Record{Role: role, Status: session.StatusActive, Version: 1}, nil
 }
-func (accounts) BumpVersion(context.Context, string) (int, error) { return 2, nil }
+func (advAccounts) BumpVersion(context.Context, string) (int, error) { return 2, nil }
 
-func (accounts) GetProfile(context.Context, string) (session.Profile, error) {
+func (advAccounts) GetProfile(context.Context, string) (session.Profile, error) {
 	return session.Profile{}, nil
 }
 
-type noCache struct{}
+type advNoCache struct{}
 
-func (noCache) Set(context.Context, string, []byte, time.Duration) error { return nil }
-func (noCache) Get(context.Context, string) ([]byte, error)              { return nil, valkey.ErrNotFound }
-func (noCache) Del(context.Context, ...string) error                     { return nil }
-func (noCache) Incr(context.Context, string, time.Duration) (int64, error) {
+func (advNoCache) Set(context.Context, string, []byte, time.Duration) error { return nil }
+func (advNoCache) Get(context.Context, string) ([]byte, error)              { return nil, valkey.ErrNotFound }
+func (advNoCache) Del(context.Context, ...string) error                     { return nil }
+func (advNoCache) Incr(context.Context, string, time.Duration) (int64, error) {
 	return 0, nil
 }
 
-func (noCache) SetNX(context.Context, string, []byte, time.Duration) (bool, error) {
+func (advNoCache) SetNX(context.Context, string, []byte, time.Duration) (bool, error) {
 	return false, nil
 }
 
@@ -109,9 +109,9 @@ func adviceSpec(t *testing.T) *openapi3.T {
 
 // call sends method path with body as accountID ("" for no session) and
 // checks the response against the OpenAPI contract.
-func call(t *testing.T, f *fakeAdvice, accountID, method, path, body string) *http.Response {
+func advCall(t *testing.T, f *fakeAdvice, accountID, method, path, body string) *http.Response {
 	t.Helper()
-	ss, err := session.New(session.Config{Secret: []byte(strings.Repeat("k", 32))}, accounts{}, noCache{})
+	ss, err := session.New(session.Config{Secret: []byte(strings.Repeat("k", 32))}, advAccounts{}, advNoCache{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -135,22 +135,22 @@ func call(t *testing.T, f *fakeAdvice, accountID, method, path, body string) *ht
 	return resp
 }
 
-const base = "/api/v1/admin/advice/EC-HS-2"
+const advBase = "/api/v1/admin/advice/EC-HS-2"
 
 func TestGetAdvice(t *testing.T) {
-	if resp := call(t, &fakeAdvice{}, adminID, http.MethodGet, base, ""); resp.StatusCode != http.StatusOK {
+	if resp := advCall(t, &fakeAdvice{}, advAdmin, http.MethodGet, advBase, ""); resp.StatusCode != http.StatusOK {
 		t.Fatalf("status = %d, want 200", resp.StatusCode)
 	}
-	if resp := call(t, &fakeAdvice{}, adminID, http.MethodGet, "/api/v1/admin/advice/NOPE", ""); resp.StatusCode != http.StatusNotFound {
+	if resp := advCall(t, &fakeAdvice{}, advAdmin, http.MethodGet, "/api/v1/admin/advice/NOPE", ""); resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404", resp.StatusCode)
 	}
 }
 
 func TestAdviceNeedsAdmin(t *testing.T) {
-	if resp := call(t, &fakeAdvice{}, "", http.MethodGet, base, ""); resp.StatusCode != http.StatusUnauthorized {
+	if resp := advCall(t, &fakeAdvice{}, "", http.MethodGet, advBase, ""); resp.StatusCode != http.StatusUnauthorized {
 		t.Fatalf("no session: status = %d, want 401", resp.StatusCode)
 	}
-	if resp := call(t, &fakeAdvice{}, userID, http.MethodGet, base, ""); resp.StatusCode != http.StatusForbidden {
+	if resp := advCall(t, &fakeAdvice{}, advUser, http.MethodGet, advBase, ""); resp.StatusCode != http.StatusForbidden {
 		t.Fatalf("user: status = %d, want 403", resp.StatusCode)
 	}
 }
@@ -167,21 +167,21 @@ func TestReplaceAdvice(t *testing.T) {
 		name, path, body string
 		want             int
 	}{
-		{"one item", base + "/RL", items(1, "ก"), 200},
-		{"reorder three", base + "/RI_C", `{"items":[{"text":{"th":"ค"}},{"text":{"th":"ก"}},{"text":{"th":"ข","en":"b"}}]}`, 200},
-		{"five items", base + "/RI_T", items(5, "ก"), 200},
-		{"zero items", base + "/RL", `{"items":[]}`, 422},
-		{"missing items", base + "/RL", `{}`, 422},
-		{"six items", base + "/RL", items(6, "ก"), 422},
-		{"blank th", base + "/RL", items(2, "  "), 422},
-		{"no th", base + "/RL", `{"items":[{"text":{"en":"x"}}]}`, 422},
-		{"bad json", base + "/RL", `{"items":`, 400},
-		{"bad list", base + "/XX", items(1, "ก"), 400},
+		{"one item", advBase + "/RL", items(1, "ก"), 200},
+		{"reorder three", advBase + "/RI_C", `{"items":[{"text":{"th":"ค"}},{"text":{"th":"ก"}},{"text":{"th":"ข","en":"b"}}]}`, 200},
+		{"five items", advBase + "/RI_T", items(5, "ก"), 200},
+		{"zero items", advBase + "/RL", `{"items":[]}`, 422},
+		{"missing items", advBase + "/RL", `{}`, 422},
+		{"six items", advBase + "/RL", items(6, "ก"), 422},
+		{"blank th", advBase + "/RL", items(2, "  "), 422},
+		{"no th", advBase + "/RL", `{"items":[{"text":{"en":"x"}}]}`, 422},
+		{"bad json", advBase + "/RL", `{"items":`, 400},
+		{"bad list", advBase + "/XX", items(1, "ก"), 400},
 		{"unknown indicator", "/api/v1/admin/advice/NOPE/RL", items(1, "ก"), 404},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if resp := call(t, &fakeAdvice{}, adminID, http.MethodPut, tc.path, tc.body); resp.StatusCode != tc.want {
+			if resp := advCall(t, &fakeAdvice{}, advAdmin, http.MethodPut, tc.path, tc.body); resp.StatusCode != tc.want {
 				t.Fatalf("status = %d, want %d", resp.StatusCode, tc.want)
 			}
 		})
@@ -190,7 +190,7 @@ func TestReplaceAdvice(t *testing.T) {
 
 func TestReplaceKeepsOrder(t *testing.T) {
 	f := &fakeAdvice{}
-	call(t, f, adminID, http.MethodPut, base+"/RI_C", `{"items":[{"text":{"th":"ค"}},{"text":{"th":"ก"}},{"text":{"th":"ข"}}]}`)
+	advCall(t, f, advAdmin, http.MethodPut, advBase+"/RI_C", `{"items":[{"text":{"th":"ค"}},{"text":{"th":"ก"}},{"text":{"th":"ข"}}]}`)
 	var got []string
 	for _, it := range f.replaced {
 		got = append(got, it.Text["th"])
