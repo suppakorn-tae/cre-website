@@ -4,6 +4,7 @@ import { createOpenApiHttp } from 'openapi-msw';
 import type { paths } from '@/lib/api/generated/schema';
 
 import { authHandlers } from './auth';
+import { catalogueHandlers } from './catalogue';
 
 // Typed handler factory for the generated API. Domain issues add their
 // handlers to `handlers` as they define endpoints.
@@ -14,6 +15,7 @@ export const mockSampleResponse = { message: 'mocked', items: [{ id: 1 }, { id: 
 
 export const handlers: HttpHandler[] = [
   ...authHandlers,
+  ...catalogueHandlers,
   // The contract has no endpoints yet, so this one is untyped and mock-only.
   mswHttp.get('*/api/v1/mock-sample', () => HttpResponse.json(mockSampleResponse)),
 ];
