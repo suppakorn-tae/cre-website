@@ -16,7 +16,13 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
 });
 
 import { createVersion, deleteVersion, fetchProject, fetchVersions } from './api';
-import { createVersionHandlers, mockProject, mockProjectId, mockVersions } from './mocks';
+import {
+  createProjectHandlers,
+  createVersionHandlers,
+  mockProject,
+  mockProjectId,
+  mockVersions,
+} from './mocks';
 import { ProjectHeader } from './ProjectHeader';
 import { VersionList } from './VersionList';
 
@@ -84,9 +90,9 @@ describe('VersionList', () => {
 });
 
 describe('versions api against mocks', () => {
-  const server = setupServer(...createVersionHandlers());
+  const server = setupServer(...createProjectHandlers(), ...createVersionHandlers());
   beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
-  afterEach(() => server.resetHandlers(...createVersionHandlers()));
+  afterEach(() => server.resetHandlers(...createProjectHandlers(), ...createVersionHandlers()));
   afterAll(() => server.close());
 
   it('loads the project and its versions', async () => {

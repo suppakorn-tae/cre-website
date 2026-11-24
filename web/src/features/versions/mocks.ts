@@ -5,7 +5,8 @@ import type { components } from '@/lib/api/generated/schema';
 type Project = components['schemas']['Project'];
 type VersionSummary = components['schemas']['VersionSummary'];
 
-export const mockProjectId = '0193a5c2-0000-7000-8000-000000000001';
+/** First project of the projects mock store (features/projects/mocks.ts), so list to detail works. */
+export const mockProjectId = '0193a5c2-7b1e-7c3a-9d4f-000000000001';
 
 export const mockProject: Project = {
   id: mockProjectId,
@@ -64,31 +65,40 @@ export const mockVersions = (): VersionSummary[] => [
   version(1, { status: 'draft' }),
 ];
 
-/**
- * Feature-local handlers for the project detail page: one project, three
- * versions, create and delete that change the list. Not yet registered in
- * `src/mocks/handlers.ts` (shared file, outside this issue's owned paths).
- */
-export function createVersionHandlers(initial: VersionSummary[] = mockVersions()): HttpHandler[] {
-  let versions = [...initial];
+/** Project detail handler for tests; the running app gets projects from the projects mocks. */
+export function createProjectHandlers(): HttpHandler[] {
   return [
     mswHttp.get('*/api/v1/projects/:projectId', ({ params }) =>
       params.projectId === mockProjectId
-        ? HttpResponse.json({ ...mockProject, version_count: versions.length })
+        ? HttpResponse.json(mockProject)
         : HttpResponse.json(
             { error: { code: 'not_found', message: 'not found' } },
             { status: 404 },
           ),
     ),
-    mswHttp.get('*/api/v1/projects/:projectId/versions', () =>
-      HttpResponse.json({ items: versions }),
+  ];
+}
+
+/**
+ * Version handlers for any project id: each project starts with the same
+ * three sample versions, and create and delete change that project's list.
+ */
+export function createVersionHandlers(): HttpHandler[] {
+  const lists = new Map<string, VersionSummary[]>();
+  const listFor = (projectId: string) => lists.get(projectId) ?? mockVersions();
+  return [
+    mswHttp.get('*/api/v1/projects/:projectId/versions', ({ params }) =>
+      HttpResponse.json({ items: listFor(String(params.projectId)) }),
     ),
-    mswHttp.post('*/api/v1/projects/:projectId/versions', () => {
+    mswHttp.post('*/api/v1/projects/:projectId/versions', ({ params }) => {
+      const projectId = String(params.projectId);
+      const versions = listFor(projectId);
       const no = Math.max(0, ...versions.map((v) => v.version_no)) + 1;
       const created = {
         ...version(no, {
           status: 'draft',
           editable: true,
+          project_id: projectId,
           created_at: new Date().toISOString(),
         }),
         submission_no: 0,
@@ -96,11 +106,15 @@ export function createVersionHandlers(initial: VersionSummary[] = mockVersions()
         start_date: mockProject.start_date,
         end_date: mockProject.end_date,
       };
-      versions = [created, ...versions.map((v) => ({ ...v, editable: false }))];
+      lists.set(projectId, [created, ...versions.map((v) => ({ ...v, editable: false }))]);
       return HttpResponse.json(created, { status: 201 });
     }),
     mswHttp.delete('*/api/v1/projects/:projectId/versions/:versionId', ({ params }) => {
-      versions = versions.filter((v) => v.id !== params.versionId);
+      const projectId = String(params.projectId);
+      lists.set(
+        projectId,
+        listFor(projectId).filter((v) => v.id !== params.versionId),
+      );
       return new HttpResponse(null, { status: 204 });
     }),
   ];
