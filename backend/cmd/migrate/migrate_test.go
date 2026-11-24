@@ -17,6 +17,7 @@ var wantTables = []string{
 	"locale", "dimension", "dimension_text", "factor", "factor_text",
 	"indicator", "indicator_text", "ri_e_option", "ri_e_option_text",
 	"impact_table", "advice_item", "advice_item_text",
+	"account", "job", "report_job", "export_job", "export_job_account", "audit_log",
 }
 
 func startPostgres(t *testing.T) (url string, conn *pgx.Conn) {
