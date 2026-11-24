@@ -15,9 +15,13 @@ down:
 	fi
 
 gen:
-	@echo "no generators yet"
+	node contracts/bundle.mjs
+	cd backend && go tool oapi-codegen -config ../contracts/codegen/oapi-codegen.yaml ../contracts/openapi/dist/openapi.yaml
+	pnpm --dir web exec openapi-typescript ../contracts/openapi/dist/openapi.yaml -o src/lib/api/generated/schema.d.ts
 
 lint:
+	node contracts/bundle.mjs
+	pnpm exec spectral lint contracts/openapi/dist/openapi.yaml --ruleset contracts/.spectral.yaml
 	@if command -v golangci-lint >/dev/null 2>&1; then \
 		cd backend && golangci-lint run ./...; \
 	else \

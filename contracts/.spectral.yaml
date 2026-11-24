@@ -1,0 +1,41 @@
+extends: [spectral:oas]
+rules:
+  info-contact: off
+  # Shared components are defined before the domain issues use them.
+  oas3-unused-component: off
+  operation-description: off
+  operation-tags: off
+  operation-operationId: error
+  path-kebab-case:
+    description: Path segments are kebab-case; `{param}` segments are snake_case.
+    severity: error
+    given: $.paths[*]~
+    then:
+      function: pattern
+      functionOptions:
+        match: "/^(\\/([a-z0-9]+(-[a-z0-9]+)*|\\{[a-z][a-z0-9_]*\\}))+$/"
+  error-responses-use-envelope:
+    description: Every 4xx response must use the ErrorEnvelope or ValidationErrorEnvelope schema.
+    severity: error
+    given: $.paths[*][*].responses[?(@property.match(/^4/))]
+    then:
+      function: schema
+      functionOptions:
+        schema:
+          type: object
+          required: [content]
+          properties:
+            content:
+              type: object
+              required: [application/json]
+              properties:
+                application/json:
+                  type: object
+                  required: [schema]
+                  properties:
+                    schema:
+                      type: object
+                      required: [required, properties]
+                      properties:
+                        required:
+                          const: [error]

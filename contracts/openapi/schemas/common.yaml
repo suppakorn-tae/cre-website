@@ -1,0 +1,184 @@
+# Shared building blocks. JSON field names are snake_case, matching the
+# database. Error `code` values are stable machine codes; the web app maps
+# them to Thai text, so never put user-facing prose in `message`.
+schemas:
+  Uuid:
+    type: string
+    format: uuid
+  Timestamp:
+    type: string
+    format: date-time
+    description: UTC instant, RFC 3339.
+  ErrorBody:
+    type: object
+    required: [code, message]
+    properties:
+      code:
+        type: string
+        description: Stable machine code, e.g. `not_found`.
+      message:
+        type: string
+        description: Developer-facing detail, not shown to users.
+      request_id:
+        type: string
+  ErrorEnvelope:
+    type: object
+    required: [error]
+    properties:
+      error:
+        $ref: '#/schemas/ErrorBody'
+  FieldError:
+    type: object
+    required: [field, code]
+    properties:
+      field:
+        type: string
+        description: JSON pointer of the offending field.
+      code:
+        type: string
+  ValidationErrorBody:
+    allOf:
+      - $ref: '#/schemas/ErrorBody'
+      - type: object
+        required: [fields]
+        properties:
+          fields:
+            type: array
+            items:
+              $ref: '#/schemas/FieldError'
+  ValidationErrorEnvelope:
+    type: object
+    required: [error]
+    properties:
+      error:
+        $ref: '#/schemas/ValidationErrorBody'
+  PageMeta:
+    type: object
+    required: [page, page_size, total]
+    properties:
+      page:
+        type: integer
+        minimum: 1
+      page_size:
+        type: integer
+        minimum: 1
+      total:
+        type: integer
+        minimum: 0
+  JobAccepted:
+    type: object
+    description: Body of a 202 response; poll the job with this id.
+    required: [job_id]
+    properties:
+      job_id:
+        $ref: '#/schemas/Uuid'
+  UserRole:
+    type: string
+    enum: [user, admin]
+  AccountStatus:
+    type: string
+    enum: [active, deactivated, deleted]
+  IndicatorDirection:
+    type: string
+    enum: [normal, inverse]
+  ImpactCode:
+    type: string
+    enum: [RI_C, RI_T]
+  AdviceList:
+    type: string
+    enum: [RL, RI_C, RI_T, RI_E]
+  VersionStatus:
+    type: string
+    enum: [draft, submitted]
+  CostUnit:
+    type: string
+    enum: [baht, percent]
+  TimeUnit:
+    type: string
+    enum: [day, percent]
+  RiskLevel:
+    type: string
+    enum: [VL, L, M, H, VH]
+  RiskStrategy:
+    type: string
+    enum: [REDUCE, TRANSFER, AVOID, ACCEPT]
+  JobKind:
+    type: string
+    enum: [report, export]
+  JobStatus:
+    type: string
+    enum: [queued, running, done, failed, expired]
+  ExportScope:
+    type: string
+    enum: [all, selected]
+  AuditAction:
+    type: string
+    enum:
+      - user_role_change
+      - user_deactivate
+      - user_reactivate
+      - user_delete
+      - advice_edit
+      - rl_threshold_edit
+      - impact_table_edit
+      - export_request
+      - export_download
+parameters:
+  Page:
+    name: page
+    in: query
+    schema:
+      type: integer
+      minimum: 1
+      default: 1
+  PageSize:
+    name: page_size
+    in: query
+    schema:
+      type: integer
+      minimum: 1
+      maximum: 100
+      default: 20
+responses:
+  BadRequest:
+    description: Malformed request.
+    content:
+      application/json:
+        schema:
+          $ref: '#/schemas/ErrorEnvelope'
+  ValidationFailed:
+    description: The request body or parameters failed validation.
+    content:
+      application/json:
+        schema:
+          $ref: '#/schemas/ValidationErrorEnvelope'
+  Unauthorized:
+    description: No valid session.
+    content:
+      application/json:
+        schema:
+          $ref: '#/schemas/ErrorEnvelope'
+  Forbidden:
+    description: The session may not perform this action (role or CSRF).
+    content:
+      application/json:
+        schema:
+          $ref: '#/schemas/ErrorEnvelope'
+  NotFound:
+    description: Not found. Also returned for resources the user does not own.
+    content:
+      application/json:
+        schema:
+          $ref: '#/schemas/ErrorEnvelope'
+  Conflict:
+    description: The request conflicts with the current state.
+    content:
+      application/json:
+        schema:
+          $ref: '#/schemas/ErrorEnvelope'
+  TooManyRequests:
+    description: Rate limit exceeded.
+    content:
+      application/json:
+        schema:
+          $ref: '#/schemas/ErrorEnvelope'
