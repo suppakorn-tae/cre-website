@@ -16,8 +16,8 @@ If they disagree, label the Linear issue `needs-decision` and stop.
 
 Fixed. Do not pick alternatives.
 
-- Backend: Go 1.24 + chi + oapi-codegen strict server; pgx v5 + sqlc; golang-migrate with timestamped files; asynq on Valkey.
-- Web: Next.js (TypeScript strict) + next-intl + TanStack Query + openapi-typescript + openapi-fetch + MSW.
+- Backend: Go 1.27 (toolchain go1.27.4) + chi + oapi-codegen strict server; pgx v5 + sqlc; golang-migrate with timestamped files; asynq on Valkey.
+- Web: Node 24.22.3 (`.nvmrc`), pnpm 10, Next.js 16.4.6 (TypeScript strict) + next-intl + TanStack Query + openapi-typescript + openapi-fetch + MSW.
 - Quality: golangci-lint, gofumpt, ESLint, Prettier, Spectral.
 - Tests: go test + testcontainers, Vitest, Playwright.
 - Commits: commitlint.
