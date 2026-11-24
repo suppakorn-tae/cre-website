@@ -102,6 +102,9 @@ type Snapshot struct {
 	Dimensions []Dimension
 	RiEOptions []RiEOption
 	Impact     map[string]ImpactTable
+	// Islands and ProjectTypes are codes in display order, `other` last.
+	Islands      []string
+	ProjectTypes []string
 
 	advice     map[AdviceKey][]AdviceItem
 	indicators map[string]*Indicator
@@ -150,10 +153,11 @@ func (s *Snapshot) Advice(indicatorCode, list, locale string) []string {
 
 // NewSnapshot indexes the data and computes its version.
 func NewSnapshot(dims []Dimension, opts []RiEOption, impact map[string]ImpactTable,
-	advice map[AdviceKey][]AdviceItem,
+	advice map[AdviceKey][]AdviceItem, islands, projectTypes []string,
 ) (*Snapshot, error) {
 	s := &Snapshot{
 		Dimensions: dims, RiEOptions: opts, Impact: impact, advice: advice,
+		Islands: islands, ProjectTypes: projectTypes,
 		indicators: map[string]*Indicator{},
 	}
 	for di := range dims {
@@ -171,11 +175,12 @@ func NewSnapshot(dims []Dimension, opts []RiEOption, impact map[string]ImpactTab
 		flat[k.Indicator+"|"+k.List] = v
 	}
 	b, err := json.Marshal(struct {
-		D []Dimension
-		O []RiEOption
-		I map[string]ImpactTable
-		A map[string][]AdviceItem
-	}{dims, opts, impact, flat})
+		D    []Dimension
+		O    []RiEOption
+		I    map[string]ImpactTable
+		A    map[string][]AdviceItem
+		L, T []string
+	}{dims, opts, impact, flat, islands, projectTypes})
 	if err != nil {
 		return nil, fmt.Errorf("catalogue: hash snapshot: %w", err)
 	}

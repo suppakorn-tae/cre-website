@@ -60,7 +60,15 @@ func (r PGRepository) Load(ctx context.Context) (*Snapshot, error) {
 	if err != nil {
 		return nil, fmt.Errorf("catalogue: advice: %w", err)
 	}
-	return build(dims, factors, inds, opts, impact, advice)
+	islands, err := q.ListCatalogueIslands(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("catalogue: islands: %w", err)
+	}
+	types, err := q.ListCatalogueProjectTypes(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("catalogue: project types: %w", err)
+	}
+	return build(dims, factors, inds, opts, impact, advice, islands, types)
 }
 
 // build groups the flat rows (one per locale of text, already in display
@@ -72,6 +80,7 @@ func build(
 	opts []sqlc.ListCatalogueRiEOptionsRow,
 	impact []sqlc.ListCatalogueImpactTablesRow,
 	advice []sqlc.ListCatalogueAdviceRow,
+	islands, types []string,
 ) (*Snapshot, error) {
 	var dimOut []Dimension
 	dimIdx := map[string]int{}
@@ -167,7 +176,7 @@ func build(
 		adviceOut[k][i].Text[r.Locale] = r.Text
 	}
 
-	return NewSnapshot(dimOut, optOut, impactOut, adviceOut)
+	return NewSnapshot(dimOut, optOut, impactOut, adviceOut, islands, types)
 }
 
 func setText(t Text, locale string, v pgtype.Text) {

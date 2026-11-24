@@ -38,6 +38,7 @@ func fixture(t *testing.T) *svc.Snapshot {
 		}},
 		[]svc.RiEOption{{Code: "A", Score: 1, IsExclusive: true, Label: svc.Text{"th": "ไม่มี"}}},
 		map[string]svc.ImpactTable{}, map[svc.AdviceKey][]svc.AdviceItem{},
+		[]string{"koh_tao", "koh_samui", "other"}, []string{"building", "pier", "other"},
 	)
 	if err != nil {
 		t.Fatal(err)

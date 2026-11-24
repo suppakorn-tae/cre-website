@@ -68,6 +68,12 @@ func TestPGRepositoryLoadsSeed(t *testing.T) {
 	if len(snap.Dimensions) != 3 || n != 55 || len(snap.RiEOptions) != 9 {
 		t.Fatalf("dimensions=%d indicators=%d options=%d", len(snap.Dimensions), n, len(snap.RiEOptions))
 	}
+	if n := len(snap.Islands); n != 8 || snap.Islands[0] != "koh_tao" || snap.Islands[n-1] != "other" {
+		t.Fatalf("islands: %v", snap.Islands)
+	}
+	if n := len(snap.ProjectTypes); n == 0 || snap.ProjectTypes[n-1] != "other" {
+		t.Fatalf("project types: %v", snap.ProjectTypes)
+	}
 	if _, ok := snap.ImpactTable(catalogue.ImpactCost); !ok {
 		t.Fatal("RI_C table missing")
 	}

@@ -44,6 +44,7 @@ func testSnapshot(n int) *catalogue.Snapshot {
 		map[catalogue.AdviceKey][]catalogue.AdviceItem{
 			{Indicator: "EC-MG-1", List: "RL"}: {{ID: "1", Position: 1, Text: catalogue.Text{"th": "คำแนะนำ"}}},
 		},
+		[]string{"koh_tao", "other"}, []string{"building", "other"},
 	)
 	if err != nil {
 		panic(err)

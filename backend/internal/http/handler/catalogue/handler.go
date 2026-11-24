@@ -19,15 +19,6 @@ const cacheControl = "private, no-cache"
 
 var localeRE = regexp.MustCompile(`^[a-z]{2}$`)
 
-// Islands and project types are fixed lists of codes; the labels live in the
-// web message catalogue. `other` is last.
-var (
-	islandCodes = []string{
-		"koh_samui", "koh_phangan", "koh_tao", "koh_phi_phi", "koh_lanta", "koh_chang", "koh_kood", "other",
-	}
-	projectTypeCodes = []string{"building", "road", "pier", "coastal", "utilities", "other"}
-)
-
 // Source is the part of the catalogue service the handlers use.
 type Source interface {
 	Snapshot(ctx context.Context) (*svc.Snapshot, error)
@@ -36,10 +27,6 @@ type Source interface {
 // Handler serves the catalogue, island and project type endpoints.
 type Handler struct {
 	src          Source
-	islandsTag   string
-	typesTag     string
-	islandsBody  api.IslandList
-	typesBody    api.ProjectTypeList
 	serverHandle api.ServerInterface
 }
 
@@ -66,14 +53,6 @@ func (a strictAdapter) ListProjectTypes(ctx context.Context, r api.ListProjectTy
 // New builds a Handler over the catalogue service.
 func New(src Source) *Handler {
 	h := &Handler{src: src}
-	for _, c := range islandCodes {
-		h.islandsBody.Items = append(h.islandsBody.Items, api.IslandOption{Code: c})
-	}
-	for _, c := range projectTypeCodes {
-		h.typesBody.Items = append(h.typesBody.Items, api.ProjectTypeOption{Code: c})
-	}
-	h.islandsTag = etag("islands", strings.Join(islandCodes, ","))
-	h.typesTag = etag("project-types", strings.Join(projectTypeCodes, ","))
 	h.serverHandle = api.NewStrictHandlerWithOptions(strictAdapter{h: h}, nil, api.StrictHTTPServerOptions{
 		RequestErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, _ error) {
 			middleware.WriteError(w, r, http.StatusBadRequest, "bad_request", "Bad request")
@@ -136,27 +115,43 @@ func (h *Handler) GetCatalogue(ctx context.Context, req api.GetCatalogueRequestO
 }
 
 // ListIslands implements GET /islands.
-func (h *Handler) ListIslands(_ context.Context, req api.ListIslandsRequestObject) (api.ListIslandsResponseObject, error) {
-	tag := h.islandsTag
+func (h *Handler) ListIslands(ctx context.Context, req api.ListIslandsRequestObject) (api.ListIslandsResponseObject, error) {
+	snap, err := h.src.Snapshot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tag := etag("islands", snap.Version())
 	if matches(req.Params.IfNoneMatch, tag) {
 		return api.ListIslands304Response{Headers: api.ListIslands304ResponseHeaders{ETag: &tag}}, nil
 	}
 	cc := cacheControl
+	body := api.IslandList{Items: make([]api.IslandOption, 0, len(snap.Islands))}
+	for _, c := range snap.Islands {
+		body.Items = append(body.Items, api.IslandOption{Code: c})
+	}
 	return api.ListIslands200JSONResponse{
-		Body:    h.islandsBody,
+		Body:    body,
 		Headers: api.ListIslands200ResponseHeaders{ETag: &tag, CacheControl: &cc},
 	}, nil
 }
 
 // ListProjectTypes implements GET /project-types.
-func (h *Handler) ListProjectTypes(_ context.Context, req api.ListProjectTypesRequestObject) (api.ListProjectTypesResponseObject, error) {
-	tag := h.typesTag
+func (h *Handler) ListProjectTypes(ctx context.Context, req api.ListProjectTypesRequestObject) (api.ListProjectTypesResponseObject, error) {
+	snap, err := h.src.Snapshot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	tag := etag("project-types", snap.Version())
 	if matches(req.Params.IfNoneMatch, tag) {
 		return api.ListProjectTypes304Response{Headers: api.ListProjectTypes304ResponseHeaders{ETag: &tag}}, nil
 	}
 	cc := cacheControl
+	body := api.ProjectTypeList{Items: make([]api.ProjectTypeOption, 0, len(snap.ProjectTypes))}
+	for _, c := range snap.ProjectTypes {
+		body.Items = append(body.Items, api.ProjectTypeOption{Code: c})
+	}
 	return api.ListProjectTypes200JSONResponse{
-		Body:    h.typesBody,
+		Body:    body,
 		Headers: api.ListProjectTypes200ResponseHeaders{ETag: &tag, CacheControl: &cc},
 	}, nil
 }

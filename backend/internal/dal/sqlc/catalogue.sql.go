@@ -246,6 +246,54 @@ func (q *Queries) ListCatalogueIndicators(ctx context.Context) ([]ListCatalogueI
 	return items, nil
 }
 
+const listCatalogueIslands = `-- name: ListCatalogueIslands :many
+SELECT code FROM island ORDER BY sort_no
+`
+
+func (q *Queries) ListCatalogueIslands(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, listCatalogueIslands)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, err
+		}
+		items = append(items, code)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listCatalogueProjectTypes = `-- name: ListCatalogueProjectTypes :many
+SELECT code FROM project_type ORDER BY sort_no
+`
+
+func (q *Queries) ListCatalogueProjectTypes(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, listCatalogueProjectTypes)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var code string
+		if err := rows.Scan(&code); err != nil {
+			return nil, err
+		}
+		items = append(items, code)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listCatalogueRiEOptions = `-- name: ListCatalogueRiEOptions :many
 SELECT o.code::text AS code, o.score, o.is_exclusive, t.locale, t.label
 FROM ri_e_option o

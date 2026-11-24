@@ -38,3 +38,9 @@ SELECT i.id, i.indicator_code, i.list, i.position, t.locale, t.text
 FROM advice_item i
 JOIN advice_item_text t ON t.item_id = i.id
 ORDER BY i.indicator_code, i.list, i.position, t.locale;
+
+-- name: ListCatalogueIslands :many
+SELECT code FROM island ORDER BY sort_no;
+
+-- name: ListCatalogueProjectTypes :many
+SELECT code FROM project_type ORDER BY sort_no;
