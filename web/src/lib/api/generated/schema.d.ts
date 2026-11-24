@@ -399,6 +399,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get the status of a job
+         * @description Poll until `status` is `done`, `failed` or `expired`. Visible to the
+         *     requester only; any other caller (admins included) gets 404.
+         */
+        get: operations["getJob"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects": {
         parameters: {
             query?: never;
@@ -445,6 +468,56 @@ export interface paths {
          * @description Value and dates apply only to versions created afterwards.
          */
         patch: operations["updateProject"];
+        trace?: never;
+    };
+    "/projects/{project_id}/versions/{version_id}/reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request a PDF report for the last submission of a version
+         * @description Enqueues a report job. A repeated request for the same submission
+         *     returns the existing job id instead of creating another job.
+         *     404 when the project or version is not the caller's or is deleted.
+         */
+        post: operations["requestReport"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reports/{job_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Download a finished report
+         * @description Streams the PDF through the api after the session and ownership check.
+         *     404 when the job is not the caller's, is not a report, or its version
+         *     is deleted. 409 when the job is not `done` or the file is missing in
+         *     storage (the user may request the report again).
+         */
+        get: operations["downloadReport"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/projects/{project_id}/versions": {
@@ -716,6 +789,32 @@ export interface components {
             items: components["schemas"]["ProjectTypeOption"][];
         };
         /**
+         * @example {
+         *       "id": "0193f6a2-7c1e-7b52-9a0d-3f1c2a4b5d6e",
+         *       "kind": "report",
+         *       "status": "running",
+         *       "created_at": "2026-11-24T08:00:00Z",
+         *       "started_at": "2026-11-24T08:00:02Z",
+         *       "finished_at": null,
+         *       "expires_at": null,
+         *       "error": null
+         *     }
+         */
+        Job: {
+            id: components["schemas"]["Uuid"];
+            kind: components["schemas"]["JobKind"];
+            status: components["schemas"]["JobStatus"];
+            created_at: components["schemas"]["Timestamp"];
+            /** @description Null while `queued`. */
+            started_at: components["schemas"]["Timestamp"] | null;
+            /** @description Null while `queued` or `running`. */
+            finished_at: components["schemas"]["Timestamp"] | null;
+            /** @description Exports only; null for reports, which do not expire. */
+            expires_at: components["schemas"]["Timestamp"] | null;
+            /** @description Developer-facing failure detail, set only when `failed`. The web app shows its own Thai text. */
+            error: string | null;
+        };
+        /**
          * @description Island / location code. `other` requires `island_other`.
          * @enum {string}
          */
@@ -872,6 +971,10 @@ export interface components {
         UserRole: "user" | "admin";
         /** @enum {string} */
         AccountStatus: "active" | "deactivated" | "deleted";
+        /** @enum {string} */
+        JobKind: "report" | "export";
+        /** @enum {string} */
+        JobStatus: "queued" | "running" | "done" | "failed" | "expired";
         /** @description Not blank. */
         name: string;
         nickname: string;
@@ -1551,6 +1654,30 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
         };
     };
+    getJob: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The job. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Job"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
     listProjects: {
         parameters: {
             query?: {
@@ -1682,6 +1809,59 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             422: components["responses"]["ValidationFailed"];
+        };
+    };
+    requestReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: components["schemas"]["Uuid"];
+                version_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Job accepted (new or existing); poll `GET /jobs/{id}`. */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobAccepted"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    downloadReport: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The PDF file. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
     listVersions: {
