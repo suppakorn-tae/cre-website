@@ -6,9 +6,16 @@ package sqlc
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
+	// Ends every session of the account (password reset, deactivate, delete).
+	BumpSessionVersion(ctx context.Context, id uuid.UUID) (int32, error)
+	// The record the session middleware checks on every request. Role, status
+	// and session version come from here, never from the token.
+	GetAccountSession(ctx context.Context, id uuid.UUID) (GetAccountSessionRow, error)
 	// Append-only: the application role has INSERT and SELECT on audit_log only.
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 }
