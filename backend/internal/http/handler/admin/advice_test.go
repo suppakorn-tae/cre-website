@@ -77,6 +77,7 @@ func (noCache) Del(context.Context, ...string) error                     { retur
 func (noCache) Incr(context.Context, string, time.Duration) (int64, error) {
 	return 0, nil
 }
+
 func (noCache) SetNX(context.Context, string, []byte, time.Duration) (bool, error) {
 	return false, nil
 }
