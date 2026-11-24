@@ -27,11 +27,12 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/versions/{version_id}/reports": {
+    "/projects/{project_id}/versions/{version_id}/reports": {
         parameters: {
             query?: never;
             header?: never;
             path: {
+                project_id: components["schemas"]["Uuid"];
                 version_id: components["schemas"]["Uuid"];
             };
             cookie?: never;
@@ -42,6 +43,7 @@ export interface paths {
          * Request a PDF report for the last submission of a version
          * @description Enqueues a report job. A repeated request for the same submission
          *     returns the existing job id instead of creating another job.
+         *     404 when the project or version is not the caller's or is deleted.
          */
         post: operations["requestReport"];
         delete?: never;
@@ -246,6 +248,7 @@ export interface operations {
             query?: never;
             header?: never;
             path: {
+                project_id: components["schemas"]["Uuid"];
                 version_id: components["schemas"]["Uuid"];
             };
             cookie?: never;

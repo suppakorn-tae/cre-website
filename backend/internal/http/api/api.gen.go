@@ -140,12 +140,12 @@ type ServerInterface interface {
 	// GetJob Get the status of a job
 	// (GET /jobs/{id})
 	GetJob(w http.ResponseWriter, r *http.Request, id Uuid)
+	// RequestReport Request a PDF report for the last submission of a version
+	// (POST /projects/{project_id}/versions/{version_id}/reports)
+	RequestReport(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid)
 	// DownloadReport Download a finished report
 	// (GET /reports/{job_id}/download)
 	DownloadReport(w http.ResponseWriter, r *http.Request, jobId Uuid)
-	// RequestReport Request a PDF report for the last submission of a version
-	// (POST /versions/{version_id}/reports)
-	RequestReport(w http.ResponseWriter, r *http.Request, versionId Uuid)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -157,15 +157,15 @@ func (_ Unimplemented) GetJob(w http.ResponseWriter, r *http.Request, id Uuid) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// DownloadReport Download a finished report
-// (GET /reports/{job_id}/download)
-func (_ Unimplemented) DownloadReport(w http.ResponseWriter, r *http.Request, jobId Uuid) {
+// RequestReport Request a PDF report for the last submission of a version
+// (POST /projects/{project_id}/versions/{version_id}/reports)
+func (_ Unimplemented) RequestReport(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
-// RequestReport Request a PDF report for the last submission of a version
-// (POST /versions/{version_id}/reports)
-func (_ Unimplemented) RequestReport(w http.ResponseWriter, r *http.Request, versionId Uuid) {
+// DownloadReport Download a finished report
+// (GET /reports/{job_id}/download)
+func (_ Unimplemented) DownloadReport(w http.ResponseWriter, r *http.Request, jobId Uuid) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -204,6 +204,41 @@ func (siw *ServerInterfaceWrapper) GetJob(w http.ResponseWriter, r *http.Request
 	handler.ServeHTTP(w, r)
 }
 
+// RequestReport operation middleware
+func (siw *ServerInterfaceWrapper) RequestReport(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "project_id" -------------
+	var projectId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "project_id", chi.URLParam(r, "project_id"), &projectId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "project_id", Err: err})
+		return
+	}
+
+	// ------------- Path parameter "version_id" -------------
+	var versionId Uuid
+
+	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RequestReport(w, r, projectId, versionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // DownloadReport operation middleware
 func (siw *ServerInterfaceWrapper) DownloadReport(w http.ResponseWriter, r *http.Request) {
 
@@ -221,32 +256,6 @@ func (siw *ServerInterfaceWrapper) DownloadReport(w http.ResponseWriter, r *http
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DownloadReport(w, r, jobId)
-	}))
-
-	for _, middleware := range siw.HandlerMiddlewares {
-		handler = middleware(handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// RequestReport operation middleware
-func (siw *ServerInterfaceWrapper) RequestReport(w http.ResponseWriter, r *http.Request) {
-
-	var err error
-	_ = err
-
-	// ------------- Path parameter "version_id" -------------
-	var versionId Uuid
-
-	err = runtime.BindStyledParameterWithOptions("simple", "version_id", chi.URLParam(r, "version_id"), &versionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
-	if err != nil {
-		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "version_id", Err: err})
-		return
-	}
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.RequestReport(w, r, versionId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -374,7 +383,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Get(options.BaseURL+"/jobs/{id}", wrapper.GetJob)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/versions/{version_id}/reports", wrapper.RequestReport)
+		r.Post(options.BaseURL+"/projects/{project_id}/versions/{version_id}/reports", wrapper.RequestReport)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/reports/{job_id}/download", wrapper.DownloadReport)
@@ -443,77 +452,8 @@ func (response GetJob404JSONResponse) VisitGetJobResponse(w http.ResponseWriter)
 	return err
 }
 
-type DownloadReportRequestObject struct {
-	JobId Uuid `json:"job_id"`
-}
-
-type DownloadReportResponseObject interface {
-	VisitDownloadReportResponse(w http.ResponseWriter) error
-}
-
-type DownloadReport200ApplicationpdfResponse struct {
-	Body          io.Reader
-	ContentLength int64
-}
-
-func (response DownloadReport200ApplicationpdfResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
-
-	w.Header().Set("Content-Type", "application/pdf")
-	if response.ContentLength != 0 {
-		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
-	}
-	w.WriteHeader(200)
-
-	if closer, ok := response.Body.(io.ReadCloser); ok {
-		defer closer.Close()
-	}
-	_, err := io.Copy(w, response.Body)
-	return err
-}
-
-type DownloadReport401JSONResponse struct{ UnauthorizedJSONResponse }
-
-func (response DownloadReport401JSONResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(401)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type DownloadReport404JSONResponse struct{ NotFoundJSONResponse }
-
-func (response DownloadReport404JSONResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(404)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
-type DownloadReport409JSONResponse struct{ ConflictJSONResponse }
-
-func (response DownloadReport409JSONResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
-
-	var buf bytes.Buffer
-	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
-		return err
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(409)
-	_, err := buf.WriteTo(w)
-	return err
-}
-
 type RequestReportRequestObject struct {
+	ProjectId Uuid `json:"project_id"`
 	VersionId Uuid `json:"version_id"`
 }
 
@@ -605,17 +545,87 @@ func (response RequestReport429JSONResponse) VisitRequestReportResponse(w http.R
 	return err
 }
 
+type DownloadReportRequestObject struct {
+	JobId Uuid `json:"job_id"`
+}
+
+type DownloadReportResponseObject interface {
+	VisitDownloadReportResponse(w http.ResponseWriter) error
+}
+
+type DownloadReport200ApplicationpdfResponse struct {
+	Body          io.Reader
+	ContentLength int64
+}
+
+func (response DownloadReport200ApplicationpdfResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
+
+	w.Header().Set("Content-Type", "application/pdf")
+	if response.ContentLength != 0 {
+		w.Header().Set("Content-Length", fmt.Sprint(response.ContentLength))
+	}
+	w.WriteHeader(200)
+
+	if closer, ok := response.Body.(io.ReadCloser); ok {
+		defer closer.Close()
+	}
+	_, err := io.Copy(w, response.Body)
+	return err
+}
+
+type DownloadReport401JSONResponse struct{ UnauthorizedJSONResponse }
+
+func (response DownloadReport401JSONResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.UnauthorizedJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(401)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadReport404JSONResponse struct{ NotFoundJSONResponse }
+
+func (response DownloadReport404JSONResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.NotFoundJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type DownloadReport409JSONResponse struct{ ConflictJSONResponse }
+
+func (response DownloadReport409JSONResponse) VisitDownloadReportResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := runtime.JSONMarshalWrite(&buf, response.ConflictJSONResponse); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(409)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 	// GetJob Get the status of a job
 	// (GET /jobs/{id})
 	GetJob(ctx context.Context, request GetJobRequestObject) (GetJobResponseObject, error)
+	// RequestReport Request a PDF report for the last submission of a version
+	// (POST /projects/{project_id}/versions/{version_id}/reports)
+	RequestReport(ctx context.Context, request RequestReportRequestObject) (RequestReportResponseObject, error)
 	// DownloadReport Download a finished report
 	// (GET /reports/{job_id}/download)
 	DownloadReport(ctx context.Context, request DownloadReportRequestObject) (DownloadReportResponseObject, error)
-	// RequestReport Request a PDF report for the last submission of a version
-	// (POST /versions/{version_id}/reports)
-	RequestReport(ctx context.Context, request RequestReportRequestObject) (RequestReportResponseObject, error)
 }
 
 // StrictHandlerFunc and StrictMiddlewareFunc are type aliases rather than
@@ -686,6 +696,33 @@ func (sh *strictHandler) GetJob(w http.ResponseWriter, r *http.Request, id Uuid)
 	}
 }
 
+// RequestReport operation middleware
+func (sh *strictHandler) RequestReport(w http.ResponseWriter, r *http.Request, projectId Uuid, versionId Uuid) {
+	var request RequestReportRequestObject
+
+	request.ProjectId = projectId
+	request.VersionId = versionId
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
+		return sh.ssi.RequestReport(ctx, request.(RequestReportRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "RequestReport")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(RequestReportResponseObject); ok {
+		if err := validResponse.VisitRequestReportResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
 // DownloadReport operation middleware
 func (sh *strictHandler) DownloadReport(w http.ResponseWriter, r *http.Request, jobId Uuid) {
 	var request DownloadReportRequestObject
@@ -712,68 +749,43 @@ func (sh *strictHandler) DownloadReport(w http.ResponseWriter, r *http.Request, 
 	}
 }
 
-// RequestReport operation middleware
-func (sh *strictHandler) RequestReport(w http.ResponseWriter, r *http.Request, versionId Uuid) {
-	var request RequestReportRequestObject
-
-	request.VersionId = versionId
-
-	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error) {
-		return sh.ssi.RequestReport(ctx, request.(RequestReportRequestObject))
-	}
-	for _, middleware := range sh.middlewares {
-		handler = middleware(handler, "RequestReport")
-	}
-
-	response, err := handler(r.Context(), w, r, request)
-
-	if err != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, err)
-	} else if validResponse, ok := response.(RequestReportResponseObject); ok {
-		if err := validResponse.VisitRequestReportResponse(w); err != nil {
-			sh.options.ResponseErrorHandlerFunc(w, r, err)
-		}
-	} else if response != nil {
-		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
-	}
-}
-
 // Base64 encoded, compressed with deflate, json marshaled OpenAPI spec.
 // Stored as a slice of fixed-width chunks rather than one concatenated
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

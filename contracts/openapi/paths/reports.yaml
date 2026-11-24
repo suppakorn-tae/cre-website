@@ -1,5 +1,10 @@
-/versions/{version_id}/reports:
+/projects/{project_id}/versions/{version_id}/reports:
   parameters:
+    - name: project_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
     - name: version_id
       in: path
       required: true
@@ -11,6 +16,7 @@
     description: |
       Enqueues a report job. A repeated request for the same submission
       returns the existing job id instead of creating another job.
+      404 when the project or version is not the caller's or is deleted.
     responses:
       '202':
         description: Job accepted (new or existing); poll `GET /jobs/{id}`.
