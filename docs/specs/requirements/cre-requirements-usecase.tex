@@ -1,0 +1,912 @@
+% CRE — Requirements & Use Case Specification. Compile: xelatex (twice).
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\usepackage[margin=2cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs,tabularx,longtable,array}
+\usepackage{enumitem}
+\usepackage[table]{xcolor}
+\usepackage{titlesec}
+\usepackage{needspace}
+% Thai font: first one installed wins (IBM Plex Sans Thai, Thonburi on macOS, Loma / Noto on Linux)
+\IfFontExistsTF{IBM Plex Sans Thai}{\newfontfamily\thaifont{IBM Plex Sans Thai}[Scale=MatchLowercase]}{%
+ \IfFontExistsTF{Thonburi}{\newfontfamily\thaifont{Thonburi}[Scale=MatchLowercase]}{%
+  \IfFontExistsTF{Noto Sans Thai}{\newfontfamily\thaifont{Noto Sans Thai}[Scale=MatchLowercase]}{%
+   \newfontfamily\thaifont{Loma}[Scale=MatchLowercase]}}}
+\newcommand{\thai}[1]{{\thaifont #1}}
+\definecolor{creBlue}{HTML}{1F4E79}
+\definecolor{creAccent}{HTML}{6C8EBF}
+\definecolor{hdr}{HTML}{DAE8FC}
+\definecolor{grp}{HTML}{F1F5F9}
+\titleformat{\section}{\Large\bfseries\color{creBlue}}{\thesection}{0.6em}{}[{\color{creAccent}\titlerule[0.8pt]}]
+\titleformat{\subsection}{\large\bfseries\color{creBlue}}{\thesubsection}{0.6em}{}
+\titleformat{name=\subsection,numberless}{\large\bfseries\color{creBlue}}{}{0pt}{}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric,arrows.meta,positioning}
+\usepackage[hidelinks]{hyperref}
+\setlist{nosep,leftmargin=*}
+\renewcommand{\arraystretch}{1.15}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{R}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\RL}{\mathrm{RL}}
+\newcommand{\RIC}{\mathrm{RI}_{C}}
+\newcommand{\RIT}{\mathrm{RI}_{T}}
+\newcommand{\RIE}{\mathrm{RI}_{E}}
+\newcommand{\RImax}{\mathrm{RI}_{\max}}
+\newcommand{\RM}{\mathrm{RM}}
+\newcommand{\inc}{\guillemotleft include\guillemotright}
+\newcommand{\ext}{\guillemotleft extend\guillemotright}
+\newcommand{\assume}{\textsuperscript{\textcolor{orange!80!black}{\textbf{A}}}}
+\newcommand{\lv}[1]{\mathrm{#1}}
+\tikzset{actor/.pic={
+  \draw (0,0.32) circle (0.1);
+  \draw (0,0.22) -- (0,-0.12);
+  \draw (-0.22,0.12) -- (0.22,0.12);
+  \draw (0,-0.12) -- (-0.18,-0.45);
+  \draw (0,-0.12) -- (0.18,-0.45);
+}}
+
+\title{\textcolor{creBlue}{\textbf{Construction Risk Expert (CRE)}}\\[2pt]\large Requirements \& Use Case Specification}
+\author{Suppakorn Krabtong}
+\date{v1.14 --- 23 November 2026}
+
+\begin{document}
+\maketitle
+
+\noindent\textbf{Scope.} CRE is a web application that assesses construction risk for projects on Thai islands. A user describes a project and answers four questions for each of 55 indicators in a versioned assessment; a dashboard summarises all own projects and versions can be compared; the Risk Engine computes likelihood ($\RL$), impact ($\RIC$, $\RIT$, $\RIE$) and the risk magnitude $\RM$, classifies each indicator as VL/L/M/H/VH, shows expert advice for high risks, and produces a PDF report. Administrators maintain users, advice and thresholds, and export pseudonymised data for research.
+
+\noindent\textbf{Sources.} Risk Engine \& Indicator Reference v1 (11 Nov 2026); Architecture Decisions v2.8 (11 Nov 2026); product owner decisions (10, 14 and 23 Nov 2026, \S\ref{sec:dec}); UI wireframes and hi-fi design review (23 Nov 2026). Items marked \assume{} are assumptions not yet confirmed.
+
+\noindent\textbf{Priority.} MoSCoW: \textbf{M} must, \textbf{S} should, \textbf{C} could.
+
+
+
+%------------------------------------------------------------
+\needspace{10\baselineskip}\section{Actors}
+\begin{tabularx}{\linewidth}{@{}l l Y@{}}
+\toprule
+\rowcolor{hdr}Actor & Type & Description \\
+\midrule
+Guest & Primary & Visitor without a session; can register and log in. No feature is available without an account. \\
+Registered User (Assessor) & Primary & Authenticated user identified by e-mail (no personal name). Owns projects and their assessment versions. \\
+Administrator & Primary & Inherits all Registered User use cases (generalisation). Manages users, advice and thresholds; exports research data; views the audit log of admin actions. \\
+E-mail Service & Secondary & External service that delivers the 6-digit OTP for e-mail sign-up and password reset. \\
+Google Sign-In & Secondary & External identity provider (OAuth 2.0 / OpenID Connect) for sign-up, log in, and linking a Google account to an existing account. \\
+\bottomrule
+\end{tabularx}
+
+\medskip
+\noindent Internal components (Risk Engine, worker, queue, object storage) are part of the system and are \emph{not} modelled as actors.
+
+\clearpage
+%------------------------------------------------------------
+\needspace{10\baselineskip}\section{Use Case Diagram}
+\begin{figure}[!ht]
+\centering
+\definecolor{acctF}{HTML}{D5E8D4}\definecolor{acctS}{HTML}{82B366}
+\definecolor{projF}{HTML}{DAE8FC}\definecolor{projS}{HTML}{6C8EBF}
+\definecolor{sysF}{HTML}{E1D5E7}\definecolor{sysS}{HTML}{9673A6}
+\definecolor{advF}{HTML}{F8CECC}\definecolor{advS}{HTML}{B85450}
+\definecolor{adminF}{HTML}{FFE6CC}\definecolor{adminS}{HTML}{D79B00}
+\definecolor{noteF}{HTML}{FFF2CC}\definecolor{noteS}{HTML}{D6B656}
+\definecolor{bndF}{HTML}{F8FAFC}\definecolor{bndS}{HTML}{475569}
+\definecolor{incC}{HTML}{9673A6}\definecolor{extC}{HTML}{B85450}\definecolor{genC}{HTML}{333333}
+\definecolor{xtF}{HTML}{F5F5F5}\definecolor{xtS}{HTML}{666666}
+\resizebox{!}{0.86\textheight}{%
+\begin{tikzpicture}[font=\scriptsize,
+  uc/.style={ellipse,draw,line width=0.8pt,align=center,inner sep=0pt},
+  dep/.style={-{Straight Barb[length=2mm]},dashed,line width=0.8pt},
+  lab/.style={fill=white,inner sep=1pt,font=\tiny\bfseries}]
+\draw[fill=bndF,draw=bndS,line width=1.2pt,rounded corners=2pt] (3.840,-0.320) rectangle (14.720,-24.960);
+\node[anchor=north,font=\small\bfseries,text=bndS] at (9.280,-0.384) {Construction Risk Expert (CRE)};
+\node[minimum width=0.6cm,minimum height=1.0cm,inner sep=0pt] (guest) at (2.400,-1.920) {};
+\pic[draw=acctS,fill=acctF,line width=1pt] at (guest) {actor};
+\node[left=1pt of guest,align=right,font=\scriptsize\bfseries,text=acctS!80!black] {Guest};
+\node[minimum width=0.6cm,minimum height=1.0cm,inner sep=0pt] (user) at (2.400,-10.720) {};
+\pic[draw=projS,fill=projF,line width=1pt] at (user) {actor};
+\node[left=1pt of user,align=right,font=\scriptsize\bfseries,text=projS!80!black] {Registered User\\(Assessor)};
+\node[minimum width=0.6cm,minimum height=1.0cm,inner sep=0pt] (admin) at (2.400,-20.640) {};
+\pic[draw=adminS,fill=adminF,line width=1pt] at (admin) {actor};
+\node[left=1pt of admin,align=right,font=\scriptsize\bfseries,text=adminS!80!black] {Administrator};
+\node[minimum width=0.6cm,minimum height=1.0cm,inner sep=0pt] (email) at (16.160,-0.720) {};
+\pic[draw=xtS,fill=xtF,line width=1pt] at (email) {actor};
+\node[below=1pt of email,align=center,font=\scriptsize\bfseries,text=xtS] {E-mail Service};
+\node[minimum width=0.6cm,minimum height=1.0cm,inner sep=0pt] (google) at (16.160,-4.000) {};
+\pic[draw=xtS,fill=xtF,line width=1pt] at (google) {actor};
+\node[below=1pt of google,align=center,font=\scriptsize\bfseries,text=xtS] {Google Sign-In\\(OAuth 2.0)};
+\node[uc,fill=acctF,draw=acctS,minimum width=3.36cm,minimum height=0.90cm] (uc01) at (6.400,-1.280) {\textbf{UC-01}\\Register account};
+\node[uc,fill=acctF,draw=acctS,minimum width=3.36cm,minimum height=0.90cm] (uc02) at (6.400,-2.560) {\textbf{UC-02}\\Log in / reset password};
+\node[uc,fill=acctF,draw=acctS,minimum width=3.36cm,minimum height=0.90cm] (uc03) at (6.400,-3.840) {\textbf{UC-03}\\Log out};
+\node[uc,fill=acctF,draw=acctS,minimum width=3.36cm,minimum height=0.90cm] (uc04) at (6.400,-5.120) {\textbf{UC-04}\\Manage own account};
+\node[uc,fill=projF,draw=projS,minimum width=3.36cm,minimum height=0.90cm] (uc20) at (6.400,-6.560) {\textbf{UC-20}\\View dashboard};
+\node[uc,fill=projF,draw=projS,minimum width=3.36cm,minimum height=0.90cm] (uc05) at (6.400,-7.840) {\textbf{UC-05}\\Manage projects};
+\node[uc,fill=projF,draw=projS,minimum width=3.36cm,minimum height=0.90cm] (uc06) at (6.400,-9.120) {\textbf{UC-06}\\Manage assessment versions};
+\node[uc,fill=projF,draw=projS,minimum width=3.36cm,minimum height=0.90cm] (uc21) at (6.400,-10.400) {\textbf{UC-21}\\Compare versions};
+\node[uc,fill=projF,draw=projS,minimum width=3.36cm,minimum height=0.90cm] (uc07) at (6.400,-11.680) {\textbf{UC-07}\\Perform risk assessment};
+\node[uc,fill=projF,draw=projS,minimum width=3.36cm,minimum height=1.22cm] (uc09) at (6.400,-13.120) {\textbf{UC-09}\\View assessment results\\[-2pt]{\color{projS}\rule{2.2cm}{0.4pt}}\\{\tiny ext. point: Advice}};
+\node[uc,fill=projF,draw=projS,minimum width=3.36cm,minimum height=0.90cm] (uc11) at (6.400,-15.360) {\textbf{UC-11}\\Generate PDF report};
+\node[uc,fill=projF,draw=projS,minimum width=3.36cm,minimum height=0.90cm] (uc13) at (6.400,-16.640) {\textbf{UC-13}\\Download PDF report};
+\node[uc,fill=adminF,draw=adminS,minimum width=3.36cm,minimum height=0.90cm] (uc14) at (6.400,-18.080) {\textbf{UC-14}\\Manage users};
+\node[uc,fill=adminF,draw=adminS,minimum width=3.36cm,minimum height=0.90cm] (uc15) at (6.400,-19.280) {\textbf{UC-15}\\Manage indicator advice};
+\node[uc,fill=adminF,draw=adminS,minimum width=3.36cm,minimum height=0.90cm] (uc16) at (6.400,-20.480) {\textbf{UC-16}\\Edit RL thresholds (a--e)};
+\node[uc,fill=adminF,draw=adminS,minimum width=3.36cm,minimum height=0.90cm] (uc17) at (6.400,-21.680) {\textbf{UC-17}\\Edit RI$_C$ / RI$_T$ thresholds};
+\node[uc,fill=adminF,draw=adminS,minimum width=3.36cm,minimum height=0.90cm] (uc18) at (6.400,-22.880) {\textbf{UC-18}\\Export research data\\(pseudonymised)};
+\node[uc,fill=adminF,draw=adminS,minimum width=3.36cm,minimum height=0.90cm] (uc19) at (6.400,-24.080) {\textbf{UC-19}\\View audit log};
+\node[uc,fill=sysF,draw=sysS,minimum width=3.36cm,minimum height=0.90cm] (uc08) at (11.520,-11.680) {\textbf{UC-08}\\Calculate risk level\\(Risk Engine)};
+\node[uc,fill=advF,draw=advS,minimum width=3.36cm,minimum height=0.90cm] (uc10) at (11.520,-13.120) {\textbf{UC-10}\\View advice \&\\choose strategy};
+\node[uc,fill=sysF,draw=sysS,minimum width=3.36cm,minimum height=0.90cm] (uc12) at (11.520,-15.360) {\textbf{UC-12}\\Track job status};
+\draw[acctS,line width=0.8pt] (guest.east) -- (uc01.west);
+\draw[acctS,line width=0.8pt] (guest.east) -- (uc02.west);
+\draw[projS,line width=0.8pt] (user.east) -- (uc03.west);
+\draw[projS,line width=0.8pt] (user.east) -- (uc04.west);
+\draw[projS,line width=0.8pt] (user.east) -- (uc20.west);
+\draw[projS,line width=0.8pt] (user.east) -- (uc05.west);
+\draw[projS,line width=0.8pt] (user.east) -- (uc06.west);
+\draw[projS,line width=0.8pt] (user.east) -- (uc21.west);
+\draw[projS,line width=0.8pt] (user.east) -- (uc07.west);
+\draw[projS,line width=0.8pt] (user.east) -- (uc09.west);
+\draw[projS,line width=0.8pt] (user.east) -- (uc11.west);
+\draw[projS,line width=0.8pt] (user.east) -- (uc13.west);
+\draw[adminS,line width=0.8pt] (admin.east) -- (uc14.west);
+\draw[adminS,line width=0.8pt] (admin.east) -- (uc15.west);
+\draw[adminS,line width=0.8pt] (admin.east) -- (uc16.west);
+\draw[adminS,line width=0.8pt] (admin.east) -- (uc17.west);
+\draw[adminS,line width=0.8pt] (admin.east) -- (uc18.west);
+\draw[adminS,line width=0.8pt] (admin.east) -- (uc19.west);
+\draw[xtS,line width=0.8pt] (uc01.east) -- (email.west);
+\draw[xtS,line width=0.8pt] (uc01.east) -- (google.west);
+\draw[xtS,line width=0.8pt] (uc02.east) -- (email.west);
+\draw[xtS,line width=0.8pt] (uc02.east) -- (google.west);
+\draw[xtS,line width=0.8pt] (uc04.east) -- (google.west);
+\draw[dep,incC] (uc07) -- node[lab,above,text=incC] {\guillemotleft include\guillemotright} (uc08);
+\draw[dep,incC] (uc11) -- node[lab,above,text=incC] {\guillemotleft include\guillemotright} (uc12);
+\draw[dep,incC] (uc18.east) -- node[lab,above,text=incC] {\guillemotleft include\guillemotright} (14.160,-22.880) -- (14.160,-15.360) -- (uc12.east);
+\draw[dep,extC] (uc10) -- node[lab,above,text=extC] {\guillemotleft extend\guillemotright} (uc09);
+\draw[genC,line width=0.8pt,-{Triangle[open,length=3mm,width=3mm]}] (admin.north) -- (user.south);
+\node[draw=noteS,fill=noteF,anchor=north west,align=left,font=\tiny,text width=2.89cm,minimum height=0.90cm] (note_ext) at (8.320,-13.728) {condition: \{risk level $\in\{\mathrm{H},\mathrm{VH}\}$\}\\extension point: Advice};
+\draw[dashed,noteS!80!black] (note_ext.north) -- (8.960,-13.120);
+\node[draw=noteS,fill=noteF,anchor=north west,align=left,font=\tiny,text width=3.34cm,minimum height=0.80cm] (note_del) at (8.960,-8.128) {Delete = soft delete: hidden from user, data retained for research};
+\draw[dashed,noteS!80!black] (note_del.west) -- (uc05.east);
+\draw[dashed,noteS!80!black] (note_del.west) -- (uc06.east);
+\node[draw=noteS,fill=noteF,anchor=north west,align=left,font=\tiny,text width=3.34cm,minimum height=0.80cm] (note_dash) at (8.960,-5.952) {Home after log-in; holds the project list of UC-05 (KPI cards, charts)};
+\draw[dashed,noteS!80!black] (note_dash.west) -- (uc20.east);
+\draw[fill=white,draw=gray!60,rounded corners=2pt] (9.360,-16.960) rectangle (13.840,-20.672);
+\node[anchor=west,font=\scriptsize\bfseries] at (9.456,-17.184) {Legend};
+\node[ellipse,draw=acctS,fill=acctF,line width=0.8pt,minimum width=0.64cm,minimum height=0.26cm,inner sep=0pt] at (9.840,-17.616) {};
+\node[anchor=west,font=\tiny] at (10.256,-17.616) {Account \& session};
+\node[ellipse,draw=projS,fill=projF,line width=0.8pt,minimum width=0.64cm,minimum height=0.26cm,inner sep=0pt] at (9.840,-17.968) {};
+\node[anchor=west,font=\tiny] at (10.256,-17.968) {Projects \& assessments};
+\node[ellipse,draw=sysS,fill=sysF,line width=0.8pt,minimum width=0.64cm,minimum height=0.26cm,inner sep=0pt] at (9.840,-18.320) {};
+\node[anchor=west,font=\tiny] at (10.256,-18.320) {Included (system) behaviour};
+\node[ellipse,draw=advS,fill=advF,line width=0.8pt,minimum width=0.64cm,minimum height=0.26cm,inner sep=0pt] at (9.840,-18.672) {};
+\node[anchor=west,font=\tiny] at (10.256,-18.672) {Extension (advice)};
+\node[ellipse,draw=adminS,fill=adminF,line width=0.8pt,minimum width=0.64cm,minimum height=0.26cm,inner sep=0pt] at (9.840,-19.024) {};
+\node[anchor=west,font=\tiny] at (10.256,-19.024) {Administration};
+\draw[projS,line width=0.8pt,-] (9.520,-19.376) -- (10.160,-19.376);
+\node[anchor=west,font=\tiny] at (10.256,-19.376) {Association};
+\draw[incC,line width=0.8pt,dashed,-{Straight Barb[length=1.5mm]}] (9.520,-19.728) -- (10.160,-19.728);
+\node[anchor=west,font=\tiny] at (10.256,-19.728) {Include};
+\draw[extC,line width=0.8pt,dashed,-{Straight Barb[length=1.5mm]}] (9.520,-20.080) -- (10.160,-20.080);
+\node[anchor=west,font=\tiny] at (10.256,-20.080) {Extend};
+\draw[genC,line width=0.8pt,-{Triangle[open,length=2mm,width=2mm]}] (9.520,-20.432) -- (10.160,-20.432);
+\node[anchor=west,font=\tiny] at (10.256,-20.432) {Generalisation};
+\end{tikzpicture}}
+\caption{UML use case diagram of CRE (editable source: \texttt{cre-usecase.drawio}).}
+\label{fig:uc}
+\end{figure}
+
+\clearpage
+%------------------------------------------------------------
+\needspace{10\baselineskip}\section{Use Case Catalogue}
+\begingroup\small
+\begin{longtable}{@{}l R{4.2cm} l R{7.0cm}@{}}
+\toprule
+\rowcolor{hdr}ID & Use case & Actor & Summary / relationships \\
+\midrule
+\endhead
+UC-01 & Register account & Guest & E-mail + password with 6-digit OTP, or Google account. Secondary: E-mail Service, Google Sign-In. \\
+UC-02 & Log in / reset password & Guest & E-mail + password (optionally \emph{keep me logged in}) or Google; JWT in httpOnly cookie; opens the dashboard (UC-20). Forgot password: reset by 6-digit OTP to e-mail. Secondary: E-mail Service, Google Sign-In. \\
+UC-03 & Log out & User & Clear session cookie. \\
+UC-04 & Manage own account & User & Edit organisation, change password, link / unlink Google account, delete account (anonymised). Secondary: Google Sign-In. \\
+UC-05 & Manage projects & User & Create, list (with search), view, edit, (soft) delete own projects. \\
+UC-06 & Manage assessment versions & User & List versions, open one, start a new blank version (snapshot), (soft) delete a version; compare versions (UC-21). \\
+UC-07 & Perform risk assessment & User & Answer indicator questions in the latest version. \inc{} UC-08. \\
+UC-08 & Calculate risk level & (system) & Risk Engine computes $\RL,\RIC,\RIT,\RIE,\RImax,\RM$ and level. Included by UC-07. \\
+UC-09 & View assessment results & User & Per-indicator scores and level of a version in four views: overview, detail table, heat map, H/VH only. Extension point \emph{Advice}. \\
+UC-10 & View advice and choose strategy & User & \ext{} UC-09 when level $\in\{\lv{H},\lv{VH}\}$. Shows advice; user picks REDUCE / TRANSFER / AVOID / ACCEPT. \\
+UC-11 & Generate PDF report & User & Async report job (HTTP 202 + job id); HTML template $\to$ PDF. \inc{} UC-12. \\
+UC-12 & Track job status & User / Admin & Poll job state: queued / running / done / failed. Included by UC-11, UC-18. \\
+UC-13 & Download PDF report & User & Auth-checked stream of \texttt{reports/\{id\}.pdf} via api. \\
+UC-14 & Manage users & Admin & List, search, change role, deactivate, delete (anonymise). \\
+UC-15 & Manage indicator advice & Admin & Add / edit / remove / reorder items in lists $\RL,\RIC,\RIT,\RIE$. \\
+UC-16 & Edit RL thresholds ($a$--$e$) & Admin & Per-indicator thresholds used to score $X \to \RL$. \\
+UC-17 & Edit impact thresholds ($\RIC$, $\RIT$) & Admin & Shared tables that score $y_1 \to \RIC$ and $y_2 \to \RIT$. \\
+UC-18 & Export research data (pseudonymised) & Admin & Async export job of all or selected users, optionally with soft-deleted data; a ZIP of CSV files (one per version) and JSON metadata. \inc{} UC-12. \\
+UC-19 & View audit log & Admin & List and filter the audit log of admin actions: who did what, to what, and when. \\
+UC-20 & View dashboard & User & Home after log-in: KPI cards, level distribution and H/VH per project for the latest submitted versions, and the project list (UC-05). \\
+UC-21 & Compare versions & User & Compare a version with another of the same project; trend over all versions; RM per indicator across versions. \\
+\bottomrule
+\end{longtable}
+\endgroup
+
+\clearpage
+%------------------------------------------------------------
+\needspace{10\baselineskip}\section{Use Case Specifications}
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-01 Register account}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Guest; secondary: E-mail Service, Google Sign-In \\
+Precondition & Not logged in. \\
+Main flow\newline (e-mail) & 1.~Guest opens the registration page and chooses sign-up with e-mail.\newline 2.~Guest enters e-mail, password, password confirmation and (optionally) organisation; no personal name is requested.\newline 3.~System shows the research data-retention notice and the terms of use; guest accepts both (NFR-03, FR-51).\newline 4.~System validates e-mail format and uniqueness and the password policy.\newline 5.~System generates a 6-digit OTP, stores it hashed with an expiry of 10 minutes, and sends it via the E-mail Service.\newline 6.~Guest enters the OTP.\newline 7.~System verifies the OTP, creates the account (role \texttt{user}, e-mail verified, hashed password) and logs the user in. \\
+Alternative\newline (Google) & 1a. Guest chooses \emph{Continue with Google}: system redirects to Google Sign-In (OAuth 2.0 / OpenID Connect).\newline 1b. Google returns a verified e-mail and account id; guest accepts the notice and the terms of use (step 3); system asks for the optional organisation.\newline 1c. System creates the account (no password, no OTP) and logs the user in. If the e-mail already belongs to an account, the Google id is linked to it. \\
+Exceptions & 3a. Guest does not accept the notice or the terms of use: account is not created.\newline 4a. E-mail already registered: show error; flow returns to 2.\newline 4b. Password fails policy (BR-22) or the confirmation does not match: show the rule; flow returns to 2.\newline 6a. Wrong OTP: show error; after 5 wrong attempts the OTP is invalidated.\newline 6b. OTP expired or not received: guest requests a new one (at most once per 60 s).\newline 1d. Google sign-in cancelled or fails: return to the registration page. \\
+Postcondition & Verified account with role \texttt{user}; stored: e-mail, password hash and/or Google id, optional organisation. Nothing is stored before verification. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-02 Log in / reset password}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Guest; secondary: E-mail Service, Google Sign-In \\
+Precondition & Account exists and is active. \\
+Main flow & 1.~Guest enters e-mail and password and may tick \emph{keep me logged in}.\newline 2.~System verifies the password hash.\newline 3.~System issues a JWT in an httpOnly, Secure, SameSite cookie (\texttt{path=/}); its lifetime follows BR-23.\newline 4.~System opens the dashboard (UC-20), which holds the project list (UC-05); an admin also sees the admin menu. \\
+Alternative & 1a. Guest chooses \emph{Continue with Google}: system validates the Google ID token, finds the account by Google id (or verified e-mail) and continues at step 3. \\
+Alternative\newline (forgot password) & 1c. Guest selects \emph{Forgot password} and enters the account e-mail.\newline 1d. System sends a 6-digit OTP via the E-mail Service (BR-16) and shows the same message whether or not the e-mail is registered.\newline 1e. Guest enters the OTP and a new password with its confirmation on one screen (BR-22).\newline 1f. System verifies the OTP, checks the password policy, stores the new hash, ends all existing sessions of the account\assume{} and returns to step 1. \\
+Exceptions & 2a. Wrong e-mail or password: generic error (does not reveal which); flow returns to 1.\newline 2b. Too many failed attempts: request rate-limited (NFR-02).\newline 2c. Account deactivated or deleted: access denied.\newline 1b. No account for this Google identity: offer registration (UC-01).\newline 1g. Wrong or expired OTP: as BR-16; password unchanged.\newline 1h. E-mail has no password (Google-only account): the e-mail tells the user to continue with Google instead\assume{}. \\
+Postcondition & User is authenticated. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-03 Log out}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Registered User \\
+Precondition & User is logged in. \\
+Main flow & 1.~User selects log out.\newline 2.~System clears the session cookie.\newline 3.~System redirects to the log-in page. \\
+Postcondition & Session ended; protected pages and API calls require logging in again. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-04 Manage own account}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Registered User; secondary: Google Sign-In \\
+Precondition & User is logged in. \\
+Main flow & 1.~User opens the account page; system shows e-mail, sign-in methods (password, Google linked or not) and organisation.\newline 2.~User edits the organisation (may be left blank) and saves.\newline 3.~To change password (e-mail accounts), user enters the current password and the new password with its confirmation (BR-22).\newline 4.~System verifies the current password, checks the policy and stores the new hash. \\
+Alternative & 1a. \emph{Delete account}: user confirms by re-authenticating (password or Google)\assume{}.\newline 1b. System removes the e-mail, password hash and Google id, marks the account deleted and ends the session. Projects and versions stay in the database for research (BR-13); the e-mail may register again as a new account.\newline 1c. \emph{Link Google account}: system redirects to Google Sign-In; on return it stores the Google id on the account, so the user can also log in with Google.\newline 1d. \emph{Unlink Google account}: user confirms; system removes the Google id. Allowed only if the account has a password, so at least one sign-in method remains. \\
+Exceptions & 4a. Current password wrong: error; password unchanged.\newline 4b. New password fails policy: show the rule.\newline 1e. Link: Google account already linked to another CRE account, or Google sign-in cancelled: nothing is linked; show error.\newline 1f. Unlink: account has no password (registered with Google): unlink rejected. \\
+Postcondition & Account updated, or anonymised and closed. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-05 Manage projects}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Registered User \\
+Precondition & User is logged in. \\
+Main flow & 1.~System lists the user's non-deleted projects on the dashboard (UC-20); the user may search by name, nickname or island.\newline 2.~To create, user fills in the project fields (\S\ref{sec:proj}): name, nickname (3--4 characters), island/location, start and end date, project value, project type, progress (default 0\,\%) and optional description.\newline 3.~System validates the fields (Table~\ref{tab:proj}) and saves.\newline 4.~User opens a project; system shows its details, the progress next to the expected progress (BR-24) and its versions (UC-06).\newline 5.~User edits project fields and saves; value and dates apply to versions created afterwards (BR-10). \\
+Alternative & 2a. Island or project type not in the list: user picks \emph{other} and types it.\newline 5a. User deletes the project: system asks for confirmation, sets \texttt{deleted\_at}, hides the project and all its versions and reports. There is no restore; data is retained (BR-12). \\
+Exceptions & 3a. Missing required field, nickname not 3--4 characters, value $\le 0$, end date not after start date or progress outside 0--100: highlight fields; flow returns to 2. \\
+Postcondition & Project stored or soft-deleted; nothing is physically removed. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-06 Manage assessment versions}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Registered User \\
+Precondition & User is logged in and owns the non-deleted project. \\
+Main flow & 1.~User opens a project; system lists its non-deleted versions (number, status draft/submitted, created time, last submitted; for submitted versions also the progress recorded at submission, H/VH counts and average RM, BR-24, BR-26).\newline 2.~User opens a version: the latest version opens for editing (UC-07); older versions open read-only (UC-09).\newline 3.~User starts a new version; it is always blank.\newline 4.~System assigns the next number $v_{n+1}$ and stores a snapshot (BR-10): project value and dates, all RL thresholds, the $\RIC$/$\RIT$ tables and the rounding settings.\newline 5.~The previous version becomes read-only (BR-11); flow continues in UC-07.\newline 6.~User may compare versions (UC-21). \\
+Alternative & 2a. User deletes a version: system asks for confirmation, sets \texttt{deleted\_at}, hides the version and its reports. There is no restore; data is retained (BR-12). \\
+Postcondition & Version history of the project is preserved; only the latest version is editable. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-07 Perform risk assessment}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Registered User \\
+Includes & UC-08 Calculate risk level \\
+Precondition & User owns the project; the version is the latest one (BR-11) and not deleted. \\
+Main flow & 1.~System lists the 55 indicators (\texttt{name\_th}) grouped by dimension and factor, with one question per input: $X$, $y_1$, $y_2$, $y_3$.\newline 2.~The user answers any number of indicators: $X$ (number $\ge 0$ in the indicator's unit), $y_1$ (cost impact: baht, or \% of project value 0--100), $y_2$ (time impact: days, or \% of duration 0--100) and options of $y_3$ (A--I). Indicators may be left blank.\newline 3.~System validates the inputs (API-side as well as UI) and saves them; no scores are shown yet. The user may leave and continue later.\newline 4.~User submits the version.\newline 5.~System checks that at least one indicator is complete ($X$, $y_1$, $y_2$, $y_3$ all given; BR-09) and \textbf{includes UC-08} for every complete indicator.\newline 6.~System marks the version \emph{submitted} and shows the results (UC-09): $\RL$, $\RIC$, $\RIT$, $\RIE$, $\RImax$, $\RM$ and risk level of each scored indicator. \\
+Alternative & 6a. While the version is still the latest (BR-11), the user changes or adds answers and submits again: flow continues at 3; all complete indicators are recalculated. \\
+Exceptions & 1a. A newer version exists: the version opens read-only (UC-09).\newline 3a. A filled input is negative, a \% is above 100, or option A is ticked together with other options: highlight fields; flow returns to 2.\newline 5a. No indicator is complete: submission rejected with a message; flow returns to 2. \\
+Postcondition & Answers stored as entered (value, unit, \%). After submission every complete indicator has scores and a level; incomplete indicators stay unscored and can be completed and resubmitted later. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-08 Calculate risk level}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & (system) --- included by UC-07 \\
+Precondition & The user submits the version (UC-07 step 5); runs once for each complete indicator. \\
+Main flow & 1.~Assessments Service converts $y_1$ baht $\to$ \% of project value and $y_2$ days $\to$ \% of duration (calendar days start$\to$end), using the version's snapshot.\newline 2.~Risk Engine computes $\RL = s(X)$ with the indicator's thresholds from the snapshot (BR-01; three-threshold and inverse rules apply).\newline 3.~Risk Engine computes $\RIC = s(y_1)$ and $\RIT = s(y_2)$ with the shared tables from the snapshot (BR-01), and $\RIE$ (BR-02).\newline 4.~Scores are rounded to $p_s$ decimals; Risk Engine computes $\RImax$ and $\RM$ (BR-03), rounds $\RM$ to $p_m$ decimals and classifies the level (BR-04).\newline 5.~For H/VH indicators, Risk Engine returns the advice list key(s) (BR-05\,--\,BR-07). \\
+Exceptions & 2a. Indicator has an invalid threshold pattern: scoring is blocked and the error is logged for the admin. \\
+Postcondition & Stored per indicator: $\RL,\RIC,\RIT,\RIE,\RImax,\RM$, level, advice keys and the decimals used. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-09 View assessment results}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Registered User \\
+Extension point & Advice (extended by UC-10) \\
+Precondition & Version submitted at least once and not deleted; user owns it. \\
+Main flow & 1.~User opens a version's results.\newline 2.~System shows the results of the last submission, per indicator: name, inputs, $\RL$, $\RIC$, $\RIT$, $\RIE$, $\RImax$, $\RM$ and level (incomplete indicators shown as not scored), with the disclaimer of BR-25, in four views (FR-47): \emph{overview} (count per level, level distribution, average $\RM$ per factor, Top 10 by $\RM$), \emph{detail table} (inputs and scores; search, filter by level), \emph{heat map} ($\RM$ per indicator, rows = factors) and \emph{H/VH only} (sorted by $\RM$).\newline 3.~\emph{Extension point Advice}: for H/VH indicators the user may view advice (UC-10).\newline 4.~User may request a PDF report (UC-11). \\
+Exceptions & 1a. Version deleted or not owned: \texttt{404}.\newline 1b. Version never submitted: no results yet; the latest version opens in UC-07. \\
+Postcondition & None (read-only). \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-10 View advice and choose strategy}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Registered User \\
+Extends & UC-09 at extension point Advice, condition: level $\in\{\mathrm{H},\mathrm{VH}\}$ (fixed rule, not configurable) \\
+Main flow & 1.~User expands an H/VH indicator.\newline 2.~System shows every item (1--5) of the selected list(s), in admin-defined order, each list with its label.\newline 3.~System shows the four strategies (BR-19) and the strategy chosen so far, if any.\newline 4.~User chooses one strategy: REDUCE, TRANSFER, AVOID or ACCEPT.\newline 5.~System saves the choice for this indicator in this version, with \texttt{updated\_at}. \\
+Alternative & 2a. Tie for $\RImax$ (and $\RL < \RImax$): show every tied list, in order $\RIC,\RIT,\RIE$.\newline 4a. User changes the strategy later: flow repeats from 4 (latest version only). \\
+Exceptions & 3a. A newer version exists (read-only, BR-11): the chosen strategy is shown but cannot be changed. \\
+Postcondition & The indicator's strategy is stored with the version and appears in the results and the PDF report. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-11 Generate PDF report}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Registered User \\
+Includes & UC-12 Track job status \\
+Precondition & Version submitted and not deleted; user owns it. The report uses the last submission. \\
+Main flow & 1.~User requests a report for the version.\newline 2.~api enqueues a report job and returns \texttt{202} + job id.\newline 3.~Worker builds the data, renders an HTML template to PDF (content per FR-32), uploads \texttt{reports/\{id\}.pdf} to object storage and marks the job done.\newline 4.~Client tracks the job (\textbf{includes UC-12}).\newline 5.~On \emph{done}, user downloads the report (UC-13). \\
+Exceptions & 3a. Worker fails or is terminated: job re-queued (graceful shutdown); after the retry limit, status \emph{failed} with message. \\
+Postcondition & PDF stored in object storage and linked to the version. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-12 Track job status}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Registered User or Administrator --- included by UC-11 and UC-18 \\
+Precondition & A report or export job exists that the actor may see. \\
+Main flow & 1.~Client polls the job status with the job id.\newline 2.~System returns \emph{queued}, \emph{running}, \emph{done} or \emph{failed}.\newline 3.~On \emph{done}, the UI shows the download action (UC-13 for reports; UC-18 step 5 for exports). \\
+Exceptions & 1a. Job id not visible to the actor: \texttt{404}.\newline 2a. \emph{failed}: show the message; the actor may request again. \\
+Postcondition & None (read-only). \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-13 Download PDF report}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Registered User \\
+Precondition & Report job is done; user owns the non-deleted version. \\
+Main flow & 1.~User selects download.\newline 2.~api checks the session and ownership.\newline 3.~api streams the PDF from object storage to the browser. \\
+Exceptions & 2a. Version deleted or not owned: \texttt{404}.\newline 3a. File missing in storage: error; user may regenerate (UC-11). \\
+Postcondition & None; storage is never exposed directly. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-14 Manage users}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Administrator \\
+Precondition & Logged in with role \texttt{admin}. \\
+Main flow & 1.~Admin lists and searches users by e-mail or organisation.\newline 2.~Admin opens a user; system shows e-mail, sign-in methods, organisation, role, status, number of projects and number of assessment versions. The projects and versions themselves cannot be opened (BR-21).\newline 3.~Admin changes a role (\texttt{user}/\texttt{admin}) or deactivates/reactivates a user.\newline 4.~Admin deletes a user: the account is anonymised as in UC-04 (1b); projects and versions are retained (BR-13).\newline 5.~System saves the change and writes an audit entry (BR-20). \\
+Exceptions & 3a. Admin tries to demote, deactivate or delete own account: rejected\assume{}. \\
+Postcondition & User records updated; a deactivated or deleted user cannot log in. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-15 Manage indicator advice}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Administrator \\
+Precondition & Logged in with role \texttt{admin}. \\
+Main flow & 1.~Admin selects an indicator and one list ($\RL$, $\RIC$, $\RIT$, $\RIE$).\newline 2.~Admin adds, edits, removes or reorders items. Each item has one text per locale; today only Thai (\texttt{th}) is edited, and the Thai text may contain English terms (FR-56).\newline 3.~Admin saves; system validates and stores the whole list in one transaction as rows \texttt{advice\_item(indicator\_code, list, position, \dots)} with \texttt{updated\_by}/\texttt{updated\_at} and their texts as \texttt{advice\_item\_text(item\_id, locale, text)}, and writes an audit entry with the old and new list (BR-20). \\
+Exceptions & 3a. List would have 0 or more than 5 items, or an item has no Thai (\texttt{th}) text: save rejected. \\
+Postcondition & Each list holds 1--5 items; \texttt{(indicator\_code, list, position)} and \texttt{(item\_id, locale)} unique. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-16 Edit RL thresholds (a--e)}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Administrator \\
+Precondition & Logged in with role \texttt{admin}. \\
+Main flow & 1.~Admin selects an indicator; system shows its unit, direction (normal or inverse), thresholds $a$--$e$ (empty = not used) and the scoring branch.\newline 2.~Admin edits the values and saves.\newline 3.~System validates: a valid pattern (all five, $a$--$c$ only, or $c$--$e$ only), values $\ge 0$, and strictly increasing (strictly decreasing for inverse indicators).\newline 4.~System stores the values with \texttt{updated\_by}/\texttt{updated\_at}, writes an audit entry with old and new values (BR-20) and invalidates the cache on all replicas. \\
+Exceptions & 3a. Invalid pattern, missing or negative value, or wrong order: save rejected; fields highlighted. \\
+Postcondition & Versions created from now on snapshot the new thresholds; existing versions keep theirs (BR-10). \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-17 Edit impact thresholds ($\RIC$, $\RIT$)}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Administrator \\
+Precondition & Logged in with role \texttt{admin}. \\
+Main flow & 1.~Admin opens the impact thresholds page; system shows both shared tables side by side: $\RIC$ (input $y_1$, \% of project value) and $\RIT$ (input $y_2$, \% of project duration), one table each, shared by all indicators.\newline 2.~System shows the current thresholds $a$--$e$ of each table and the score (1--5) at each.\newline 3.~Admin edits one or both tables and saves once.\newline 4.~System validates every changed table (all five set, $\ge 0$, strictly increasing), stores it with \texttt{updated\_by}/\texttt{updated\_at}, writes one audit entry per changed table with old and new values (BR-20) and invalidates the cache on all replicas. \\
+Exceptions & 4a. Validation fails: save rejected; field highlighted. \\
+Postcondition & Versions created from now on snapshot the new table; existing versions keep theirs (BR-10). \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-18 Export research data (pseudonymised)}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Administrator \\
+Includes & UC-12 Track job status \\
+Precondition & Logged in with role \texttt{admin}. \\
+Main flow & 1.~Admin opens export and selects all users or a subset, and whether to include soft-deleted projects and versions.\newline 2.~api enqueues an export job and returns \texttt{202} + job id.\newline 3.~Worker builds the export: e-mail and Google id removed, each user replaced by a stable random pseudonym (BR-14). The file is one ZIP (FR-53): a folder per pseudonym holding \texttt{user.json} (organisation) and a folder per project (\texttt{nickname\_projectid}) with \texttt{project.json} (project fields, versions with status, times, snapshot and \texttt{deleted\_at}) and one CSV per version (one row per indicator: inputs with unit, $\RL,\RIC,\RIT,\RIE,\RImax,\RM$, level, strategy). Worker uploads \texttt{exports/\{id\}.zip} to object storage.\newline 4.~Admin tracks the job (\textbf{includes UC-12}).\newline 5.~On \emph{done}, admin downloads the file through the api (auth-checked stream); the request and each download are written to the audit log (BR-20). \\
+Exceptions & 3a. Worker fails: job re-queued; after the retry limit, status \emph{failed}. \\
+Postcondition & Pseudonymised export file stored; export logged (NFR-03). \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-19 View audit log}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Administrator \\
+Precondition & Logged in with role \texttt{admin}. \\
+Main flow & 1.~Admin opens the audit log; system lists entries newest first: time, admin, action, target.\newline 2.~Admin filters by admin, action type, target (e.g. a user, an indicator, a threshold table) or date range.\newline 3.~Admin opens an entry; system shows its details, including old and new values for changes (BR-20). \\
+Exceptions & 1a. No entries match the filter: empty list. \\
+Postcondition & None (read-only); entries cannot be edited or deleted. \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-20 View dashboard}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Registered User \\
+Precondition & User is logged in. \\
+Main flow & 1.~After log-in (UC-02), or when the user selects the logo, the system opens the dashboard.\newline 2.~System shows four KPI cards: number of projects (and versions), number of H+VH indicators, islands with projects, and total project value (display only).\newline 3.~System shows the level distribution and the H/VH count per project (BR-26).\newline 4.~One KPI card is always selected (default: projects) and decides the panel below the charts: the project list (UC-05) with the actions \emph{assess} (latest version), \emph{results} and \emph{versions}; the Top 10 indicators most often H/VH; or the projects grouped by island.\newline 5.~User selects a card, searches the list or opens a project. \\
+Alternative & 1a. User has no projects: empty state with an action to create the first project (UC-05). \\
+Postcondition & None (read-only). \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+\noindent\begin{minipage}{\linewidth}
+\subsection*{UC-21 Compare versions}
+\begin{tabularx}{\linewidth}{@{}>{\columncolor{grp}\raggedright\leavevmode\bfseries\color{creBlue}}p{2.6cm} Y@{}}
+\toprule
+Actor & Registered User \\
+Precondition & User owns the non-deleted project; at least one of its versions is submitted. \\
+Main flow & 1.~In the project's \emph{versions} tab the user selects a version; the system compares it with a chosen version (default: the previous submitted one): progress at submission, average $\RM$, number of H+VH indicators and number of indicators whose level went up or down (BR-26).\newline 2.~System shows the trend of H+VH and average $\RM$ over all versions, never-submitted versions as empty slots, and the level distribution of every version.\newline 3.~User switches to \emph{RM per indicator}, filters by factor and indicators, and sees each indicator's $\RM$ per version. \\
+Alternative & 1a. Only one submitted version: no comparison; trend and distribution only. \\
+Exceptions & 1b. Selected version never submitted: no results (UC-09 1b); its saved answers can be viewed. \\
+Postcondition & None (read-only). \\
+\bottomrule
+\end{tabularx}
+\end{minipage}
+\par\medskip
+
+
+
+\clearpage
+%------------------------------------------------------------
+\needspace{10\baselineskip}\section{Project Fields}\label{sec:proj}
+\begin{longtable}{@{}R{4.6cm} l c R{7.2cm}@{}}
+\caption{Project fields (UC-05).}\label{tab:proj}\\
+\toprule
+\rowcolor{hdr}Field & Type & Req. & Rule / options \\
+\midrule
+\endhead
+\thai{ชื่อโครงการ}\newline Project name & text & yes & Non-empty. \\
+\thai{ชื่อเล่นโครงการ}\newline Project nickname & text & yes & 3--4 characters. \\
+\thai{เกาะ / สถานที่โครงการ}\newline Island / project location & select + other & yes & \thai{เกาะเต่า} Koh Tao, \thai{เกาะสมุย} Koh Samui, \thai{เกาะพะงัน} Koh Phangan, \thai{เกาะพีพี} Koh Phi Phi, \thai{เกาะลันตา} Koh Lanta, \thai{เกาะช้าง} Koh Chang, \thai{เกาะกูด} Koh Kood; \thai{อื่นๆ} other: free text, required when \thai{อื่นๆ} is chosen. \\
+\thai{วันที่เริ่ม}\newline Start date & date & yes & --- \\
+\thai{วันที่สิ้นสุด}\newline End date & date & yes & After the start date. Duration = calendar days start $\to$ end (used for $y_2$). \\
+\thai{มูลค่าโครงการ}\newline Project value & number (baht) & yes & $> 0$ (used for $y_1$). \\
+\thai{ประเภทโครงการ}\newline Project type & select + other & yes & \thai{อาคาร / ที่พัก} building / accommodation; \thai{ท่าเรือ} pier / port; \thai{ถนน / โครงสร้างพื้นฐาน} road / infrastructure; \thai{ระบบสาธารณูปโภค} utilities; \thai{โครงสร้างชายฝั่ง} coastal structure; \thai{อื่นๆ} other: free text, required when \thai{อื่นๆ} is chosen. One choice, shown as chips. \\
+\thai{\% ความก้าวหน้า}\newline Progress & number (\%) & no & 0--100, default 0. \\
+\thai{รายละเอียด}\newline Description & long text & no & --- \\
+\bottomrule
+\end{longtable}
+\noindent Project value and dates are copied into each new version's snapshot (BR-10); editing them later does not change existing versions. The \emph{expected progress} (\thai{ตามแผน}) is not a field: it is computed from the dates (BR-24) and shown next to the progress.
+
+%------------------------------------------------------------
+\needspace{10\baselineskip}\section{Functional Requirements}
+\begin{longtable}{@{}l R{11.2cm} c l@{}}
+\toprule
+\rowcolor{hdr}ID & Requirement & Pri & UC \\
+\midrule
+\endhead
+\rowcolor{grp}\multicolumn{4}{@{}l}{\textbf{\color{creBlue}Accounts \& access}}\\
+FR-01 & A guest shall register with e-mail, password (with confirmation, BR-22) and optional organisation; the e-mail is verified with a 6-digit OTP sent by e-mail before the account is created (BR-16). & M & 01 \\
+FR-02 & A guest shall register and log in with a Google account (OAuth 2.0 / OpenID Connect) without a password or OTP. & M & 01, 02 \\
+FR-03 & The system shall not request or store personal names; organisation is optional (BR-15). & M & 01, 04 \\
+FR-04 & The system shall authenticate users and issue a JWT in an httpOnly cookie (\texttt{path=/}). & M & 02 \\
+FR-05 & A user with an e-mail account shall reset a forgotten password with a 6-digit OTP sent to the e-mail (BR-16). & M & 02 \\
+FR-06 & The system shall end the session on log out. & M & 03 \\
+FR-07 & The system shall enforce role-based access (\texttt{user}, \texttt{admin}) on every \texttt{/api/v1} endpoint; an account is required for every feature except registration and log in. & M & all \\
+FR-08 & A user shall update own organisation and (for e-mail accounts) password. & S & 04 \\
+FR-09 & A user who registered with e-mail shall link a Google account for sign-in and unlink it; a Google account can be linked to only one CRE account, and unlinking requires a password on the account. & M & 04 \\
+FR-10 & A user shall delete own account; the system anonymises it (BR-13) and keeps the projects. & M & 04 \\
+\rowcolor{grp}\multicolumn{4}{@{}l}{\textbf{\color{creBlue}Projects, versions \& deletion}}\\
+FR-11 & A user shall create, list, view and edit own projects with the fields in Table~\ref{tab:proj}. & M & 05 \\
+FR-12 & A user shall access only own non-deleted projects, versions and reports (object-level authorisation). Admins have no access to other users' projects, versions, answers or reports (BR-21). & M & 05--13, 20, 21 \\
+FR-13 & A project shall hold zero or more versions $v_1, v_2, \dots$; numbers are never reused; a new version is always blank (BR-08). & M & 06 \\
+FR-14 & A new version shall snapshot project value, dates, all thresholds and rounding settings; later changes to these do not affect it (BR-10). & M & 06, 08 \\
+FR-15 & Only the latest version shall be editable; creating a new version makes the previous one read-only (BR-11). & M & 06, 07 \\
+FR-16 & The system shall list a project's versions with number, status (draft / submitted), created time and last submitted time; for submitted versions also the progress recorded at submission, H/VH counts and average $\RM$ (BR-24, BR-26). & M & 06, 21 \\
+FR-17 & Deleting a project or version shall be a soft delete with no restore: hidden from the user in every view, API response and download; deleting a project hides all its versions (BR-12). & M & 05, 06 \\
+\rowcolor{grp}\multicolumn{4}{@{}l}{\textbf{\color{creBlue}Assessment}}\\
+FR-18 & The system shall present the 55 seeded indicators by dimension and factor, with one question per input $X$, $y_1$, $y_2$, $y_3$. & M & 07 \\
+FR-19 & The system shall capture $X \ge 0$, $y_1$ (baht or \% 0--100), $y_2$ (days or \% 0--100) and multi-select $y_3\subseteq\{A..I\}$ (A exclusive) per indicator, and validate them in the API. & M & 07 \\
+FR-20 & The system shall save answers as entered, including partly answered versions, and show no scores before submission. & M & 07 \\
+FR-21 & A user shall submit a version when at least one indicator is complete; on submission the system scores every complete indicator and shows the results; incomplete indicators stay unscored (BR-09). & M & 07--09 \\
+FR-22 & The latest version shall be editable after submission; resubmitting recalculates all complete indicators (BR-11). & M & 07, 08 \\
+FR-23 & The input layer shall convert baht and days to \% using the version's snapshot; the Risk Engine takes \% only. & M & 08 \\
+FR-24 & The Risk Engine shall compute $\RL,\RIC,\RIT,\RIE,\RImax,\RM$ and level per BR-01\,--\,BR-04 with the version's snapshot. & M & 08 \\
+FR-25 & The system shall display per-indicator scores and level of the selected version. & M & 09 \\
+FR-26 & The system shall show advice only for H/VH indicators, selecting the list(s) per BR-05\,--\,BR-07. & M & 10 \\
+FR-27 & Each advice list shall hold 1--5 items; UI and PDF shall render any count in that range. & M & 10, 11, 15 \\
+FR-28 & For each H/VH indicator the user shall choose one strategy (REDUCE, TRANSFER, AVOID, ACCEPT) and may change it while the version is the latest; the choice is stored with the version (BR-19). & M & 10 \\
+\rowcolor{grp}\multicolumn{4}{@{}l}{\textbf{\color{creBlue}Reports \& jobs}}\\
+FR-29 & Report and export requests shall be asynchronous: enqueue job, return \texttt{202} + job id. & M & 11, 18 \\
+FR-30 & The system shall expose job status (queued / running / done / failed). & M & 12 \\
+FR-31 & Completed reports shall be downloadable only through the api (auth-checked stream) and not for deleted versions. & M & 13 \\
+FR-32 & The PDF shall be rendered from an HTML template and contain project data, version number, a summary of levels, per-indicator results, advice and chosen strategy for H/VH indicators, the disclaimer (BR-25) and signature slots for assessor, reviewer and approver. & M & 11 \\
+\rowcolor{grp}\multicolumn{4}{@{}l}{\textbf{\color{creBlue}Administration}}\\
+FR-33 & An admin shall list, search, change role of, deactivate and delete (anonymise) users, and see each user's number of projects and assessment versions. & M & 14 \\
+FR-34 & An admin shall add, edit, remove and reorder advice items per indicator and list; changes record \texttt{updated\_by}/\texttt{updated\_at}. & M & 15 \\
+FR-35 & An admin shall edit the RL thresholds $a..e$ per indicator, keeping a valid pattern and order (normal or inverse). & M & 16 \\
+FR-36 & An admin shall edit the shared $\RIC$ and $\RIT$ threshold tables ($a..e$, $\ge 0$, strictly increasing). & M & 17 \\
+FR-37 & Threshold changes shall be logged, invalidate the cache on all replicas and apply only to versions created afterwards. & M & 16, 17 \\
+FR-38 & An admin shall export pseudonymised research data of all or selected users, optionally including soft-deleted projects and versions (BR-14), packaged per FR-53. & M & 18 \\
+FR-39 & The system shall record every admin action in an append-only audit log, written in the same transaction as the change (BR-20). & M & 14--18 \\
+FR-40 & An admin shall view the audit log and filter it by admin, action type, target and date range; no one can edit or delete entries through the application. & M & 19 \\
+FR-41 & The \texttt{migrate} job shall seed indicators, questions, RL thresholds, $\RIC$/$\RIT$ tables, $\RIE$ options and advice from \texttt{cre-indicators.json}. & M & -- \\
+\rowcolor{grp}\multicolumn{4}{@{}l}{\textbf{\color{creBlue}Dashboard, comparison \& presentation (v1.13)}}\\
+FR-42 & After log-in the system shall open the dashboard (UC-20) with KPI cards (projects, H+VH indicators, islands, total value), the level distribution, H/VH per project and a panel chosen by the selected KPI card: project list, Top 10 H/VH indicators or projects by island. & M & 02, 20 \\
+FR-43 & Dashboard figures shall use only non-deleted projects and versions and each project's latest submitted version (BR-26). & M & 20 \\
+FR-44 & A user shall search the project list by name, nickname or island. & S & 05, 20 \\
+FR-45 & A user shall compare a version with another version of the project (progress, average $\RM$, H+VH, level changes) and see the trend and level distribution over all versions (BR-26). & S & 21 \\
+FR-46 & A user shall see each indicator's $\RM$ per version, filtered by factor and indicator. & C & 21 \\
+FR-47 & The results of a version shall be shown in four views: overview, detail table (search, filter by level), heat map and H/VH only. The heat map colours cells with one hue from light (VL) to dark (VH) and prints each indicator's code and $\RM$. & S & 09 \\
+FR-48 & Project pages shall show the steps project data $\to$ assessment $\to$ results $\to$ advice \& strategy $\to$ report, with the current step marked. & C & 05, 07, 09--11 \\
+FR-49 & The system shall show the expected progress computed from the project dates next to the entered progress (BR-24). & C & 05 \\
+FR-50 & Results and PDF shall show the disclaimer of BR-25; the PDF shall have signature slots for assessor, reviewer and approver. & S & 09, 11 \\
+FR-51 & A guest shall accept the research data-retention notice and the terms of use before an account is created. & M & 01 \\
+FR-52 & The log-in form shall offer \emph{keep me logged in} (BR-23). & S & 02 \\
+FR-53 & The research export shall be one ZIP: a folder per pseudonym with \texttt{user.json} and a folder per project with \texttt{project.json} and one CSV per assessment version (UC-18). & M & 18 \\
+FR-54 & Risk levels shall be labelled by code only (VL, L, M, H, VH) in the UI and the PDF. & S & 09--11, 20 \\
+\rowcolor{grp}\multicolumn{4}{@{}l}{\textbf{\color{creBlue}Localisation \& copy (v1.14)}}\\
+FR-55 & Every user-facing string of the web app and the PDF shall come from a per-locale message catalogue (\texttt{th} shipped, the default). Adding a locale shall need no code or schema change. No language switch is shown while only \texttt{th} exists. & M & all \\
+FR-56 & Admin-maintained content (advice items) shall be stored per locale; \texttt{th} is required, other locales optional and fall back to \texttt{th}. Thai text may contain English terms. & M & 10, 11, 15 \\
+FR-57 & User-facing text shall not show specification codes (UC-, FR-, BR-, NFR-) or internal terms such as \emph{snapshot}; it says what happens in plain words. & S & all \\
+\bottomrule
+\end{longtable}
+
+%------------------------------------------------------------
+\needspace{10\baselineskip}\section{Business Rules}
+\subsection*{Risk Engine (from the Risk Engine \& Indicator Reference v1)}
+\begin{description}[style=nextline,leftmargin=1.6cm,labelwidth=1.4cm,font=\bfseries\color{creBlue}]
+\item[BR-01] Scoring a numeric input $v$ with thresholds $a<b<c<d<e$:
+\[
+s(v)=\begin{cases}
+1 & v\le a\\
+1+\frac{v-a}{b-a} & a<v\le b\\[2pt]
+2+\frac{v-b}{c-b} & b<v\le c\\[2pt]
+3+\frac{v-c}{d-c} & c<v\le d\\[2pt]
+4+\frac{v-d}{e-d} & d<v\le e\\
+5 & v>e
+\end{cases}
+\qquad \RL=s(X),\ \RIC=s(y_1),\ \RIT=s(y_2).
+\]
+$\RL$ uses the indicator's own $a..e$; $\RIC$ and $\RIT$ use one shared table each (seed: $\RIC$ 9.58, 23.92, 47.5, 61.42, 80; $\RIT$ 13.79, 23.33, 46.67, 60.83, 79.33). Inverse indicators (EC-MG-5, EC-CO-5, EC-RS-1, EV-EV-4) have $a>b>\dots>e$ with mirrored comparisons. Three-threshold indicators: only $a,b,c$ (EC-HS-2, EC-HS-5; $\RL=5$ above $c$) or only $c,d,e$ (EC-HS-1, EC-HS-3, SO-PL-1, EV-EV-2, EV-EV-3; $\RL=1$ below $c$, 3 at $c$). Scores stay in $[1,5]$.
+\item[BR-02] $\RIE = \max_{o \in S} s(o)$ over the ticked options $S\subseteq\{A..I\}$; option scores A--C $=1$, D--E $=2$, F $=3$, G $=4$, H--I $=5$ (fixed, not editable). A (very little impact) is not combined with other options.
+\item[BR-03] $\RImax = \max(\RIC,\RIT,\RIE)$ and $\RM = \sqrt{\RL \cdot \RImax}$, using scores rounded to $p_s$ decimals (default 2; environment variable, BR-18).
+\item[BR-04] $\RM$ is rounded to $p_m$ decimals (default 3; environment variable, BR-18) and classified by the membership functions peaking at 1--5: VL $[1,1.5)$, L $[1.5,2.5)$, M $[2.5,3.5)$, H $[3.5,4.5)$, VH $[4.5,5]$. A value exactly on a border takes the higher level.
+\item[BR-05] Advice is shown iff level $\in\{\lv{H},\lv{VH}\}$ (i.e.\ $\RM\ge3.5$).
+\item[BR-06] Advice list:
+$\RL$ list if $\RL \ge \RImax$; otherwise the list of the impact equal to $\RImax$. Comparisons use the rounded scores.
+\item[BR-07] Tie between impacts for $\RImax$ (and $\RL < \RImax$): show every tied list, order $\RIC,\RIT,\RIE$.
+\end{description}
+
+\subsection*{Risk strategy}
+\begin{description}[style=nextline,leftmargin=1.6cm,labelwidth=1.4cm,font=\bfseries\color{creBlue}]
+\item[BR-19] For each indicator at level H or VH the user may choose one strategy (\thai{กลยุทธ์}) from the fixed list below. The choice belongs to the indicator in that version, can be changed while the version is the latest (BR-11), and is shown in the results, the PDF report and the research export.
+\end{description}
+\begin{tabularx}{\linewidth}{@{}l l Y@{}}
+\toprule
+\rowcolor{hdr}Code & Thai & Meaning \\
+\midrule
+REDUCE & \thai{ลดโอกาสหรือผลกระทบโดยการควบคุมเชิงป้องกัน} & Reduce likelihood or impact with preventive controls. \\
+TRANSFER & \thai{โอนความเสี่ยงผ่านประกันภัยหรือสัญญา} & Transfer the risk through insurance or contracts. \\
+AVOID & \thai{หลีกเลี่ยงกิจกรรมที่ก่อให้เกิดความเสี่ยง} & Avoid the activity that causes the risk. \\
+ACCEPT & \thai{ยอมรับและติดตามอย่างใกล้ชิด} & Accept and monitor closely. \\
+\bottomrule
+\end{tabularx}
+
+\subsection*{Versions and data}
+\begin{description}[style=nextline,leftmargin=1.6cm,labelwidth=1.4cm,font=\bfseries\color{creBlue}]
+\item[BR-08] A project has versions $v_1,\dots,v_n$ ($n\ge0$); numbers are sequential per project and never reused. A new version is always blank.
+\item[BR-09] An indicator is complete when $X$, $y_1$, $y_2$, $y_3$ are all given. A version may be submitted when at least one indicator is complete; not all 55 are required. On submission only complete indicators are scored ($\RL,\RIC,\RIT,\RIE,\RImax,\RM$, level); scores are shown only after submission. Status: \emph{draft} (never submitted) $\to$ \emph{submitted}; the latest version can be edited and resubmitted (BR-11).
+\item[BR-10] A new version stores a snapshot of the project value and dates, every indicator's RL thresholds, the $\RIC$/$\RIT$ tables and $p_s$, $p_m$. All its calculations use the snapshot; threshold and project edits apply only to versions created afterwards.
+\item[BR-11] Only the latest version of a project is editable. Once a newer version is created, earlier versions are read-only, even if the newer one is later deleted\assume.
+\item[BR-12] Deleting a project or version is a soft delete (\texttt{deleted\_at}): it disappears from every user view and API response; no row or file is removed and there is no restore. Retained data is reachable only through the research export (UC-18).
+\item[BR-13] Deleting an account (by the user or an admin) removes the e-mail, password hash and Google id and marks the account deleted. Its projects and versions are kept for research.
+\item[BR-14] Research export is pseudonymised: no e-mail or Google id; each account is replaced by a stable random pseudonym not derived from its e-mail. Organisation is kept\assume.
+\item[BR-27] There is no limit on the number of projects per account or versions per project.
+\end{description}
+
+\subsection*{Accounts}
+\begin{description}[style=nextline,leftmargin=1.6cm,labelwidth=1.4cm,font=\bfseries\color{creBlue}]
+\item[BR-15] No personal names are collected; a user is identified by e-mail. Organisation is optional.
+\item[BR-16] E-mail OTP (sign-up and password reset): 6 digits, stored hashed, valid 10 minutes, at most 5 wrong attempts, resend at most once per 60 s. The account is created only after the OTP is verified. Google sign-up needs no OTP (Google verifies the e-mail); if its e-mail already belongs to an account, the Google id is linked to that account.
+\item[BR-17] An account has one or two sign-in methods: password and/or Google. A user who registered with e-mail may link a Google account and unlink it later; a Google account is linked to at most one CRE account; a method can be removed only if another remains.
+\item[BR-22] Password policy: at least 8 characters; every new password is entered twice and both entries must match. The strength bar is guidance only.
+\item[BR-23] Without \emph{keep me logged in} the JWT cookie is a session cookie that ends when the browser closes; with it the cookie persists for a configured period (environment variable, default 30 days\assume). Log out (UC-03) always ends the session.
+\end{description}
+
+\subsection*{Audit log and admin access}
+\begin{description}[style=nextline,leftmargin=1.6cm,labelwidth=1.4cm,font=\bfseries\color{creBlue}]
+\item[BR-20] Every admin action is recorded in an append-only audit log: managing users (role change, deactivate, reactivate, delete), editing advice, editing RL thresholds, editing the $\RIC$/$\RIT$ tables, and requesting and downloading research exports. Each entry stores the time (UTC), the admin account, the action, the target (type and id), old and new values for changes, request id and IP address. The entry is written in the same transaction as the change, so no change happens without its entry. Entries cannot be edited or deleted through the application and are kept indefinitely\assume. If an admin account is later deleted (BR-13), its entries remain and show the account id.
+\item[BR-21] Admins cannot open, view or change other users' projects, versions, answers, results or reports in the application. For each user they see only the number of projects and the number of assessment versions (not deleted\assume). Users' assessment data reaches admins only through the pseudonymised research export (UC-18).
+\end{description}
+
+\subsection*{Dashboard and presentation (v1.13)}
+\begin{description}[style=nextline,leftmargin=1.6cm,labelwidth=1.4cm,font=\bfseries\color{creBlue}]
+\item[BR-24] Expected progress $=\min(100,\max(0,\ \text{elapsed calendar days since start} / \text{duration} \times 100))$, rounded to a whole percent. On each submission the project's progress at that moment is stored with the version\assume{} and is used in version lists and comparisons.
+\item[BR-25] Results views and the PDF show the disclaimer:\newline \thai{ผลลัพธ์เป็นข้อมูลเบื้องต้นสำหรับใช้ประกอบการพิจารณาเท่านั้น} (results are preliminary and for consideration only).
+\item[BR-26] Dashboard figures use each non-deleted project's latest submitted version: H+VH count, level distribution, H/VH per project and Top 10 indicators most often H/VH (ties: more VH first, then code\assume). Total value sums the project values. Average $\RM$ of a version is the mean $\RM$ of its scored indicators; ``level changed'' compares indicators scored in both versions.
+\end{description}
+
+\subsection*{Configuration}
+\begin{description}[style=nextline,leftmargin=1.6cm,labelwidth=1.4cm,font=\bfseries\color{creBlue}]
+\item[BR-18] The rounding settings $p_s$ and $p_m$ are set only by environment variables (e.g.\ \texttt{SCORE\_DECIMALS}, \texttt{RM\_DECIMALS}\assume) on api and worker; there is no admin UI. A changed value applies to versions created afterwards (BR-10).
+\end{description}
+
+%------------------------------------------------------------
+\needspace{10\baselineskip}\section{Non-Functional Requirements}
+\begin{longtable}{@{}l l R{12.2cm}@{}}
+\toprule
+\rowcolor{hdr}ID & Category & Requirement \\
+\midrule
+\endhead
+NFR-01 & Security & HTTPS only (Caddy automatic TLS); only Caddy exposed; all other services on internal \texttt{private-net}. \\
+NFR-02 & Security & JWT in httpOnly, Secure, SameSite cookie; passwords and OTPs stored with a slow hash (e.g.\ Argon2id); rate limiting on log-in, OTP, registration and password-reset endpoints; Google ID tokens validated (issuer, audience, expiry). \\
+NFR-03 & Privacy & Admin actions audited (BR-20); data minimisation (no personal names, optional organisation); users informed at registration that assessment data, including deleted projects and versions, is retained for research (Thai PDPA) and accept the terms of use; exports pseudonymised, restricted to admins and logged. \\
+NFR-04 & Performance & Interactive API requests p95 $< 1$\,s\assume; reports and exports never block a request (job queue). \\
+NFR-05 & Scalability & web, api and worker are stateless and scale horizontally; rate-limit counters, OTP state and threshold cache shared/invalidated across replicas (Valkey). \\
+NFR-06 & Availability & \texttt{/healthz} and \texttt{/readyz} on api, worker, web; graceful SIGTERM; worker finishes or re-queues in-flight job; Valkey AOF on. \\
+NFR-07 & Portability & All configuration via environment variables, including the rounding settings $p_s$, $p_m$ (BR-18); storage via S3 API only (RustFS, MinIO, cloud S3 interchangeable); Docker Compose now, Kubernetes later. \\
+NFR-08 & Observability & JSON logs to stdout with request ID; Prometheus \texttt{/metrics}. \\
+NFR-09 & Maintainability & Layered backend (HTTP $\to$ Service $\to$ DAL/adapters; shared domain); Risk Engine is pure (no DB access, \% inputs only). \\
+NFR-10 & Data integrity & Idempotent, backward-compatible migrations runnable as a job; unique \texttt{(indicator\_code, list, position)} and \texttt{(project\_id, version\_no)}; every user-facing query filters \texttt{deleted\_at IS NULL}. \\
+NFR-11 & Localisation & Thai is the only UI language today and the default locale; the app is ready for a second locale (English) without redesign: message catalogues per locale (FR-55), content per locale (FR-56), dates and numbers through a locale formatter (\texttt{th}: Buddhist era; \texttt{en}: Common Era), layouts that allow about 30\,\% longer labels. Risk level codes, indicator codes and units are not translated. \\
+NFR-12 & Usability & Responsive UI (desktop and mobile; tables become cards on small screens); unit pickers for cost/time inputs; delete actions confirmed; no UI or PDF layout assumes a fixed number of advice items. \\
+\bottomrule
+\end{longtable}
+
+%------------------------------------------------------------
+\clearpage
+\needspace{10\baselineskip}\section{Traceability (FR $\to$ UC)}
+\begingroup\scriptsize\setlength{\tabcolsep}{1.6pt}
+\begin{longtable}{@{}l*{21}{c}@{}}
+\toprule
+\rowcolor{hdr}&01&02&03&04&05&06&07&08&09&10&11&12&13&14&15&16&17&18&19&20&21\\
+\midrule
+\endhead
+FR-01&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&&&&&\\
+FR-02&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&&&&\\
+FR-03&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&&\\
+FR-04&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&&&&\\
+FR-05&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&&&&\\
+FR-06&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&&&\\
+FR-07&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}\\
+FR-08&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&&\\
+FR-09&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&&\\
+FR-10&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&&\\
+FR-11&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&\\
+FR-12&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}\\
+FR-13&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&\\
+FR-14&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&\\
+FR-15&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&\\
+FR-16&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}\\
+FR-17&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&\\
+FR-18&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&\\
+FR-19&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&\\
+FR-20&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&\\
+FR-21&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&\\
+FR-22&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&\\
+FR-23&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&\\
+FR-24&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&\\
+FR-25&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&\\
+FR-26&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&\\
+FR-27&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&\\
+FR-28&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&\\
+FR-29&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&\\
+FR-30&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&\\
+FR-31&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&\\
+FR-32&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&\\
+FR-33&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&\\
+FR-34&&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&\\
+FR-35&&&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&\\
+FR-36&&&&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&\\
+FR-37&&&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&\\
+FR-38&&&&&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&\\
+FR-39&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&\\
+FR-40&&&&&&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&\\
+FR-42&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\\
+FR-43&&&&&&&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\\
+FR-44&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\\
+FR-45&&&&&&&&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}\\
+FR-46&&&&&&&&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}\\
+FR-47&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&\\
+FR-48&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&\\
+FR-49&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&\\
+FR-50&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&\\
+FR-51&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&&&&&\\
+FR-52&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&&&&&&&&&&&\\
+FR-53&&&&&&&&&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&\\
+FR-54&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\\
+FR-55&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}\\
+FR-56&&&&&&&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&&&&&&\\
+FR-57&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}\\
+\bottomrule
+\end{longtable}
+\endgroup
+
+%------------------------------------------------------------
+\needspace{10\baselineskip}\section{Decisions \& Open Issues}\label{sec:dec}
+\subsection*{Decisions (14--15 Nov 2026)}
+\begin{longtable}{@{}l R{5.2cm} R{8.6cm}@{}}
+\toprule
+\rowcolor{hdr}\# & Question & Decision \\
+\midrule
+\endhead
+1 & Self-registration? & Yes: e-mail + password verified by a 6-digit OTP sent to the e-mail, or a Google account (UC-01, BR-16). \\
+2 & Assessment without an account? & No; an account is required (FR-07). \\
+3 & Project fields? & Name, nickname (added in v1.12), island/location, start/end date, value, type, progress (default 0\,\%), optional description (\S\ref{sec:proj}). \\
+4 & New version prefilled? & No; always blank (BR-08). \\
+5 & Edit a version? & Editable while no newer version exists (BR-11). \\
+6 & Restore deleted project/version? & No; data stays in the database for research (BR-12). \\
+7 & Account deletion? & Remove the e-mail; projects stay (BR-13). \\
+8 & Research export identity? & Pseudonymised (BR-14). \\
+9 & Threshold changes vs.\ existing versions? & Snapshot per version; changes apply to the next version (BR-10). \\
+10 & $\RIC$/$\RIT$ tables shared or per indicator? & One shared table each (BR-01). \\
+11 & $\RIE$ option scores editable? & No (BR-02). \\
+12 & Level on a membership border? & As in the engine reference: bands at 1.5/2.5/3.5/4.5, border takes the higher level (BR-04). \\
+13 & Export through the queue? & Yes, like reports: job + object storage + status polling (UC-18, UC-12); simpler to scale and no request time-outs. Format later. \\
+14 & PDF rendering? & HTML template $\to$ PDF (engine to be chosen). \\
+15 & Performance target? & Relaxed to p95 $< 1$\,s for interactive requests (NFR-04). \\
+16 & Forgot password? (v1.4 OI-3) & Reset by 6-digit OTP sent to the e-mail (UC-02, FR-05). \\
+17 & Who edits the rounding settings? (v1.4 OI-4) & Environment variables only; no admin UI (BR-18). \\
+18 & Link Google to an e-mail account? & Yes: link and unlink Google for sign-in after registering with e-mail (UC-04, BR-17). \\
+19 & OTP limits and Google auto-linking? & Confirmed: 10-minute expiry, 5 wrong attempts, resend once per 60 s; Google sign-in with an existing e-mail links to that account (BR-16). \\
+20 & When are results shown; must all indicators be answered? & Results only after the user submits; a version can be submitted with at least one complete indicator and edited later while it is the latest (UC-07, BR-09). \\
+21 & Risk strategy? & For each H/VH indicator the user chooses REDUCE, TRANSFER, AVOID or ACCEPT (UC-10, BR-19). \\
+22 & Audit admin actions? & Yes: append-only audit log of who did what and when; admins view it in UC-19 (BR-20). \\
+23 & Can admins open users' projects and versions? & No. For each user only the number of projects and assessment versions is shown; data reaches admins only via the pseudonymised export (UC-14, BR-21). \\
+24 & Project nickname? & Required, 3--4 characters (\S\ref{sec:proj}). \\
+\bottomrule
+\end{longtable}
+
+\subsection*{Decisions (23 Nov 2026, UI review)}
+\begin{longtable}{@{}l R{5.2cm} R{8.6cm}@{}}
+\toprule
+\rowcolor{hdr}\# & Question & Decision \\
+\midrule
+\endhead
+25 & Home page after log-in? & Dashboard with KPI cards, charts and the project list (UC-20, FR-42). \\
+26 & Quotas on projects or versions? & None (BR-27). \\
+27 & Compare versions? & Yes: compare two versions, trend over all versions, RM per indicator (UC-21, FR-45, FR-46). \\
+28 & Result views? & Overview, detail table, heat map and H/VH only (UC-09, FR-47). \\
+29 & Step bar and expected progress? & Yes (FR-48, FR-49, BR-24). \\
+30 & Disclaimer and signatures? & Disclaimer on results and PDF; PDF signature slots for assessor, reviewer, approver (BR-25, FR-32, FR-50). \\
+31 & Terms of use? & Accepted at registration together with the research notice (FR-51). \\
+32 & Password policy? & At least 8 characters, entered twice (BR-22). \\
+33 & Keep me logged in? & Yes (FR-52, BR-23). \\
+34 & Forgot-password screens? & Two: e-mail; then OTP and new password on one screen (UC-02 1c--1f). \\
+35 & Export file format? (closes OI-1) & ZIP of CSV files, one per assessment version, with JSON metadata per user and project (UC-18, FR-53). \\
+36 & Risk level labels? & Codes only: VL, L, M, H, VH (FR-54, NFR-11). \\
+\bottomrule
+\end{longtable}
+
+\subsection*{Decisions (23 Nov 2026, hi-fi review)}
+\begin{longtable}{@{}l R{5.2cm} R{8.6cm}@{}}
+\toprule
+\rowcolor{hdr}\# & Question & Decision \\
+\midrule
+\endhead
+37 & Spec codes in the UI? & No. Codes stay in design annotations only; the UI says what happens in plain Thai (FR-57). \\
+38 & UI language? & Thai only for now, ready for English: message catalogues and locale formatting; no switch shown until a second locale exists (FR-55, NFR-11). \\
+39 & Advice language? & Thai only for now; Thai text may contain English terms. Stored per locale in \texttt{advice\_item\_text} (FR-56, UC-15). \\
+40 & $\RIC$ / $\RIT$ editor? & Both tables on one page, $\RIC$ left and $\RIT$ right, no chart; one save, one audit entry per changed table (UC-17). \\
+41 & Heat-map colours? & One hue, light to dark by level, so H and VH stand out (FR-47). \\
+42 & Project type input? & Six chips, one choice; \thai{อื่นๆ} opens a required text field (\S\ref{sec:proj}). \\
+\bottomrule
+\end{longtable}
+
+\subsection*{Open issues}
+\begin{enumerate}[label=OI-\arabic*]
+\item \emph{Closed in v1.13} --- export file format (decision 35).
+\item HTML-to-PDF engine.
+\item Text of the terms of use.
+\item Duration of \emph{keep me logged in} (BR-23) and CSV encoding and column order of the research export.
+\end{enumerate}
+
+%------------------------------------------------------------
+\needspace{10\baselineskip}\section{Revision History}
+\noindent\begin{tabularx}{\linewidth}{@{}l l Y@{}}
+\toprule
+\rowcolor{hdr}Version & Date & Changes \\
+\midrule
+1.0 & 10 Nov 2026 & First version: actors, use cases, requirements. \\
+1.1 & 10 Nov 2026 & Versioning; soft delete with research retention; no personal names. \\
+1.2 & 13 Nov 2026 & Admin edits $\RIC$/$\RIT$ thresholds (UC-17). \\
+1.3 & 13 Nov 2026 & Full specification for every use case. \\
+1.4 & 14 Nov 2026 & Open issues resolved (\S\ref{sec:dec}): OTP and Google sign-up, project fields, blank versions, only latest version editable, threshold snapshot per version, account deletion, pseudonymised export via job queue, risk engine rules aligned with the engine reference; secondary actors added; xelatex for Thai. \\
+1.5 & 14 Nov 2026 & Forgot password by OTP to e-mail (UC-02, FR-05, BR-16). \\
+1.6 & 14 Nov 2026 & Link / unlink Google account (UC-04, FR-09, BR-17); rounding settings from environment variables only (BR-03, BR-04, NFR-07). \\
+1.7 & 14 Nov 2026 & OTP limits and Google auto-linking confirmed (BR-16). \\
+1.8 & 15 Nov 2026 & Submit step restored: results shown only after submission; a version can be submitted with at least one complete indicator (UC-07, BR-09). \\
+1.9 & 15 Nov 2026 & Risk strategy per H/VH indicator: REDUCE, TRANSFER, AVOID, ACCEPT (UC-10, BR-19). \\
+1.10 & 15 Nov 2026 & Audit log of admin actions; new UC-19 View audit log (BR-20). \\
+1.11 & 15 Nov 2026 & Admins have no access to users' projects and versions; only counts shown (UC-14, BR-21). \\
+1.12 & 16 Nov 2026 & Project nickname field, required, 3--4 characters (\S\ref{sec:proj}). \\
+1.13 & 23 Nov 2026 & Aligned with the UI wireframes and hi-fi design: dashboard (UC-20) and version comparison (UC-21) added; four result views; step bar and expected progress; disclaimer and PDF signature slots; terms of use at registration; password policy and \emph{keep me logged in} (BR-22, BR-23); forgot password on two screens; export as ZIP of CSV + JSON (closes OI-1); no quotas (BR-27); risk levels by code only; FR-42--FR-54, BR-24--BR-26. \\
+1.14 & 23 Nov 2026 & Hi-fi review: localisation readiness (FR-55, FR-56, NFR-11 rewritten); advice stored per locale, Thai only for now (UC-15); no spec codes in user-facing text (FR-57); $\RIC$/$\RIT$ edited side by side (UC-17); heat-map colouring (FR-47); \thai{อื่นๆ} text required for island and project type (\S\ref{sec:proj}); decisions 37--42. \\
+\bottomrule
+\end{tabularx}
+
+\end{document}
