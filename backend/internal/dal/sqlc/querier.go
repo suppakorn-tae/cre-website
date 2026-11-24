@@ -57,6 +57,7 @@ type Querier interface {
 	// Created only after the OTP was verified. Role and status take their
 	// defaults (user, active); the e-mail counts as verified.
 	CreateRegisteredAccount(ctx context.Context, arg CreateRegisteredAccountParams) (CreateRegisteredAccountRow, error)
+	DeleteAnswerY3(ctx context.Context, arg DeleteAnswerY3Params) error
 	// The live job for a submission; a failed job does not count, so the user
 	// may ask again.
 	FindReportJob(ctx context.Context, arg FindReportJobParams) (uuid.UUID, error)
@@ -65,6 +66,12 @@ type Querier interface {
 	// The record the session middleware checks on every request. Role, status
 	// and session version come from here, never from the token.
 	GetAccountSession(ctx context.Context, id uuid.UUID) (GetAccountSessionRow, error)
+	// Owner and editability live in the query: a version of another account, of a
+	// deleted project or of a deleted version looks absent (no row). A version is
+	// editable only while it is the highest version_no ever created for the
+	// project (deleted versions count, BR-11). The row lock keeps the version
+	// from being superseded while the answers are written.
+	GetAnswerVersionAccess(ctx context.Context, arg GetAnswerVersionAccessParams) (bool, error)
 	GetAuditEntry(ctx context.Context, id int64) (GetAuditEntryRow, error)
 	GetJob(ctx context.Context, id uuid.UUID) (Job, error)
 	// The owner check lives in the query: another account's job looks absent.
@@ -75,12 +82,15 @@ type Querier interface {
 	// Owner and deletion checks live in the query: a version of another
 	// account, or a deleted version or project, looks absent.
 	GetVersionForReport(ctx context.Context, arg GetVersionForReportParams) (GetVersionForReportRow, error)
+	InsertAnswerY3(ctx context.Context, arg InsertAnswerY3Params) error
 	// Append-only: the application role has INSERT and SELECT on audit_log only.
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
 	InsertReportJob(ctx context.Context, arg InsertReportJobParams) error
 	// The number counts deleted versions too, so it is never reused.
 	InsertVersion(ctx context.Context, arg InsertVersionParams) (uuid.UUID, error)
+	ListAnswerY3(ctx context.Context, versionID uuid.UUID) ([]AnswerY3, error)
+	ListAnswers(ctx context.Context, versionID uuid.UUID) ([]Answer, error)
 	// Newest first. Each filter is optional. The sort matches audit_log_time_ix,
 	// the admin and target filters match audit_log_admin_ix and
 	// audit_log_target_ix. The admin e-mail is '' (mapped to null by the service) once the account is
@@ -98,6 +108,7 @@ type Querier interface {
 	ListCatalogueIslands(ctx context.Context) ([]string, error)
 	ListCatalogueProjectTypes(ctx context.Context) ([]string, error)
 	ListCatalogueRiEOptions(ctx context.Context) ([]ListCatalogueRiEOptionsRow, error)
+	ListExistingIndicatorCodes(ctx context.Context, codes []string) ([]string, error)
 	ListUnfinishedJobs(ctx context.Context) ([]Job, error)
 	// Non-deleted versions of an owned project, newest first; version_id narrows
 	// it to one. editable is true only for the highest number ever created,
@@ -117,6 +128,8 @@ type Querier interface {
 	SnapshotImpactThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
 	SnapshotRLThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
 	SoftDeleteVersion(ctx context.Context, arg SoftDeleteVersionParams) (int64, error)
+	// Replaces the stored answer of one indicator; NULL columns are cleared.
+	UpsertAnswer(ctx context.Context, arg UpsertAnswerParams) error
 }
 
 var _ Querier = (*Queries)(nil)
