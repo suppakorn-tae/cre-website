@@ -44,6 +44,9 @@ services:
     restart: unless-stopped
     environment:
       <<: *app-env
+      APP_ENV: ${APP_ENV:-production}
+      SESSION_SECRET: ${SESSION_SECRET}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-${PUBLIC_BASE_URL}}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       SMTP_HOST: ${SMTP_HOST}
@@ -63,7 +66,10 @@ services:
       context: ../../backend
       target: worker
     restart: unless-stopped
-    environment: *app-env
+    environment:
+      <<: *app-env
+      WORKER_REPORTS_CONCURRENCY: ${WORKER_REPORTS_CONCURRENCY:-}
+      WORKER_EXPORTS_CONCURRENCY: ${WORKER_EXPORTS_CONCURRENCY:-}
     networks: [private-net]
     depends_on:
       migrate: { condition: service_completed_successfully }
