@@ -68,7 +68,7 @@ CsrfToken:
   properties:
     csrf_token:
       type: string
-      description: Send as `X-CSRF-Token` on every state-changing request.
+      description: Same value as the `cre_csrf` cookie. Send as `X-CSRF-Token` on every unsafe request; the server returns 403 when it does not match the cookie.
 RegisterStartRequest:
   type: object
   required: [email, password, password_confirmation, retention_accepted, terms_accepted]

@@ -1,0 +1,79 @@
+# Optional PostgreSQL backup (AD-26). Always layered on compose.yaml by
+# deploy/backup/deploy.sh:
+#   docker compose -f compose.yaml -f compose.backup.yaml ...
+# With BACKUP_ENABLED=false (default) the backup service is not started
+# and the db keeps archive_mode=off with the stock postgres image.
+# Do not set the variables below by hand; the wrapper derives them.
+
+services:
+  db:
+    # Wrapper sets DB_IMAGE=cre-pgbackrest:local when backup is on.
+    image: ${DB_IMAGE:-postgres:16-alpine}
+    # The pgbackrest image sets its own ENTRYPOINT for the backup
+    # service; db must keep the stock postgres one.
+    entrypoint: ["docker-entrypoint.sh"]
+    command:
+      - postgres
+      - -c
+      - archive_mode=${POSTGRES_ARCHIVE_MODE:-off}
+      - -c
+      - archive_command=pgbackrest --stanza=cre archive-push %p
+      - -c
+      - archive_timeout=60s
+      - -c
+      - wal_level=replica
+      - -c
+      - unix_socket_directories=/var/run/postgresql
+    volumes:
+      - pgsock:/var/run/postgresql
+      - pgbackrest-tls:/etc/pgbackrest/tls:ro
+      - ../backup/pgbackrest.db.conf:/etc/pgbackrest/pgbackrest.conf:ro
+
+  backup:
+    profiles: [backup]
+    build:
+      context: ../backup
+    image: cre-pgbackrest:local
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Bangkok
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      BACKUP_S3_ENDPOINT: ${BACKUP_S3_ENDPOINT}
+      BACKUP_S3_REGION: ${BACKUP_S3_REGION}
+      BACKUP_S3_BUCKET: ${BACKUP_S3_BUCKET}
+      BACKUP_S3_KEY: ${BACKUP_S3_KEY}
+      BACKUP_S3_SECRET: ${BACKUP_S3_SECRET}
+      BACKUP_S3_PATH_STYLE: ${BACKUP_S3_PATH_STYLE:-true}
+      BACKUP_S3_VERIFY_TLS: ${BACKUP_S3_VERIFY_TLS:-y}
+      BACKUP_LOCK_S3_BUCKET: ${BACKUP_LOCK_S3_BUCKET}
+      BACKUP_LOCK_S3_KEY: ${BACKUP_LOCK_S3_KEY:-}
+      BACKUP_LOCK_S3_SECRET: ${BACKUP_LOCK_S3_SECRET:-}
+      BACKUP_CIPHER_PASS: ${BACKUP_CIPHER_PASS}
+      # Source of the nightly reports/ mirror (read only use).
+      S3_ENDPOINT: ${S3_ENDPOINT}
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ACCESS_KEY: ${S3_ACCESS_KEY}
+      S3_SECRET_KEY: ${S3_SECRET_KEY}
+    volumes:
+      - pgdata:/var/lib/postgresql/data:ro
+      - pgsock:/var/run/postgresql
+      - pgbackrest-tls:/etc/pgbackrest/tls
+      - backup-state:/var/lib/backup
+      - backup-scratch:/scratch
+    healthcheck:
+      test: ["CMD", "/opt/backup/healthcheck.sh"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 120s
+    networks: [private-net, egress-net]
+    depends_on:
+      db: { condition: service_healthy }
+      rustfs: { condition: service_healthy }
+
+volumes:
+  pgsock:
+  pgbackrest-tls:
+  backup-state:
+  backup-scratch:

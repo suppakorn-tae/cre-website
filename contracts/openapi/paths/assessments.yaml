@@ -1,1 +1,136 @@
-{}
+# Answers and submit of one version. Only the latest version is editable
+# (BR-11); a write to an older version returns 409.
+/projects/{project_id}/versions/{version_id}/answers:
+  parameters: &version-params
+    - name: project_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+    - name: version_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+  get:
+    operationId: listAnswers
+    summary: Get all answers of a version.
+    responses:
+      '200':
+        description: Answers recorded so far.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/assessments.yaml#/AnswerList
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+  patch:
+    operationId: upsertAnswers
+    summary: Upsert one or many answers (partial allowed).
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/assessments.yaml#/AnswerBatchRequest
+    responses:
+      '200':
+        description: The saved answers of the request.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/assessments.yaml#/AnswerList
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+/projects/{project_id}/versions/{version_id}/answers/{indicator_code}:
+  parameters:
+    - name: project_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+    - name: version_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+    - name: indicator_code
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/assessments.yaml#/IndicatorCode
+  put:
+    operationId: putAnswer
+    summary: Upsert the answer of one indicator.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/assessments.yaml#/AnswerInput
+    responses:
+      '200':
+        description: The saved answer.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/assessments.yaml#/Answer
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+/projects/{project_id}/versions/{version_id}/submit:
+  parameters: *version-params
+  post:
+    operationId: submitVersion
+    summary: Submit (or resubmit) the version and score every complete indicator.
+    description: |
+      422 with code `no_complete_indicator` when no indicator is complete.
+      Previous results of the version are replaced.
+    responses:
+      '200':
+        description: Submitted; results summary.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/assessments.yaml#/SubmitResponse
+            examples:
+              mixed:
+                value:
+                  version_id: 0191a0de-0000-7000-8000-000000000001
+                  status: submitted
+                  submitted_at: '2026-11-24T10:00:00Z'
+                  summary:
+                    scored_count: 3
+                    level_counts: {VL: 0, L: 1, M: 0, H: 1, VH: 1}
+                    average_rm: 3.412
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed

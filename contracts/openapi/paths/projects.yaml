@@ -1,1 +1,110 @@
-{}
+/projects:
+  get:
+    operationId: listProjects
+    summary: List own projects
+    description: Own non-deleted projects, newest first, searchable by name, nickname or island.
+    parameters:
+      - name: q
+        in: query
+        description: Case-insensitive search over name, nickname and island (code or other text).
+        schema:
+          type: string
+          maxLength: 200
+      - $ref: ../schemas/common.yaml#/parameters/Page
+      - $ref: ../schemas/common.yaml#/parameters/PageSize
+    responses:
+      '200':
+        description: A page of projects.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/projects.yaml#/ProjectList
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+  post:
+    operationId: createProject
+    summary: Create a project
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/projects.yaml#/ProjectCreate
+    responses:
+      '201':
+        description: The created project.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/projects.yaml#/Project
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+/projects/{project_id}:
+  parameters:
+    - name: project_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+  get:
+    operationId: getProject
+    summary: Get a project
+    responses:
+      '200':
+        description: The project, with expected progress.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/projects.yaml#/Project
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+  patch:
+    operationId: updateProject
+    summary: Edit a project
+    description: Value and dates apply only to versions created afterwards.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/projects.yaml#/ProjectUpdate
+    responses:
+      '200':
+        description: The updated project.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/projects.yaml#/Project
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+  delete:
+    operationId: deleteProject
+    summary: Delete a project (soft)
+    description: Hides the project and all its versions and reports. There is no restore.
+    responses:
+      '204':
+        description: Deleted.
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound

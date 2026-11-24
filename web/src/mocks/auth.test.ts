@@ -1,7 +1,7 @@
 import { setupServer } from 'msw/node';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { authHandlers, mockAccount, mockOtp } from './auth';
+import { authHandlers, mockAccount, mockCsrfToken, mockOtp } from './auth';
 
 const server = setupServer(...authHandlers);
 
@@ -22,6 +22,18 @@ describe('auth mocks', () => {
     const body = await res.json();
     expect(body.user.organisation).toBe(mockAccount.organisation);
     expect(body.user.organisation).toMatch(/[฀-๿]/);
+  });
+
+  it('sets the cre_csrf cookie and returns the same token', async () => {
+    const res = await fetch(`${base}/auth/csrf`);
+    expect(res.status).toBe(200);
+    expect((await res.json()).csrf_token).toBe(mockCsrfToken);
+    const cookie = res.headers.get('set-cookie') ?? '';
+    expect(cookie).toContain(`cre_csrf=${mockCsrfToken}`);
+    expect(cookie).toContain('Path=/');
+    expect(cookie).toContain('Secure');
+    expect(cookie).toContain('SameSite=Lax');
+    expect(cookie).not.toMatch(/HttpOnly/i);
   });
 
   it('rejects a wrong OTP with a 422 field error', async () => {

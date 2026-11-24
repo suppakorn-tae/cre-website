@@ -6,6 +6,14 @@
 # SameSite=Lax, path=/). Log out clears it. Without `keep_logged_in` it is a
 # session cookie (SESSION_TTL); with it, it persists for REMEMBER_TTL.
 #
+# CSRF (double submit): `GET /auth/csrf` sets the cookie `cre_csrf` (not
+# httpOnly, so the web client can read it; Secure, SameSite=Lax, path=/).
+# The client echoes its value in the header `X-CSRF-Token` on every unsafe
+# request (POST, PUT, PATCH, DELETE), declared as the `csrfToken` security
+# scheme. The server answers 403 (`csrf_invalid`) when the header is missing
+# or does not match the cookie. Server-side calls from Next.js send no
+# Origin header and are accepted when the token matches.
+#
 # Error codes (ErrorBody.code and FieldError.code) used here:
 #   invalid_credentials, account_unavailable, email_taken, otp_invalid,
 #   otp_expired, otp_locked, otp_resend_cooldown, no_pending_signup,
@@ -19,13 +27,24 @@
     operationId: getCsrfToken
     summary: Get a CSRF token
     description: |
-      Returns the token to send as `X-CSRF-Token` on state-changing requests.
-      State-changing requests are also checked against the Origin header.
-      Call once at start-up and again after log in or log out.
+      Sets the cookie `cre_csrf` (not httpOnly, Secure, SameSite=Lax,
+      path=/) and returns the same token in the body. The client sends the
+      token in the header `X-CSRF-Token` on every unsafe request (POST, PUT,
+      PATCH, DELETE). The server returns 403 `csrf_invalid` when the header
+      does not match the cookie. Unsafe requests are also checked against
+      the Origin header; a missing Origin is accepted when the token is
+      valid. Call once at start-up and again after log in or log out.
     security: []
     responses:
       '200':
-        description: Token for the current session (or anonymous visitor).
+        description: Token for the current session (or anonymous visitor). Sets `cre_csrf`.
+        headers:
+          Set-Cookie:
+            description: >-
+              `cre_csrf=<token>; Path=/; Secure; SameSite=Lax`. Not httpOnly,
+              so the web client can read it and echo it in `X-CSRF-Token`.
+            schema:
+              type: string
         content:
           application/json:
             schema:
@@ -43,7 +62,8 @@
       `password_mismatch` (on `/password_confirmation`),
       `retention_not_accepted`, `terms_not_accepted`. A second start for the
       same e-mail inside the 60 s cool-down returns 429 `otp_resend_cooldown`.
-    security: []
+    security:
+      - csrfToken: []
     requestBody:
       required: true
       content:
@@ -64,6 +84,8 @@
           application/json:
             schema:
               $ref: ../schemas/auth.yaml#/OtpChallenge
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
       '409':
         description: The e-mail is already registered (UC-01 4a). Code `email_taken`.
         content:
@@ -91,7 +113,8 @@
       the session cookie. 422 codes on `/otp`: `otp_invalid`, `otp_expired`,
       `otp_locked`. 409 `email_taken` if the e-mail registered meanwhile.
       404 `no_pending_signup` if there is no pending sign-up for the e-mail.
-    security: []
+    security:
+      - csrfToken: []
     requestBody:
       required: true
       content:
@@ -112,6 +135,8 @@
           application/json:
             schema:
               $ref: ../schemas/auth.yaml#/AuthSession
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
       '404':
         $ref: ../schemas/common.yaml#/responses/NotFound
       '409':
@@ -128,7 +153,8 @@
       At most once per 60 s per e-mail; inside the cool-down the response is
       429 `otp_resend_cooldown` with `Retry-After`. The earlier code stops
       working. 404 `no_pending_signup` if the pending sign-up has expired.
-    security: []
+    security:
+      - csrfToken: []
     requestBody:
       required: true
       content:
@@ -144,6 +170,8 @@
           application/json:
             schema:
               $ref: ../schemas/auth.yaml#/OtpChallenge
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
       '404':
         $ref: ../schemas/common.yaml#/responses/NotFound
       '422':
@@ -167,7 +195,8 @@
       which), also for an account that only has Google. 403
       `account_unavailable` for a deactivated or deleted account. 429 after
       too many failed attempts per IP and per e-mail.
-    security: []
+    security:
+      - csrfToken: []
     requestBody:
       required: true
       content:
@@ -256,7 +285,8 @@
       account gets an e-mail telling it to continue with Google (UC-02 1h).
       Calling it again resends the OTP, at most once per 60 s (429
       `otp_resend_cooldown`).
-    security: []
+    security:
+      - csrfToken: []
     requestBody:
       required: true
       content:
@@ -272,6 +302,8 @@
           application/json:
             schema:
               $ref: ../schemas/auth.yaml#/OtpChallenge
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
       '422':
         $ref: ../schemas/common.yaml#/responses/ValidationFailed
       '429':
@@ -294,7 +326,8 @@
       `/otp`: `otp_invalid`, `otp_expired`, `otp_locked` (password
       unchanged, UC-02 1g); `/new_password`: `password_too_short`;
       `/new_password_confirmation`: `password_mismatch`.
-    security: []
+    security:
+      - csrfToken: []
     requestBody:
       required: true
       content:
@@ -309,6 +342,8 @@
     responses:
       '204':
         description: Password changed; all sessions ended.
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
       '422':
         $ref: ../schemas/common.yaml#/responses/ValidationFailed
       '429':
@@ -347,6 +382,8 @@
               authorization_url: https://accounts.google.com/o/oauth2/v2/auth?client_id=example&response_type=code&scope=openid%20email&state=4f1c9a&nonce=b27e5d&code_challenge=Zx81&code_challenge_method=S256
       '401':
         $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
       '409':
         $ref: ../schemas/common.yaml#/responses/Conflict
       '422':
@@ -423,7 +460,8 @@
       the pending cookie. 422 `retention_not_accepted` or
       `terms_not_accepted` when either is false (nothing is created, UC-01
       3a). 404 when there is no pending sign-up.
-    security: []
+    security:
+      - csrfToken: []
     requestBody:
       required: true
       content:
@@ -445,6 +483,8 @@
           application/json:
             schema:
               $ref: ../schemas/auth.yaml#/AuthSession
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
       '404':
         $ref: ../schemas/common.yaml#/responses/NotFound
       '409':

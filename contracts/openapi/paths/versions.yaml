@@ -1,0 +1,80 @@
+/projects/{project_id}/versions:
+  parameters:
+    - name: project_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+  get:
+    operationId: listVersions
+    summary: List the versions of a project
+    responses:
+      '200':
+        description: Non-deleted versions, newest first.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/projects.yaml#/VersionList
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+  post:
+    operationId: createVersion
+    summary: Start a new blank version
+    description: |
+      Takes no body. The next number is assigned, the project value, dates,
+      thresholds and rounding are copied into the version, and the previous
+      version becomes read-only.
+    responses:
+      '201':
+        description: The new, blank draft version.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/projects.yaml#/Version
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+/projects/{project_id}/versions/{version_id}:
+  parameters:
+    - name: project_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+    - name: version_id
+      in: path
+      required: true
+      schema:
+        $ref: ../schemas/common.yaml#/schemas/Uuid
+  get:
+    operationId: getVersion
+    summary: Get a version
+    responses:
+      '200':
+        description: The version; `editable` is true only for the latest one.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/projects.yaml#/Version
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+  delete:
+    operationId: deleteVersion
+    summary: Delete a version (soft)
+    description: Hides the version and its reports. There is no restore and its number is not reused.
+    responses:
+      '204':
+        description: Deleted.
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound

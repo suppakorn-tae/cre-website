@@ -25,6 +25,9 @@ export const mockAuthSession: AuthSession = {
   keep_logged_in: true,
 };
 
+/** CSRF token the mock sets as the `cre_csrf` cookie and returns in the body. */
+export const mockCsrfToken = '9f2c1d7a4be84c6f8a0e3b5d71c2a946';
+
 /** The OTP every mock accepts. */
 export const mockOtp = '482915';
 
@@ -46,7 +49,10 @@ function errorBody(code: string, message: string) {
 
 export const authHandlers: HttpHandler[] = [
   http.get('/auth/csrf', ({ response }) =>
-    response(200).json({ csrf_token: '9f2c1d7a4be84c6f8a0e3b5d71c2a946' }),
+    response(200).json(
+      { csrf_token: mockCsrfToken },
+      { headers: { 'Set-Cookie': `cre_csrf=${mockCsrfToken}; Path=/; Secure; SameSite=Lax` } },
+    ),
   ),
   http.post('/auth/register/start', async ({ request, response }) => {
     const body = await request.clone().json();

@@ -1,0 +1,126 @@
+# Reference data the web loads once: the indicator catalogue, islands and
+# project types. Text is already resolved to the served locale: `th` is
+# required and any other locale falls back to `th` per text (FR-56).
+Locale:
+  type: string
+  pattern: '^[a-z]{2}$'
+  description: Two-letter locale code, e.g. `th`.
+  examples: [th]
+CatalogueIndicator:
+  type: object
+  required: [code, name, unit, question_x, question_y1, question_y2, question_y3]
+  properties:
+    code:
+      type: string
+      description: Stable indicator code, e.g. `EC-MG-1`.
+      examples: [EC-MG-1]
+    name:
+      type: string
+    unit:
+      type: string
+      description: Unit of the likelihood input X, as text.
+    question_x:
+      type: [string, 'null']
+      description: Question for the likelihood input X (a number, 0 or more).
+    question_y1:
+      type: [string, 'null']
+      description: Question for the cost impact y1.
+    question_y2:
+      type: [string, 'null']
+      description: Question for the time impact y2.
+    question_y3:
+      type: [string, 'null']
+      description: Question for the environmental impact y3 (multi-select).
+CatalogueFactor:
+  type: object
+  required: [code, name, indicators]
+  properties:
+    code:
+      type: string
+      examples: [EC-MG]
+    name:
+      type: string
+    indicators:
+      type: array
+      description: Indicators of this factor, in display order.
+      items:
+        $ref: '#/CatalogueIndicator'
+CatalogueDimension:
+  type: object
+  required: [code, name, factors]
+  properties:
+    code:
+      type: string
+      examples: [EC]
+    name:
+      type: string
+    factors:
+      type: array
+      description: Factors of this dimension, in display order.
+      items:
+        $ref: '#/CatalogueFactor'
+RiEOption:
+  type: object
+  description: One option of the environmental impact question y3.
+  required: [code, label, is_exclusive]
+  properties:
+    code:
+      type: string
+      pattern: '^[A-I]$'
+    label:
+      type: string
+    is_exclusive:
+      type: boolean
+      description: When true the option cannot be combined with any other (A).
+Catalogue:
+  type: object
+  required: [locale, dimensions, ri_e_options]
+  properties:
+    locale:
+      $ref: '#/Locale'
+    dimensions:
+      type: array
+      description: Dimensions in display order, each with its factors and indicators.
+      items:
+        $ref: '#/CatalogueDimension'
+    ri_e_options:
+      type: array
+      description: Options A to I in order.
+      items:
+        $ref: '#/RiEOption'
+IslandOption:
+  type: object
+  description: Label comes from the web message catalogue, keyed by `code`.
+  required: [code]
+  properties:
+    code:
+      type: string
+      description: e.g. `koh_tao`; `other` asks the user to type a place.
+      examples: [koh_tao]
+IslandList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      description: In display order; `other` is last.
+      items:
+        $ref: '#/IslandOption'
+ProjectTypeOption:
+  type: object
+  description: Label comes from the web message catalogue, keyed by `code`.
+  required: [code]
+  properties:
+    code:
+      type: string
+      description: e.g. `building`; `other` asks the user to type a type.
+      examples: [building]
+ProjectTypeList:
+  type: object
+  required: [items]
+  properties:
+    items:
+      type: array
+      description: In display order; `other` is last.
+      items:
+        $ref: '#/ProjectTypeOption'
