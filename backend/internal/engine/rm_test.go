@@ -35,10 +35,15 @@ func TestClassifyRM_Boundaries(t *testing.T) {
 		rm   float64
 		want RiskLevel
 	}{
-		{1, LevelVL}, {1.499, LevelVL}, {1.5, LevelL},
-		{2.499, LevelL}, {2.5, LevelM},
-		{3.499, LevelM}, {3.5, LevelH},
-		{4.499, LevelH}, {4.5, LevelVH},
+		{1, LevelVL},
+		{1.499, LevelVL},
+		{1.5, LevelL},
+		{2.499, LevelL},
+		{2.5, LevelM},
+		{3.499, LevelM},
+		{3.5, LevelH},
+		{4.499, LevelH},
+		{4.5, LevelVH},
 		{5, LevelVH},
 	}
 	for _, tc := range tests {
