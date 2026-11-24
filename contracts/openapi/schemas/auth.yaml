@@ -1,0 +1,238 @@
+# Auth and account schemas (UC-01 to UC-04). Merged into components.schemas
+# by contracts/bundle.mjs. Error `code` values are listed in the operation
+# descriptions in paths/auth.yaml and paths/account.yaml.
+Email:
+  type: string
+  maxLength: 254
+  pattern: '^[^@\s]+@[^@\s]+$'
+  example: somchai.k@example.co.th
+Password:
+  type: string
+  minLength: 8
+  maxLength: 128
+  format: password
+  description: At least 8 characters (BR-22). The strength bar in the UI is guidance only.
+Organisation:
+  type: string
+  maxLength: 200
+  description: Optional organisation name. No personal names are collected (BR-15).
+  example: บริษัท สยามก่อสร้าง จำกัด
+OtpCode:
+  type: string
+  pattern: '^[0-9]{6}$'
+  description: 6-digit code sent by e-mail, valid 10 minutes, at most 5 wrong attempts (BR-16).
+  example: '482915'
+SignInMethods:
+  type: object
+  description: How the account can sign in. At least one is always true.
+  required: [password, google]
+  properties:
+    password:
+      type: boolean
+    google:
+      type: boolean
+Account:
+  type: object
+  required: [id, email, role, organisation, sign_in_methods, created_at]
+  properties:
+    id:
+      $ref: common.yaml#/schemas/Uuid
+    email:
+      $ref: '#/Email'
+    role:
+      $ref: common.yaml#/schemas/UserRole
+    organisation:
+      type: [string, 'null']
+      maxLength: 200
+    sign_in_methods:
+      $ref: '#/SignInMethods'
+    terms_accepted_at:
+      $ref: common.yaml#/schemas/Timestamp
+    created_at:
+      $ref: common.yaml#/schemas/Timestamp
+AuthSession:
+  type: object
+  description: The signed-in user. The session itself is the `cre_session` cookie.
+  required: [user, expires_at, keep_logged_in]
+  properties:
+    user:
+      $ref: '#/Account'
+    expires_at:
+      $ref: common.yaml#/schemas/Timestamp
+    keep_logged_in:
+      type: boolean
+      description: True when the cookie persists (REMEMBER_TTL) instead of ending with the browser.
+CsrfToken:
+  type: object
+  required: [csrf_token]
+  properties:
+    csrf_token:
+      type: string
+      description: Same value as the `cre_csrf` cookie. Send as `X-CSRF-Token` on every unsafe request; the server returns 403 when it does not match the cookie.
+RegisterStartRequest:
+  type: object
+  required: [email, password, password_confirmation, retention_accepted, terms_accepted]
+  properties:
+    email:
+      $ref: '#/Email'
+    password:
+      $ref: '#/Password'
+    password_confirmation:
+      $ref: '#/Password'
+    organisation:
+      $ref: '#/Organisation'
+    retention_accepted:
+      type: boolean
+      description: Research data-retention notice accepted (FR-51). Must be true.
+    terms_accepted:
+      type: boolean
+      description: Terms of use accepted (FR-51). Must be true.
+OtpChallenge:
+  type: object
+  description: An OTP was sent. Nothing is stored in Postgres until it is verified.
+  required: [expires_in_seconds, resend_available_in_seconds]
+  properties:
+    expires_in_seconds:
+      type: integer
+      example: 600
+    resend_available_in_seconds:
+      type: integer
+      example: 60
+EmailRequest:
+  type: object
+  required: [email]
+  properties:
+    email:
+      $ref: '#/Email'
+RegisterVerifyRequest:
+  type: object
+  required: [email, otp]
+  properties:
+    email:
+      $ref: '#/Email'
+    otp:
+      $ref: '#/OtpCode'
+LoginRequest:
+  type: object
+  required: [email, password]
+  properties:
+    email:
+      $ref: '#/Email'
+    password:
+      type: string
+      format: password
+      maxLength: 128
+    keep_logged_in:
+      type: boolean
+      default: false
+      description: Persist the cookie for REMEMBER_TTL (BR-23, FR-52).
+ResetPasswordRequest:
+  type: object
+  required: [email, otp, new_password, new_password_confirmation]
+  properties:
+    email:
+      $ref: '#/Email'
+    otp:
+      $ref: '#/OtpCode'
+    new_password:
+      $ref: '#/Password'
+    new_password_confirmation:
+      $ref: '#/Password'
+GoogleIntent:
+  type: string
+  description: |
+    Why the user goes to Google. `login` and `signup` need no session;
+    `link` and `reauth` need one (`reauth` confirms account deletion for
+    accounts without a password).
+  enum: [login, signup, link, reauth]
+GoogleStartRequest:
+  type: object
+  required: [intent]
+  properties:
+    intent:
+      $ref: '#/GoogleIntent'
+GoogleStartResponse:
+  type: object
+  required: [authorization_url]
+  properties:
+    authorization_url:
+      type: string
+      format: uri
+      description: Google authorization URL (code flow with PKCE); the browser navigates to it.
+GoogleCallbackResult:
+  type: string
+  description: |
+    Value of the `result` query parameter on the redirect the callback sends
+    back to the web app.
+    `logged_in`: signed in, go to the dashboard.
+    `needs_signup`: new Google user, show the notice and optional organisation, then call `completeGoogleSignup` (also for a `signup` intent).
+    `no_account`: login intent but no account for this identity, offer registration (UC-02 1b).
+    `linked`: Google id stored on the account.
+    `reauthenticated`: confirmed, account deletion may proceed.
+    `already_linked`: the Google account belongs to another account (UC-04 1e).
+    `account_unavailable`: the account is deactivated or deleted (UC-02 2c).
+    `cancelled`: the user cancelled at Google (UC-01 1d).
+    `failed`: state, nonce or ID token validation failed.
+  enum:
+    - logged_in
+    - needs_signup
+    - no_account
+    - linked
+    - reauthenticated
+    - already_linked
+    - account_unavailable
+    - cancelled
+    - failed
+GooglePending:
+  type: object
+  description: A verified Google identity waiting for the retention notice to be accepted.
+  required: [email, expires_in_seconds]
+  properties:
+    email:
+      $ref: '#/Email'
+    expires_in_seconds:
+      type: integer
+      example: 540
+GoogleCompleteRequest:
+  type: object
+  required: [retention_accepted, terms_accepted]
+  properties:
+    organisation:
+      $ref: '#/Organisation'
+    retention_accepted:
+      type: boolean
+      description: Must be true.
+    terms_accepted:
+      type: boolean
+      description: Must be true.
+UpdateAccountRequest:
+  type: object
+  required: [organisation]
+  properties:
+    organisation:
+      type: [string, 'null']
+      maxLength: 200
+      description: Null or empty clears the organisation.
+ChangePasswordRequest:
+  type: object
+  required: [current_password, new_password, new_password_confirmation]
+  properties:
+    current_password:
+      type: string
+      format: password
+      maxLength: 128
+    new_password:
+      $ref: '#/Password'
+    new_password_confirmation:
+      $ref: '#/Password'
+DeleteAccountRequest:
+  type: object
+  description: |
+    Re-authentication (UC-04 1a). Accounts with a password send
+    `current_password`; accounts without one first complete a Google
+    `reauth` and send an empty body.
+  properties:
+    current_password:
+      type: string
+      format: password
+      maxLength: 128

@@ -1,0 +1,143 @@
+# Manage own account (UC-04). Every operation needs a session. An account
+# endpoint never returns another user's data. Error codes used here:
+# current_password_incorrect, password_too_short, password_mismatch,
+# no_password, password_required, google_not_linked, reauth_required.
+/account:
+  get:
+    operationId: getAccount
+    summary: Get own account (UC-04 1)
+    description: E-mail, sign-in methods (password, Google) and organisation.
+    responses:
+      '200':
+        description: The account.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/auth.yaml#/Account
+            example:
+              id: 0193a5c2-7b1e-7c3a-9d4f-2a6b8e1f5c70
+              email: somchai.k@example.co.th
+              role: user
+              organisation: บริษัท สยามก่อสร้าง จำกัด
+              sign_in_methods:
+                password: true
+                google: true
+              terms_accepted_at: '2026-11-20T03:14:07Z'
+              created_at: '2026-11-20T03:14:07Z'
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+  patch:
+    operationId: updateAccount
+    summary: Update the organisation (UC-04 2)
+    description: The organisation may be left blank (null or empty string clears it).
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/auth.yaml#/UpdateAccountRequest
+          example:
+            organisation: กรมทางหลวงชนบท
+    responses:
+      '200':
+        description: The updated account.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/auth.yaml#/Account
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+  delete:
+    operationId: deleteAccount
+    summary: Delete own account, anonymised (UC-04 1a, 1b)
+    description: |
+      Removes the e-mail, password hash and Google id, marks the account
+      deleted, raises the session version (every session ends) and clears the
+      cookie. Projects and versions stay (BR-13). Re-authentication: with a
+      password the body carries `current_password` (422
+      `current_password_incorrect` when wrong); without one, a Google
+      `reauth` (intent in `startGoogleAuth`) must have completed within the
+      last 5 minutes, otherwise 403 `reauth_required`.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/auth.yaml#/DeleteAccountRequest
+          example:
+            current_password: รหัสผ่านทดสอบ-2569
+    responses:
+      '204':
+        description: Account anonymised and closed. Clears `cre_session`.
+        headers:
+          Set-Cookie:
+            schema:
+              type: string
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+      '429':
+        $ref: ../schemas/common.yaml#/responses/TooManyRequests
+/account/password:
+  put:
+    operationId: changePassword
+    summary: Change password (UC-04 3, 4)
+    description: |
+      For accounts that have a password. 422 codes:
+      `/current_password`: `current_password_incorrect` (UC-04 4a);
+      `/new_password`: `password_too_short` (4b);
+      `/new_password_confirmation`: `password_mismatch`. An account without a
+      password gets 409 `no_password`.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/auth.yaml#/ChangePasswordRequest
+          example:
+            current_password: รหัสผ่านทดสอบ-2569
+            new_password: รหัสผ่านใหม่-2569
+            new_password_confirmation: รหัสผ่านใหม่-2569
+    responses:
+      '204':
+        description: Password changed.
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+      '429':
+        $ref: ../schemas/common.yaml#/responses/TooManyRequests
+/account/google:
+  delete:
+    operationId: unlinkGoogle
+    summary: Unlink the Google account (UC-04 1d)
+    description: |
+      Removes the Google id. Linking is done with `startGoogleAuth`
+      (intent `link`) and the callback result `linked` or `already_linked`.
+      409 `password_required` when the account has no password, because one
+      sign-in method must remain (UC-04 1f). 409 `google_not_linked` when no
+      Google account is linked.
+    responses:
+      '200':
+        description: The updated account.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/auth.yaml#/Account
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
