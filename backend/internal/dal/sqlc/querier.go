@@ -54,6 +54,9 @@ type Querier interface {
 	// Ends every session of the account (password reset, deactivate, delete).
 	BumpSessionVersion(ctx context.Context, id uuid.UUID) (int32, error)
 	CountAuditLog(ctx context.Context, arg CountAuditLogParams) (int64, error)
+	// Every query takes the owner id and hides soft-deleted rows. A project of
+	// another user and a deleted project look the same: no row.
+	CreateProject(ctx context.Context, arg CreateProjectParams) (uuid.UUID, error)
 	// Created only after the OTP was verified. Role and status take their
 	// defaults (user, active); the e-mail counts as verified.
 	CreateRegisteredAccount(ctx context.Context, arg CreateRegisteredAccountParams) (CreateRegisteredAccountRow, error)
@@ -72,6 +75,7 @@ type Querier interface {
 	GetJob(ctx context.Context, id uuid.UUID) (Job, error)
 	// The owner check lives in the query: another account's job looks absent.
 	GetJobForRequester(ctx context.Context, arg GetJobForRequesterParams) (Job, error)
+	GetProject(ctx context.Context, arg GetProjectParams) (GetProjectRow, error)
 	// Owner check in SQL (admins get no access); absent when the version or its
 	// project is deleted.
 	GetReportForDownload(ctx context.Context, arg GetReportForDownloadParams) (GetReportForDownloadRow, error)
@@ -101,6 +105,9 @@ type Querier interface {
 	ListCatalogueIslands(ctx context.Context) ([]string, error)
 	ListCatalogueProjectTypes(ctx context.Context) ([]string, error)
 	ListCatalogueRiEOptions(ctx context.Context) ([]ListCatalogueRiEOptionsRow, error)
+	// @q is a LIKE pattern already escaped by the caller, or empty for all.
+	// latest_version_no is 0 when the project has no live version.
+	ListProjects(ctx context.Context, arg ListProjectsParams) ([]ListProjectsRow, error)
 	ListUnfinishedJobs(ctx context.Context) ([]Job, error)
 	// Non-deleted versions of an owned project, newest first; version_id narrows
 	// it to one. editable is true only for the highest number ever created,
@@ -121,7 +128,11 @@ type Querier interface {
 	SetAccountPasswordHash(ctx context.Context, arg SetAccountPasswordHashParams) (int64, error)
 	SnapshotImpactThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
 	SnapshotRLThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
+	// One statement, so the project and its versions are hidden together.
+	// No row means not found (missing, not owned or already deleted).
+	SoftDeleteProject(ctx context.Context, arg SoftDeleteProjectParams) (uuid.UUID, error)
 	SoftDeleteVersion(ctx context.Context, arg SoftDeleteVersionParams) (int64, error)
+	UpdateProject(ctx context.Context, arg UpdateProjectParams) (int64, error)
 }
 
 var _ Querier = (*Queries)(nil)
