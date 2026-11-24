@@ -85,7 +85,8 @@ func pdfText(t *testing.T, data []byte) (string, int) {
 }
 
 // norm drops white space and Thai combining marks. pdfium repeats stacked
-// Thai clusters when it extracts text, so both sides are compared without them.
+// Thai clusters when it extracts text, so both sides are compared without
+// them and with the tolerant match below.
 func norm(s string) string {
 	var b strings.Builder
 	for _, r := range s {
@@ -97,6 +98,43 @@ func norm(s string) string {
 		}
 	}
 	return b.String()
+}
+
+// maxGap is how many extra characters pdfium may insert between two
+// characters of the expected text (repeated clusters, line breaks).
+const maxGap = 8
+
+// contains reports whether want appears in got as a subsequence whose
+// consecutive characters are at most maxGap apart.
+func contains(got, want string) bool {
+	g, w := []rune(got), []rune(want)
+	if len(w) == 0 {
+		return true
+	}
+	for start := range g {
+		if g[start] != w[0] {
+			continue
+		}
+		pos, ok := start, true
+		for _, c := range w[1:] {
+			next := -1
+			for k := pos + 1; k < len(g) && k <= pos+maxGap+1; k++ {
+				if g[k] == c {
+					next = k
+					break
+				}
+			}
+			if next < 0 {
+				ok = false
+				break
+			}
+			pos = next
+		}
+		if ok {
+			return true
+		}
+	}
+	return false
 }
 
 // TestGoldenReport builds a report from stored rows in Postgres, renders it
@@ -206,7 +244,7 @@ func TestGoldenReport(t *testing.T) {
 		t.Fatalf("fixture has too little advice: %d expectations", len(want))
 	}
 	for _, w := range want {
-		if !strings.Contains(got, norm(w)) {
+		if !contains(got, norm(w)) {
 			t.Errorf("pdf text lacks %q", w)
 		}
 	}
@@ -252,5 +290,15 @@ func TestSixtyPageReportWithinTimeout(t *testing.T) {
 	_, pages := pdfText(t, up.objects["reports/"+j.ID.String()+".pdf"])
 	if pages < 60 {
 		t.Errorf("pages = %d, want at least 60", pages)
+	}
+}
+
+func TestContainsToleratesRepeatedClusters(t *testing.T) {
+	got := norm("ผลลัพธ์เป็นข้อข้ มูลมู เบื้อบื้งต้นสำ หรับรั ใช้ปช้ ระกอบการพิจารณาเท่านั้น ผู้ประเมิน")
+	if !contains(got, norm("ผลลัพธ์เป็นข้อมูลเบื้องต้นสำหรับใช้ประกอบการพิจารณาเท่านั้น")) {
+		t.Error("repeated clusters are not tolerated")
+	}
+	if contains(got, norm("ผู้อนุมัติ")) {
+		t.Error("absent text is found")
 	}
 }
