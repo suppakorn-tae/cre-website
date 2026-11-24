@@ -15,6 +15,23 @@ type Querier interface {
 	// Sign-up start and verify: is the e-mail taken? Deleted accounts have no
 	// e-mail, so they never match.
 	AccountEmailExists(ctx context.Context, email pgtype.Text) (bool, error)
+	// Anonymising delete (UC-04 1b, BR-13): e-mail, password hash and Google id
+	// removed, status deleted. Pseudonym, organisation and projects stay.
+	// IO-39 (user self-delete) should reuse this query.
+	AdminAnonymiseAccount(ctx context.Context, id uuid.UUID) error
+	AdminCountUsers(ctx context.Context, arg AdminCountUsersParams) (int32, error)
+	AdminGetUser(ctx context.Context, id uuid.UUID) (AdminGetUserRow, error)
+	// Users with project and version counts only (BR-21): never any project or
+	// version content. Soft-deleted projects and versions are not counted.
+	AdminListUsers(ctx context.Context, arg AdminListUsersParams) ([]AdminListUsersRow, error)
+	// Locks the target row for the rest of the transaction.
+	AdminLockAccount(ctx context.Context, id uuid.UUID) (AdminLockAccountRow, error)
+	// Locks every active admin row so two concurrent demotions cannot both pass
+	// the last-admin check.
+	AdminLockActiveAdmins(ctx context.Context) ([]uuid.UUID, error)
+	AdminSetRole(ctx context.Context, arg AdminSetRoleParams) error
+	// Deactivate or reactivate. Deleted accounts are never touched here.
+	AdminSetStatus(ctx context.Context, arg AdminSetStatusParams) error
 	// Ends every session of the account (password reset, deactivate, delete).
 	BumpSessionVersion(ctx context.Context, id uuid.UUID) (int32, error)
 	// Created only after the OTP was verified. Role and status take their
