@@ -17,6 +17,7 @@ down:
 gen:
 	node contracts/bundle.mjs
 	cd backend && go tool oapi-codegen -config ../contracts/codegen/oapi-codegen.yaml ../contracts/openapi/dist/openapi.yaml
+	cd backend && go tool sqlc generate
 	pnpm --dir web exec openapi-typescript ../contracts/openapi/dist/openapi.yaml -o src/lib/api/generated/schema.d.ts
 	pnpm --dir web run msw:init
 
