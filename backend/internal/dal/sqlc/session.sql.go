@@ -7,8 +7,10 @@ package sqlc
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const bumpSessionVersion = `-- name: BumpSessionVersion :one
@@ -24,6 +26,41 @@ func (q *Queries) BumpSessionVersion(ctx context.Context, id uuid.UUID) (int32, 
 	var session_version int32
 	err := row.Scan(&session_version)
 	return session_version, err
+}
+
+const getAccountProfile = `-- name: GetAccountProfile :one
+SELECT id, email, organisation, role, (password_hash IS NOT NULL)::boolean AS has_password,
+       (google_sub IS NOT NULL)::boolean AS has_google, terms_accepted_at, created_at
+FROM account
+WHERE id = $1
+`
+
+type GetAccountProfileRow struct {
+	ID              uuid.UUID
+	Email           pgtype.Text
+	Organisation    pgtype.Text
+	Role            UserRole
+	HasPassword     bool
+	HasGoogle       bool
+	TermsAcceptedAt time.Time
+	CreatedAt       time.Time
+}
+
+// What GET /auth/me returns about the signed-in account.
+func (q *Queries) GetAccountProfile(ctx context.Context, id uuid.UUID) (GetAccountProfileRow, error) {
+	row := q.db.QueryRow(ctx, getAccountProfile, id)
+	var i GetAccountProfileRow
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.Organisation,
+		&i.Role,
+		&i.HasPassword,
+		&i.HasGoogle,
+		&i.TermsAcceptedAt,
+		&i.CreatedAt,
+	)
+	return i, err
 }
 
 const getAccountSession = `-- name: GetAccountSession :one

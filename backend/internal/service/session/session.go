@@ -16,6 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -51,12 +52,26 @@ type Record struct {
 	Version int    `json:"version"`
 }
 
+// Profile is the account data GET /auth/me returns.
+type Profile struct {
+	ID              string
+	Email           string
+	Organisation    *string
+	Role            string
+	HasPassword     bool
+	HasGoogle       bool
+	TermsAcceptedAt time.Time
+	CreatedAt       time.Time
+}
+
 // Store reads and bumps the account record in Postgres.
 type Store interface {
 	// GetRecord returns ErrNoAccount when the id is unknown.
 	GetRecord(ctx context.Context, accountID string) (Record, error)
 	// BumpVersion adds one to the session version and returns the new value.
 	BumpVersion(ctx context.Context, accountID string) (int, error)
+	// GetProfile returns ErrNoAccount when the id is unknown.
+	GetProfile(ctx context.Context, accountID string) (Profile, error)
 }
 
 // Config sets lifetimes and cookie flags.
@@ -72,6 +87,10 @@ type Config struct {
 type Principal struct {
 	AccountID string
 	Role      string
+	// Expires is when the token ends; Remember is true for a REMEMBER_TTL
+	// token.
+	Expires  time.Time
+	Remember bool
 }
 
 // Service checks and manages sessions.
@@ -103,6 +122,7 @@ type claims struct {
 	Sub string `json:"sub"`
 	Ver int    `json:"ver"`
 	Exp int64  `json:"exp"`
+	Rem bool   `json:"rem,omitempty"`
 }
 
 var header = base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256","typ":"JWT"}`))
@@ -121,7 +141,7 @@ func (s *Service) Issue(accountID string, version int, remember bool) (string, t
 		ttl = s.cfg.RememberTTL
 	}
 	exp := s.now().Add(ttl).Truncate(time.Second)
-	b, _ := json.Marshal(claims{Sub: accountID, Ver: version, Exp: exp.Unix()})
+	b, _ := json.Marshal(claims{Sub: accountID, Ver: version, Exp: exp.Unix(), Rem: remember})
 	p := base64.RawURLEncoding.EncodeToString(b)
 	return header + "." + p + "." + s.sign(p), exp
 }
@@ -147,19 +167,66 @@ func (s *Service) parse(token string) (claims, error) {
 
 func cacheKey(id string) string { return "session:acct:" + id }
 
-// record loads the account record, from the cache when it is there.
+// floorKey holds the lowest session version that may still be served from
+// the cache, set by BumpVersion.
+func floorKey(id string) string { return "session:floor:" + id }
+
+// floor returns the version floor for the account, 0 when none is set. A
+// cache failure other than a miss returns an error so the caller reads
+// Postgres.
+func (s *Service) floor(ctx context.Context, id string) (int, error) {
+	b, err := s.cache.Get(ctx, floorKey(id))
+	if errors.Is(err, valkey.ErrNotFound) {
+		return 0, nil
+	}
+	if err != nil {
+		return 0, err
+	}
+	return strconv.Atoi(string(b))
+}
+
+// cacheEntry is what goes into the cache: the record plus the time its
+// database read started.
+type cacheEntry struct {
+	Record
+	ReadAt int64 `json:"readAt"` // unix seconds; 0 means unknown
+}
+
+// record loads the account record, from the cache when it is there and not
+// older than the version floor.
+//
+// Two gates keep a bump from being undone by a racing database read. A
+// reader that loaded the row just before a bump may hand the old record over
+// after BumpVersion dropped the cache entry:
+//
+//   - Reads and writes pass the version floor, so an entry below the floor
+//     is neither served nor stored.
+//   - A read that started more than a CacheTTL ago may finish after the
+//     floor itself has expired. Its record can predate the bump, so it is
+//     not stored; caching only records whose read started within the last
+//     CacheTTL keeps the lifetime of every entry inside the reach of the
+//     floors that protect it.
 func (s *Service) record(ctx context.Context, id string) (Record, error) {
 	if b, err := s.cache.Get(ctx, cacheKey(id)); err == nil {
-		var r Record
-		if json.Unmarshal(b, &r) == nil {
-			return r, nil
+		var e cacheEntry
+		if json.Unmarshal(b, &e) == nil {
+			if f, ferr := s.floor(ctx, id); ferr == nil && e.Version >= f {
+				return e.Record, nil
+			}
 		}
 	}
+	readAt := s.now()
 	r, err := s.store.GetRecord(ctx, id)
 	if err != nil {
 		return Record{}, err
 	}
-	if b, err := json.Marshal(r); err == nil {
+	if f, ferr := s.floor(ctx, id); ferr != nil || r.Version < f {
+		return r, nil // too old to store, fresh enough to serve this time
+	}
+	if s.now().Sub(readAt) > s.cfg.CacheTTL {
+		return r, nil // stalled read: may predate a bump whose floor expired
+	}
+	if b, err := json.Marshal(cacheEntry{Record: r, ReadAt: readAt.Unix()}); err == nil {
 		// A cache failure only costs a database read next time.
 		_ = s.cache.Set(ctx, cacheKey(id), b, s.cfg.CacheTTL)
 	}
@@ -183,7 +250,10 @@ func (s *Service) Authenticate(ctx context.Context, token string) (Principal, er
 	if r.Status != StatusActive || r.Version != c.Ver {
 		return Principal{}, ErrRevoked
 	}
-	return Principal{AccountID: c.Sub, Role: r.Role}, nil
+	return Principal{
+		AccountID: c.Sub, Role: r.Role,
+		Expires: time.Unix(c.Exp, 0), Remember: c.Rem,
+	}, nil
 }
 
 // BumpVersion ends every session of the account: old tokens get 401 at once
@@ -193,10 +263,22 @@ func (s *Service) BumpVersion(ctx context.Context, accountID string) (int, error
 	if err != nil {
 		return 0, err
 	}
+	// Set the floor before the delete: a cache write that races with this
+	// bump may land after the delete, but it then holds a version below the
+	// floor and record() ignores it. The floor lives longer than any cache
+	// entry written before this point.
+	if err := s.cache.Set(ctx, floorKey(accountID), []byte(strconv.Itoa(v)), 2*s.cfg.CacheTTL); err != nil {
+		return v, fmt.Errorf("session: set version floor: %w", err)
+	}
 	if err := s.cache.Del(ctx, cacheKey(accountID)); err != nil {
 		return v, fmt.Errorf("session: drop cache: %w", err)
 	}
 	return v, nil
+}
+
+// Profile returns the account data for GET /auth/me.
+func (s *Service) Profile(ctx context.Context, accountID string) (Profile, error) {
+	return s.store.GetProfile(ctx, accountID)
 }
 
 // Forget drops the cached record, for status or role changes.

@@ -96,6 +96,11 @@ func TestPGStoreWithValkey(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	pr, err := svc.Profile(ctx, id)
+	if err != nil || pr.ID != id || pr.Email != "a@example.com" || !pr.HasPassword || pr.HasGoogle || pr.Organisation != nil {
+		t.Fatalf("profile: %+v %v", pr, err)
+	}
+
 	tok, _ := svc.Issue(id, 1, false)
 	p, err := svc.Authenticate(ctx, tok)
 	if err != nil || p.Role != session.RoleUser {

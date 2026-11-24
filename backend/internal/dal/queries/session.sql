@@ -11,3 +11,10 @@ UPDATE account
 SET session_version = session_version + 1, updated_at = now()
 WHERE id = $1
 RETURNING session_version;
+
+-- name: GetAccountProfile :one
+-- What GET /auth/me returns about the signed-in account.
+SELECT id, email, organisation, role, (password_hash IS NOT NULL)::boolean AS has_password,
+       (google_sub IS NOT NULL)::boolean AS has_google, terms_accepted_at, created_at
+FROM account
+WHERE id = $1;

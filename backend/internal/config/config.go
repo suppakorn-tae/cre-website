@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"net/netip"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -28,7 +30,25 @@ type API struct {
 	// TrustedProxies are the networks (Caddy) whose forwarding headers are
 	// believed. Empty by default: the TCP peer is the client. Deploy sets it.
 	TrustedProxies []netip.Prefix
+
+	// Env is APP_ENV: "production" (default) or "development".
+	Env string
+	// SessionSecret signs session tokens (SESSION_SECRET, at least 32
+	// bytes). Required in production; development without it gets a random
+	// per-process secret from the caller.
+	SessionSecret string
+	SessionTTL    time.Duration
+	RememberTTL   time.Duration
+	// AllowedOrigins are the full origins (scheme and host) accepted by the
+	// CSRF Origin check besides the request host. Defaults to PUBLIC_BASE_URL.
+	AllowedOrigins []string
 }
+
+// MinSessionSecret is the shortest accepted SESSION_SECRET in bytes.
+const MinSessionSecret = 32
+
+// Insecure reports local http development: cookies drop the Secure flag.
+func (c API) Insecure() bool { return c.Env != "production" }
 
 // Worker is the worker process configuration.
 type Worker struct {
@@ -45,7 +65,20 @@ func LoadAPI(get Getenv) (API, error) {
 		HTTPAddr:       r.str("HTTP_ADDR", ":4000"),
 		RequestTimeout: r.duration("REQUEST_TIMEOUT", 30*time.Second),
 		TrustedProxies: r.prefixes("TRUSTED_PROXIES", ""),
+		Env:            strings.ToLower(r.str("APP_ENV", "production")),
 	}
+	switch c.Env {
+	case "production", "development":
+	default:
+		r.errs = append(r.errs, fmt.Errorf("APP_ENV: %q is not production or development", c.Env))
+	}
+	c.SessionSecret = r.str("SESSION_SECRET", "")
+	if (c.Env == "production" || c.SessionSecret != "") && len(c.SessionSecret) < MinSessionSecret {
+		r.errs = append(r.errs, fmt.Errorf("SESSION_SECRET must be set to at least %d bytes in production", MinSessionSecret))
+	}
+	c.SessionTTL = r.duration("SESSION_TTL", 12*time.Hour)
+	c.RememberTTL = r.duration("REMEMBER_TTL", 30*24*time.Hour)
+	c.AllowedOrigins = r.origins("ALLOWED_ORIGINS", r.str("PUBLIC_BASE_URL", ""))
 	return c, r.err()
 }
 
@@ -101,7 +134,7 @@ func (r *reader) duration(key string, def time.Duration) time.Duration {
 	if !ok || v == "" {
 		return def
 	}
-	d, err := time.ParseDuration(v)
+	d, err := parseDuration(v)
 	if err != nil || d <= 0 {
 		r.errs = append(r.errs, fmt.Errorf("%s: %q is not a positive duration", key, v))
 		return def
@@ -122,6 +155,38 @@ func (r *reader) prefixes(key, def string) []netip.Prefix {
 			continue
 		}
 		out = append(out, p)
+	}
+	return out
+}
+
+// parseDuration is time.ParseDuration plus a whole-day suffix ("30d"), the
+// form used by REMEMBER_TTL.
+func parseDuration(v string) (time.Duration, error) {
+	if n, ok := strings.CutSuffix(v, "d"); ok {
+		days, err := strconv.Atoi(n)
+		if err != nil {
+			return 0, err
+		}
+		return time.Duration(days) * 24 * time.Hour, nil
+	}
+	return time.ParseDuration(v)
+}
+
+// origins reads a comma-separated list of full origins and drops any
+// trailing slash. An unset variable falls back to def.
+func (r *reader) origins(key, def string) []string {
+	var out []string
+	for _, s := range strings.Split(r.str(key, def), ",") {
+		s = strings.TrimRight(strings.TrimSpace(s), "/")
+		if s == "" {
+			continue
+		}
+		u, err := url.Parse(s)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" || u.Path != "" {
+			r.errs = append(r.errs, fmt.Errorf("%s: %q is not an origin such as https://example.com", key, s))
+			continue
+		}
+		out = append(out, s)
 	}
 	return out
 }

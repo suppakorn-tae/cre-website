@@ -30,6 +30,13 @@ func (f *fakeStore) GetRecord(_ context.Context, id string) (Record, error) {
 	return r, nil
 }
 
+func (f *fakeStore) GetProfile(_ context.Context, id string) (Profile, error) {
+	if _, ok := f.recs[id]; !ok {
+		return Profile{}, ErrNoAccount
+	}
+	return Profile{ID: id}, nil
+}
+
 func (f *fakeStore) BumpVersion(_ context.Context, id string) (int, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -43,14 +50,22 @@ func (f *fakeStore) BumpVersion(_ context.Context, id string) (int, error) {
 }
 
 type fakeCache struct {
-	mu sync.Mutex
-	m  map[string][]byte
+	mu  sync.Mutex
+	m   map[string][]byte
+	now func() time.Time // optional clock; nil means entries never expire
+	ttl map[string]time.Time
 }
 
-func (c *fakeCache) Set(_ context.Context, k string, v []byte, _ time.Duration) error {
+func (c *fakeCache) Set(_ context.Context, k string, v []byte, d time.Duration) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.m[k] = v
+	if c.now != nil {
+		if c.ttl == nil {
+			c.ttl = map[string]time.Time{}
+		}
+		c.ttl[k] = c.now().Add(d)
+	}
 	return nil
 }
 
@@ -61,6 +76,13 @@ func (c *fakeCache) Get(_ context.Context, k string) ([]byte, error) {
 	if !ok {
 		return nil, valkey.ErrNotFound
 	}
+	if c.now != nil {
+		if e, exp := c.ttl[k]; exp && !c.now().Before(e) {
+			delete(c.m, k)
+			delete(c.ttl, k)
+			return nil, valkey.ErrNotFound
+		}
+	}
 	return v, nil
 }
 
@@ -69,6 +91,7 @@ func (c *fakeCache) Del(_ context.Context, ks ...string) error {
 	defer c.mu.Unlock()
 	for _, k := range ks {
 		delete(c.m, k)
+		delete(c.ttl, k)
 	}
 	return nil
 }
@@ -220,5 +243,114 @@ func TestCookies(t *testing.T) {
 	svc.ClearCookie(w)
 	if c := w.Result().Cookies()[0]; c.MaxAge >= 0 || c.Value != "" {
 		t.Fatalf("clear: %+v", c)
+	}
+}
+
+// racingStore returns the old record and runs onRead (a concurrent bump)
+// before handing it over, like a reader that loaded the row just before the
+// bump committed.
+type racingStore struct {
+	*fakeStore
+	onRead func()
+}
+
+func (r *racingStore) GetRecord(ctx context.Context, id string) (Record, error) {
+	rec, err := r.fakeStore.GetRecord(ctx, id)
+	if r.onRead != nil {
+		f := r.onRead
+		r.onRead = nil
+		f()
+	}
+	return rec, err
+}
+
+func TestBumpRacingCacheWriteDoesNotKeepOldRecord(t *testing.T) {
+	ctx := context.Background()
+	fs := &fakeStore{recs: map[string]Record{"a1": {Role: RoleUser, Status: StatusActive, Version: 1}}}
+	rs := &racingStore{fakeStore: fs}
+	svc, err := New(Config{Secret: []byte(strings.Repeat("k", 32))}, rs, &fakeCache{m: map[string][]byte{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	old, _ := svc.Issue("a1", 1, false)
+	rs.onRead = func() {
+		if _, err := svc.BumpVersion(ctx, "a1"); err != nil {
+			t.Error(err)
+		}
+	}
+	// This request read version 1, then the bump ran, then the stale record
+	// was written to the cache.
+	_, _ = svc.Authenticate(ctx, old)
+	// The next request must not be served from that stale cache entry.
+	if _, err := svc.Authenticate(ctx, old); !errors.Is(err, ErrRevoked) {
+		t.Fatalf("old cookie after racing bump: %v", err)
+	}
+	fresh, _ := svc.Issue("a1", 2, false)
+	if _, err := svc.Authenticate(ctx, fresh); err != nil {
+		t.Fatalf("new cookie: %v", err)
+	}
+}
+
+func TestPrincipalCarriesExpiryAndRemember(t *testing.T) {
+	svc, _ := setup(t)
+	base := time.Date(2026, 11, 24, 12, 0, 0, 0, time.UTC)
+	svc.now = func() time.Time { return base }
+	for _, remember := range []bool{false, true} {
+		tok, exp := svc.Issue("a1", 1, remember)
+		p, err := svc.Authenticate(context.Background(), tok)
+		if err != nil || !p.Expires.Equal(exp) || p.Remember != remember {
+			t.Fatalf("remember=%v: %+v %v", remember, p, err)
+		}
+	}
+}
+
+// stalledStore hands out the record read at read time only after gate has
+// run, like a database read that stalls for minutes.
+type stalledStore struct {
+	*fakeStore
+	gate func()
+}
+
+func (s *stalledStore) GetRecord(ctx context.Context, id string) (Record, error) {
+	rec, err := s.fakeStore.GetRecord(ctx, id)
+	if s.gate != nil {
+		g := s.gate
+		s.gate = nil
+		g()
+	}
+	return rec, err
+}
+
+// The request reads version 1; the bump commits while the read is stalled,
+// and the cache write would land after the floor has expired. Without the
+// freshness gate the stale record would revive the revoked session.
+func TestBumpDuringStalledReadDoesNotReviveOldSession(t *testing.T) {
+	ctx := context.Background()
+	clock := time.Date(2026, 11, 25, 12, 0, 0, 0, time.UTC)
+	fs := &fakeStore{recs: map[string]Record{"a1": {Role: RoleUser, Status: StatusActive, Version: 1}}}
+	ss := &stalledStore{fakeStore: fs}
+	cache := &fakeCache{m: map[string][]byte{}, now: func() time.Time { return clock }}
+	svc, err := New(Config{Secret: []byte(strings.Repeat("k", 32))}, ss, cache)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc.now = func() time.Time { return clock }
+	old, _ := svc.Issue("a1", 1, false)
+	ss.gate = func() {
+		if _, err := svc.BumpVersion(ctx, "a1"); err != nil {
+			t.Error(err)
+			return
+		}
+		clock = clock.Add(3 * time.Minute) // CacheTTL is 30s, floors live 60s
+	}
+	if _, err := svc.Authenticate(ctx, old); err != nil {
+		t.Fatalf("in-flight request before the bump was visible: %v", err)
+	}
+	fresh, _ := svc.Issue("a1", 2, false)
+	if _, err := svc.Authenticate(ctx, fresh); err != nil {
+		t.Fatalf("new cookie after the bump: %v", err)
+	}
+	if _, err := svc.Authenticate(ctx, old); !errors.Is(err, ErrRevoked) {
+		t.Fatalf("stalled read revived the revoked session: %v", err)
 	}
 }
