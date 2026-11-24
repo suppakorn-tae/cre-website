@@ -1,1 +1,455 @@
-{}
+# Registration, log in, log out, password reset and Google sign-in
+# (UC-01, UC-02, UC-03). Account management is in account.yaml.
+#
+# Cookies: a successful register verification, log in, Google callback or
+# Google signup completion sets `cre_session` (httpOnly, Secure,
+# SameSite=Lax, path=/). Log out clears it. Without `keep_logged_in` it is a
+# session cookie (SESSION_TTL); with it, it persists for REMEMBER_TTL.
+#
+# Error codes (ErrorBody.code and FieldError.code) used here:
+#   invalid_credentials, account_unavailable, email_taken, otp_invalid,
+#   otp_expired, otp_locked, otp_resend_cooldown, no_pending_signup,
+#   rate_limited, password_too_short, password_mismatch,
+#   retention_not_accepted, terms_not_accepted, csrf_invalid.
+# OTP failures return 422 with the field `/otp`; the codes mean: wrong code
+# (`otp_invalid`), older than 10 minutes or never issued (`otp_expired`),
+# more than 5 wrong attempts so the code is invalidated (`otp_locked`).
+/auth/csrf:
+  get:
+    operationId: getCsrfToken
+    summary: Get a CSRF token
+    description: |
+      Returns the token to send as `X-CSRF-Token` on state-changing requests.
+      State-changing requests are also checked against the Origin header.
+      Call once at start-up and again after log in or log out.
+    security: []
+    responses:
+      '200':
+        description: Token for the current session (or anonymous visitor).
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/auth.yaml#/CsrfToken
+            example:
+              csrf_token: 9f2c1d7a4be84c6f8a0e3b5d71c2a946
+/auth/register/start:
+  post:
+    operationId: startRegistration
+    summary: Start e-mail registration (UC-01 steps 2 to 5)
+    description: |
+      Validates the form, stores the pending sign-up in Valkey only and
+      e-mails a 6-digit OTP. Nothing is written to Postgres until the OTP is
+      verified. Validation (422) codes: `invalid_email`, `password_too_short`,
+      `password_mismatch` (on `/password_confirmation`),
+      `retention_not_accepted`, `terms_not_accepted`. A second start for the
+      same e-mail inside the 60 s cool-down returns 429 `otp_resend_cooldown`.
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/auth.yaml#/RegisterStartRequest
+          example:
+            email: somchai.k@example.co.th
+            password: รหัสผ่านทดสอบ-2569
+            password_confirmation: รหัสผ่านทดสอบ-2569
+            organisation: บริษัท สยามก่อสร้าง จำกัด
+            retention_accepted: true
+            terms_accepted: true
+    responses:
+      '200':
+        description: OTP sent.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/auth.yaml#/OtpChallenge
+      '409':
+        description: The e-mail is already registered (UC-01 4a). Code `email_taken`.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/common.yaml#/schemas/ErrorEnvelope
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+      '429':
+        description: Rate limit or resend cool-down; `Retry-After` gives the seconds to wait.
+        headers:
+          Retry-After:
+            schema:
+              type: integer
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/common.yaml#/schemas/ErrorEnvelope
+/auth/register/verify:
+  post:
+    operationId: verifyRegistration
+    summary: Verify the sign-up OTP and log in (UC-01 steps 6 and 7)
+    description: |
+      On success creates the account (role `user`, e-mail verified) and sets
+      the session cookie. 422 codes on `/otp`: `otp_invalid`, `otp_expired`,
+      `otp_locked`. 409 `email_taken` if the e-mail registered meanwhile.
+      404 `no_pending_signup` if there is no pending sign-up for the e-mail.
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/auth.yaml#/RegisterVerifyRequest
+          example:
+            email: somchai.k@example.co.th
+            otp: '482915'
+    responses:
+      '201':
+        description: Account created and signed in. Sets `cre_session`.
+        headers:
+          Set-Cookie:
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/auth.yaml#/AuthSession
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+      '429':
+        $ref: ../schemas/common.yaml#/responses/TooManyRequests
+/auth/register/resend:
+  post:
+    operationId: resendRegistrationOtp
+    summary: Send a new sign-up OTP (UC-01 6b)
+    description: |
+      At most once per 60 s per e-mail; inside the cool-down the response is
+      429 `otp_resend_cooldown` with `Retry-After`. The earlier code stops
+      working. 404 `no_pending_signup` if the pending sign-up has expired.
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/auth.yaml#/EmailRequest
+          example:
+            email: somchai.k@example.co.th
+    responses:
+      '200':
+        description: New OTP sent.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/auth.yaml#/OtpChallenge
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+      '429':
+        description: Cool-down or rate limit; `Retry-After` gives the seconds to wait.
+        headers:
+          Retry-After:
+            schema:
+              type: integer
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/common.yaml#/schemas/ErrorEnvelope
+/auth/login:
+  post:
+    operationId: login
+    summary: Log in with e-mail and password (UC-02)
+    description: |
+      401 `invalid_credentials` for a wrong e-mail or password (never says
+      which), also for an account that only has Google. 403
+      `account_unavailable` for a deactivated or deleted account. 429 after
+      too many failed attempts per IP and per e-mail.
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/auth.yaml#/LoginRequest
+          example:
+            email: somchai.k@example.co.th
+            password: รหัสผ่านทดสอบ-2569
+            keep_logged_in: true
+    responses:
+      '200':
+        description: Signed in. Sets `cre_session`.
+        headers:
+          Set-Cookie:
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/auth.yaml#/AuthSession
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+      '429':
+        $ref: ../schemas/common.yaml#/responses/TooManyRequests
+/auth/logout:
+  post:
+    operationId: logout
+    summary: Log out of this device (UC-03)
+    description: Clears the session cookie. Other devices stay signed in.
+    responses:
+      '204':
+        description: Logged out. Clears `cre_session`.
+        headers:
+          Set-Cookie:
+            schema:
+              type: string
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '403':
+        $ref: ../schemas/common.yaml#/responses/Forbidden
+/auth/me:
+  get:
+    operationId: getSession
+    summary: Get the current session and user
+    description: |
+      401 when there is no valid session; the server re-checks status, role
+      and session version on every request, so a reset, deactivation or
+      deletion elsewhere also gives 401.
+    security:
+      - sessionCookie: []
+    responses:
+      '200':
+        description: The signed-in user.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/auth.yaml#/AuthSession
+            example:
+              user:
+                id: 0193a5c2-7b1e-7c3a-9d4f-2a6b8e1f5c70
+                email: somchai.k@example.co.th
+                role: user
+                organisation: บริษัท สยามก่อสร้าง จำกัด
+                sign_in_methods:
+                  password: true
+                  google: false
+                terms_accepted_at: '2026-11-20T03:14:07Z'
+                created_at: '2026-11-20T03:14:07Z'
+              expires_at: '2026-12-20T03:14:07Z'
+              keep_logged_in: true
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+/auth/password/forgot:
+  post:
+    operationId: requestPasswordReset
+    summary: Request a password-reset OTP (UC-02 1c, 1d)
+    description: |
+      Always returns the same 200 response whether or not the e-mail is
+      registered, and the cool-down applies to every e-mail so the response
+      does not reveal it. A registered e-mail gets the OTP; a Google-only
+      account gets an e-mail telling it to continue with Google (UC-02 1h).
+      Calling it again resends the OTP, at most once per 60 s (429
+      `otp_resend_cooldown`).
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/auth.yaml#/EmailRequest
+          example:
+            email: somchai.k@example.co.th
+    responses:
+      '200':
+        description: If the e-mail is registered, an OTP was sent.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/auth.yaml#/OtpChallenge
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+      '429':
+        description: Cool-down or rate limit; `Retry-After` gives the seconds to wait.
+        headers:
+          Retry-After:
+            schema:
+              type: integer
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/common.yaml#/schemas/ErrorEnvelope
+/auth/password/reset:
+  post:
+    operationId: resetPassword
+    summary: Verify the OTP and set a new password (UC-02 1e, 1f)
+    description: |
+      On success stores the new hash and ends every session of the account.
+      The client then returns to log in; no cookie is set. 422 codes:
+      `/otp`: `otp_invalid`, `otp_expired`, `otp_locked` (password
+      unchanged, UC-02 1g); `/new_password`: `password_too_short`;
+      `/new_password_confirmation`: `password_mismatch`.
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/auth.yaml#/ResetPasswordRequest
+          example:
+            email: somchai.k@example.co.th
+            otp: '482915'
+            new_password: รหัสผ่านใหม่-2569
+            new_password_confirmation: รหัสผ่านใหม่-2569
+    responses:
+      '204':
+        description: Password changed; all sessions ended.
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+      '429':
+        $ref: ../schemas/common.yaml#/responses/TooManyRequests
+/auth/google/start:
+  post:
+    operationId: startGoogleAuth
+    summary: Start Google sign-in (UC-01 1a, UC-02 1a, UC-04 1c)
+    description: |
+      Stores state, nonce, PKCE verifier and intent in Valkey (10 minutes)
+      and returns the Google URL to navigate to. Intents `link` and `reauth`
+      need a session (401 otherwise); `login` and `signup` are public, so
+      this operation accepts both with or without a session. `link` is
+      rejected with 409 `google_already_linked` if the account already has a
+      Google id.
+    security:
+      - {}
+      - sessionCookie: []
+        csrfToken: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/auth.yaml#/GoogleStartRequest
+          example:
+            intent: login
+    responses:
+      '200':
+        description: Authorization URL.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/auth.yaml#/GoogleStartResponse
+            example:
+              authorization_url: https://accounts.google.com/o/oauth2/v2/auth?client_id=example&response_type=code&scope=openid%20email&state=4f1c9a&nonce=b27e5d&code_challenge=Zx81&code_challenge_method=S256
+      '401':
+        $ref: ../schemas/common.yaml#/responses/Unauthorized
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+      '429':
+        $ref: ../schemas/common.yaml#/responses/TooManyRequests
+/auth/google/callback:
+  get:
+    operationId: googleCallback
+    summary: Google redirect target (browser navigation)
+    description: |
+      Production URL `https://conriskexpert.com/api/v1/auth/google/callback`.
+      Validates `state`, exchanges the code, validates the ID token (signature,
+      iss, aud, exp, nonce, verified e-mail) and always answers with a 302 to
+      the web app, never JSON. The redirect carries `result` (see
+      `GoogleCallbackResult`). Behaviour by intent:
+      `login`: existing Google id or verified e-mail signs in (a matching
+      e-mail gets the Google id linked, BR-16), otherwise `no_account`.
+      `signup`: an existing account signs in as for `login`; a new identity
+      is parked in Valkey and `needs_signup` sets a short-lived httpOnly
+      `cre_google_pending` cookie.
+      `link`: stores the Google id on the session account (`linked`), or
+      `already_linked`.
+      `reauth`: marks the session as freshly re-authenticated for 5 minutes.
+      A successful sign-in also sets `cre_session`.
+    security: []
+    parameters:
+      - name: code
+        in: query
+        schema:
+          type: string
+      - name: state
+        in: query
+        schema:
+          type: string
+      - name: error
+        in: query
+        description: Set by Google when the user cancelled or denied.
+        schema:
+          type: string
+    responses:
+      '302':
+        description: Redirect to the web app with `?result=<GoogleCallbackResult>`.
+        headers:
+          Location:
+            schema:
+              type: string
+          Set-Cookie:
+            schema:
+              type: string
+/auth/google/pending:
+  get:
+    operationId: getGooglePending
+    summary: Get the pending Google sign-up
+    description: |
+      Shows the verified Google e-mail on the notice screen. Requires the
+      `cre_google_pending` cookie; 404 when it is missing or expired.
+    security: []
+    responses:
+      '200':
+        description: Pending Google identity.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/auth.yaml#/GooglePending
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+/auth/google/complete:
+  post:
+    operationId: completeGoogleSignup
+    summary: Accept the retention notice and create the Google account (UC-01 1b, 1c)
+    description: |
+      Creates the account (no password, no OTP), signs the user in and clears
+      the pending cookie. 422 `retention_not_accepted` or
+      `terms_not_accepted` when either is false (nothing is created, UC-01
+      3a). 404 when there is no pending sign-up.
+    security: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            $ref: ../schemas/auth.yaml#/GoogleCompleteRequest
+          example:
+            organisation: บริษัท สยามก่อสร้าง จำกัด
+            retention_accepted: true
+            terms_accepted: true
+    responses:
+      '201':
+        description: Account created and signed in. Sets `cre_session`.
+        headers:
+          Set-Cookie:
+            schema:
+              type: string
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/auth.yaml#/AuthSession
+      '404':
+        $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict
+      '422':
+        $ref: ../schemas/common.yaml#/responses/ValidationFailed
+      '429':
+        $ref: ../schemas/common.yaml#/responses/TooManyRequests

@@ -3,10 +3,556 @@
  * Do not make direct changes to the file.
  */
 
-export type paths = Record<string, never>;
+export interface paths {
+    "/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get own account (UC-04 1)
+         * @description E-mail, sign-in methods (password, Google) and organisation.
+         */
+        get: operations["getAccount"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete own account, anonymised (UC-04 1a, 1b)
+         * @description Removes the e-mail, password hash and Google id, marks the account
+         *     deleted, raises the session version (every session ends) and clears the
+         *     cookie. Projects and versions stay (BR-13). Re-authentication: with a
+         *     password the body carries `current_password` (422
+         *     `current_password_incorrect` when wrong); without one, a Google
+         *     `reauth` (intent in `startGoogleAuth`) must have completed within the
+         *     last 5 minutes, otherwise 403 `reauth_required`.
+         */
+        delete: operations["deleteAccount"];
+        options?: never;
+        head?: never;
+        /**
+         * Update the organisation (UC-04 2)
+         * @description The organisation may be left blank (null or empty string clears it).
+         */
+        patch: operations["updateAccount"];
+        trace?: never;
+    };
+    "/account/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Change password (UC-04 3, 4)
+         * @description For accounts that have a password. 422 codes:
+         *     `/current_password`: `current_password_incorrect` (UC-04 4a);
+         *     `/new_password`: `password_too_short` (4b);
+         *     `/new_password_confirmation`: `password_mismatch`. An account without a
+         *     password gets 409 `no_password`.
+         */
+        put: operations["changePassword"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/account/google": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Unlink the Google account (UC-04 1d)
+         * @description Removes the Google id. Linking is done with `startGoogleAuth`
+         *     (intent `link`) and the callback result `linked` or `already_linked`.
+         *     409 `password_required` when the account has no password, because one
+         *     sign-in method must remain (UC-04 1f). 409 `google_not_linked` when no
+         *     Google account is linked.
+         */
+        delete: operations["unlinkGoogle"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/csrf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a CSRF token
+         * @description Returns the token to send as `X-CSRF-Token` on state-changing requests.
+         *     State-changing requests are also checked against the Origin header.
+         *     Call once at start-up and again after log in or log out.
+         */
+        get: operations["getCsrfToken"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/register/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start e-mail registration (UC-01 steps 2 to 5)
+         * @description Validates the form, stores the pending sign-up in Valkey only and
+         *     e-mails a 6-digit OTP. Nothing is written to Postgres until the OTP is
+         *     verified. Validation (422) codes: `invalid_email`, `password_too_short`,
+         *     `password_mismatch` (on `/password_confirmation`),
+         *     `retention_not_accepted`, `terms_not_accepted`. A second start for the
+         *     same e-mail inside the 60 s cool-down returns 429 `otp_resend_cooldown`.
+         */
+        post: operations["startRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/register/verify": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify the sign-up OTP and log in (UC-01 steps 6 and 7)
+         * @description On success creates the account (role `user`, e-mail verified) and sets
+         *     the session cookie. 422 codes on `/otp`: `otp_invalid`, `otp_expired`,
+         *     `otp_locked`. 409 `email_taken` if the e-mail registered meanwhile.
+         *     404 `no_pending_signup` if there is no pending sign-up for the e-mail.
+         */
+        post: operations["verifyRegistration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/register/resend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a new sign-up OTP (UC-01 6b)
+         * @description At most once per 60 s per e-mail; inside the cool-down the response is
+         *     429 `otp_resend_cooldown` with `Retry-After`. The earlier code stops
+         *     working. 404 `no_pending_signup` if the pending sign-up has expired.
+         */
+        post: operations["resendRegistrationOtp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log in with e-mail and password (UC-02)
+         * @description 401 `invalid_credentials` for a wrong e-mail or password (never says
+         *     which), also for an account that only has Google. 403
+         *     `account_unavailable` for a deactivated or deleted account. 429 after
+         *     too many failed attempts per IP and per e-mail.
+         */
+        post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log out of this device (UC-03)
+         * @description Clears the session cookie. Other devices stay signed in.
+         */
+        post: operations["logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the current session and user
+         * @description 401 when there is no valid session; the server re-checks status, role
+         *     and session version on every request, so a reset, deactivation or
+         *     deletion elsewhere also gives 401.
+         */
+        get: operations["getSession"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/password/forgot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Request a password-reset OTP (UC-02 1c, 1d)
+         * @description Always returns the same 200 response whether or not the e-mail is
+         *     registered, and the cool-down applies to every e-mail so the response
+         *     does not reveal it. A registered e-mail gets the OTP; a Google-only
+         *     account gets an e-mail telling it to continue with Google (UC-02 1h).
+         *     Calling it again resends the OTP, at most once per 60 s (429
+         *     `otp_resend_cooldown`).
+         */
+        post: operations["requestPasswordReset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/password/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Verify the OTP and set a new password (UC-02 1e, 1f)
+         * @description On success stores the new hash and ends every session of the account.
+         *     The client then returns to log in; no cookie is set. 422 codes:
+         *     `/otp`: `otp_invalid`, `otp_expired`, `otp_locked` (password
+         *     unchanged, UC-02 1g); `/new_password`: `password_too_short`;
+         *     `/new_password_confirmation`: `password_mismatch`.
+         */
+        post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/google/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Start Google sign-in (UC-01 1a, UC-02 1a, UC-04 1c)
+         * @description Stores state, nonce, PKCE verifier and intent in Valkey (10 minutes)
+         *     and returns the Google URL to navigate to. Intents `link` and `reauth`
+         *     need a session (401 otherwise); `login` and `signup` are public, so
+         *     this operation accepts both with or without a session. `link` is
+         *     rejected with 409 `google_already_linked` if the account already has a
+         *     Google id.
+         */
+        post: operations["startGoogleAuth"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/google/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Google redirect target (browser navigation)
+         * @description Production URL `https://conriskexpert.com/api/v1/auth/google/callback`.
+         *     Validates `state`, exchanges the code, validates the ID token (signature,
+         *     iss, aud, exp, nonce, verified e-mail) and always answers with a 302 to
+         *     the web app, never JSON. The redirect carries `result` (see
+         *     `GoogleCallbackResult`). Behaviour by intent:
+         *     `login`: existing Google id or verified e-mail signs in (a matching
+         *     e-mail gets the Google id linked, BR-16), otherwise `no_account`.
+         *     `signup`: an existing account signs in as for `login`; a new identity
+         *     is parked in Valkey and `needs_signup` sets a short-lived httpOnly
+         *     `cre_google_pending` cookie.
+         *     `link`: stores the Google id on the session account (`linked`), or
+         *     `already_linked`.
+         *     `reauth`: marks the session as freshly re-authenticated for 5 minutes.
+         *     A successful sign-in also sets `cre_session`.
+         */
+        get: operations["googleCallback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/google/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get the pending Google sign-up
+         * @description Shows the verified Google e-mail on the notice screen. Requires the
+         *     `cre_google_pending` cookie; 404 when it is missing or expired.
+         */
+        get: operations["getGooglePending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/auth/google/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept the retention notice and create the Google account (UC-01 1b, 1c)
+         * @description Creates the account (no password, no OTP), signs the user in and clears
+         *     the pending cookie. 422 `retention_not_accepted` or
+         *     `terms_not_accepted` when either is false (nothing is created, UC-01
+         *     3a). 404 when there is no pending sign-up.
+         */
+        post: operations["completeGoogleSignup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+}
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @example somchai.k@example.co.th */
+        Email: string;
+        /**
+         * Format: password
+         * @description At least 8 characters (BR-22). The strength bar in the UI is guidance only.
+         */
+        Password: string;
+        /**
+         * @description Optional organisation name. No personal names are collected (BR-15).
+         * @example บริษัท สยามก่อสร้าง จำกัด
+         */
+        Organisation: string;
+        /**
+         * @description 6-digit code sent by e-mail, valid 10 minutes, at most 5 wrong attempts (BR-16).
+         * @example 482915
+         */
+        OtpCode: string;
+        /** @description How the account can sign in. At least one is always true. */
+        SignInMethods: {
+            password: boolean;
+            google: boolean;
+        };
+        Account: {
+            id: components["schemas"]["Uuid"];
+            email: components["schemas"]["Email"];
+            role: components["schemas"]["UserRole"];
+            organisation: string | null;
+            sign_in_methods: components["schemas"]["SignInMethods"];
+            terms_accepted_at?: components["schemas"]["Timestamp"];
+            created_at: components["schemas"]["Timestamp"];
+        };
+        /** @description The signed-in user. The session itself is the `cre_session` cookie. */
+        AuthSession: {
+            user: components["schemas"]["Account"];
+            expires_at: components["schemas"]["Timestamp"];
+            /** @description True when the cookie persists (REMEMBER_TTL) instead of ending with the browser. */
+            keep_logged_in: boolean;
+        };
+        CsrfToken: {
+            /** @description Send as `X-CSRF-Token` on every state-changing request. */
+            csrf_token: string;
+        };
+        RegisterStartRequest: {
+            email: components["schemas"]["Email"];
+            password: components["schemas"]["Password"];
+            password_confirmation: components["schemas"]["Password"];
+            organisation?: components["schemas"]["Organisation"];
+            /** @description Research data-retention notice accepted (FR-51). Must be true. */
+            retention_accepted: boolean;
+            /** @description Terms of use accepted (FR-51). Must be true. */
+            terms_accepted: boolean;
+        };
+        /** @description An OTP was sent. Nothing is stored in Postgres until it is verified. */
+        OtpChallenge: {
+            /** @example 600 */
+            expires_in_seconds: number;
+            /** @example 60 */
+            resend_available_in_seconds: number;
+        };
+        EmailRequest: {
+            email: components["schemas"]["Email"];
+        };
+        RegisterVerifyRequest: {
+            email: components["schemas"]["Email"];
+            otp: components["schemas"]["OtpCode"];
+        };
+        LoginRequest: {
+            email: components["schemas"]["Email"];
+            /** Format: password */
+            password: string;
+            /**
+             * @description Persist the cookie for REMEMBER_TTL (BR-23, FR-52).
+             * @default false
+             */
+            keep_logged_in: boolean;
+        };
+        ResetPasswordRequest: {
+            email: components["schemas"]["Email"];
+            otp: components["schemas"]["OtpCode"];
+            new_password: components["schemas"]["Password"];
+            new_password_confirmation: components["schemas"]["Password"];
+        };
+        /**
+         * @description Why the user goes to Google. `login` and `signup` need no session;
+         *     `link` and `reauth` need one (`reauth` confirms account deletion for
+         *     accounts without a password).
+         * @enum {string}
+         */
+        GoogleIntent: "login" | "signup" | "link" | "reauth";
+        GoogleStartRequest: {
+            intent: components["schemas"]["GoogleIntent"];
+        };
+        GoogleStartResponse: {
+            /**
+             * Format: uri
+             * @description Google authorization URL (code flow with PKCE); the browser navigates to it.
+             */
+            authorization_url: string;
+        };
+        /**
+         * @description Value of the `result` query parameter on the redirect the callback sends
+         *     back to the web app.
+         *     `logged_in`: signed in, go to the dashboard.
+         *     `needs_signup`: new Google user, show the notice and optional organisation, then call `completeGoogleSignup` (also for a `signup` intent).
+         *     `no_account`: login intent but no account for this identity, offer registration (UC-02 1b).
+         *     `linked`: Google id stored on the account.
+         *     `reauthenticated`: confirmed, account deletion may proceed.
+         *     `already_linked`: the Google account belongs to another account (UC-04 1e).
+         *     `account_unavailable`: the account is deactivated or deleted (UC-02 2c).
+         *     `cancelled`: the user cancelled at Google (UC-01 1d).
+         *     `failed`: state, nonce or ID token validation failed.
+         * @enum {string}
+         */
+        GoogleCallbackResult: "logged_in" | "needs_signup" | "no_account" | "linked" | "reauthenticated" | "already_linked" | "account_unavailable" | "cancelled" | "failed";
+        /** @description A verified Google identity waiting for the retention notice to be accepted. */
+        GooglePending: {
+            email: components["schemas"]["Email"];
+            /** @example 540 */
+            expires_in_seconds: number;
+        };
+        GoogleCompleteRequest: {
+            organisation?: components["schemas"]["Organisation"];
+            /** @description Must be true. */
+            retention_accepted: boolean;
+            /** @description Must be true. */
+            terms_accepted: boolean;
+        };
+        UpdateAccountRequest: {
+            /** @description Null or empty clears the organisation. */
+            organisation: string | null;
+        };
+        ChangePasswordRequest: {
+            /** Format: password */
+            current_password: string;
+            new_password: components["schemas"]["Password"];
+            new_password_confirmation: components["schemas"]["Password"];
+        };
+        /**
+         * @description Re-authentication (UC-04 1a). Accounts with a password send
+         *     `current_password`; accounts without one first complete a Google
+         *     `reauth` and send an empty body.
+         */
+        DeleteAccountRequest: {
+            /** Format: password */
+            current_password?: string;
+        };
+        /** Format: uuid */
+        Uuid: string;
+        /** @enum {string} */
+        UserRole: "user" | "admin";
+        /**
+         * Format: date-time
+         * @description UTC instant, RFC 3339.
+         */
+        Timestamp: string;
         ErrorBody: {
             /** @description Stable machine code, e.g. `not_found`. */
             code: string;
@@ -103,4 +649,604 @@ export interface components {
     pathItems: never;
 }
 export type $defs = Record<string, never>;
-export type operations = Record<string, never>;
+export interface operations {
+    getAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The account. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "id": "0193a5c2-7b1e-7c3a-9d4f-2a6b8e1f5c70",
+                     *       "email": "somchai.k@example.co.th",
+                     *       "role": "user",
+                     *       "organisation": "บริษัท สยามก่อสร้าง จำกัด",
+                     *       "sign_in_methods": {
+                     *         "password": true,
+                     *         "google": true
+                     *       },
+                     *       "terms_accepted_at": "2026-11-20T03:14:07Z",
+                     *       "created_at": "2026-11-20T03:14:07Z"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    deleteAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "current_password": "รหัสผ่านทดสอบ-2569"
+                 *     }
+                 */
+                "application/json": components["schemas"]["DeleteAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description Account anonymised and closed. Clears `cre_session`. */
+            204: {
+                headers: {
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    updateAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "organisation": "กรมทางหลวงชนบท"
+                 *     }
+                 */
+                "application/json": components["schemas"]["UpdateAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated account. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "current_password": "รหัสผ่านทดสอบ-2569",
+                 *       "new_password": "รหัสผ่านใหม่-2569",
+                 *       "new_password_confirmation": "รหัสผ่านใหม่-2569"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Password changed. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    unlinkGoogle: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The updated account. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getCsrfToken: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Token for the current session (or anonymous visitor). */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "csrf_token": "9f2c1d7a4be84c6f8a0e3b5d71c2a946"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["CsrfToken"];
+                };
+            };
+        };
+    };
+    startRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "email": "somchai.k@example.co.th",
+                 *       "password": "รหัสผ่านทดสอบ-2569",
+                 *       "password_confirmation": "รหัสผ่านทดสอบ-2569",
+                 *       "organisation": "บริษัท สยามก่อสร้าง จำกัด",
+                 *       "retention_accepted": true,
+                 *       "terms_accepted": true
+                 *     }
+                 */
+                "application/json": components["schemas"]["RegisterStartRequest"];
+            };
+        };
+        responses: {
+            /** @description OTP sent. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtpChallenge"];
+                };
+            };
+            /** @description The e-mail is already registered (UC-01 4a). Code `email_taken`. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+            /** @description Rate limit or resend cool-down; `Retry-After` gives the seconds to wait. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    verifyRegistration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "email": "somchai.k@example.co.th",
+                 *       "otp": "482915"
+                 *     }
+                 */
+                "application/json": components["schemas"]["RegisterVerifyRequest"];
+            };
+        };
+        responses: {
+            /** @description Account created and signed in. Sets `cre_session`. */
+            201: {
+                headers: {
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSession"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    resendRegistrationOtp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "email": "somchai.k@example.co.th"
+                 *     }
+                 */
+                "application/json": components["schemas"]["EmailRequest"];
+            };
+        };
+        responses: {
+            /** @description New OTP sent. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtpChallenge"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationFailed"];
+            /** @description Cool-down or rate limit; `Retry-After` gives the seconds to wait. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "email": "somchai.k@example.co.th",
+                 *       "password": "รหัสผ่านทดสอบ-2569",
+                 *       "keep_logged_in": true
+                 *     }
+                 */
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Signed in. Sets `cre_session`. */
+            200: {
+                headers: {
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSession"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Logged out. Clears `cre_session`. */
+            204: {
+                headers: {
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+        };
+    };
+    getSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The signed-in user. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "user": {
+                     *         "id": "0193a5c2-7b1e-7c3a-9d4f-2a6b8e1f5c70",
+                     *         "email": "somchai.k@example.co.th",
+                     *         "role": "user",
+                     *         "organisation": "บริษัท สยามก่อสร้าง จำกัด",
+                     *         "sign_in_methods": {
+                     *           "password": true,
+                     *           "google": false
+                     *         },
+                     *         "terms_accepted_at": "2026-11-20T03:14:07Z",
+                     *         "created_at": "2026-11-20T03:14:07Z"
+                     *       },
+                     *       "expires_at": "2026-12-20T03:14:07Z",
+                     *       "keep_logged_in": true
+                     *     }
+                     */
+                    "application/json": components["schemas"]["AuthSession"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    requestPasswordReset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "email": "somchai.k@example.co.th"
+                 *     }
+                 */
+                "application/json": components["schemas"]["EmailRequest"];
+            };
+        };
+        responses: {
+            /** @description If the e-mail is registered, an OTP was sent. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtpChallenge"];
+                };
+            };
+            422: components["responses"]["ValidationFailed"];
+            /** @description Cool-down or rate limit; `Retry-After` gives the seconds to wait. */
+            429: {
+                headers: {
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "email": "somchai.k@example.co.th",
+                 *       "otp": "482915",
+                 *       "new_password": "รหัสผ่านใหม่-2569",
+                 *       "new_password_confirmation": "รหัสผ่านใหม่-2569"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ResetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Password changed; all sessions ended. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    startGoogleAuth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "intent": "login"
+                 *     }
+                 */
+                "application/json": components["schemas"]["GoogleStartRequest"];
+            };
+        };
+        responses: {
+            /** @description Authorization URL. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth?client_id=example&response_type=code&scope=openid%20email&state=4f1c9a&nonce=b27e5d&code_challenge=Zx81&code_challenge_method=S256"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["GoogleStartResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    googleCallback: {
+        parameters: {
+            query?: {
+                code?: string;
+                state?: string;
+                /** @description Set by Google when the user cancelled or denied. */
+                error?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Redirect to the web app with `?result=<GoogleCallbackResult>`. */
+            302: {
+                headers: {
+                    Location?: string;
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getGooglePending: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending Google identity. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GooglePending"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+        };
+    };
+    completeGoogleSignup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                /**
+                 * @example {
+                 *       "organisation": "บริษัท สยามก่อสร้าง จำกัด",
+                 *       "retention_accepted": true,
+                 *       "terms_accepted": true
+                 *     }
+                 */
+                "application/json": components["schemas"]["GoogleCompleteRequest"];
+            };
+        };
+        responses: {
+            /** @description Account created and signed in. Sets `cre_session`. */
+            201: {
+                headers: {
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthSession"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            422: components["responses"]["ValidationFailed"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+}
