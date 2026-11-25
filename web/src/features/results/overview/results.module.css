@@ -320,7 +320,7 @@
 }
 .factorLineLabel {
   position: absolute;
-  inset-inline-end: 0;
+  inset-inline-start: 0;
   bottom: 2px;
   color: var(--level-h-text);
   font-size: var(--text-caption);
