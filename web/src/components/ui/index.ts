@@ -3,6 +3,7 @@ export { CheckboxGroup, toggleOption, type CheckboxOption } from './CheckboxGrou
 export { ConfirmDialog } from './ConfirmDialog';
 export { DataTable, type DataTableColumn } from './DataTable';
 export { EmptyState } from './EmptyState';
+export { Icon, ICON_STROKE, type IconSize } from './Icon';
 export { Input, NumberInput, Select, type SelectOption } from './Input';
 export { KpiCard } from './KpiCard';
 export { LEVELS, LevelBadge, type Level } from './LevelBadge';
