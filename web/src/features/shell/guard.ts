@@ -1,4 +1,5 @@
 import { notFound, redirect } from 'next/navigation';
+import { connection } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
 import type { components } from '@/lib/api/generated/schema';
@@ -42,6 +43,9 @@ export function enforceGuard(result: GuardResult): AuthSession {
 
 /** Server-side guard for the `(app)` and `(admin)` layouts. */
 export async function requireSession(options: { requireAdmin: boolean }): Promise<AuthSession> {
+  // The session is per request: opt out of prerendering before fetching,
+  // otherwise Next flags the fetch's random values during prerender.
+  await connection();
   const api = await serverApi();
   const result = await evaluateGuard(async () => {
     const { data } = await api.GET('/auth/me');
