@@ -1,0 +1,7 @@
+# Overlay on deploy/compose/compose.yaml for the load test (IO-78).
+# All k6 traffic comes from one IP and 500 users, so lift the log in limits.
+services:
+  api:
+    environment:
+      RL_LOGIN_IP_LIMIT: "1000000"
+      RL_LOGIN_EMAIL_LIMIT: "1000000"
