@@ -90,6 +90,8 @@ type Querier interface {
 	// Created only after the OTP was verified. Role and status take their
 	// defaults (user, active); the e-mail counts as verified.
 	CreateRegisteredAccount(ctx context.Context, arg CreateRegisteredAccountParams) (CreateRegisteredAccountRow, error)
+	// Projects with a live version, by island order then name.
+	DashboardIslands(ctx context.Context, ownerID uuid.UUID) ([]DashboardIslandsRow, error)
 	// Dashboard read models (UC-20, BR-26). Every query is scoped by owner_id and
 	// hides deleted projects and versions. They read stored risk_result rows;
 	// nothing is recalculated. "Latest submitted" is the submitted, non-deleted
@@ -97,6 +99,15 @@ type Querier interface {
 	DashboardKpis(ctx context.Context, ownerID uuid.UUID) (DashboardKpisRow, error)
 	DashboardLevelCounts(ctx context.Context, ownerID uuid.UUID) ([]DashboardLevelCountsRow, error)
 	DashboardProjectRisks(ctx context.Context, ownerID uuid.UUID) ([]DashboardProjectRisksRow, error)
+	// @q is a LIKE pattern already escaped by the caller, or empty for all.
+	// Columns of the submitted version are zero values when submitted is false
+	// (sqlc cannot mark lateral join columns nullable); avg_rm is '' when no
+	// indicator is scored. Projects without a live version are not listed: the
+	// contract needs a latest version id.
+	DashboardProjectsPanel(ctx context.Context, arg DashboardProjectsPanelParams) ([]DashboardProjectsPanelRow, error)
+	// Indicators ranked by the number of projects with H or VH in the latest
+	// submitted version. Ties: more VH first, then indicator code (BR-26).
+	DashboardTopIndicators(ctx context.Context, ownerID uuid.UUID) ([]DashboardTopIndicatorsRow, error)
 	DeleteAnswerY3(ctx context.Context, arg DeleteAnswerY3Params) error
 	// A strategy only exists for H and VH results.
 	DeleteLowRiskStrategies(ctx context.Context, versionID uuid.UUID) error

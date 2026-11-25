@@ -109,6 +109,93 @@ func TestSummaryUsesLatestSubmittedLiveVersionsOfOwnLiveProjects(t *testing.T) {
 	}
 }
 
+func TestPanels(t *testing.T) {
+	ctx := context.Background()
+	db, svc := setup(t)
+	me := testutil.NewAccount(t, db).ID
+	owner := uuid.MustParse(me)
+	mk := func(n, nick, island string) testutil.Project {
+		return testutil.NewProject(t, db, me, func(p *testutil.Project) { p.Name, p.Nickname, p.Island = n, nick, island })
+	}
+	a := mk("Alpha pier", "ALPH", "koh_samui")
+	va := version(t, db, a.ID, true, map[string]string{"EC-MG-1": "VH", "EC-MG-2": "H", "EC-HS-1": "L"})
+	va2 := version(t, db, a.ID, false, nil)
+	b := mk("Beta", "BETA", "koh_tao")
+	vb := version(t, db, b.ID, true, map[string]string{"EC-MG-1": "H", "EC-MG-2": "H", "EC-HS-1": "VH"})
+	c := mk("Gamma", "GAMM", "koh_tao")
+	vc := version(t, db, c.ID, false, nil)
+	mk("No versions", "NONE", "koh_tao")
+
+	page, err := svc.Projects(ctx, owner, dashboard.ProjectsParams{Page: 1, PageSize: 10})
+	if err != nil || page.Total != 3 || len(page.Items) != 3 {
+		t.Fatalf("projects = %+v err=%v, want 3 projects with a live version", page, err)
+	}
+	byName := map[string]dashboard.ProjectItem{}
+	for _, it := range page.Items {
+		byName[it.Name] = it
+	}
+	al := byName["Alpha pier"]
+	if al.LatestVersionID.String() != va2.ID || al.LatestVersionNo != 2 || al.LatestVersionStatus != "draft" ||
+		al.LatestSubmittedVersionID == nil || al.LatestSubmittedVersionID.String() != va.ID ||
+		al.HVhCount == nil || *al.HVhCount != 2 || al.AvgRM == nil || *al.AvgRM != "3.67" || al.VersionCount != 2 {
+		t.Fatalf("alpha = %+v", al)
+	}
+	if g := byName["Gamma"]; g.LatestVersionID.String() != vc.ID || g.LatestSubmittedVersionID != nil || g.HVhCount != nil || g.AvgRM != nil {
+		t.Fatalf("gamma = %+v, want no submitted figures", g)
+	}
+	if s, _ := svc.Projects(ctx, owner, dashboard.ProjectsParams{Q: "pier", Page: 1, PageSize: 10}); len(s.Items) != 1 || s.Total != 1 {
+		t.Fatalf("search = %+v", s)
+	}
+	if s, _ := svc.Projects(ctx, owner, dashboard.ProjectsParams{Q: "%", Page: 1, PageSize: 10}); len(s.Items) != 0 {
+		t.Fatalf("a literal %% must not match everything: %+v", s)
+	}
+	for _, q := range []string{"_", `\`, "Al_ha"} {
+		if s, _ := svc.Projects(ctx, owner, dashboard.ProjectsParams{Q: q, Page: 1, PageSize: 10}); len(s.Items) != 0 {
+			t.Fatalf("%q must match literally, got %+v", q, s)
+		}
+	}
+	if s, _ := svc.Projects(ctx, owner, dashboard.ProjectsParams{Q: "  beta  ", Page: 1, PageSize: 10}); len(s.Items) != 1 {
+		t.Fatalf("search is case-insensitive and trimmed: %+v", s)
+	}
+	// Newest project first.
+	if len(page.Items) != 3 || page.Items[0].Name != "Gamma" || page.Items[1].Name != "Beta" || page.Items[2].Name != "Alpha pier" {
+		t.Fatalf("order = %+v, want newest first", page.Items)
+	}
+	if s, _ := svc.Projects(ctx, owner, dashboard.ProjectsParams{Page: 3, PageSize: 2}); len(s.Items) != 0 || s.Total != 3 {
+		t.Fatalf("page past the end = %+v, want no items and total 3", s)
+	}
+	if s, _ := svc.Projects(ctx, uuid.New(), dashboard.ProjectsParams{Page: 1, PageSize: 10}); len(s.Items) != 0 {
+		t.Fatalf("stranger sees %+v", s)
+	}
+
+	top, err := svc.TopIndicators(ctx, owner)
+	if err != nil || len(top) != 3 {
+		t.Fatalf("top = %+v err=%v", top, err)
+	}
+	// EC-MG-1: VH+H, EC-MG-2: H+H (same total, fewer VH), EC-HS-1: VH only (total 1).
+	if top[0].IndicatorCode != "EC-MG-1" || top[0].Rank != 1 || top[0].HCount != 1 || top[0].VhCount != 1 ||
+		top[1].IndicatorCode != "EC-MG-2" || top[1].HCount != 2 ||
+		top[2].IndicatorCode != "EC-HS-1" || top[2].Rank != 3 || top[2].FactorCode != "EC-HS" {
+		t.Fatalf("top = %+v", top)
+	}
+
+	groups, err := svc.Islands(ctx, owner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// island order: koh_tao (1) before koh_samui (2); the project without a version is absent.
+	if len(groups) != 2 || groups[0].IslandCode != "koh_tao" || groups[1].IslandCode != "koh_samui" ||
+		len(groups[0].Projects) != 2 || groups[0].Projects[0].Name != "Beta" || groups[0].Projects[1].Name != "Gamma" {
+		t.Fatalf("islands = %+v", groups)
+	}
+	if h := groups[0].Projects[0].HVhCount; h == nil || *h != 3 || groups[0].Projects[0].LatestVersionID.String() != vb.ID {
+		t.Fatalf("beta = %+v", groups[0].Projects[0])
+	}
+	if g := groups[0].Projects[1]; g.HVhCount != nil || g.LatestVersionID.String() != vc.ID {
+		t.Fatalf("gamma = %+v, want no figure until submitted", g)
+	}
+}
+
 // TestFixtureVolume is the p95 check: 200 projects x 10 submitted versions of
 // 55 scored indicators each. Every endpoint query set must stay under one
 // second at the 95th percentile.
@@ -163,6 +250,16 @@ func TestFixtureVolume(t *testing.T) {
 
 	calls := map[string]func() error{
 		"summary": func() error { _, err := svc.Summary(ctx, owner); return err },
+		"projects": func() error {
+			_, err := svc.Projects(ctx, owner, dashboard.ProjectsParams{Page: 1, PageSize: 20})
+			return err
+		},
+		"projects-q": func() error {
+			_, err := svc.Projects(ctx, owner, dashboard.ProjectsParams{Q: "project 1", Page: 2, PageSize: 20})
+			return err
+		},
+		"top-indicators": func() error { _, err := svc.TopIndicators(ctx, owner); return err },
+		"islands":        func() error { _, err := svc.Islands(ctx, owner); return err },
 	}
 	for name, call := range calls {
 		var d []time.Duration

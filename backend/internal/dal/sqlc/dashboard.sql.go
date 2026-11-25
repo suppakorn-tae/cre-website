@@ -9,7 +9,73 @@ import (
 	"context"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const dashboardIslands = `-- name: DashboardIslands :many
+SELECT p.island_code, p.id AS project_id, p.name, p.nickname, p.progress_pct,
+       la.id AS latest_version_id, (ls.id IS NOT NULL)::bool AS submitted,
+       COALESCE(s.h_vh_count, 0)::int AS h_vh_count
+FROM project p
+JOIN island isl ON isl.code = p.island_code
+CROSS JOIN LATERAL (
+    SELECT v.id FROM assessment_version v
+    WHERE v.project_id = p.id AND v.deleted_at IS NULL
+    ORDER BY v.version_no DESC LIMIT 1
+) la
+LEFT JOIN LATERAL (
+    SELECT v.id FROM assessment_version v
+    WHERE v.project_id = p.id AND v.deleted_at IS NULL AND v.status = 'submitted'
+    ORDER BY v.version_no DESC LIMIT 1
+) ls ON true
+LEFT JOIN LATERAL (
+    SELECT (count(*) FILTER (WHERE r.level IN ('H', 'VH')))::int AS h_vh_count
+    FROM risk_result r WHERE r.version_id = ls.id
+) s ON ls.id IS NOT NULL
+WHERE p.owner_id = $1 AND p.deleted_at IS NULL
+ORDER BY isl.sort_no, p.name, p.id
+`
+
+type DashboardIslandsRow struct {
+	IslandCode      string
+	ProjectID       uuid.UUID
+	Name            string
+	Nickname        string
+	ProgressPct     int16
+	LatestVersionID uuid.UUID
+	Submitted       bool
+	HVhCount        int32
+}
+
+// Projects with a live version, by island order then name.
+func (q *Queries) DashboardIslands(ctx context.Context, ownerID uuid.UUID) ([]DashboardIslandsRow, error) {
+	rows, err := q.db.Query(ctx, dashboardIslands, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DashboardIslandsRow
+	for rows.Next() {
+		var i DashboardIslandsRow
+		if err := rows.Scan(
+			&i.IslandCode,
+			&i.ProjectID,
+			&i.Name,
+			&i.Nickname,
+			&i.ProgressPct,
+			&i.LatestVersionID,
+			&i.Submitted,
+			&i.HVhCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
 
 const dashboardKpis = `-- name: DashboardKpis :one
 
@@ -143,6 +209,171 @@ func (q *Queries) DashboardProjectRisks(ctx context.Context, ownerID uuid.UUID) 
 			&i.Nickname,
 			&i.VersionID,
 			&i.VersionNo,
+			&i.HCount,
+			&i.VhCount,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const dashboardProjectsPanel = `-- name: DashboardProjectsPanel :many
+SELECT p.id, p.name, p.nickname, p.island_code, p.island_other, p.type_code,
+       p.type_other, p.value_baht::text AS value_baht, p.progress_pct,
+       (SELECT count(*) FROM assessment_version c
+         WHERE c.project_id = p.id AND c.deleted_at IS NULL)::int AS version_count,
+       la.id AS latest_version_id, la.version_no AS latest_version_no,
+       la.status AS latest_version_status,
+       (ls.id IS NOT NULL)::bool AS submitted,
+       COALESCE(ls.id, '00000000-0000-0000-0000-000000000000'::uuid) AS latest_submitted_version_id,
+       COALESCE(s.h_vh_count, 0)::int AS h_vh_count,
+       COALESCE(s.avg_rm, '')::text AS avg_rm,
+       count(*) OVER ()::int AS total
+FROM project p
+CROSS JOIN LATERAL (
+    SELECT v.id, v.version_no, v.status FROM assessment_version v
+    WHERE v.project_id = p.id AND v.deleted_at IS NULL
+    ORDER BY v.version_no DESC LIMIT 1
+) la
+LEFT JOIN LATERAL (
+    SELECT v.id, v.snap_rm_decimals FROM assessment_version v
+    WHERE v.project_id = p.id AND v.deleted_at IS NULL AND v.status = 'submitted'
+    ORDER BY v.version_no DESC LIMIT 1
+) ls ON true
+LEFT JOIN LATERAL (
+    SELECT (count(*) FILTER (WHERE r.level IN ('H', 'VH')))::int AS h_vh_count,
+           round(avg(r.rm), ls.snap_rm_decimals::int)::text AS avg_rm
+    FROM risk_result r WHERE r.version_id = ls.id
+) s ON ls.id IS NOT NULL
+WHERE p.owner_id = $1 AND p.deleted_at IS NULL
+  AND ($2::text = '' OR p.name ILIKE $2::text OR p.nickname ILIKE $2::text)
+ORDER BY p.created_at DESC, p.id DESC
+LIMIT $4 OFFSET $3
+`
+
+type DashboardProjectsPanelParams struct {
+	OwnerID    uuid.UUID
+	Q          string
+	PageOffset int32
+	PageLimit  int32
+}
+
+type DashboardProjectsPanelRow struct {
+	ID                       uuid.UUID
+	Name                     string
+	Nickname                 string
+	IslandCode               string
+	IslandOther              pgtype.Text
+	TypeCode                 string
+	TypeOther                pgtype.Text
+	ValueBaht                string
+	ProgressPct              int16
+	VersionCount             int32
+	LatestVersionID          uuid.UUID
+	LatestVersionNo          int32
+	LatestVersionStatus      VersionStatus
+	Submitted                bool
+	LatestSubmittedVersionID uuid.UUID
+	HVhCount                 int32
+	AvgRm                    string
+	Total                    int32
+}
+
+// @q is a LIKE pattern already escaped by the caller, or empty for all.
+// Columns of the submitted version are zero values when submitted is false
+// (sqlc cannot mark lateral join columns nullable); avg_rm is ” when no
+// indicator is scored. Projects without a live version are not listed: the
+// contract needs a latest version id.
+func (q *Queries) DashboardProjectsPanel(ctx context.Context, arg DashboardProjectsPanelParams) ([]DashboardProjectsPanelRow, error) {
+	rows, err := q.db.Query(ctx, dashboardProjectsPanel,
+		arg.OwnerID,
+		arg.Q,
+		arg.PageOffset,
+		arg.PageLimit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DashboardProjectsPanelRow
+	for rows.Next() {
+		var i DashboardProjectsPanelRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Nickname,
+			&i.IslandCode,
+			&i.IslandOther,
+			&i.TypeCode,
+			&i.TypeOther,
+			&i.ValueBaht,
+			&i.ProgressPct,
+			&i.VersionCount,
+			&i.LatestVersionID,
+			&i.LatestVersionNo,
+			&i.LatestVersionStatus,
+			&i.Submitted,
+			&i.LatestSubmittedVersionID,
+			&i.HVhCount,
+			&i.AvgRm,
+			&i.Total,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const dashboardTopIndicators = `-- name: DashboardTopIndicators :many
+WITH latest AS (
+    SELECT DISTINCT ON (v.project_id) v.id
+    FROM assessment_version v
+    JOIN project p ON p.id = v.project_id
+    WHERE p.owner_id = $1 AND p.deleted_at IS NULL
+      AND v.deleted_at IS NULL AND v.status = 'submitted'
+    ORDER BY v.project_id, v.version_no DESC
+)
+SELECT r.indicator_code, i.factor_code,
+       (count(*) FILTER (WHERE r.level = 'H'))::int AS h_count,
+       (count(*) FILTER (WHERE r.level = 'VH'))::int AS vh_count
+FROM latest l
+JOIN risk_result r ON r.version_id = l.id AND r.level IN ('H', 'VH')
+JOIN indicator i ON i.code = r.indicator_code
+GROUP BY r.indicator_code, i.factor_code
+ORDER BY count(*) DESC, (count(*) FILTER (WHERE r.level = 'VH')) DESC, r.indicator_code
+LIMIT 10
+`
+
+type DashboardTopIndicatorsRow struct {
+	IndicatorCode string
+	FactorCode    string
+	HCount        int32
+	VhCount       int32
+}
+
+// Indicators ranked by the number of projects with H or VH in the latest
+// submitted version. Ties: more VH first, then indicator code (BR-26).
+func (q *Queries) DashboardTopIndicators(ctx context.Context, ownerID uuid.UUID) ([]DashboardTopIndicatorsRow, error) {
+	rows, err := q.db.Query(ctx, dashboardTopIndicators, ownerID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []DashboardTopIndicatorsRow
+	for rows.Next() {
+		var i DashboardTopIndicatorsRow
+		if err := rows.Scan(
+			&i.IndicatorCode,
+			&i.FactorCode,
 			&i.HCount,
 			&i.VhCount,
 		); err != nil {

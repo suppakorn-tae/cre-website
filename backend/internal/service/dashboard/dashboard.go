@@ -8,6 +8,7 @@ package dashboard
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 
@@ -94,4 +95,159 @@ func (s *Service) Summary(ctx context.Context, owner uuid.UUID) (Summary, error)
 		})
 	}
 	return out, nil
+}
+
+// ProjectItem is one row of the projects panel. HVhCount, AvgRM (exact
+// decimal text) and LatestSubmittedVersionID are nil until a version has been
+// submitted; AvgRM is also nil when no indicator is scored.
+type ProjectItem struct {
+	ProjectID                 uuid.UUID
+	Name, Nickname            string
+	IslandCode, TypeCode      string
+	IslandOther, TypeOther    *string
+	ValueBaht                 string
+	ProgressPct, VersionCount int
+	LatestVersionID           uuid.UUID
+	LatestVersionNo           int
+	LatestVersionStatus       string
+	LatestSubmittedVersionID  *uuid.UUID
+	HVhCount                  *int
+	AvgRM                     *string
+}
+
+// ProjectsParams selects one page of the projects panel. Q is raw search text.
+type ProjectsParams struct {
+	Q              string
+	Page, PageSize int
+}
+
+// ProjectsPage is one page of the projects panel and the total match count.
+type ProjectsPage struct {
+	Items []ProjectItem
+	Total int
+}
+
+// Projects returns one page of the caller's projects with a live version,
+// newest first, filtered by Q over name and nickname.
+func (s *Service) Projects(ctx context.Context, owner uuid.UUID, p ProjectsParams) (ProjectsPage, error) {
+	args := sqlc.DashboardProjectsPanelParams{
+		OwnerID: owner, Q: likePattern(p.Q),
+		PageLimit: int32(p.PageSize), PageOffset: int32((p.Page - 1) * p.PageSize), //nolint:gosec // bounded by the handler
+	}
+	rows, err := s.q.DashboardProjectsPanel(ctx, args)
+	if err != nil {
+		return ProjectsPage{}, fmt.Errorf("dashboard: projects: %w", err)
+	}
+	out := ProjectsPage{Items: make([]ProjectItem, 0, len(rows))}
+	for _, r := range rows {
+		out.Total = int(r.Total)
+		it := ProjectItem{
+			ProjectID: r.ID, Name: r.Name, Nickname: r.Nickname, IslandCode: r.IslandCode,
+			TypeCode: r.TypeCode, ValueBaht: r.ValueBaht, ProgressPct: int(r.ProgressPct),
+			VersionCount: int(r.VersionCount), LatestVersionID: r.LatestVersionID,
+			LatestVersionNo: int(r.LatestVersionNo), LatestVersionStatus: string(r.LatestVersionStatus),
+		}
+		if r.IslandOther.Valid {
+			it.IslandOther = &r.IslandOther.String
+		}
+		if r.TypeOther.Valid {
+			it.TypeOther = &r.TypeOther.String
+		}
+		if r.Submitted {
+			id, n := r.LatestSubmittedVersionID, int(r.HVhCount)
+			it.LatestSubmittedVersionID, it.HVhCount = &id, &n
+			if r.AvgRm != "" {
+				it.AvgRM = &r.AvgRm
+			}
+		}
+		out.Items = append(out.Items, it)
+	}
+	if len(rows) == 0 && p.Page > 1 {
+		// A page past the end carries no total; ask for it on page one.
+		args.PageLimit, args.PageOffset = 1, 0
+		first, err := s.q.DashboardProjectsPanel(ctx, args)
+		if err != nil {
+			return ProjectsPage{}, fmt.Errorf("dashboard: projects total: %w", err)
+		}
+		if len(first) > 0 {
+			out.Total = int(first[0].Total)
+		}
+	}
+	return out, nil
+}
+
+// TopIndicator is an indicator ranked by projects with it at H or VH.
+type TopIndicator struct {
+	Rank                      int
+	IndicatorCode, FactorCode string
+	HCount, VhCount           int
+}
+
+// TopIndicators returns the Top 10 indicators most often H or VH. Ties: more
+// VH first, then indicator code.
+func (s *Service) TopIndicators(ctx context.Context, owner uuid.UUID) ([]TopIndicator, error) {
+	rows, err := s.q.DashboardTopIndicators(ctx, owner)
+	if err != nil {
+		return nil, fmt.Errorf("dashboard: top indicators: %w", err)
+	}
+	out := make([]TopIndicator, len(rows))
+	for i, r := range rows {
+		out[i] = TopIndicator{
+			Rank: i + 1, IndicatorCode: r.IndicatorCode, FactorCode: r.FactorCode,
+			HCount: int(r.HCount), VhCount: int(r.VhCount),
+		}
+	}
+	return out, nil
+}
+
+// IslandProject is a project in an island group. HVhCount is nil until a
+// version has been submitted.
+type IslandProject struct {
+	ProjectID       uuid.UUID
+	Name, Nickname  string
+	ProgressPct     int
+	LatestVersionID uuid.UUID
+	HVhCount        *int
+}
+
+// IslandGroup is the caller's projects on one island.
+type IslandGroup struct {
+	IslandCode string
+	Projects   []IslandProject
+}
+
+// Islands returns the caller's projects grouped by island, in island order.
+func (s *Service) Islands(ctx context.Context, owner uuid.UUID) ([]IslandGroup, error) {
+	rows, err := s.q.DashboardIslands(ctx, owner)
+	if err != nil {
+		return nil, fmt.Errorf("dashboard: islands: %w", err)
+	}
+	out := []IslandGroup{}
+	for _, r := range rows {
+		if n := len(out); n == 0 || out[n-1].IslandCode != r.IslandCode {
+			out = append(out, IslandGroup{IslandCode: r.IslandCode, Projects: []IslandProject{}})
+		}
+		g := &out[len(out)-1]
+		ip := IslandProject{
+			ProjectID: r.ProjectID, Name: r.Name, Nickname: r.Nickname,
+			ProgressPct: int(r.ProgressPct), LatestVersionID: r.LatestVersionID,
+		}
+		if r.Submitted {
+			n := int(r.HVhCount)
+			ip.HVhCount = &n
+		}
+		g.Projects = append(g.Projects, ip)
+	}
+	return out, nil
+}
+
+// likePattern turns search text into an ILIKE pattern, escaping wildcards.
+// Empty text gives "" which the query reads as "no filter".
+func likePattern(q string) string {
+	q = strings.TrimSpace(q)
+	if q == "" {
+		return ""
+	}
+	r := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`)
+	return "%" + r.Replace(q) + "%"
 }

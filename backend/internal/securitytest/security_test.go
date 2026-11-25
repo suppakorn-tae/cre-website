@@ -266,3 +266,23 @@ func TestReportDownloadIsOwnerOnly(t *testing.T) {
 		}
 	}
 }
+
+// The dashboard panels list only the caller's own projects, for an admin
+// too (UC-20, an admin path never reads other users' projects).
+func TestDashboardPanelsOnlyShowOwnProjects(t *testing.T) {
+	e := newEnv(t)
+	f := e.newFixture(t)
+	for _, p := range []string{"/dashboard/panels/projects", "/dashboard/panels/top-indicators", "/dashboard/panels/islands"} {
+		for _, c := range []*who{&e.bob, &e.admin} {
+			w := e.do(req{method: "GET", path: p, as: c})
+			wantStatus(t, w.Code, http.StatusOK, w.Body.String())
+			if strings.Contains(w.Body.String(), f.project.ID) || strings.Contains(w.Body.String(), f.project.Name) {
+				t.Errorf("%s: %s sees alice's project: %s", p, c.Pseudonym, w.Body)
+			}
+		}
+	}
+	w := e.do(req{method: "GET", path: "/dashboard/panels/projects", as: &e.alice})
+	if !strings.Contains(w.Body.String(), f.project.ID) {
+		t.Fatalf("control: alice does not see her project: %s", w.Body)
+	}
+}

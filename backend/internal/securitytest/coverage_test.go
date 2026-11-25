@@ -95,10 +95,13 @@ var covered = map[string]route{
 	"POST /auth/register/start":  {access: accessPublic},
 	"POST /auth/register/verify": {access: accessPublic},
 
-	"GET /dashboard":     {access: accessSession},
-	"GET /catalogue":     {access: accessSession},
-	"GET /islands":       {access: accessSession},
-	"GET /project-types": {access: accessSession},
+	"GET /dashboard":                       {access: accessSession},
+	"GET /dashboard/panels/projects":       {access: accessSession},
+	"GET /dashboard/panels/top-indicators": {access: accessSession},
+	"GET /dashboard/panels/islands":        {access: accessSession},
+	"GET /catalogue":                       {access: accessSession},
+	"GET /islands":                         {access: accessSession},
+	"GET /project-types":                   {access: accessSession},
 	// Not owned: the fixture job is not a finished report, so the owner gets
 	// 404 as well. TestReportDownloadIsOwnerOnly checks the other callers.
 	"GET /reports/{}/download": {
@@ -197,9 +200,6 @@ var pending = []string{
 	// IO-106: google sign-in endpoints (the oidc adapter is merged, the handlers are not)
 	"DELETE /account/google",
 	"POST /auth/google/start", "GET /auth/google/callback", "GET /auth/google/pending", "POST /auth/google/complete",
-	// IO-45 follow-up: the dashboard handler serves GET /dashboard only; the
-	// three panel endpoints of the contract have no handler yet.
-	"GET /dashboard/panels/projects", "GET /dashboard/panels/top-indicators", "GET /dashboard/panels/islands",
 }
 
 func static(p string) func(fixture) string { return func(fixture) string { return p } }
