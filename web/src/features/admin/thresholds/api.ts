@@ -4,15 +4,17 @@ import { browserApi } from '@/lib/api/client';
 import { ApiError } from '@/lib/api/errors';
 import type { components } from '@/lib/api/generated/schema';
 
-import type { RlValues } from './validation';
+import type { ImpactValues, RlValues } from './validation';
 
 export type RlThreshold = components['schemas']['AdminRlThreshold'];
+export type ImpactTables = components['schemas']['AdminImpactTables'];
 
 /** Indicator name and the dimension it belongs to, from the catalogue. */
 export type IndicatorInfo = { name: string; dimensionCode: string; dimensionName: string };
 
 const keys = {
   rl: ['admin-thresholds', 'rl'] as const,
+  impact: ['admin-thresholds', 'impact'] as const,
   names: ['admin-thresholds', 'names'] as const,
 };
 
@@ -59,6 +61,22 @@ export function useUpdateRl() {
       qc.setQueryData<RlThreshold[]>(keys.rl, (rows) =>
         rows?.map((r) => (r.indicator_code === saved.indicator_code ? saved : r)),
       ),
+  });
+}
+
+export function useImpactTables() {
+  return useQuery({
+    queryKey: keys.impact,
+    queryFn: async () => (await browserApi().GET('/admin/impact-tables')).data!,
+  });
+}
+
+export function useUpdateImpact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { ri_c: ImpactValues; ri_t: ImpactValues }) =>
+      (await browserApi().PUT('/admin/impact-tables', { body })).data!,
+    onSuccess: (saved) => qc.setQueryData(keys.impact, saved),
   });
 }
 

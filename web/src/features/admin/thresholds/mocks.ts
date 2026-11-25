@@ -6,8 +6,8 @@ import seed from '../../../../../backend/seed/cre-indicators.json';
 
 import type { paths } from '@/lib/api/generated/schema';
 
-import type { RlThreshold } from './api';
-import { checkRl, SLOTS, type Check, type Parsed } from './validation';
+import type { ImpactTables, RlThreshold } from './api';
+import { checkImpact, checkRl, SLOTS, type Check, type Parsed } from './validation';
 
 // Feature-local mock of the admin threshold api. The shared handler list is
 // not ours to edit, so `AdminThresholdMocks` adds these to the running worker.
@@ -31,11 +31,19 @@ const seedRl = (): RlThreshold[] =>
     updated_at: SEEDED_AT,
   }));
 
+const seedImpact = (): ImpactTables => ({
+  ri_c: { code: 'RI_C', thresholds: { ...seed.ri_c_thresholds }, updated_at: SEEDED_AT },
+  ri_t: { code: 'RI_T', thresholds: { ...seed.ri_t_thresholds }, updated_at: SEEDED_AT },
+});
+
 let rlStore = seedRl();
+let impactStore = seedImpact();
 
 export const getRlStore = () => rlStore;
+export const getImpactStore = () => impactStore;
 export function resetThresholdStore() {
   rlStore = seedRl();
+  impactStore = seedImpact();
 }
 /** Test hook: makes one indicator inverse, as the real catalogue has some. */
 export function setDirection(code: string, direction: RlThreshold['direction']) {
@@ -73,5 +81,33 @@ export const adminThresholdHandlers: HttpHandler[] = [
     const updated = { ...current, thresholds, updated_at: new Date().toISOString() };
     rlStore = rlStore.map((r) => (r === current ? updated : r));
     return response(200).json(updated);
+  }),
+  http.get('/admin/impact-tables', ({ response }) => response(200).json(impactStore)),
+  http.put('/admin/impact-tables', async ({ request, response }) => {
+    const body = (await request.clone().json()) as {
+      ri_c?: Parsed;
+      ri_t?: Parsed;
+    };
+    for (const [key, field] of [
+      ['ri_c', '/ri_c'],
+      ['ri_t', '/ri_t'],
+    ] as const) {
+      const values = body[key];
+      if (!values) continue;
+      const check = checkImpact(values);
+      if (check.form || Object.keys(check.fields).length > 0) {
+        return response(422).json(validation(field, check));
+      }
+    }
+    const now = new Date().toISOString();
+    impactStore = {
+      ri_c: body.ri_c
+        ? { code: 'RI_C', thresholds: body.ri_c as never, updated_at: now }
+        : impactStore.ri_c,
+      ri_t: body.ri_t
+        ? { code: 'RI_T', thresholds: body.ri_t as never, updated_at: now }
+        : impactStore.ri_t,
+    };
+    return response(200).json(impactStore);
   }),
 ];
