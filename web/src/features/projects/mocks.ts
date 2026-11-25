@@ -94,6 +94,10 @@ for (let i = 0; i < 19; i += 1) {
   });
 }
 
+/** Stable id of version `no` of a mock project, in the shape of the api's uuid. */
+const versionIdFor = (projectId: string, no: number) =>
+  `0193a5c2-0000-7000-8000-${projectId.slice(-8)}${String(no).padStart(4, '0')}`;
+
 function withDerived(id: string, fields: ProjectFields, versions: number, now: string): Project {
   const expected = expectedProgress(fields.start_date, fields.end_date);
   return {
@@ -102,6 +106,7 @@ function withDerived(id: string, fields: ProjectFields, versions: number, now: s
     expected_progress_pct: expected?.pct ?? 0,
     version_count: versions,
     latest_version_no: versions > 0 ? versions : null,
+    latest_version_id: versions > 0 ? versionIdFor(id, versions) : null,
     created_at: now,
     updated_at: now,
   };
@@ -158,7 +163,8 @@ export const projectHandlers: HttpHandler[] = [
   }),
   http.post('/projects', async ({ request, response }) => {
     const body = (await request.clone().json()) as ProjectFields;
-    const project = withDerived(idFor(nextId++), body, 0, new Date().toISOString());
+    // Like the api, creating a project also creates its first version.
+    const project = withDerived(idFor(nextId++), body, 1, new Date().toISOString());
     store = [project, ...store];
     return response(201).json(project);
   }),

@@ -107,6 +107,7 @@ describe('fromProject', () => {
       expected_progress_pct: 48,
       version_count: 2,
       latest_version_no: 2,
+      latest_version_id: '0193a5c2-7b1e-7c3a-9d4f-2a6b8e1f5c72',
       created_at: '2026-11-20T03:14:07Z',
       updated_at: '2026-11-20T03:14:07Z',
     } as Project;
