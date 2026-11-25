@@ -21,6 +21,10 @@ import (
 // account's data, admins included, looks absent.
 var ErrNotFound = errors.New("versions: not found")
 
+// ErrLastVersion means the version is the only live one of its project. A
+// project always keeps at least one version; delete the project instead.
+var ErrLastVersion = errors.New("versions: last version")
+
 // Status is a version's lifecycle state.
 type Status string
 
@@ -161,13 +165,38 @@ func (s *Service) IsEditable(ctx context.Context, projectID, id, owner uuid.UUID
 }
 
 // Delete soft-deletes a version of an owned project. Its number stays taken.
+// A project keeps at least one live version: deleting the last one is
+// ErrLastVersion. The project row is locked first, so two deletes of the last
+// two versions queue and the second one sees the first one's result.
 func (s *Service) Delete(ctx context.Context, projectID, id, owner uuid.UUID) error {
-	n, err := sqlc.New(s.db).SoftDeleteVersion(ctx, sqlc.SoftDeleteVersionParams{ID: id, ProjectID: projectID, OwnerID: owner})
-	if err != nil {
-		return fmt.Errorf("versions: delete: %w", err)
-	}
-	if n == 0 {
+	err := dal.WithTx(ctx, s.tx, func(tx pgx.Tx) error {
+		q := sqlc.New(tx)
+		if _, err := q.LockOwnedProject(ctx, sqlc.LockOwnedProjectParams{ID: projectID, OwnerID: owner}); err != nil {
+			return err
+		}
+		n, err := q.SoftDeleteVersion(ctx, sqlc.SoftDeleteVersionParams{ID: id, ProjectID: projectID, OwnerID: owner})
+		if err != nil {
+			return err
+		}
+		if n == 0 {
+			return ErrNotFound
+		}
+		left, err := q.CountLiveVersions(ctx, projectID)
+		if err != nil {
+			return err
+		}
+		if left == 0 {
+			return ErrLastVersion // rolls the delete back
+		}
+		return nil
+	})
+	switch {
+	case errors.Is(err, pgx.ErrNoRows), errors.Is(err, ErrNotFound):
 		return ErrNotFound
+	case errors.Is(err, ErrLastVersion):
+		return ErrLastVersion
+	case err != nil:
+		return fmt.Errorf("versions: delete: %w", err)
 	}
 	return nil
 }

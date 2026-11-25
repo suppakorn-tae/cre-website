@@ -128,10 +128,10 @@ type ProjectsPage struct {
 }
 
 // Projects returns one page of the caller's projects with a live version,
-// newest first, filtered by Q over name and nickname.
+// newest first, filtered by Q over name, nickname and island (code, Thai name or free text).
 func (s *Service) Projects(ctx context.Context, owner uuid.UUID, p ProjectsParams) (ProjectsPage, error) {
 	args := sqlc.DashboardProjectsPanelParams{
-		OwnerID: owner, Q: likePattern(p.Q),
+		OwnerID: owner, Q: likePattern(p.Q), IslandCodes: islandCodesByName(p.Q),
 		PageLimit: int32(p.PageSize), PageOffset: int32((p.Page - 1) * p.PageSize), //nolint:gosec // bounded by the handler
 	}
 	rows, err := s.q.DashboardProjectsPanel(ctx, args)
@@ -239,6 +239,31 @@ func (s *Service) Islands(ctx context.Context, owner uuid.UUID) ([]IslandGroup, 
 		g.Projects = append(g.Projects, ip)
 	}
 	return out, nil
+}
+
+// islandNameTH is the Thai island name per code, copied from
+// web/messages/th/projects.json (a test keeps the two equal). The island
+// table holds codes only, so the Thai half of the search lives here.
+var islandNameTH = map[string]string{
+	"koh_tao": "เกาะเต่า", "koh_samui": "เกาะสมุย", "koh_phangan": "เกาะพะงัน",
+	"koh_phi_phi": "เกาะพีพี", "koh_lanta": "เกาะลันตา", "koh_chang": "เกาะช้าง",
+	"koh_kood": "เกาะกูด", "other": "อื่น ๆ",
+}
+
+// islandCodesByName returns the codes of the islands whose Thai name contains
+// the search text. It is never nil, so the query gets an empty array.
+func islandCodesByName(q string) []string {
+	q = strings.ToLower(strings.TrimSpace(q))
+	codes := []string{}
+	if q == "" {
+		return codes
+	}
+	for code, name := range islandNameTH {
+		if strings.Contains(strings.ToLower(name), q) {
+			codes = append(codes, code)
+		}
+	}
+	return codes
 }
 
 // likePattern turns search text into an ILIKE pattern, escaping wildcards.

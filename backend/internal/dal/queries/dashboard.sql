@@ -78,7 +78,10 @@ ORDER BY count(*) DESC, (count(*) FILTER (WHERE r.level = 'VH')) DESC, r.indicat
 LIMIT 10;
 
 -- name: DashboardProjectsPanel :many
--- @q is a LIKE pattern already escaped by the caller, or empty for all.
+-- @q is a LIKE pattern already escaped by the caller, or empty for all. It
+-- matches name, nickname, the island code (read with spaces, "koh samui"),
+-- the free-text island, and the islands in @island_codes, which the caller
+-- picked by Thai name (the island table holds codes only).
 -- Columns of the submitted version are zero values when submitted is false
 -- (sqlc cannot mark lateral join columns nullable); avg_rm is '' when no
 -- indicator is scored. Projects without a live version are not listed: the
@@ -111,7 +114,12 @@ LEFT JOIN LATERAL (
     FROM risk_result r WHERE r.version_id = ls.id
 ) s ON ls.id IS NOT NULL
 WHERE p.owner_id = @owner_id AND p.deleted_at IS NULL
-  AND (@q::text = '' OR p.name ILIKE @q::text OR p.nickname ILIKE @q::text)
+  AND (@q::text = ''
+       OR p.name ILIKE @q::text
+       OR p.nickname ILIKE @q::text
+       OR replace(p.island_code, '_', ' ') ILIKE @q::text
+       OR p.island_other ILIKE @q::text
+       OR p.island_code = ANY(@island_codes::text[]))
 ORDER BY p.created_at DESC, p.id DESC
 LIMIT @page_limit OFFSET @page_offset;
 

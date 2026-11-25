@@ -157,6 +157,12 @@ func TestPanels(t *testing.T) {
 	if s, _ := svc.Projects(ctx, owner, dashboard.ProjectsParams{Q: "  beta  ", Page: 1, PageSize: 10}); len(s.Items) != 1 {
 		t.Fatalf("search is case-insensitive and trimmed: %+v", s)
 	}
+	// The search also matches the island, by code or by Thai name.
+	for q, want := range map[string]int{"samui": 1, "koh samui": 1, "สมุย": 1, "เกาะสมุย": 1, "เกาะเต่า": 2, "koh": 3, "เกาะ": 3, "ภูเก็ต": 0} {
+		if s, _ := svc.Projects(ctx, owner, dashboard.ProjectsParams{Q: q, Page: 1, PageSize: 10}); len(s.Items) != want || s.Total != want {
+			t.Fatalf("island search %q = %d items (total %d), want %d", q, len(s.Items), s.Total, want)
+		}
+	}
 	// Newest project first.
 	if len(page.Items) != 3 || page.Items[0].Name != "Gamma" || page.Items[1].Name != "Beta" || page.Items[2].Name != "Alpha pier" {
 		t.Fatalf("order = %+v, want newest first", page.Items)
