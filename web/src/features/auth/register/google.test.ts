@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { googleReturnView } from './google';
+import { AFTER_LOGIN_PATH } from '../login/paths';
+import { AFTER_SIGNUP_PATH, googleReturnView } from './google';
+
+describe('landing page', () => {
+  it('is the same after sign-up and log-in', () => {
+    expect(AFTER_SIGNUP_PATH).toBe(AFTER_LOGIN_PATH);
+    expect(AFTER_SIGNUP_PATH).toBe('/dashboard');
+  });
+});
 
 describe('googleReturnView', () => {
   it('shows the notice for a new Google user', () => {

@@ -182,3 +182,9 @@ responses:
       application/json:
         schema:
           $ref: '#/schemas/ErrorEnvelope'
+  ServiceUnavailable:
+    description: A dependency is unavailable. Code `mail_unavailable` when e-mail cannot be sent.
+    content:
+      application/json:
+        schema:
+          $ref: '#/schemas/ErrorEnvelope'
