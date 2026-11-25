@@ -1,0 +1,86 @@
+/* Heat map: one orange hue, light to dark by level (hi-fi 3.3c, "Heat-map colour"). */
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--color-text-secondary);
+  font-size: var(--text-small);
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.swatch {
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.VH {
+  background: #7f1d1d;
+  color: #fff;
+}
+.H {
+  background: #c2410c;
+  color: #fff;
+}
+.M {
+  background: #f6cfb3;
+  color: var(--color-navy-900);
+}
+.L {
+  background: #faeadf;
+  color: var(--color-navy-900);
+}
+.VL {
+  background: #f7f4f1;
+  color: var(--color-navy-900);
+}
+.none {
+  border: 1px dashed var(--color-border);
+  background: #fff;
+  color: var(--color-text-muted);
+}
+
+.scroll {
+  overflow-x: auto;
+}
+.grid {
+  border-collapse: separate;
+  border-spacing: var(--space-1);
+}
+.factor {
+  min-width: 11rem;
+  padding-right: var(--space-3);
+  color: var(--color-navy-900);
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  text-align: left;
+}
+.factorCode {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-medium);
+}
+.cell {
+  min-width: 4.75rem;
+  padding: var(--space-2);
+  border-radius: var(--radius-control);
+  font-size: var(--text-small);
+  text-align: center;
+}
+.cell span {
+  display: block;
+}
+.code {
+  font-weight: var(--weight-semibold);
+}
+.sum {
+  padding-left: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--text-small);
+  white-space: nowrap;
+}

@@ -11,6 +11,8 @@ import { projectPaths } from '@/features/versions/rules';
 import { ApiError } from '@/lib/api/errors';
 import { formatDateTime, formatNumber } from '@/lib/format/locale';
 
+import { HeatmapTab } from '../heatmap/HeatmapTab';
+import { HvhTab } from '../hvh/HvhTab';
 import { ResultsTable } from '../table/ResultsTable';
 import { useIndicatorNames, useResults, useVersion } from './api';
 import { OverviewTab } from './OverviewTab';
@@ -108,8 +110,17 @@ export function ResultsPage({ projectId, versionId }: { projectId: string; versi
         return <OverviewTab results={results.data!} names={names.data!} />;
       case 'table':
         return <ResultsTable items={items} names={names.data!} />;
+      case 'heatmap':
+        return <HeatmapTab items={items} names={names.data!} />;
       default:
-        return <EmptyState title={t('tabs.pending')} />;
+        return (
+          <HvhTab
+            projectId={projectId}
+            versionId={versionId}
+            results={results.data!}
+            names={names.data!}
+          />
+        );
     }
   }
 
