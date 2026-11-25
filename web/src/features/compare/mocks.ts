@@ -61,8 +61,8 @@ export const mockComparison = (base: string, target: string): VersionComparison 
     level_down_count: 2,
     level_changes: [
       {
-        indicator_code: 'ind_a',
-        factor_code: 'fac_1',
+        indicator_code: 'EC-MG-1',
+        factor_code: 'EC-MG',
         base_level: 'H',
         target_level: 'M',
         base_rm: 4,
@@ -70,8 +70,8 @@ export const mockComparison = (base: string, target: string): VersionComparison 
         direction: 'down',
       },
       {
-        indicator_code: 'ind_b',
-        factor_code: 'fac_1',
+        indicator_code: 'EC-MG-2',
+        factor_code: 'EC-MG',
         base_level: 'VH',
         target_level: 'H',
         base_rm: 5,
@@ -79,8 +79,8 @@ export const mockComparison = (base: string, target: string): VersionComparison 
         direction: 'down',
       },
       {
-        indicator_code: 'ind_c',
-        factor_code: 'fac_2',
+        indicator_code: 'EC-TC-1',
+        factor_code: 'EC-TC',
         base_level: 'L',
         target_level: 'M',
         base_rm: 2,
@@ -98,8 +98,8 @@ export const mockIndicatorRm = (): IndicatorRmMatrix => ({
     submitted: p.status === 'submitted',
   })),
   indicators: [
-    { indicator_code: 'ind_a', factor_code: 'fac_1', rms: [4, 3.5, 3, null] },
-    { indicator_code: 'ind_c', factor_code: 'fac_2', rms: [2, 2, 3, null] },
+    { indicator_code: 'EC-MG-1', factor_code: 'EC-MG', rms: [4, 3.5, 3, null] },
+    { indicator_code: 'EC-TC-1', factor_code: 'EC-TC', rms: [2, 2, 3, null] },
   ].map((row) => ({
     indicator_code: row.indicator_code,
     factor_code: row.factor_code,

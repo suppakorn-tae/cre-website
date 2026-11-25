@@ -20,6 +20,7 @@ import { formatDate, formatNumber } from '@/lib/format/locale';
 import { compareKey, fetchComparison, fetchTrend, trendKey, type VersionComparison } from './api';
 import styles from './compare.module.css';
 import { IndicatorRmChart } from './IndicatorRmChart';
+import { useNames } from './names';
 import { defaultPair, delta, submittedVersions } from './rules';
 import { TrendCharts } from './TrendCharts';
 
@@ -115,6 +116,7 @@ function Comparison({
   target: string;
 }) {
   const t = useTranslations('compare');
+  const names = useNames();
   const query = useQuery({
     queryKey: compareKey(projectId, base, target),
     queryFn: () => fetchComparison(projectId, base, target),
@@ -140,17 +142,15 @@ function Comparison({
       : formatNumber(d, undefined, { signDisplay: 'exceptZero', maximumFractionDigits: digits });
   const num = (v: number | null) =>
     v === null ? t('none') : formatNumber(v, undefined, { maximumFractionDigits: 2 });
-  const label = (kind: 'indicators' | 'factors', code: string) =>
-    t.has(`${kind}.${code}`) ? t(`${kind}.${code}`) : code;
 
   const columns: DataTableColumn<Change>[] = [
     {
       key: 'indicator',
       header: t('columns.indicator'),
       primary: true,
-      render: (c) => <strong>{label('indicators', c.indicator_code)}</strong>,
+      render: (c) => <strong>{names.indicator(c.indicator_code)}</strong>,
     },
-    { key: 'factor', header: t('columns.factor'), render: (c) => label('factors', c.factor_code) },
+    { key: 'factor', header: t('columns.factor'), render: (c) => names.factor(c.factor_code) },
     {
       key: 'change',
       header: t('columns.change'),

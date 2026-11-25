@@ -8,6 +8,7 @@ import { CheckboxGroup, Skeleton } from '@/components/ui';
 
 import { fetchIndicatorRm, indicatorRmKey } from './api';
 import styles from './compare.module.css';
+import { useNames } from './names';
 import { linePath, plotPoints } from './rules';
 
 const W = 320;
@@ -26,8 +27,7 @@ export function IndicatorRmChart({ projectId }: { projectId: string }) {
     queryKey: indicatorRmKey(projectId, factors),
     queryFn: () => fetchIndicatorRm(projectId, factors),
   });
-  const label = (kind: 'indicators' | 'factors', code: string) =>
-    tc.has(`${kind}.${code}`) ? tc(`${kind}.${code}`) : code;
+  const names = useNames();
 
   if (!all.data) return <Skeleton height="8rem" />;
   const factorCodes = [...new Set(all.data.indicators.map((i) => i.factor_code))];
@@ -40,7 +40,7 @@ export function IndicatorRmChart({ projectId }: { projectId: string }) {
       </h2>
       <CheckboxGroup
         legend={t('factorFilter')}
-        options={factorCodes.map((c) => ({ value: c, label: label('factors', c) }))}
+        options={factorCodes.map((c) => ({ value: c, label: names.factor(c) }))}
         value={factors}
         onChange={(v) => setFactors(v)}
       />
@@ -77,7 +77,7 @@ export function IndicatorRmChart({ projectId }: { projectId: string }) {
         <ul className={styles.legend}>
           {matrix.indicators.map((row, n) => (
             <li key={row.indicator_code} data-series={n % 6}>
-              {label('indicators', row.indicator_code)}
+              {names.indicator(row.indicator_code)}
             </li>
           ))}
         </ul>

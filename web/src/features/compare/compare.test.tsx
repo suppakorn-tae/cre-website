@@ -15,10 +15,12 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
 });
 
 import { fetchComparison, fetchIndicatorRm, fetchTrend } from './api';
+import { catalogueHandlers } from '../../mocks/catalogue';
 import { createCompareHandlers, mockTrend } from './mocks';
+import { fetchNames } from './names';
 import { TrendCharts } from './TrendCharts';
 
-const server = setupServer(...createCompareHandlers());
+const server = setupServer(...createCompareHandlers(), ...catalogueHandlers);
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 afterAll(() => server.close());
 
@@ -37,8 +39,8 @@ describe('compare api', () => {
     expect(cmp.base.version_no).toBe(2);
     expect(cmp.target.version_no).toBe(3);
     expect(cmp.level_changes).toHaveLength(3);
-    const rm = await fetchIndicatorRm('p', ['fac_2']);
-    expect(rm.indicators.map((i) => i.indicator_code)).toEqual(['ind_c']);
+    const rm = await fetchIndicatorRm('p', ['EC-TC']);
+    expect(rm.indicators.map((i) => i.indicator_code)).toEqual(['EC-TC-1']);
   });
 });
 
@@ -49,5 +51,13 @@ describe('TrendCharts', () => {
     expect(html).toContain('เวอร์ชัน 4');
     expect(html).toContain('<path');
     expect(html).toContain('ความเสี่ยงสูงมาก 2');
+  });
+});
+
+describe('catalogue names', () => {
+  it('maps indicator and factor codes to Thai names', async () => {
+    const names = await fetchNames();
+    expect(names.indicators.get('EC-MG-1')).toContain('การประสานงาน');
+    expect(names.factors.get('EC-MG')).toBeTruthy();
   });
 });
