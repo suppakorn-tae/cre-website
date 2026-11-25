@@ -175,6 +175,8 @@ type Querier interface {
 	ListCompleteAnswers(ctx context.Context, versionID uuid.UUID) ([]ListCompleteAnswersRow, error)
 	ListExistingAccountIDs(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error)
 	ListExistingIndicatorCodes(ctx context.Context, codes []string) ([]string, error)
+	// Done exports past their expiry. Served by job_expiry_ix.
+	ListExpiredExports(ctx context.Context, now time.Time) ([]ListExpiredExportsRow, error)
 	// @q is a LIKE pattern already escaped by the caller, or empty for all.
 	// latest_version_no is 0 when the project has no live version.
 	ListProjects(ctx context.Context, arg ListProjectsParams) ([]ListProjectsRow, error)
