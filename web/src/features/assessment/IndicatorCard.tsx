@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { CheckboxGroup, Input, UnitPicker, type CheckboxOption } from '@/components/ui';
 
 import type { Catalogue } from './api';
+import { fieldMessageKey, type FieldKey } from './fieldErrors';
 import styles from './assessment.module.css';
 import { COST_UNITS, TIME_UNITS, isAnswered, isComplete, parseAmount, type Draft } from './rules';
 
@@ -15,11 +16,20 @@ type Props = {
   draft: Draft;
   y3Options: CheckboxOption[];
   disabled: boolean;
+  /** Error codes the server answered with, per field. */
+  serverErrors?: Partial<Record<FieldKey, string>>;
   onChange: (draft: Draft) => void;
 };
 
 /** One indicator: X, y1, y2 and y3, each with the question from the catalogue. */
-export function IndicatorCard({ indicator, draft, y3Options, disabled, onChange }: Props) {
+export function IndicatorCard({
+  indicator,
+  draft,
+  y3Options,
+  disabled,
+  serverErrors,
+  onChange,
+}: Props) {
   const t = useTranslations('assessment');
   const tUnits = useTranslations('assessment.units');
   const done = isComplete(draft);
@@ -29,6 +39,10 @@ export function IndicatorCard({ indicator, draft, y3Options, disabled, onChange 
     text.trim() !== '' && parseAmount(text, max) === null
       ? t(max === undefined ? 'errors.number' : 'errors.percent')
       : undefined;
+  const serverError = (key: FieldKey) => {
+    const code = serverErrors?.[key];
+    return code === undefined ? undefined : t(fieldMessageKey(code));
+  };
   const maxFor = (unit: string) => (unit === 'percent' ? 100 : undefined);
 
   return (
@@ -40,6 +54,11 @@ export function IndicatorCard({ indicator, draft, y3Options, disabled, onChange 
           {t(`indicator.${state}`)}
         </span>
       </div>
+      {serverErrors?.code !== undefined && (
+        <p role="alert" className={styles.cardError}>
+          {t(fieldMessageKey(serverErrors.code))}
+        </p>
+      )}
       <div className={styles.fields}>
         <Input
           label={t('fields.x')}
@@ -49,7 +68,7 @@ export function IndicatorCard({ indicator, draft, y3Options, disabled, onChange 
           helper={[indicator.question_x, t('fields.xUnit', { unit: indicator.unit })]
             .filter(Boolean)
             .join(' · ')}
-          error={numberError(draft.x)}
+          error={numberError(draft.x) ?? serverError('x')}
           onChange={(e) => onChange({ ...draft, x: e.target.value })}
         />
         <UnitPicker
@@ -59,7 +78,7 @@ export function IndicatorCard({ indicator, draft, y3Options, disabled, onChange 
           value={draft.y1}
           disabled={disabled}
           helper={indicator.question_y1 ?? undefined}
-          error={numberError(draft.y1.amount, maxFor(draft.y1.unit))}
+          error={numberError(draft.y1.amount, maxFor(draft.y1.unit)) ?? serverError('y1')}
           onChange={(y1) => onChange({ ...draft, y1 })}
         />
         <UnitPicker
@@ -69,7 +88,7 @@ export function IndicatorCard({ indicator, draft, y3Options, disabled, onChange 
           value={draft.y2}
           disabled={disabled}
           helper={indicator.question_y2 ?? undefined}
-          error={numberError(draft.y2.amount, maxFor(draft.y2.unit))}
+          error={numberError(draft.y2.amount, maxFor(draft.y2.unit)) ?? serverError('y2')}
           onChange={(y2) => onChange({ ...draft, y2 })}
         />
         <CheckboxGroup
@@ -78,6 +97,7 @@ export function IndicatorCard({ indicator, draft, y3Options, disabled, onChange 
           value={draft.y3}
           disabled={disabled}
           helper={indicator.question_y3 ?? t('fields.y3Helper')}
+          error={serverError('y3')}
           onChange={(y3) => onChange({ ...draft, y3 })}
         />
       </div>
