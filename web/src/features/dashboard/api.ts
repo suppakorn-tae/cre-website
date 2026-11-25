@@ -13,6 +13,7 @@ const keys = {
   projects: (q: string, page: number) => ['dashboard', 'projects', q, page] as const,
   top: ['dashboard', 'top-indicators'] as const,
   islands: ['dashboard', 'islands'] as const,
+  islandNames: ['dashboard', 'islands', 'names'] as const,
   names: ['dashboard', 'indicator-names'] as const,
 };
 
@@ -44,6 +45,21 @@ export function useTopIndicatorsPanel(enabled: boolean) {
     queryKey: keys.top,
     enabled,
     queryFn: async () => (await browserApi().GET('/dashboard/panels/top-indicators')).data!.items,
+  });
+}
+
+/** Island codes for the islands card note. Best effort: any failure just means no note. */
+export function useIslandNames(enabled: boolean) {
+  return useQuery({
+    queryKey: keys.islandNames,
+    enabled,
+    queryFn: async () => {
+      try {
+        return (await browserApi().GET('/dashboard/panels/islands')).data?.items ?? [];
+      } catch {
+        return [];
+      }
+    },
   });
 }
 
