@@ -16,6 +16,7 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/api"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/app"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/projects"
+	"github.com/suppakorn-tae/cre-website/backend/internal/service/versions"
 	"github.com/suppakorn-tae/cre-website/backend/internal/testutil"
 	"github.com/suppakorn-tae/cre-website/backend/internal/testutil/contract"
 )
@@ -40,7 +41,7 @@ func newEnv(t *testing.T) env {
 		t.Fatal(err)
 	}
 	h := &handler{
-		svc: projects.New(db, func() time.Time { return time.Date(2027, 7, 1, 12, 0, 0, 0, time.UTC) }),
+		svc: projects.New(db, db, versions.Rounding{ScoreDecimals: 2, RMDecimals: 3}, func() time.Time { return time.Date(2027, 7, 1, 12, 0, 0, 0, time.UTC) }),
 		owner: func(r *http.Request) (uuid.UUID, bool) {
 			id, err := uuid.Parse(r.Header.Get(ownerHeader))
 			return id, err == nil
@@ -96,8 +97,12 @@ func TestCreateGetUpdateDelete(t *testing.T) {
 	p := decodeProject(t, w)
 	id := p["id"].(string)
 	if p["progress_pct"] != float64(0) || p["expected_progress_pct"] != float64(50) ||
-		p["version_count"] != float64(0) || p["latest_version_no"] != nil || p["description"] != nil {
+		p["version_count"] != float64(1) || p["latest_version_no"] != float64(1) || p["description"] != nil {
 		t.Fatalf("created: %v", p)
+	}
+	versionID, _ := p["latest_version_id"].(string)
+	if _, err := uuid.Parse(versionID); err != nil {
+		t.Fatalf("latest_version_id %v", p["latest_version_id"])
 	}
 	// 15 digits survive the round trip exactly.
 	if !strings.Contains(w.Body.String(), `"value_baht":123456789012.34`) {
@@ -107,7 +112,8 @@ func TestCreateGetUpdateDelete(t *testing.T) {
 		t.Fatalf("location %q", loc)
 	}
 
-	if w := e.do(t, e.a, "GET", "/projects/"+id, ""); w.Code != 200 {
+	w = e.do(t, e.a, "GET", "/projects/"+id, "")
+	if w.Code != 200 || decodeProject(t, w)["latest_version_id"] != versionID {
 		t.Fatalf("get: %d %s", w.Code, w.Body)
 	}
 

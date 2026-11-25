@@ -346,8 +346,8 @@ func toAPI(p projects.Project) wireProject {
 			StartDate: date(p.StartDate), EndDate: date(p.EndDate),
 			ProgressPct: p.ProgressPct, Description: p.Description,
 			ExpectedProgressPct: p.ExpectedProgressPct, VersionCount: p.VersionCount,
-			LatestVersionNo: p.LatestVersionNo,
-			CreatedAt:       p.CreatedAt.UTC(), UpdatedAt: p.UpdatedAt.UTC(),
+			LatestVersionNo: p.LatestVersionNo, LatestVersionId: p.LatestVersionID,
+			CreatedAt: p.CreatedAt.UTC(), UpdatedAt: p.UpdatedAt.UTC(),
 		},
 		ValueBaht: json.Number(p.ValueBaht),
 	}
