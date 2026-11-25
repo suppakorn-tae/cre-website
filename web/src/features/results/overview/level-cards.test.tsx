@@ -50,11 +50,11 @@ describe('results level cards', () => {
     }
   });
 
-  it('shows the level badge on every level card', () => {
+  it('shows the level chip first, then the count and the unit', () => {
     const html = renderPage();
     for (const level of ['VH', 'H', 'M', 'L', 'VL']) {
       const card = new RegExp(
-        `data-level="${level}"><span class="[^"]*countBadge[^"]*"><span class="[^"]*badge[^"]*"[^>]*>${level}</span>`,
+        `data-level="${level}"><span class="[^"]*badge[^"]*"[^>]*>${level}</span><p class="[^"]*countValue[^"]*"><span class="[^"]*countNumber[^"]*">\\d+</span><span class="[^"]*countUnit[^"]*">ตัวชี้วัด</span>`,
       );
       expect(html).toMatch(card);
     }
