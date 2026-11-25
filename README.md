@@ -152,23 +152,112 @@ Latest numbers: every interactive endpoint is under 1 s at p95. See [`loadtest/R
 
 ## 🏗️ Architecture
 
+Everything runs in Docker Compose. Only Caddy is published (ports 80 and 443).
+
 ```mermaid
 flowchart LR
-    browser([Browser]) --> caddy[Caddy<br/>TLS]
-    caddy --> web[Next.js web]
-    caddy --> api[Go api]
-    web -- server calls --> api
-    api --> db[(PostgreSQL)]
-    api --> valkey[(Valkey<br/>sessions · queue)]
-    api --> s3[(RustFS<br/>S3 files)]
-    worker[Go worker] --> db
-    worker --> valkey
-    worker --> s3
-    worker --> gotenberg[Gotenberg<br/>PDF]
-    api -. mail .-> mailpit[Mailpit<br/>dev only]
+    user([👤 Browser])
+    google([Google Sign-In])
+    mail([E-mail service])
+
+    subgraph public["public-net"]
+        caddy[Caddy<br/>HTTPS :443]
+    end
+
+    subgraph private["private-net (internal)"]
+        web[web<br/>Next.js :3000]
+        api[api<br/>Go + chi :4000]
+        worker[worker<br/>Go + asynq]
+        migrate[[migrate<br/>one-off]]
+        db[(PostgreSQL)]
+        valkey[(Valkey<br/>sessions · queue · cache)]
+        s3[(RustFS<br/>S3 files)]
+        pdf[Gotenberg<br/>PDF]
+    end
+
+    user --> caddy
+    caddy -- "/" --> web
+    caddy -- "/api/v1" --> api
+    web -- server-side fetch --> api
+    api --> db & valkey & s3
+    worker --> db & valkey & s3 & pdf
+    migrate -- schema + seed --> db
+    api -. egress-net .-> google & mail
 ```
 
-The api stores results when a version is submitted and never recalculates them on read. Reports and exports run as background jobs in the worker.
+<details>
+<summary><b>🗺️ Full architecture diagram</b> (v2.3)</summary>
+
+<br>
+
+[![CRE architecture v2.3](docs/specs/architecture/cre-architecture-v2.3.png)](docs/specs/architecture/cre-architecture-v2.3.png)
+
+Source: [`cre-architecture-v2.3.drawio`](docs/specs/architecture/cre-architecture-v2.3.drawio). Decisions: [`cre-architecture-decisions.md`](docs/specs/architecture/cre-architecture-decisions.md).
+
+</details>
+
+### How a user goes through it
+
+```mermaid
+flowchart LR
+    A[Sign up / log in<br/>e-mail OTP or Google] --> B[Dashboard]
+    B --> C[Project]
+    C --> D[Version v1]
+    D --> E[Answer indicators<br/>autosave]
+    E --> F{Submit}
+    F --> G[Results<br/>overview · table · heat map · H/VH]
+    G --> H[Choose strategy<br/>for H / VH]
+    H --> I[PDF report]
+    C --> J[New version v2<br/>v1 becomes read-only]
+    J --> K[Compare versions]
+```
+
+### How a score is made
+
+On submit, the api scores every complete indicator with the version's snapshot of thresholds and stores the result. Results are **never recalculated on read**.
+
+```mermaid
+flowchart LR
+    in[Answers as entered<br/>X · y1 · y2 · y3] --> conv[Unit conversion<br/>baht → % · days → %]
+    conv --> rl[RL<br/>likelihood]
+    conv --> ric[RI_C<br/>cost]
+    conv --> rit[RI_T<br/>time]
+    conv --> rie[RI_E<br/>environment]
+    ric & rit & rie --> rimax[RI_max]
+    rl & rimax --> rm["RM = √(RL × RI_max)"]
+    rm --> lvl[Level<br/>VL · L · M · H · VH]
+    lvl --> adv[Advice lists]
+```
+
+Full method: [risk engine spec](docs/specs/risk-engine/cre-risk-engine-and-indicators-v1.1.pdf).
+
+### How a PDF report is built
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant API as api
+    participant Q as Valkey queue
+    participant W as worker
+    participant G as Gotenberg
+    participant S as RustFS
+    U->>API: POST …/reports
+    API->>Q: enqueue job
+    API-->>U: 202 + job id
+    W->>Q: take job
+    W->>W: read stored results
+    W->>G: HTML → PDF
+    W->>S: upload reports/{id}.pdf
+    loop until done
+        U->>API: GET /jobs/{id}
+    end
+    U->>API: GET …/download
+    API->>S: stream the file
+    API-->>U: PDF
+```
+
+Research exports work the same way, as a ZIP with no e-mails, and expire after 7 days.
 
 | Part | Technology |
 | --- | --- |
@@ -200,6 +289,7 @@ docs/        Specs (specs/) and runbooks (runbooks/)
 | | |
 | --- | --- |
 | 📐 [Specs](docs/specs/README.md) | Requirements, risk engine, architecture, database, UX/UI. **The source of truth.** |
+| 🧩 Diagrams | [Use cases](docs/specs/requirements/cre-usecase-diagram.pdf) · [User flow](docs/specs/user-flow/cre-userflow.drawio) · [ER overview](docs/specs/database/figures/er-overview.pdf) · [Wireframes](docs/specs/ux-ui/CRE-wireframes.drawio) · [Hi-fi UI](docs/specs/ux-ui/CRE-hifi-ui.drawio) (open `.drawio` files at [app.diagrams.net](https://app.diagrams.net)) |
 | 🚢 [Deploy runbook](docs/runbooks/deploy.md) | Production deploy, including [Google sign-in setup](docs/runbooks/deploy.md#google-sign-in) |
 | 💾 [Restore runbook](docs/runbooks/restore.md) | Backups and restore |
 | 🤝 [CONTRIBUTING.md](CONTRIBUTING.md) | Branches, commits, pull requests, required checks |
