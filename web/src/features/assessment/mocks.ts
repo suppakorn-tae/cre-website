@@ -1,16 +1,49 @@
 import { HttpResponse, http as mswHttp, type HttpHandler } from 'msw';
 
+import { mockResultItems } from '@/features/results/overview/mocks';
+import { mockVersions } from '@/features/versions/mocks';
+
 import type { AnswerInput, AnswerList } from './api';
 
+const Y3_OPTIONS: AnswerInput['y3'][] = [
+  ['A'],
+  ['B'],
+  ['C', 'F'],
+  ['D', 'E', 'H'],
+  ['G'],
+  ['B', 'I'],
+];
+
 /**
- * Answers of any version, kept in memory. `readOnlyVersions` lists version ids
- * that answer `editable: false`.
+ * The answers behind a submitted sample version: one complete answer per
+ * scored indicator, with x, y1 and y2 as the results mock shows them. Other
+ * versions have no answers.
+ */
+export function seededAnswers(versionId: string): AnswerInput[] {
+  const version = mockVersions().find((v) => v.id === versionId);
+  if (version?.status !== 'submitted' || !version.level_counts) return [];
+  return mockResultItems(version.level_counts).map((item, i) => ({
+    indicator_code: item.indicator_code,
+    x: item.x,
+    y1: { value: item.y1_pct, unit: 'percent' },
+    y2: { value: item.y2_pct, unit: 'percent' },
+    y3: Y3_OPTIONS[i % Y3_OPTIONS.length],
+  }));
+}
+
+/**
+ * Answers of any version, kept in memory; the submitted sample versions start
+ * with their seeded answers. `readOnlyVersions` lists version ids that answer
+ * `editable: false`.
  */
 export function createAnswerHandlers(readOnlyVersions: string[] = []): HttpHandler[] {
   const stores = new Map<string, Map<string, AnswerInput>>();
   const storeOf = (id: string) => {
     let store = stores.get(id);
-    if (!store) stores.set(id, (store = new Map()));
+    if (!store) {
+      store = new Map(seededAnswers(id).map((a) => [a.indicator_code, a]));
+      stores.set(id, store);
+    }
     return store;
   };
   const list = (versionId: string): AnswerList => ({

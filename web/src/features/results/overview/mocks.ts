@@ -7,26 +7,65 @@ import { mockProject, mockProjectId, mockVersions } from '@/features/versions/mo
 
 import type { IndicatorResult, Level, ResultsResponse, Version } from './api';
 
-/** Level cut-offs of the mock only; the real ones come from `level_cutoffs`. */
-function levelOf(rm: number): Level {
-  if (rm >= 4.5) return 'VH';
-  if (rm >= 3.5) return 'H';
-  if (rm >= 2.5) return 'M';
-  if (rm >= 1.5) return 'L';
-  return 'VL';
+type LevelCounts = Record<Level, number>;
+
+const LEVELS: Level[] = ['VL', 'L', 'M', 'H', 'VH'];
+/** RM range of each level in the mock only; the real cut-offs come from `level_cutoffs`. */
+const BANDS: Record<Level, [number, number]> = {
+  VL: [1, 1.5],
+  L: [1.5, 2.5],
+  M: [2.5, 3.5],
+  H: [3.5, 4.5],
+  VH: [4.5, 5],
+};
+
+const round3 = (n: number) => Math.round(n * 1000) / 1000;
+
+/**
+ * Level counts and mean RM a results mock reports. The versions mock is the
+ * one source of both; the rows below are built to add up to the same counts.
+ * An unknown version id gets the latest version's numbers.
+ */
+function summaryOf(versionId: string) {
+  const versions = mockVersions();
+  const found = versions.find((v) => v.id === versionId && v.level_counts) ?? versions[0];
+  return { counts: found.level_counts as LevelCounts, averageRm: found.average_rm };
 }
 
-const score = (i: number, step: number) => 1 + ((i * step) % 400) / 100;
-
-/** One scored row per catalogue indicator, spread over all five levels. */
-export function mockResultItems(): IndicatorResult[] {
+/**
+ * One scored row per catalogue indicator, spread over the levels exactly as
+ * `counts` says (default: the latest version).
+ */
+export function mockResultItems(counts: LevelCounts = summaryOf('').counts): IndicatorResult[] {
+  const total = seed.indicators.length;
+  // A fixed shuffle: 37 is coprime to 55, so every rank 0..54 is used once.
+  const levelAt = (rank: number) => {
+    let from = 0;
+    for (const level of LEVELS) {
+      if (rank < from + counts[level])
+        return { level, within: (rank - from + 0.5) / counts[level] };
+      from += counts[level];
+    }
+    return { level: 'VH' as Level, within: 0.5 };
+  };
   return seed.indicators.map((indicator, i) => {
-    const rl = score(i, 37);
-    const ri_c = score(i, 53);
-    const ri_t = score(i, 71);
-    const ri_e = score(i, 29);
-    const ri_max = Math.max(ri_c, ri_t, ri_e);
-    const rm = Math.round(Math.sqrt(rl * ri_max) * 1000) / 1000;
+    const { level, within } = levelAt((i * 37) % total);
+    const [low, high] = BANDS[level];
+    const target = low + (high - low) * (0.05 + 0.9 * within);
+    // rl and ri_max stay within 1..5 and their geometric mean is the target.
+    const aMin = Math.max(1 / target, target / 5);
+    const aMax = Math.min(5 / target, target);
+    const a = aMin + (((i * 29) % 100) / 100) * (aMax - aMin);
+    const rl = round3(target * a);
+    const ri_max = round3(target / a);
+    const impacts = [
+      ri_max,
+      round3(Math.max(1, ri_max * 0.82)),
+      round3(Math.max(1, ri_max * 0.64)),
+    ];
+    const at = (k: number) => impacts[(k + (i % 3)) % 3];
+    const [ri_c, ri_t, ri_e] = [at(0), at(1), at(2)];
+    const rm = round3(Math.sqrt(rl * ri_max));
     return {
       indicator_code: indicator.group_id,
       x: 1 + (i % 9),
@@ -38,7 +77,7 @@ export function mockResultItems(): IndicatorResult[] {
       ri_e,
       ri_max,
       rm,
-      level: levelOf(rm),
+      level,
     };
   });
 }
@@ -57,9 +96,13 @@ function mockFactorAverages(items: IndicatorResult[]): ResultsResponse['factor_a
   }));
 }
 
-export function mockResults(versionId: string, items = mockResultItems()): ResultsResponse {
+export function mockResults(
+  versionId: string,
+  items = mockResultItems(summaryOf(versionId).counts),
+): ResultsResponse {
   const level_counts = { VL: 0, L: 0, M: 0, H: 0, VH: 0 };
   for (const item of items) level_counts[item.level] += 1;
+  const { averageRm } = summaryOf(versionId);
   return {
     version_id: versionId,
     submitted_at: '2026-11-14T09:40:00Z',
@@ -67,7 +110,7 @@ export function mockResults(versionId: string, items = mockResultItems()): Resul
     summary: {
       scored_count: items.length,
       level_counts,
-      average_rm: items.reduce((sum, i) => sum + i.rm, 0) / items.length,
+      average_rm: averageRm ?? items.reduce((sum, i) => sum + i.rm, 0) / items.length,
     },
     level_cutoffs: { l: 1.5, m: 2.5, h: 3.5, vh: 4.5 },
     factor_averages: mockFactorAverages(items),

@@ -67,7 +67,7 @@ export const mockVersions = (): VersionSummary[] => [
     very_high_count: 4,
     average_rm: 3.03,
     scored_count: 55,
-    level_counts: { VL: 5, L: 12, M: 19, H: 14, VH: 4 },
+    level_counts: { VL: 5, L: 12, M: 20, H: 14, VH: 4 },
   }),
   version(1, { status: 'draft' }),
 ];
