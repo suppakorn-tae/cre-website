@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -28,10 +29,19 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/worker/export"
 	"github.com/suppakorn-tae/cre-website/backend/internal/worker/report"
 	"github.com/suppakorn-tae/cre-website/backend/internal/worker/runtime"
+	"github.com/suppakorn-tae/cre-website/backend/internal/worker/sweep"
 )
 
 func main() {
 	os.Exit(run())
+}
+
+// schedulerEnabled reports whether this replica runs the cron scheduler.
+// It is on unless SCHEDULER_ENABLED is a false value.
+func schedulerEnabled(get func(string) (string, bool)) bool {
+	v, _ := get("SCHEDULER_ENABLED")
+	on, err := strconv.ParseBool(strings.TrimSpace(v))
+	return err != nil || on
 }
 
 func run() int {
@@ -98,6 +108,8 @@ func run() int {
 	}
 
 	store.EnsureBucketLogged(ctx, l)
+	// The sweep is a plain queue task, not a job kind.
+	srv.Handle(sweep.TaskType, sweep.New(pool, store, l, nil).Handle)
 
 	// One runner per job kind.
 	rt := runtime.New(jobs.New(pool, enq), srv, l)
@@ -105,6 +117,24 @@ func run() int {
 	rt.Register(jobs.KindExport, export.NewRunner(export.NewRepository(pool), store))
 	if err := rt.Start(ctx); err != nil {
 		return fail("worker runtime, exiting", err)
+	}
+
+	// Run the cron scheduler on one replica only; set SCHEDULER_ENABLED=false
+	// on the others. Every replica still handles the task.
+	if schedulerEnabled(os.LookupEnv) {
+		sch, err := sweep.NewScheduler(valkeyURL)
+		if err != nil {
+			rt.Stop()
+			return fail("sweep scheduler, exiting", err)
+		}
+		if err := sch.Start(); err != nil {
+			rt.Stop()
+			return fail("sweep scheduler start, exiting", err)
+		}
+		defer sch.Shutdown()
+		l.Info("scheduler started", "task", sweep.TaskType, "spec", sweep.Spec, "timezone", sweep.Timezone)
+	} else {
+		l.Info("scheduler disabled by SCHEDULER_ENABLED")
 	}
 
 	r := chi.NewRouter()
