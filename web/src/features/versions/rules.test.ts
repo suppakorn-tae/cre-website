@@ -28,7 +28,7 @@ describe('version rules', () => {
   });
 
   it('builds links to assessment, results and compare', () => {
-    expect(projectPaths.assessment('p', 'v')).toBe('/projects/p/versions/v/assessment');
+    expect(projectPaths.assessment('p', 'v')).toBe('/projects/p/versions/v/assess');
     expect(projectPaths.results('p', 'v')).toBe('/projects/p/versions/v/results');
     expect(projectPaths.compare('p')).toBe('/projects/p/compare');
   });

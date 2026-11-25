@@ -72,7 +72,7 @@ describe('VersionList', () => {
 
   it('links to assessment, results (submitted only) and compare', () => {
     const html = render();
-    expect(html).toContain('/versions/0193a5c2-0000-7000-8000-000000000103/assessment');
+    expect(html).toContain('/versions/0193a5c2-0000-7000-8000-000000000103/assess');
     expect(html).toContain('/versions/0193a5c2-0000-7000-8000-000000000103/results');
     expect(html).not.toContain('/versions/0193a5c2-0000-7000-8000-000000000101/results');
     expect(html).toContain(`/projects/${mockProjectId}/compare`);
