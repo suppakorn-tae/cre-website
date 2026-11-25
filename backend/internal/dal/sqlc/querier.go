@@ -60,6 +60,13 @@ type Querier interface {
 	// Created only after the OTP was verified. Role and status take their
 	// defaults (user, active); the e-mail counts as verified.
 	CreateRegisteredAccount(ctx context.Context, arg CreateRegisteredAccountParams) (CreateRegisteredAccountRow, error)
+	// Dashboard read models (UC-20, BR-26). Every query is scoped by owner_id and
+	// hides deleted projects and versions. They read stored risk_result rows;
+	// nothing is recalculated. "Latest submitted" is the submitted, non-deleted
+	// version with the highest version_no of a project; drafts never count.
+	DashboardKpis(ctx context.Context, ownerID uuid.UUID) (DashboardKpisRow, error)
+	DashboardLevelCounts(ctx context.Context, ownerID uuid.UUID) ([]DashboardLevelCountsRow, error)
+	DashboardProjectRisks(ctx context.Context, ownerID uuid.UUID) ([]DashboardProjectRisksRow, error)
 	// The live job for a submission; a failed job does not count, so the user
 	// may ask again.
 	FindReportJob(ctx context.Context, arg FindReportJobParams) (uuid.UUID, error)
