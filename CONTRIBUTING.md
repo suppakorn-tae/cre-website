@@ -79,9 +79,10 @@ Toolchain versions come from the repo: `backend/go.mod`, `.nvmrc` and `packageMa
 
 ## Dependabot PRs
 
-- Dependabot opens at most one PR per ecosystem (Go, npm, GitHub Actions, Docker images) every Monday, 06:00 Asia/Bangkok. Only minor and patch updates are proposed; majors are ignored because the stack is fixed. Next.js is pinned, so only its patch updates are proposed.
-- Titles look like `chore(web): bump the npm group with 4 updates`. The `pr-title` check accepts them without `(IO-n)`; type, scope and lowercase are still checked. Human PRs always need `(IO-n)`.
-- Review: a reviewer agent or a human reads the changelogs of risky bumps (runtime, framework, auth, database driver, base images) and checks that CI is green. If a group is risky, close it and let Dependabot reopen only what is safe, or pin the dependency in `.github/dependabot.yml` in a separate issue.
+- Dependabot opens PRs only for security fixes, of any size (patch, minor or major, as the fix requires). There are no weekly version updates and no routine bumps: if it works, it works. `open-pull-requests-limit: 0` turns version updates off; security updates keep their own cap.
+- Covered: Go, npm and GitHub Actions, one grouped security PR per ecosystem. Docker base images are not covered by Dependabot security updates, so they are not configured.
+- Titles look like `chore(web): bump the npm group across 1 directory with 2 updates`. The `pr-title` check accepts them without `(IO-n)`; type, scope and lowercase are still checked. Human PRs always need `(IO-n)`.
+- Review: a reviewer agent or a human checks that CI is green and reads the changelog and breaking changes of the fix, especially majors, because the stack is fixed (AGENTS.md). If a major cannot be taken, close the PR and open an issue for a manual fix. Do not add `ignore` rules to `.github/dependabot.yml`: they also block security fixes.
 - Merge: squash merge when CI is green. Changes to `.github/dependabot.yml` or `.github/workflows/` are hotspots and need a human.
 
 ## Merge rules
