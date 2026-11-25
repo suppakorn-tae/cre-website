@@ -30,3 +30,16 @@ func TestRenderOTPEmptyCode(t *testing.T) {
 		t.Fatal("want error for empty code")
 	}
 }
+
+func TestRenderContinueWithGoogle(t *testing.T) {
+	subject, body, err := mail.RenderContinueWithGoogle()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(subject, "Google") || strings.ContainsAny(subject, "\r\n") {
+		t.Errorf("subject = %q", subject)
+	}
+	if !strings.Contains(body, "เรียนผู้ใช้งาน") || !strings.Contains(body, "Google") {
+		t.Errorf("body = %q", body)
+	}
+}
