@@ -38,6 +38,37 @@ func (f *fakeReader) Summary(_ context.Context, o uuid.UUID) (svc.Summary, error
 	}, nil
 }
 
+func (f *fakeReader) Projects(_ context.Context, o uuid.UUID, p svc.ProjectsParams) (svc.ProjectsPage, error) {
+	f.asked = append(f.asked, o)
+	sub, n, rm, other := uuid.New(), 7, "3.25", "dock"
+	return svc.ProjectsPage{Total: 2, Items: []svc.ProjectItem{
+		{
+			ProjectID: uuid.New(), Name: "Pier", Nickname: "PIER", IslandCode: "koh_tao", TypeCode: "pier",
+			TypeOther: &other, ValueBaht: "150000000.25", ProgressPct: 40, VersionCount: 3,
+			LatestVersionID: uuid.New(), LatestVersionNo: 3, LatestVersionStatus: "draft",
+			LatestSubmittedVersionID: &sub, HVhCount: &n, AvgRM: &rm,
+		},
+		{
+			ProjectID: uuid.New(), Name: "New", Nickname: "NEW1", IslandCode: "koh_samui", TypeCode: "road",
+			ValueBaht: "1.00", VersionCount: 1, LatestVersionID: uuid.New(), LatestVersionNo: 1, LatestVersionStatus: "draft",
+		},
+	}}, nil
+}
+
+func (f *fakeReader) TopIndicators(_ context.Context, o uuid.UUID) ([]svc.TopIndicator, error) {
+	f.asked = append(f.asked, o)
+	return []svc.TopIndicator{{Rank: 1, IndicatorCode: "EC-HS-1", FactorCode: "EC-HS", HCount: 2, VhCount: 1}}, nil
+}
+
+func (f *fakeReader) Islands(_ context.Context, o uuid.UUID) ([]svc.IslandGroup, error) {
+	f.asked = append(f.asked, o)
+	n := 3
+	return []svc.IslandGroup{{IslandCode: "koh_tao", Projects: []svc.IslandProject{
+		{ProjectID: uuid.New(), Name: "Pier", Nickname: "PIER", ProgressPct: 10, LatestVersionID: uuid.New(), HVhCount: &n},
+		{ProjectID: uuid.New(), Name: "New", Nickname: "NEW1", LatestVersionID: uuid.New()},
+	}}}, nil
+}
+
 type accounts struct{}
 
 func (accounts) GetRecord(_ context.Context, id string) (session.Record, error) {
@@ -101,6 +132,10 @@ func get(t *testing.T, f *fakeReader, accountID, path string) *http.Response {
 func TestResponsesMatchContract(t *testing.T) {
 	for _, path := range []string{
 		"/api/v1/dashboard",
+		"/api/v1/dashboard/panels/projects",
+		"/api/v1/dashboard/panels/projects?page=2&page_size=5&q=pier",
+		"/api/v1/dashboard/panels/top-indicators",
+		"/api/v1/dashboard/panels/islands",
 	} {
 		f := &fakeReader{}
 		if resp := get(t, f, owner.String(), path); resp.StatusCode != http.StatusOK {
@@ -123,10 +158,21 @@ func TestAdminSeesOnlyOwnFigures(t *testing.T) {
 func TestNoSessionIs401(t *testing.T) {
 	for _, path := range []string{
 		"/api/v1/dashboard",
+		"/api/v1/dashboard/panels/projects",
+		"/api/v1/dashboard/panels/top-indicators",
+		"/api/v1/dashboard/panels/islands",
 	} {
 		f := &fakeReader{}
 		if resp := get(t, f, "", path); resp.StatusCode != http.StatusUnauthorized || len(f.asked) != 0 {
 			t.Fatalf("%s: status = %d asked = %v, want 401 and no read", path, resp.StatusCode, f.asked)
+		}
+	}
+}
+
+func TestBadPagingIs400(t *testing.T) {
+	for _, q := range []string{"page=0", "page=x", "page_size=101", "q=" + strings.Repeat("a", 101)} {
+		if resp := get(t, &fakeReader{}, owner.String(), "/api/v1/dashboard/panels/projects?"+q); resp.StatusCode != http.StatusBadRequest {
+			t.Fatalf("%s: status = %d, want 400", q, resp.StatusCode)
 		}
 	}
 }
