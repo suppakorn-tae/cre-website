@@ -179,6 +179,7 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
   test('download the PDF and find the indicator and strategy', async () => {
     test.setTimeout(180_000);
     await go(page, `/projects/${projectId}/versions/${v1}/report`);
+    await page.getByRole('button', { name: msg('reports', 'request') }).click();
     await expect(page.getByText(msg('reports', 'status.done'))).toBeVisible({ timeout: 120_000 });
 
     const download = page
