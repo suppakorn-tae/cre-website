@@ -24,10 +24,6 @@
   outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
-.alertText {
-  margin: 0;
-}
-
 /* Two-step indicator of the forgot-password flow */
 .steps {
   display: flex;

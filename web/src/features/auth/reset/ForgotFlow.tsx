@@ -1,12 +1,13 @@
 'use client';
 
+import { IconArrowLeft, IconCheck, IconMail } from '@tabler/icons-react';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
-import { Button, Input } from '@/components/ui';
+import { Alert, Button, FieldError, FieldOk, Icon, Input } from '@/components/ui';
 import { AuthShell } from '@/features/auth/register/AuthShell';
 import { RESEND_SECONDS } from '@/features/auth/register/countdown';
 import { OTP_LENGTH } from '@/features/auth/register/otp';
@@ -65,7 +66,7 @@ function StepIndicator({ current }: { current: 1 | 2 }) {
           data-done={n < current}
         >
           <span className={extra.stepDot} aria-hidden="true">
-            {n}
+            {n < current ? <Icon icon={IconCheck} size={16} /> : n}
           </span>
           {t(`step${n}`)}
         </li>
@@ -117,17 +118,14 @@ function EmailStep({ onSent }: { onSent: (email: string, challenge: OtpChallenge
 
   return (
     <>
-      <Link href={LOGIN_PATH} className={styles.link}>
+      <Link href={LOGIN_PATH} className={`${styles.link} ${styles.backLink}`}>
+        <Icon icon={IconArrowLeft} size={16} />
         {t('back')}
       </Link>
       <StepIndicator current={1} />
       <h1 className={styles.title}>{t('title')}</h1>
       <p className={styles.subtitle}>{t('subtitle')}</p>
-      {formError && (
-        <p className={styles.alert} role="alert">
-          {formError}
-        </p>
-      )}
+      {formError && <Alert tone="error">{formError}</Alert>}
       <form className={styles.form} onSubmit={submit} noValidate>
         <Input
           label={t('label')}
@@ -135,6 +133,7 @@ function EmailStep({ onSent }: { onSent: (email: string, challenge: OtpChallenge
           inputMode="email"
           autoComplete="email"
           placeholder={t('placeholder')}
+          icon={IconMail}
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
@@ -291,17 +290,19 @@ function ResetStep({
 
   return (
     <>
-      <Button variant="ghost" size="sm" className={styles.back} onClick={onBack}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className={styles.back}
+        icon={<Icon icon={IconArrowLeft} size={16} />}
+        onClick={onBack}
+      >
         {t('changeEmail')}
       </Button>
       <StepIndicator current={2} />
       <h1 className={styles.title}>{t('title')}</h1>
       <p className={styles.subtitle}>{t('subtitle', { email: maskEmail(email), minutes })}</p>
-      {failure?.kind === 'form' && (
-        <p className={styles.alert} role="alert">
-          {failure.text}
-        </p>
-      )}
+      {failure?.kind === 'form' && <Alert tone="error">{failure.text}</Alert>}
       <form className={styles.form} onSubmit={submit} noValidate>
         <div className={styles.field}>
           <span className={styles.label}>
@@ -321,16 +322,8 @@ function ResetStep({
             describedBy={otpError ? 'reset-otp-error' : undefined}
             disabled={reset.isPending}
           />
-          {otpError && (
-            <p id="reset-otp-error" className={styles.errorText} role="alert">
-              {otpError}
-            </p>
-          )}
-          {resent && !otpError && (
-            <p className={styles.okText} role="status">
-              {t('resent')}
-            </p>
-          )}
+          {otpError && <FieldError id="reset-otp-error">{otpError}</FieldError>}
+          {resent && !otpError && <FieldOk>{t('resent')}</FieldOk>}
         </div>
         <p className={styles.resend}>
           {t('noCode')}{' '}

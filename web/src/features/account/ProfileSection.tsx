@@ -1,10 +1,11 @@
 'use client';
 
+import { IconBuilding, IconMail } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useState, type FormEvent } from 'react';
 
-import { Button, Input } from '@/components/ui';
+import { Alert, Button, Input } from '@/components/ui';
 
 import { organisationError } from './account';
 import styles from './account.module.css';
@@ -42,13 +43,21 @@ export function ProfileSection({ account }: { account: Account }) {
       <h2 id="account-profile" className={styles.cardTitle}>
         {t('title')}
       </h2>
-      <Input label={t('email')} value={account.email} disabled readOnly helper={t('emailHelper')} />
+      <Input
+        label={t('email')}
+        icon={IconMail}
+        value={account.email}
+        disabled
+        readOnly
+        helper={t('emailHelper')}
+      />
       <form className={styles.inlineForm} onSubmit={submit} noValidate>
         <Input
           className={styles.grow}
           label={t('organisation')}
           optionalLabel={t('optional')}
           placeholder={t('organisationPlaceholder')}
+          icon={IconBuilding}
           autoComplete="organization"
           value={organisation}
           onChange={(e) => {
@@ -62,11 +71,7 @@ export function ProfileSection({ account }: { account: Account }) {
           {save.isPending ? t('saving') : t('save')}
         </Button>
       </form>
-      {saved && (
-        <p className={styles.success} role="status">
-          {t('saved')}
-        </p>
-      )}
+      {saved && <Alert tone="success">{t('saved')}</Alert>}
     </section>
   );
 }

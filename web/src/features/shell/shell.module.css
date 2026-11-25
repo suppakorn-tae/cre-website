@@ -49,8 +49,7 @@
   color: var(--color-text-muted);
   white-space: nowrap;
 }
-.accountButton:focus-visible,
-.menuItem:focus-visible {
+.accountButton:focus-visible {
   outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
@@ -64,14 +63,21 @@
   align-items: center;
   gap: var(--space-2);
   min-height: 40px;
-  padding: 0 var(--space-2);
-  border: 0;
-  border-radius: var(--radius-control);
+  padding: 0 var(--space-3) 0 var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
   background: transparent;
   color: inherit;
   font: inherit;
   font-size: var(--text-small);
   cursor: pointer;
+}
+.accountButton:hover {
+  background: var(--color-subtle);
+}
+.chevron {
+  flex: none;
+  color: var(--color-text-muted);
 }
 .avatar {
   display: inline-flex;
@@ -86,51 +92,6 @@
 }
 .email {
   display: none;
-}
-.menu {
-  position: absolute;
-  inset-inline-end: 0;
-  top: calc(100% + var(--space-2));
-  display: flex;
-  flex-direction: column;
-  min-width: 220px;
-  padding: var(--space-2);
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-floating);
-}
-.role {
-  padding: var(--space-1) var(--space-3);
-  color: var(--color-text-muted);
-  font-size: var(--text-caption);
-}
-.menuItem {
-  display: flex;
-  align-items: center;
-  min-height: 40px;
-  padding: 0 var(--space-3);
-  border: 0;
-  border-radius: var(--radius-control);
-  background: transparent;
-  color: var(--color-text);
-  font: inherit;
-  font-size: var(--text-body);
-  text-align: start;
-  text-decoration: none;
-  cursor: pointer;
-}
-.menuItem:hover:not(:disabled) {
-  background: var(--color-subtle);
-}
-.menuItem:disabled {
-  color: var(--color-disabled);
-  cursor: default;
-}
-.menuError {
-  margin: var(--space-1) var(--space-3);
-  color: var(--color-error);
-  font-size: var(--text-caption);
 }
 .main {
   display: block;

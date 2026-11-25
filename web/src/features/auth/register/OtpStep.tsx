@@ -1,12 +1,13 @@
 'use client';
 
+import { IconArrowLeft } from '@tabler/icons-react';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
-import { Button } from '@/components/ui';
+import { Button, FieldError, FieldOk, Icon } from '@/components/ui';
 
 import {
   AuthApiError,
@@ -130,7 +131,13 @@ export function OtpStep({ email, challenge, onBack }: Props) {
 
   return (
     <>
-      <Button variant="ghost" size="sm" className={styles.back} onClick={onBack}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className={styles.back}
+        icon={<Icon icon={IconArrowLeft} size={16} />}
+        onClick={onBack}
+      >
         {t('otp.back')}
       </Button>
       <h1 className={styles.title}>{t('otp.title')}</h1>
@@ -156,16 +163,8 @@ export function OtpStep({ email, challenge, onBack }: Props) {
             describedBy={errorText ? errorId : undefined}
             disabled={verify.isPending}
           />
-          {errorText && (
-            <p id={errorId} className={styles.errorText} role="alert">
-              {errorText}
-            </p>
-          )}
-          {resent && !errorText && (
-            <p className={styles.okText} role="status">
-              {t('otp.resent')}
-            </p>
-          )}
+          {errorText && <FieldError id={errorId}>{errorText}</FieldError>}
+          {resent && !errorText && <FieldOk>{t('otp.resent')}</FieldOk>}
         </div>
         <p className={styles.resend}>
           {t('otp.noCode')}{' '}

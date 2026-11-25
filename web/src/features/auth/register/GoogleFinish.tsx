@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, type FormEvent } from 'react';
 
-import { Button, Input } from '@/components/ui';
+import { IconBuilding } from '@tabler/icons-react';
+import { Alert, Button, GoogleMark, Input } from '@/components/ui';
 
 import { AuthApiError, completeGoogleSignup, getGooglePending, refreshCsrf } from './api';
 import { AuthShell } from './AuthShell';
@@ -28,12 +29,10 @@ export function GoogleFinish() {
   return (
     <AuthShell>
       {view.kind === 'finish' && <FinishForm />}
-      {view.kind === 'redirect' && <p className={styles.success}>{t('result.redirecting')}</p>}
+      {view.kind === 'redirect' && <Alert tone="success">{t('result.redirecting')}</Alert>}
       {view.kind === 'message' && (
         <>
-          <p className={styles.alert} role="alert">
-            {t(`result.${view.key}`)}
-          </p>
+          <Alert tone="error">{t(`result.${view.key}`)}</Alert>
           <Link href={REGISTER_PATH} className={styles.link}>
             {t('restart')}
           </Link>
@@ -70,9 +69,7 @@ function FinishForm() {
   if (pending.isError) {
     return (
       <>
-        <p className={styles.alert} role="alert">
-          {t('google.expired')}
-        </p>
+        <Alert tone="error">{t('google.expired')}</Alert>
         <Link href={REGISTER_PATH} className={styles.link}>
           {t('google.restart')}
         </Link>
@@ -101,20 +98,22 @@ function FinishForm() {
       <h1 className={styles.title}>{t('google.title')}</h1>
       <p className={styles.subtitle}>{t('google.subtitle')}</p>
       <div className={styles.account}>
-        <span className={styles.accountLabel}>{t('google.account')}</span>
-        <span>{pending.data.email}</span>
+        <span className={styles.accountMark}>
+          <GoogleMark size={18} />
+        </span>
+        <span className={styles.accountText}>
+          <span className={styles.accountLabel}>{t('google.account')}</span>
+          <span>{pending.data.email}</span>
+        </span>
       </div>
       <form className={styles.form} onSubmit={submit} noValidate>
-        {failedText && (
-          <p className={styles.alert} role="alert">
-            {failedText}
-          </p>
-        )}
+        {failedText && <Alert tone="error">{failedText}</Alert>}
         <Input
           label={t('google.organisation')}
           optionalLabel={tUi('optional')}
           autoComplete="organization"
           placeholder={t('google.organisationPlaceholder')}
+          icon={IconBuilding}
           value={organisation}
           maxLength={200}
           onChange={(e) => setOrganisation(e.target.value)}
