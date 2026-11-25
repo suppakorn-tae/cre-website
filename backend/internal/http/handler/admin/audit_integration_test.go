@@ -252,8 +252,8 @@ func TestAuditListValidation(t *testing.T) {
 		"?admin_id=nope", "?action=nope", "?target_id=u1", "?from=yesterday", "?to=2026-01-01",
 		"?page=0", "?page_size=101", "?page_size=x",
 	} {
-		if got := e.get(t, a, http.MethodGet, "/audit-log"+q).StatusCode; got != http.StatusUnprocessableEntity {
-			t.Errorf("%s status = %d, want 422", q, got)
+		if got := e.get(t, a, http.MethodGet, "/audit-log"+q).StatusCode; got != http.StatusBadRequest {
+			t.Errorf("%s status = %d, want 400", q, got)
 		}
 	}
 }

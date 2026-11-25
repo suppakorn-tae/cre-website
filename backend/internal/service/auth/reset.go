@@ -83,6 +83,10 @@ type resetCode struct {
 
 func resetCodeKey(email string) string     { return "otp:reset:" + email }
 func resetCooldownKey(email string) string { return "otp:reset:cd:" + email }
+func resetUsedKey(email, nonce string) string {
+	return "otp:reset:used:" + email + ":" + nonce
+}
+
 func resetAttemptsKey(email, nonce string) string {
 	return "otp:reset:att:" + email + ":" + nonce
 }
@@ -178,19 +182,31 @@ func (s *ResetService) Reset(ctx context.Context, email, otp, newPassword, confi
 	if !OTPMatches(rc.Hash, rc.Salt, email, otp) {
 		return ErrResetOTPInvalid
 	}
+	// Consume the code atomically: of two concurrent requests with the same
+	// valid code only the one that wins this SetNX goes on.
+	won, err := s.cache.SetNX(ctx, resetUsedKey(email, rc.Nonce), []byte("1"), ResetOTPTTL)
+	if err != nil {
+		return fmt.Errorf("auth: consume code: %w", err)
+	}
+	if !won {
+		return ErrResetOTPExpired
+	}
 	acc, err := s.store.ByEmail(ctx, email)
 	if errors.Is(err, ErrLoginNoAccount) || (err == nil && acc.Status != loginStatusActive) {
 		_ = s.cache.Del(ctx, resetCodeKey(email))
 		return ErrResetOTPExpired
 	}
 	if err != nil {
+		_ = s.cache.Del(ctx, resetUsedKey(email, rc.Nonce)) // not spent: allow a retry
 		return fmt.Errorf("auth: load account: %w", err)
 	}
 	hash, err := HashPassword(newPassword)
 	if err != nil {
+		_ = s.cache.Del(ctx, resetUsedKey(email, rc.Nonce))
 		return err
 	}
 	if err := s.store.SetPasswordHash(ctx, acc.ID, hash); err != nil {
+		_ = s.cache.Del(ctx, resetUsedKey(email, rc.Nonce))
 		return fmt.Errorf("auth: store password: %w", err)
 	}
 	if _, err := s.sessions.BumpVersion(ctx, acc.ID); err != nil {

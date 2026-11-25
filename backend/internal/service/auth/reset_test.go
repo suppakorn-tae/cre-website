@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"sync"
 	"testing"
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/mailer"
@@ -177,5 +178,33 @@ func TestResetPasswordValidationKeepsCode(t *testing.T) {
 	}
 	if err := e.s.Reset(ctx, "a@example.com", code, "brand-new-pass", "brand-new-pass"); err != nil {
 		t.Errorf("valid after bad password: %v", err)
+	}
+}
+
+func TestResetConcurrentSameCodeSucceedsOnce(t *testing.T) {
+	e := resetNewEnv(t)
+	code := e.code(t, "a@example.com")
+	const n = 4 // below the 5-attempt lock
+	var wg sync.WaitGroup
+	errs := make([]error, n)
+	for i := range n {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			errs[i] = e.s.Reset(context.Background(), "a@example.com", code, "brand-new-pass", "brand-new-pass")
+		}()
+	}
+	wg.Wait()
+	ok := 0
+	for _, err := range errs {
+		switch {
+		case err == nil:
+			ok++
+		case !errors.Is(err, ErrResetOTPExpired):
+			t.Errorf("unexpected error: %v", err)
+		}
+	}
+	if ok != 1 || len(e.sess.bumped) != 1 {
+		t.Errorf("successes = %d, bumps = %d, want 1 and 1", ok, len(e.sess.bumped))
 	}
 }
