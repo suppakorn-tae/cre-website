@@ -105,6 +105,8 @@ type Querier interface {
 	// from being superseded while the answers are written.
 	GetAnswerVersionAccess(ctx context.Context, arg GetAnswerVersionAccessParams) (bool, error)
 	GetAuditEntry(ctx context.Context, id int64) (GetAuditEntryRow, error)
+	// Any admin may fetch any export; the handler sits behind RequireAdmin.
+	GetExportJob(ctx context.Context, jobID uuid.UUID) (GetExportJobRow, error)
 	GetJob(ctx context.Context, id uuid.UUID) (Job, error)
 	// The owner check lives in the query: another account's job looks absent.
 	GetJobForRequester(ctx context.Context, arg GetJobForRequesterParams) (Job, error)
@@ -125,6 +127,8 @@ type Querier interface {
 	InsertAnswerY3(ctx context.Context, arg InsertAnswerY3Params) error
 	// Append-only: the application role has INSERT and SELECT on audit_log only.
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
+	InsertExportJob(ctx context.Context, arg InsertExportJobParams) error
+	InsertExportJobAccounts(ctx context.Context, arg InsertExportJobAccountsParams) error
 	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
 	InsertReportJob(ctx context.Context, arg InsertReportJobParams) error
 	InsertResultAdvice(ctx context.Context, arg InsertResultAdviceParams) error
@@ -151,6 +155,7 @@ type Querier interface {
 	ListCatalogueRiEOptions(ctx context.Context) ([]ListCatalogueRiEOptionsRow, error)
 	// Complete indicators (BR-09): x, y1, y2 and at least one y3 option.
 	ListCompleteAnswers(ctx context.Context, versionID uuid.UUID) ([]ListCompleteAnswersRow, error)
+	ListExistingAccountIDs(ctx context.Context, ids []uuid.UUID) ([]uuid.UUID, error)
 	ListExistingIndicatorCodes(ctx context.Context, codes []string) ([]string, error)
 	// @q is a LIKE pattern already escaped by the caller, or empty for all.
 	// latest_version_no is 0 when the project has no live version.
