@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -12,20 +13,15 @@ import (
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/api"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/middleware"
-	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/audit"
 )
 
 type auditHandler struct{ s *audit.Reader }
 
-func auditInvalid(w http.ResponseWriter, r *http.Request, field, code string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusUnprocessableEntity)
-	_ = json.NewEncoder(w).Encode(map[string]any{"error": map[string]any{
-		"code": "validation_failed", "message": "validation failed",
-		"request_id": log.RequestID(r.Context()),
-		"fields":     []map[string]string{{"field": field, "code": code}},
-	}})
+// auditInvalid answers 400 bad_request: the contract lists 400 for bad query
+// parameters (ErrorEnvelope) and reserves 422 for body validation.
+func auditInvalid(w http.ResponseWriter, r *http.Request, field, _ string) {
+	middleware.WriteError(w, r, http.StatusBadRequest, "bad_request", "invalid query parameter "+strings.TrimPrefix(field, "/"))
 }
 
 func auditWriteJSON(w http.ResponseWriter, v any) {

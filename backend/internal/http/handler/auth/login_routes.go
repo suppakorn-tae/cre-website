@@ -49,7 +49,7 @@ func loginRoutes(r chi.Router, d app.Deps, mail mailer.Mailer) {
 	r.With(rl("RL_LOGIN_IP", 20, 15*time.Minute, middleware.KeyIP),
 		rl("RL_LOGIN_EMAIL", 10, 15*time.Minute, middleware.KeyEmail)).
 		Post("/login", login(logins, d.Sessions))
-	r.With(d.Auth).Post("/logout", logout(d.Sessions))
+	r.Post("/logout", logout(d.Sessions))
 	r.With(rl("RL_RESET_REQ_IP", 10, time.Hour, middleware.KeyIP),
 		rl("RL_RESET_REQ_EMAIL", 5, time.Hour, middleware.KeyEmail)).
 		Post("/password/forgot", requestPasswordReset(resets))

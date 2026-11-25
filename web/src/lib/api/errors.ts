@@ -1,28 +1,39 @@
 import type { components } from './generated/schema';
 
 type ErrorBody = components['schemas']['ErrorBody'];
+export type FieldError = components['schemas']['FieldError'];
 
 /** Error raised for any non-2xx API answer or a failed request. */
 export class ApiError extends Error {
   readonly status: number;
   readonly code: string;
   readonly requestId?: string;
+  /** Per-field problems of a 422 answer; empty for other errors. */
+  readonly fields: FieldError[];
 
-  constructor(status: number, code: string, message: string, requestId?: string) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    requestId?: string,
+    fields: FieldError[] = [],
+  ) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
     this.code = code;
     this.requestId = requestId;
+    this.fields = fields;
   }
 
   static fromBody(status: number, body: unknown): ApiError {
-    const error = (body as { error?: Partial<ErrorBody> } | null)?.error;
+    const error = (body as { error?: Partial<ErrorBody> & { fields?: unknown } } | null)?.error;
     return new ApiError(
       status,
       typeof error?.code === 'string' ? error.code : 'unknown',
       typeof error?.message === 'string' ? error.message : `HTTP ${status}`,
       error?.request_id,
+      Array.isArray(error?.fields) ? (error.fields as FieldError[]) : [],
     );
   }
 }
