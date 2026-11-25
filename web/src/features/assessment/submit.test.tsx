@@ -212,7 +212,7 @@ describe('422 field errors', () => {
     expect(html.split(message)).toHaveLength(2);
     const id = /<p id="([^"]+)"[^>]*>ข้อ A ใช้เดี่ยวเท่านั้น/.exec(html)?.[1];
     expect(id).toBeTruthy();
-    const summary = /<summary[^>]*>/.exec(html)?.[0] ?? '';
-    expect(summary).toContain(`aria-describedby="${id}"`);
+    const trigger = /<button[^>]*aria-haspopup="dialog"[^>]*>/.exec(html)?.[0] ?? '';
+    expect(trigger).toContain(`aria-describedby="${id}"`);
   });
 });

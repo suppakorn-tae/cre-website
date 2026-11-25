@@ -42,7 +42,7 @@ export function GroupList({ catalogue, drafts, disabled, factor, serverErrors, o
     () =>
       catalogue.ri_e_options.map((o) => ({
         value: o.code,
-        label: `${o.code} ${o.label}`,
+        label: o.label,
         exclusive: o.is_exclusive,
       })),
     [catalogue],
@@ -59,11 +59,20 @@ export function GroupList({ catalogue, drafts, disabled, factor, serverErrors, o
   return (
     <table className={styles.table}>
       <caption className={styles.srOnly}>{t('table.label')}</caption>
+      <colgroup>
+        <col className={styles.colCode} />
+        <col />
+        <col className={styles.colX} />
+        <col className={styles.colY1} />
+        <col className={styles.colY2} />
+        <col className={styles.colY3} />
+        <col className={styles.colStatus} />
+      </colgroup>
       <thead>
         <tr>
           <th scope="col">{t('table.code')}</th>
           <th scope="col">{t('table.indicator')}</th>
-          <th scope="col">{t('table.x')}</th>
+          <th scope="col">{t('table.withUnit', { name: t('table.x'), unit: t('table.xUnit') })}</th>
           <th scope="col">{header('y1')}</th>
           <th scope="col">{header('y2')}</th>
           <th scope="col">{t('table.y3')}</th>

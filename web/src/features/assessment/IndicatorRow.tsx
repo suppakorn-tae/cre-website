@@ -1,14 +1,16 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useId } from 'react';
+import { useId, useRef } from 'react';
 
-import { CheckboxGroup, type CheckboxOption } from '@/components/ui';
+import type { CheckboxOption } from '@/components/ui';
 
 import type { Catalogue } from './api';
 import styles from './assessment.module.css';
 import { fieldMessageKey, type FieldKey } from './fieldErrors';
-import { isAnswered, isComplete, parseAmount, type Draft } from './rules';
+import { FocusHint, type Hint } from './FocusHint';
+import { isAnswered, isComplete, parseAmount, y3Conflict, type Draft } from './rules';
+import { Y3Picker } from './Y3Picker';
 
 type Indicator = Catalogue['dimensions'][number]['factors'][number]['indicators'][number];
 
@@ -30,13 +32,16 @@ type CellProps = {
   value: string;
   disabled: boolean;
   error?: string;
-  hint?: { title: string; lines: string[] };
-  placeholder?: string;
+  /** Question shown above the field while it has focus. */
+  hint?: Hint;
+  /** Unit written under the input (X: it changes from indicator to indicator). */
+  unit?: string;
+  /** Unit written inside the input, after the number (y1, y2). */
   suffix?: string;
   onChange: (value: string) => void;
 };
 
-/** One number field of the row, with its hover hint card and its error under the input. */
+/** One number field of the row: its focus hint, unit and the error under the input. */
 function NumberCell({
   label,
   inputLabel,
@@ -44,7 +49,7 @@ function NumberCell({
   disabled,
   error,
   hint,
-  placeholder,
+  unit,
   suffix,
   onChange,
 }: CellProps) {
@@ -54,31 +59,26 @@ function NumberCell({
   const described = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ');
   return (
     <td className={styles.cell} data-label={label}>
-      <input
-        type="text"
-        inputMode="decimal"
-        className={styles.input}
-        aria-label={inputLabel}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={described || undefined}
-        value={value}
-        placeholder={placeholder}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.value)}
-      />
-      {suffix && <span className={styles.suffix}>{suffix}</span>}
+      <FocusHint hint={hint} id={hintId}>
+        <input
+          type="text"
+          inputMode="decimal"
+          className={styles.input}
+          data-suffix={suffix ? '' : undefined}
+          aria-label={inputLabel}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={described || undefined}
+          value={value}
+          disabled={disabled}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        {suffix && <span className={styles.suffix}>{suffix}</span>}
+      </FocusHint>
+      {unit && <span className={styles.unitText}>{unit}</span>}
       {error && (
         <p id={errorId} className={styles.cellError}>
           {error}
         </p>
-      )}
-      {hint && (
-        <div id={hintId} role="tooltip" className={styles.hint}>
-          <strong>{hint.title}</strong>
-          {hint.lines.map((line) => (
-            <span key={line}>{line}</span>
-          ))}
-        </div>
       )}
     </td>
   );
@@ -98,7 +98,11 @@ export function IndicatorRow({
   const done = isComplete(draft);
   const state = done ? 'complete' : isAnswered(draft) ? 'partial' : 'empty';
   const code = indicator.code;
-  const y3ErrorId = `${useId()}-y3-error`;
+  const ids = useId();
+  const y3ErrorId = `${ids}-y3-error`;
+  const y3HintId = `${ids}-y3-hint`;
+  // A closing y3 panel hands focus back to its button; the hint should not pop up then.
+  const quietRef = useRef(false);
 
   const numberError = (text: string, max?: number): string | undefined =>
     text.trim() !== '' && parseAmount(text, max) === null
@@ -109,12 +113,19 @@ export function IndicatorRow({
     return found === undefined ? undefined : t(fieldMessageKey(found));
   };
   const maxFor = (unit: string) => (unit === 'percent' ? 100 : undefined);
-  const hint = (field: 'x' | 'y1' | 'y2', question: string | null, extra?: string) => {
+  const hint = (
+    field: 'x' | 'y1' | 'y2' | 'y3',
+    question: string | null,
+    extra?: string,
+  ): Hint | undefined => {
     const lines = [question, extra].filter((l): l is string => Boolean(l));
     return lines.length === 0
       ? undefined
       : { title: t('table.hintTitle', { code, field: t(`fields.${field}`) }), lines };
   };
+
+  const y3Hint = hint('y3', indicator.question_y3);
+  const y3Error = y3Conflict(draft.y3) ? t('y3.exclusiveError') : serverError('y3');
 
   return (
     <tr className={styles.row} data-state={state}>
@@ -134,7 +145,7 @@ export function IndicatorRow({
         inputLabel={`${t('fields.x')} ${code}`}
         value={draft.x}
         disabled={disabled}
-        placeholder={indicator.unit}
+        unit={indicator.unit}
         error={numberError(draft.x) ?? serverError('x')}
         hint={hint('x', indicator.question_x, t('fields.xUnit', { unit: indicator.unit }))}
         onChange={(x) => onChange({ ...draft, x })}
@@ -160,50 +171,23 @@ export function IndicatorRow({
         onChange={(amount) => onChange({ ...draft, y2: { ...draft.y2, amount } })}
       />
       <td className={styles.cell} data-label={t('fields.y3')}>
-        <details
-          className={styles.picker}
-          onBlur={(e) => {
-            // Close when focus leaves the picker, so the panel never covers other rows.
-            if (!e.currentTarget.contains(e.relatedTarget)) e.currentTarget.open = false;
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') e.currentTarget.open = false;
-          }}
-        >
-          <summary
-            className={styles.pickerHead}
-            aria-describedby={serverError('y3') ? y3ErrorId : undefined}
-          >
-            <span className={styles.srOnly}>{`${t('fields.y3')} ${code}`}</span>
-            {draft.y3.length === 0 ? (
-              <span className={styles.pick}>{t('table.pick')}</span>
-            ) : (
-              <>
-                {draft.y3.map((v) => (
-                  <span key={v} className={styles.y3Chip}>
-                    {v}
-                  </span>
-                ))}
-                <span className={styles.srOnly}>
-                  {t('table.picked', { count: draft.y3.length })}
-                </span>
-              </>
-            )}
-          </summary>
-          <div className={styles.pickerPanel}>
-            <CheckboxGroup
-              legend={`${t('fields.y3')} ${code}`}
-              options={y3Options}
-              value={draft.y3}
-              disabled={disabled}
-              helper={indicator.question_y3 ?? t('fields.y3Helper')}
-              onChange={(y3) => onChange({ ...draft, y3 })}
-            />
-          </div>
-        </details>
-        {serverError('y3') && (
+        <FocusHint hint={y3Hint} id={y3HintId} quietRef={quietRef}>
+          <Y3Picker
+            code={code}
+            question={indicator.question_y3}
+            options={y3Options}
+            value={draft.y3}
+            disabled={disabled}
+            describedBy={[y3Hint ? y3HintId : null, y3Error ? y3ErrorId : null]
+              .filter(Boolean)
+              .join(' ')}
+            quietRef={quietRef}
+            onChange={(y3) => onChange({ ...draft, y3 })}
+          />
+        </FocusHint>
+        {y3Error && (
           <p id={y3ErrorId} className={styles.cellError}>
-            {serverError('y3')}
+            {y3Error}
           </p>
         )}
       </td>

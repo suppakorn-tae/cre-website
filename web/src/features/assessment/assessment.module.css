@@ -209,7 +209,12 @@
 
 /* The table: narrow screens show each row as a card */
 .table {
+  --row-height: 64px;
+  --head-height: 44px;
+  /* Horizontal padding of every cell, so header text and inputs share their left edge. */
+  --pad-x: var(--space-2);
   width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0 var(--space-2);
   padding: 0 var(--space-3);
@@ -218,12 +223,45 @@
   background: var(--color-subtle);
   font-size: var(--text-body);
 }
+/* Column widths: the indicator column takes what is left. */
+.colCode {
+  width: 88px;
+}
+.colX {
+  width: 160px;
+}
+.colY1 {
+  width: 150px;
+}
+.colY2 {
+  width: 130px;
+}
+.colY3 {
+  width: 150px;
+}
+.colStatus {
+  width: 96px;
+}
+/* The header row stays in view under the app header while the 55 rows scroll. */
 .table thead th {
-  padding: var(--space-3) var(--space-2);
+  position: sticky;
+  top: var(--nav-height);
+  z-index: 2;
+  box-sizing: border-box;
+  height: var(--head-height);
+  padding: 0 var(--pad-x);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-subtle);
   text-align: start;
-  font-size: var(--text-small);
+  vertical-align: middle;
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
   font-weight: var(--weight-semibold);
-  color: var(--color-text);
+  color: var(--color-text-secondary);
+}
+/* The first body cell has a 4px state bar as its border; keep the header text over the code. */
+.table thead th:first-child {
+  padding-inline-start: calc(var(--pad-x) + 4px);
 }
 .groupInner {
   display: flex;
@@ -244,8 +282,11 @@
 .factorRow th {
   background: var(--color-info-bg);
 }
+.row {
+  height: var(--row-height);
+}
 .row > * {
-  padding: var(--space-2);
+  padding: var(--space-2) var(--pad-x);
   border-block: 1px solid var(--color-border);
   background: var(--color-white);
   text-align: start;
@@ -276,14 +317,20 @@
   font-weight: var(--weight-regular);
   color: var(--color-text);
 }
+.row > .cell {
+  vertical-align: top;
+}
 .cell {
   position: relative;
-  min-width: 7rem;
+}
+/* The box that holds a field and its focus hint; the hint text is read from here. */
+.fieldBox {
+  position: relative;
 }
 .input {
   box-sizing: border-box;
   width: 100%;
-  min-height: var(--control-md);
+  min-height: var(--control-sm);
   padding: 0 var(--space-3);
   border: 1px solid var(--color-field-border);
   border-radius: var(--radius-pill);
@@ -292,9 +339,11 @@
   font: inherit;
   font-size: var(--text-body);
   font-variant-numeric: tabular-nums;
+  text-align: end;
 }
-.input::placeholder {
-  color: var(--color-placeholder);
+/* Room for the unit written inside the input (baht, day, %). */
+.input[data-suffix] {
+  padding-inline-end: calc(var(--space-3) + var(--space-6));
 }
 .input:focus-visible {
   border-color: var(--color-blue-600);
@@ -308,9 +357,20 @@
   color: var(--color-disabled);
 }
 .suffix {
-  display: none;
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: var(--space-3);
+  display: flex;
+  align-items: center;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+.unitText {
+  display: block;
   margin-top: 2px;
   font-size: var(--text-caption);
+  line-height: var(--leading-caption);
   color: var(--color-text-muted);
 }
 .cellError {
@@ -319,16 +379,16 @@
   line-height: var(--leading-caption);
   color: var(--color-error);
 }
+
+/* Question bubble above a focused field (shown by FocusHint, never on hover) */
 .hint {
-  position: absolute;
-  z-index: 5;
-  bottom: calc(100% + 6px);
-  inset-inline-start: 0;
-  display: none;
+  z-index: 40;
+  display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  width: 18rem;
-  max-width: 80vw;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(360px, calc(100vw - var(--space-8)));
   padding: var(--space-3);
   border-radius: var(--radius-control);
   background: var(--color-navy-900);
@@ -337,31 +397,39 @@
   line-height: var(--leading-small);
   pointer-events: none;
 }
-.cell:hover .hint,
-.cell:focus-within .hint {
-  display: flex;
+.hint strong {
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  font-weight: var(--weight-bold);
+}
+.hintArrow {
+  fill: var(--color-navy-900);
 }
 
-/* y3 picker */
-.picker {
-  position: relative;
-}
+/* y3 picker: the button in the cell; its panel is in Y3Picker */
 .pickerHead {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
-  min-height: var(--control-md);
-  padding: 0 var(--space-3);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--control-sm);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
   border: 1px solid var(--color-field-border);
   border-radius: var(--radius-pill);
   background: var(--color-white);
   color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--text-body);
+  text-align: start;
   cursor: pointer;
-  list-style: none;
 }
-.pickerHead::-webkit-details-marker {
-  display: none;
+.pickerHead[data-state='open'] {
+  border-color: var(--color-blue-600);
+}
+.pick {
+  margin-inline-start: auto;
 }
 .y3Chip {
   min-width: 22px;
@@ -372,19 +440,6 @@
   font-size: var(--text-caption);
   font-weight: var(--weight-bold);
   text-align: center;
-}
-.pickerPanel {
-  position: absolute;
-  z-index: 6;
-  inset-inline-end: 0;
-  width: 22rem;
-  max-width: 85vw;
-  margin-top: var(--space-1);
-  padding: var(--space-3);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  background: var(--color-white);
-  box-shadow: var(--shadow-floating);
 }
 .badge {
   display: inline-block;
@@ -405,24 +460,39 @@
   background: var(--color-warning-bg);
 }
 
-/* Tablet: the table is still a table but must fit; let the columns shrink instead of scrolling */
-@media (min-width: 768px) and (max-width: 1023px) {
+/* Tablet and small desktop: still a table that fits without scrolling; narrower columns */
+@media (min-width: 768px) and (max-width: 1199px) {
   .table {
+    --pad-x: var(--space-1);
     padding: 0 var(--space-2);
   }
-  .table .cell {
-    min-width: 5rem;
+  .colCode {
+    width: 80px;
   }
-  .table .nameCell {
-    min-width: 8rem;
+  .colX {
+    width: 104px;
   }
-  .table .row > *,
-  .table thead th {
-    padding-inline: var(--space-1);
+  .colY1 {
+    width: 104px;
+  }
+  .colY2 {
+    width: 92px;
+  }
+  .colY3 {
+    width: 100px;
+  }
+  .colStatus {
+    width: 80px;
   }
   .table .input,
   .table .pickerHead {
     padding-inline: var(--space-2);
+  }
+  .table .input[data-suffix] {
+    padding-inline-end: calc(var(--space-2) + var(--space-6));
+  }
+  .table .suffix {
+    inset-inline-end: var(--space-2);
   }
 }
 
@@ -480,6 +550,7 @@
     clip-path: inset(50%);
   }
   .row {
+    height: auto;
     display: grid;
     grid-template-columns: 1fr 1fr;
     margin-bottom: var(--space-3);
@@ -510,33 +581,6 @@
     font-weight: var(--weight-semibold);
     color: var(--color-text-secondary);
     content: attr(data-label);
-  }
-  .cell {
-    min-width: 0;
-  }
-  .suffix {
-    display: block;
-  }
-  .hint {
-    position: static;
-    display: flex;
-    width: auto;
-    max-width: none;
-    margin-top: var(--space-1);
-    padding: 0;
-    background: none;
-    color: var(--color-text-muted);
-    font-size: var(--text-caption);
-    line-height: var(--leading-caption);
-  }
-  .hint strong {
-    display: none;
-  }
-  .pickerPanel {
-    position: static;
-    width: auto;
-    max-width: none;
-    box-shadow: none;
   }
 }
 
@@ -587,9 +631,6 @@
 }
 .submit p[role='alert'] {
   color: var(--color-error);
-}
-.nameCell {
-  min-width: 12rem;
 }
 .statusCell {
   white-space: nowrap;

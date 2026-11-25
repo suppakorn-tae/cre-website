@@ -1,0 +1,95 @@
+.group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.legend {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.list {
+  display: flex;
+  flex-direction: column;
+}
+.line {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.line:hover {
+  background: var(--color-subtle);
+}
+.line[data-invalid] {
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+/* The real checkbox stays focusable and covers the line; the badge draws its state. */
+.input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+.badge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 28px;
+  height: 28px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-badge);
+  background: var(--color-blue-50);
+  color: var(--color-blue-700);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+}
+.line[data-checked] .badge {
+  background: var(--color-blue-600);
+  color: var(--color-white);
+}
+.line[data-invalid] .badge {
+  border-color: var(--color-error);
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+.line:has(.input:focus-visible) {
+  box-shadow: var(--focus-ring);
+}
+.line:has(.input:disabled) {
+  cursor: not-allowed;
+  color: var(--color-disabled);
+}
+.text {
+  min-width: 0;
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+.error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0 var(--space-2);
+  color: var(--color-error);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+.error:not(:empty) {
+  padding-block: var(--space-2) 0;
+}
