@@ -43,7 +43,15 @@ type Props = {
 type Focus = { id: number; dir: 'up' | 'down' };
 
 /** One advice list: add, edit, remove, reorder (buttons or drag), save and cancel. */
-export function AdviceListEditor({ code, list, saved, updatedAt, updatedBy, draft, onDraft }: Props) {
+export function AdviceListEditor({
+  code,
+  list,
+  saved,
+  updatedAt,
+  updatedBy,
+  draft,
+  onDraft,
+}: Props) {
   const t = useTranslations('admin-advice.list');
   const tRoot = useTranslations();
   const replace = useReplaceList(code);
@@ -252,9 +260,11 @@ export function AdviceListEditor({ code, list, saved, updatedAt, updatedBy, draf
       )}
 
       <div className={styles.footer}>
-        <p className={styles.updated}>{updatedBy
+        <p className={styles.updated}>
+          {updatedBy
             ? t('updatedBy', { email: updatedBy, date: formatDate(updatedAt) })
-            : t('updatedAt', { date: formatDate(updatedAt) })}</p>
+            : t('updatedAt', { date: formatDate(updatedAt) })}
+        </p>
         <div className={styles.actions}>
           <Button variant="secondary" disabled={!dirty || replace.isPending} onClick={reset}>
             {t('cancel')}
