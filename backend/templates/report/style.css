@@ -24,3 +24,4 @@ ul { margin: 2pt 0 4pt; padding-left: 18pt; }
 .chip { display: inline-block; margin-right: 4pt; padding: 1pt 8pt; border-radius: 9pt; font-weight: 700; white-space: nowrap; }
 .sumline { margin: 4pt 0; }
 sub { font-size: 70%; line-height: 0; }
+.subtitle { margin: 0 0 8pt; color: #475569; }
