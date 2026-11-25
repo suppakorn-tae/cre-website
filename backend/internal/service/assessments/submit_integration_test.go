@@ -12,7 +12,7 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/testutil"
 )
 
-func setup(t *testing.T) (*pgxpool.Pool, *svc.SubmitService, testutil.Account, testutil.Project, testutil.Version) {
+func setupSubmit(t *testing.T) (*pgxpool.Pool, *svc.SubmitService, testutil.Account, testutil.Project, testutil.Version) {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("integration test needs Docker")
@@ -39,7 +39,7 @@ func ids(a testutil.Account, p testutil.Project, v testutil.Version) (uuid.UUID,
 
 func TestSubmitStoresResults(t *testing.T) {
 	ctx := context.Background()
-	db, s, acct, proj, v := setup(t)
+	db, s, acct, proj, v := setupSubmit(t)
 	testutil.NewAnswer(t, db, v.ID, "EC-MG-1")
 	testutil.NewAnswer(t, db, v.ID, "EC-MG-2", func(a *testutil.Answer) { a.Y3 = []string{"G", "C"} })
 	// Incomplete: no y3 and no y2.
@@ -72,7 +72,7 @@ func TestSubmitStoresResults(t *testing.T) {
 
 func TestSubmitRollsBackOnAnyFailure(t *testing.T) {
 	ctx := context.Background()
-	db, s, acct, proj, v := setup(t)
+	db, s, acct, proj, v := setupSubmit(t)
 	testutil.NewAnswer(t, db, v.ID, "EC-MG-1")
 	// A with another option is not allowed by the engine.
 	testutil.NewAnswer(t, db, v.ID, "EC-MG-2", func(a *testutil.Answer) { a.Y3 = []string{"A", "B"} })
@@ -90,7 +90,7 @@ func TestSubmitRollsBackOnAnyFailure(t *testing.T) {
 
 func TestSubmitGuards(t *testing.T) {
 	ctx := context.Background()
-	db, s, acct, proj, v := setup(t)
+	db, s, acct, proj, v := setupSubmit(t)
 	o, p, vid := ids(acct, proj, v)
 	if _, err := s.Submit(ctx, o, p, vid); !errors.Is(err, svc.ErrNoCompleteIndicator) {
 		t.Fatalf("empty version: err = %v, want ErrNoCompleteIndicator", err)
@@ -106,7 +106,7 @@ func TestSubmitGuards(t *testing.T) {
 
 func TestResubmitRecalculatesAndDropsIncomplete(t *testing.T) {
 	ctx := context.Background()
-	db, s, acct, proj, v := setup(t)
+	db, s, acct, proj, v := setupSubmit(t)
 	testutil.NewAnswer(t, db, v.ID, "EC-MG-1")
 	testutil.NewAnswer(t, db, v.ID, "EC-MG-2")
 	o, p, vid := ids(acct, proj, v)
