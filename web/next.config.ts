@@ -4,6 +4,10 @@ import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
 import { loadCatalogue } from './src/lib/i18n/catalogue';
+import { assertNoMocksInProduction } from './src/lib/mocks/mock-mode';
+
+// Mock mode skips the sign-in check, so a production build or server must not have it.
+assertNoMocksInProduction();
 
 const withNextIntl = createNextIntlPlugin('./src/lib/i18n/request.ts');
 

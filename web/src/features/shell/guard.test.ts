@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 import { createApiClient } from '@/lib/api/client';
 import { ApiError } from '@/lib/api/errors';
 import type { paths } from '@/lib/api/generated/schema';
-import { authHandlers, mockAccount, mockAuthSession } from '@/mocks/auth';
+import { authHandlers, mockAccount, mockAdminSession, mockAuthSession } from '@/mocks/auth';
 
 vi.mock('next/navigation', () => ({
   redirect: (to: string) => {
@@ -18,7 +18,7 @@ vi.mock('next/navigation', () => ({
 }));
 vi.mock('@/lib/api/server', () => ({ serverApi: vi.fn() }));
 
-import { enforceGuard, evaluateGuard } from './guard';
+import { enforceGuard, evaluateGuard, mockSession } from './guard';
 
 const base = 'http://test.local/api/v1';
 const http = createOpenApiHttp<paths>({ baseUrl: '*/api/v1' });
@@ -84,5 +84,24 @@ describe('auth guard', () => {
     await expect(evaluateGuard(fetchSession, { requireAdmin: false })).rejects.toBeInstanceOf(
       ApiError,
     );
+  });
+});
+
+describe('mock mode session', () => {
+  afterEach(() => vi.unstubAllEnvs());
+
+  it('is the sample user by default, so (admin) answers 404', async () => {
+    const session = await mockSession();
+    expect(session.user.role).toBe('user');
+    const result = await evaluateGuard(async () => session, { requireAdmin: true });
+    expect(() => enforceGuard(result)).toThrow('NOT_FOUND');
+  });
+
+  it('is the admin with CRE_MOCK_ROLE=admin, so (admin) opens', async () => {
+    vi.stubEnv('CRE_MOCK_ROLE', 'admin');
+    const session = await mockSession();
+    expect(session.user.role).toBe('admin');
+    const result = await evaluateGuard(async () => session, { requireAdmin: true });
+    expect(enforceGuard(result).user.email).toBe(mockAdminSession.user.email);
   });
 });

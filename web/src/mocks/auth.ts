@@ -25,6 +25,21 @@ export const mockAuthSession: AuthSession = {
   keep_logged_in: true,
 };
 
+/**
+ * The admin of mock mode (`CRE_MOCK_ROLE=admin`). Same id and e-mail as row 1
+ * of the admin users mock, so that row shows as "(คุณ)".
+ */
+export const mockAdminSession: AuthSession = {
+  ...mockAuthSession,
+  user: {
+    ...mockAccount,
+    id: '0193a5c2-7b1e-7c3a-9d4f-000000000001',
+    email: 'admin@cre.ac.th',
+    role: 'admin',
+    organisation: 'มหาวิทยาลัยทักษิณ',
+  },
+};
+
 /** CSRF token the mock sets as the `cre_csrf` cookie and returns in the body. */
 export const mockCsrfToken = '9f2c1d7a4be84c6f8a0e3b5d71c2a946';
 
