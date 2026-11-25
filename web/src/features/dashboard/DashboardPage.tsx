@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { Button, EmptyState, KpiCard, Skeleton } from '@/components/ui';
 import { formatNumber } from '@/lib/format/locale';
 
-import { useDashboard, useIslandsPanel } from './api';
+import { useDashboard, useIslandNames } from './api';
 import { LevelChart, ProjectRiskChart } from './Charts';
 import styles from './dashboard.module.css';
 import { formatMillionBaht } from './format';
@@ -22,7 +22,7 @@ export function DashboardPage() {
   const [panel, setPanel] = useState<PanelId>('projects');
   const dashboard = useDashboard();
   const data = dashboard.data;
-  const islands = useIslandsPanel(Boolean(data && data.kpis.island_count > 0));
+  const islands = useIslandNames(Boolean(data && data.kpis.island_count > 0));
   const islandNames = islands.data?.map((g) => tIslands(g.island_code)).join(' · ');
 
   const pick = (id: PanelId) => ({

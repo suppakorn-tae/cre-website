@@ -20,7 +20,7 @@ import { dashboardHandlers, emptySummary, seedSummary, seedTop, setDashboardEmpt
 function render(node: ReactNode, summary?: typeof seedSummary, islands?: unknown) {
   const client = new QueryClient();
   if (summary) client.setQueryData(['dashboard', 'summary'], summary);
-  if (islands) client.setQueryData(['dashboard', 'islands'], islands);
+  if (islands) client.setQueryData(['dashboard', 'islands', 'names'], islands);
   return renderToStaticMarkup(
     <NextIntlClientProvider locale="th" messages={{ dashboard, projects, common, ui }}>
       <QueryClientProvider client={client}>{node}</QueryClientProvider>
