@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 
 import { browserApi } from '@/lib/api/client';
 import '@/styles/tokens.css';
@@ -29,28 +29,121 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+/**
+ * The frame around every signed-in page: skip link, header with the logo, the
+ * admin side menu and the main region. It does not read the session or the
+ * URL, so it prerenders into the static shell. The session-dependent parts
+ * arrive as `account` (the header's account control) and `children` (the
+ * guarded page).
+ */
 export function AppShell({
   variant,
-  user,
+  account,
   children,
 }: {
   variant: ShellVariant;
-  user: ShellUser;
+  account: ReactNode;
   children: ReactNode;
 }) {
   const t = useTranslations('shell');
+
+  return (
+    <div className={styles.shell}>
+      <a href="#main" className={styles.skip}>
+        {t('skipToContent')}
+      </a>
+      <header className={styles.header}>
+        <Link href="/dashboard" className={styles.brand}>
+          <span className={styles.brandName}>{t('brand.name')}</span>
+          <span className={styles.tagline}>{t('brand.tagline')}</span>
+        </Link>
+        {account}
+      </header>
+
+      {variant === 'admin' ? (
+        <div className={styles.adminBody}>
+          {/* usePathname() needs the request URL, so it waits behind a boundary. */}
+          <Suspense fallback={<AdminSideMenu pathname={null} />}>
+            <AdminSide />
+          </Suspense>
+          <main id="main" className={styles.main}>
+            {children}
+          </main>
+        </div>
+      ) : (
+        <main id="main" className={styles.main}>
+          {children}
+        </main>
+      )}
+    </div>
+  );
+}
+
+function AdminSide() {
+  return <AdminSideMenu pathname={usePathname()} />;
+}
+
+/** Admin side menu. `pathname` is null until the URL is known. */
+function AdminSideMenu({ pathname }: { pathname: string | null }) {
+  const t = useTranslations('shell');
+  const [navOpen, setNavOpen] = useState(false);
+  const [lastPath, setLastPath] = useState(pathname);
+
+  // Close the mobile menu when the page changes.
+  if (lastPath !== pathname) {
+    setLastPath(pathname);
+    setNavOpen(false);
+  }
+
+  return (
+    <div className={styles.sideCard}>
+      <h2 className={styles.sideTitle}>{t('adminNav.label')}</h2>
+      <button
+        type="button"
+        className={styles.sideToggle}
+        aria-expanded={navOpen}
+        aria-controls="admin-nav"
+        onClick={() => setNavOpen((o) => !o)}
+      >
+        {t('adminNav.label')}
+      </button>
+      <nav
+        id="admin-nav"
+        aria-label={t('adminNav.label')}
+        className={styles.sideNav}
+        data-open={navOpen}
+      >
+        <ul className={styles.navList}>
+          {ADMIN_NAV.map((item) => (
+            <li key={item.href}>
+              <Link
+                href={item.href}
+                className={styles.navLink}
+                aria-current={pathname && isActive(pathname, item.href) ? 'page' : undefined}
+              >
+                {t(`adminNav.${item.key}`)}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+  );
+}
+
+/** The header's account button and its menu. Needs the signed-in user. */
+export function AccountControl({ user }: { user: ShellUser }) {
+  const t = useTranslations('shell');
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [navOpen, setNavOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [lastPath, setLastPath] = useState(pathname);
 
-  // Close both layers when the page changes.
+  // Close the menu when the page changes.
   if (lastPath !== pathname) {
     setLastPath(pathname);
     setMenuOpen(false);
-    setNavOpen(false);
   }
 
   useEffect(() => {
@@ -88,85 +181,28 @@ export function AppShell({
     };
   }, [menuOpen]);
 
-  const admin = variant === 'admin';
-
   return (
-    <div className={styles.shell}>
-      <a href="#main" className={styles.skip}>
-        {t('skipToContent')}
-      </a>
-      <header className={styles.header}>
-        <Link href="/dashboard" className={styles.brand}>
-          <span className={styles.brandName}>{t('brand.name')}</span>
-          <span className={styles.tagline}>{t('brand.tagline')}</span>
-        </Link>
-        <div className={styles.account} ref={menuRef}>
-          <button
-            type="button"
-            ref={buttonRef}
-            className={styles.accountButton}
-            aria-label={t('account.menuLabel')}
-            aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((o) => !o)}
-          >
-            <span className={styles.avatar} aria-hidden="true">
-              {user.email.charAt(0).toUpperCase()}
-            </span>
-            <span className={styles.email}>{user.email}</span>
-            {user.isAdmin && (
-              <span className={styles.badge} data-testid="admin-badge">
-                {t('account.adminBadge')}
-              </span>
-            )}
-          </button>
-          {menuOpen && <AccountMenu user={user} />}
-        </div>
-      </header>
-
-      {admin ? (
-        <div className={styles.adminBody}>
-          <div className={styles.sideCard}>
-            <h2 className={styles.sideTitle}>{t('adminNav.label')}</h2>
-            <button
-              type="button"
-              className={styles.sideToggle}
-              aria-expanded={navOpen}
-              aria-controls="admin-nav"
-              onClick={() => setNavOpen((o) => !o)}
-            >
-              {t('adminNav.label')}
-            </button>
-            <nav
-              id="admin-nav"
-              aria-label={t('adminNav.label')}
-              className={styles.sideNav}
-              data-open={navOpen}
-            >
-              <ul className={styles.navList}>
-                {ADMIN_NAV.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={styles.navLink}
-                      aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-                    >
-                      {t(`adminNav.${item.key}`)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
-          <main id="main" className={styles.main}>
-            {children}
-          </main>
-        </div>
-      ) : (
-        <main id="main" className={styles.main}>
-          {children}
-        </main>
-      )}
+    <div className={styles.account} ref={menuRef}>
+      <button
+        type="button"
+        ref={buttonRef}
+        className={styles.accountButton}
+        aria-label={t('account.menuLabel')}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        onClick={() => setMenuOpen((o) => !o)}
+      >
+        <span className={styles.avatar} aria-hidden="true">
+          {user.email.charAt(0).toUpperCase()}
+        </span>
+        <span className={styles.email}>{user.email}</span>
+        {user.isAdmin && (
+          <span className={styles.badge} data-testid="admin-badge">
+            {t('account.adminBadge')}
+          </span>
+        )}
+      </button>
+      {menuOpen && <AccountMenu user={user} />}
     </div>
   );
 }

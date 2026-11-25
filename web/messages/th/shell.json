@@ -32,5 +32,6 @@
     "strategy": "แผนจัดการ",
     "report": "รายงาน"
   },
-  "skipToContent": "ข้ามไปยังเนื้อหา"
+  "skipToContent": "ข้ามไปยังเนื้อหา",
+  "loading": "กำลังโหลด…"
 }
