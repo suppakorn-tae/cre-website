@@ -64,7 +64,7 @@ Without `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` the api still starts
 and `/api/v1/auth/google/*` answers 503 `google_unavailable`. To enable it:
 
 1. In Google Cloud Console open APIs & Services, OAuth consent screen and
-   configure it (External, scopes `openid`, `email`, `profile`).
+   configure it (External, scopes `openid` and `email`; the api asks for no others).
 2. Credentials, Create credentials, OAuth client ID, type Web application.
 3. Authorized redirect URI: `PUBLIC_BASE_URL` + `/api/v1/auth/google/callback`,
    for example `https://conriskexpert.com/api/v1/auth/google/callback`.
@@ -74,9 +74,10 @@ and `/api/v1/auth/google/*` answers 503 `google_unavailable`. To enable it:
    `GOOGLE_CLIENT_SECRET`. `PUBLIC_BASE_URL` must be set (it already is).
    Set `GOOGLE_REDIRECT_URL` only if the registered callback differs from
    the default above.
-6. Redeploy the api and check that
-   `curl -si https://<host>/api/v1/auth/google/start` redirects to
-   `accounts.google.com` instead of returning 503.
+6. Redeploy the api and open the log-in page: the Google button should
+   take you to `accounts.google.com`. The api's `POST /auth/google/start`
+   (CSRF token plus body `{"intent":"login"}`) now answers 200 with an
+   `authorization_url` on `accounts.google.com` instead of 503.
 
 Optional limits: `RL_GOOGLE_IP_LIMIT`/`_WINDOW` (default 30 per 15m per IP)
 and `RL_REPORT_REQUEST_LIMIT`/`_WINDOW` (default 10 per 10m per account).
