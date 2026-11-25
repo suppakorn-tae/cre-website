@@ -111,3 +111,34 @@ func TestCSRFCookie(t *testing.T) {
 		t.Fatalf("cookie: %+v", c)
 	}
 }
+
+func TestCSRFDefaultPortOrigins(t *testing.T) {
+	h := middleware.CSRF(nil, "https://web.example.com")(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(204)
+	}))
+	tests := []struct {
+		origin string
+		want   int
+	}{
+		{"https://web.example.com:443", 204},
+		{"https://WEB.example.com", 204},
+		{"http://api.example.com:80", 204},
+		{"https://web.example.com:8443", 403},
+		{"http://web.example.com:443", 403},
+	}
+	for _, tc := range tests {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, csrfReq("POST", "tok", "tok", tc.origin))
+		if w.Code != tc.want {
+			t.Errorf("%s: got %d, want %d", tc.origin, w.Code, tc.want)
+		}
+	}
+	// own origin with explicit default port in Host
+	req := csrfReq("POST", "tok", "tok", "http://api.example.com")
+	req.Host = "api.example.com:80"
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != 204 {
+		t.Errorf("own origin with :80 host: got %d", w.Code)
+	}
+}

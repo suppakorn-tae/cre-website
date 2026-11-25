@@ -16,6 +16,14 @@ type Querier interface {
 	// Sign-up start and verify: is the e-mail taken? Deleted accounts have no
 	// e-mail, so they never match.
 	AccountEmailExists(ctx context.Context, email pgtype.Text) (bool, error)
+	// The signed-in user's own account (UC-04 1). Never takes an id from the
+	// request: the handler passes the session's account id.
+	AccountGetOwn(ctx context.Context, id uuid.UUID) (AccountGetOwnRow, error)
+	// Locks the row for the rest of the transaction and returns the hash for
+	// re-authentication.
+	AccountLockOwn(ctx context.Context, id uuid.UUID) (AccountLockOwnRow, error)
+	AccountSetOrganisation(ctx context.Context, arg AccountSetOrganisationParams) error
+	AccountSetOwnPassword(ctx context.Context, arg AccountSetOwnPasswordParams) error
 	AdminAdviceIndicatorExists(ctx context.Context, code string) (bool, error)
 	// Serialises concurrent replaces of one indicator's advice (released at commit).
 	AdminAdviceLock(ctx context.Context, key string) error
