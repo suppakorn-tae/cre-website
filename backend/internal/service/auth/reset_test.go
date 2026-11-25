@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"strings"
+	"sync"
 	"testing"
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/mailer"
@@ -69,8 +71,12 @@ func TestRequestCodeSameAnswerForAnyEmail(t *testing.T) {
 			t.Fatalf("challenges differ: %+v vs %+v", c, chs[0])
 		}
 	}
-	if sent := e.mail.Sent(); len(sent) != 1 || sent[0].To != "a@example.com" {
-		t.Fatalf("sent = %+v, want one e-mail to a@example.com", sent)
+	sent := e.mail.Sent()
+	if len(sent) != 2 || sent[0].To != "a@example.com" || sent[1].To != "g@example.com" {
+		t.Fatalf("sent = %+v, want e-mails to a@ and g@ only", sent)
+	}
+	if resetOTPPattern.MatchString(sent[1].Subject+sent[1].Body) || !strings.Contains(sent[1].Body, "Google") {
+		t.Fatalf("google mail wrong: %+v", sent[1])
 	}
 }
 
@@ -177,5 +183,33 @@ func TestResetPasswordValidationKeepsCode(t *testing.T) {
 	}
 	if err := e.s.Reset(ctx, "a@example.com", code, "brand-new-pass", "brand-new-pass"); err != nil {
 		t.Errorf("valid after bad password: %v", err)
+	}
+}
+
+func TestResetConcurrentSameCodeSucceedsOnce(t *testing.T) {
+	e := resetNewEnv(t)
+	code := e.code(t, "a@example.com")
+	const n = 4 // below the 5-attempt lock
+	var wg sync.WaitGroup
+	errs := make([]error, n)
+	for i := range n {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			errs[i] = e.s.Reset(context.Background(), "a@example.com", code, "brand-new-pass", "brand-new-pass")
+		}()
+	}
+	wg.Wait()
+	ok := 0
+	for _, err := range errs {
+		switch {
+		case err == nil:
+			ok++
+		case !errors.Is(err, ErrResetOTPExpired):
+			t.Errorf("unexpected error: %v", err)
+		}
+	}
+	if ok != 1 || len(e.sess.bumped) != 1 {
+		t.Errorf("successes = %d, bumps = %d, want 1 and 1", ok, len(e.sess.bumped))
 	}
 }
