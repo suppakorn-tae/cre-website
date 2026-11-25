@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"regexp"
+	"strings"
 	"sync"
 	"testing"
 
@@ -70,8 +71,12 @@ func TestRequestCodeSameAnswerForAnyEmail(t *testing.T) {
 			t.Fatalf("challenges differ: %+v vs %+v", c, chs[0])
 		}
 	}
-	if sent := e.mail.Sent(); len(sent) != 1 || sent[0].To != "a@example.com" {
-		t.Fatalf("sent = %+v, want one e-mail to a@example.com", sent)
+	sent := e.mail.Sent()
+	if len(sent) != 2 || sent[0].To != "a@example.com" || sent[1].To != "g@example.com" {
+		t.Fatalf("sent = %+v, want e-mails to a@ and g@ only", sent)
+	}
+	if resetOTPPattern.MatchString(sent[1].Subject+sent[1].Body) || !strings.Contains(sent[1].Body, "Google") {
+		t.Fatalf("google mail wrong: %+v", sent[1])
 	}
 }
 
