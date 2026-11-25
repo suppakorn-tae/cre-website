@@ -206,6 +206,17 @@ VersionSummary:
       type: [number, 'null']
       minimum: 0
       description: Mean RM of the scored indicators; null while `draft`.
+    scored_count:
+      type: [integer, 'null']
+      minimum: 0
+      description: |
+        Number of indicators with a stored result at the last submission; null
+        while `draft`. The total of the catalogue is in the catalogue endpoint.
+    level_counts:
+      description: Stored indicators per level at the last submission; null while `draft`.
+      oneOf:
+        - $ref: assessments.yaml#/LevelCounts
+        - type: 'null'
 Version:
   allOf:
     - $ref: '#/VersionSummary'

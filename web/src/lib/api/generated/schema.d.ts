@@ -1975,6 +1975,13 @@ export interface components {
             very_high_count: number | null;
             /** @description Mean RM of the scored indicators; null while `draft`. */
             average_rm: number | null;
+            /**
+             * @description Number of indicators with a stored result at the last submission; null
+             *     while `draft`. The total of the catalogue is in the catalogue endpoint.
+             */
+            scored_count?: number | null;
+            /** @description Stored indicators per level at the last submission; null while `draft`. */
+            level_counts?: components["schemas"]["LevelCounts"] | null;
         };
         Version: components["schemas"]["VersionSummary"] & {
             /** @description Number of submissions, 0 when never submitted. */
