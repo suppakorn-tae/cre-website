@@ -1,85 +1,47 @@
-# Weekly grouped updates, one PR per ecosystem (IO-155).
-# The stack is fixed (AGENTS.md), so only minor and patch updates are
-# proposed. Commit prefixes use an allowed type and scope so commitlint
-# passes; group names are short to keep the header within 72 characters.
+# Security updates only (IO-156). No routine version updates: a
+# dependency that works stays as it is. open-pull-requests-limit: 0
+# switches version updates off for the ecosystem; security updates have
+# their own fixed cap (10) and still open PRs. Do not add `ignore`
+# rules: they also suppress security fixes, and a fix may need a major.
+# Each ecosystem has one security group, so it gets one PR. Commit
+# prefixes use an allowed type and scope so commitlint passes; group
+# names are short to keep the title within 72 characters.
+# Docker is left out because Dependabot security updates do not support
+# it. Alerts and security updates are enabled in the repo settings.
 version: 2
 updates:
   - package-ecosystem: gomod
     directory: /backend
     schedule:
       interval: weekly
-      day: monday
-      time: "06:00"
-      timezone: Asia/Bangkok
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 0
     commit-message:
       prefix: "chore(api)"
     groups:
       go:
-        update-types: [minor, patch]
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
+        applies-to: security-updates
+        patterns: ["*"]
 
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
-      day: monday
-      time: "06:00"
-      timezone: Asia/Bangkok
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 0
     commit-message:
       prefix: "chore(web)"
     groups:
       npm:
-        update-types: [minor, patch]
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-      # Next.js is pinned exactly (AGENTS.md): patch updates only.
-      - dependency-name: next
-        update-types: ["version-update:semver-minor"]
+        applies-to: security-updates
+        patterns: ["*"]
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-      day: monday
-      time: "06:00"
-      timezone: Asia/Bangkok
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 0
     commit-message:
       prefix: "ci(ci)"
     groups:
       actions:
-        update-types: [minor, patch]
-    ignore:
-      - dependency-name: "*"
-        update-types: ["version-update:semver-major"]
-
-  - package-ecosystem: docker
-    directories:
-      - /backend
-      - /web
-      - /deploy/backup
-    schedule:
-      interval: weekly
-      day: monday
-      time: "06:00"
-      timezone: Asia/Bangkok
-    open-pull-requests-limit: 2
-    commit-message:
-      prefix: "chore(deploy)"
-    groups:
-      img:
-        update-types: [minor, patch]
-    ignore:
-      - dependency-name: golang
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: node
-        update-types: ["version-update:semver-major", "version-update:semver-minor"]
-      - dependency-name: postgres
-        update-types: ["version-update:semver-major"]
-      - dependency-name: alpine
-        update-types: ["version-update:semver-major"]
+        applies-to: security-updates
+        patterns: ["*"]
