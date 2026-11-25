@@ -165,6 +165,10 @@
   width: 100%;
   aspect-ratio: 210 / 297;
   min-height: 24rem;
+  /* Cap at a desktop viewport; the width follows so the page stays A4. */
+  max-height: 80vh;
+  max-width: calc(80vh * 210 / 297);
+  margin-inline: auto;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
