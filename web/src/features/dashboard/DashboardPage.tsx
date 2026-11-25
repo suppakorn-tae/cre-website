@@ -1,12 +1,18 @@
 'use client';
 
-import Link from 'next/link';
+import {
+  IconAlertTriangle,
+  IconBuildingFactory2,
+  IconCurrencyBaht,
+  IconMapPin,
+} from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
-import { Button, EmptyState, KpiCard, Skeleton } from '@/components/ui';
+import { Button, EmptyState, Icon, KpiCard, LEVELS, Skeleton } from '@/components/ui';
 import { formatNumber } from '@/lib/format/locale';
 
+import { AddProjectLink } from './AddProjectLink';
 import { useDashboard, useIslandNames } from './api';
 import { LevelChart, ProjectRiskChart } from './Charts';
 import styles from './dashboard.module.css';
@@ -31,6 +37,12 @@ export function DashboardPage() {
     selectedLabel: t('showing'),
   });
 
+  const scored = data ? LEVELS.reduce((sum, l) => sum + data.level_distribution[l], 0) : 0;
+  const averageValue =
+    data && data.kpis.project_count > 0
+      ? formatMillionBaht(data.kpis.total_value_baht / data.kpis.project_count)
+      : '';
+
   return (
     <section className={styles.page}>
       <header className={styles.head}>
@@ -38,9 +50,9 @@ export function DashboardPage() {
           <h1 className={styles.title}>{t('title')}</h1>
           <p className={styles.subtitle}>{t('subtitle')}</p>
         </div>
-        <Link href="/projects/new" className={styles.createLink}>
-          {t('addProject')}
-        </Link>
+        {data?.kpis.project_count !== 0 && (
+          <AddProjectLink label={t('addProject')} compactOnPhone />
+        )}
       </header>
 
       {dashboard.isPending && (
@@ -60,21 +72,22 @@ export function DashboardPage() {
       )}
 
       {data && data.kpis.project_count === 0 && (
-        <EmptyState
-          title={t('empty.title')}
-          description={t('empty.text')}
-          action={
-            <Link href="/projects/new" className={styles.createLink}>
-              {t('empty.action')}
-            </Link>
-          }
-        />
+        <div className={styles.emptyCard}>
+          <EmptyState
+            icon={<Icon icon={IconBuildingFactory2} size={24} />}
+            title={t('empty.title')}
+            description={t('empty.text')}
+            action={<AddProjectLink label={t('empty.action')} />}
+          />
+          <p className={styles.emptyNote}>{t('empty.note')}</p>
+        </div>
       )}
 
       {data && data.kpis.project_count > 0 && (
         <>
           <div className={styles.kpis}>
             <KpiCard
+              icon={<Icon icon={IconBuildingFactory2} size={20} />}
               label={t('kpi.projects')}
               value={formatNumber(data.kpis.project_count)}
               unit={t('kpi.projectsUnit')}
@@ -82,13 +95,16 @@ export function DashboardPage() {
               {...pick('projects')}
             />
             <KpiCard
+              icon={<Icon icon={IconAlertTriangle} size={20} />}
+              tone="red"
               label={t('kpi.indicators')}
               value={formatNumber(data.kpis.h_vh_indicator_count)}
               unit={t('kpi.indicatorsUnit')}
-              note={t('kpi.indicatorsNote')}
+              note={t('kpi.indicatorsNote', { total: formatNumber(scored) })}
               {...pick('indicators')}
             />
             <KpiCard
+              icon={<Icon icon={IconMapPin} size={20} />}
               label={t('kpi.islands')}
               value={formatNumber(data.kpis.island_count)}
               unit={t('kpi.islandsUnit')}
@@ -96,9 +112,12 @@ export function DashboardPage() {
               {...pick('islands')}
             />
             <KpiCard
+              icon={<Icon icon={IconCurrencyBaht} size={20} />}
+              tone="orange"
               label={t('kpi.value')}
               value={formatMillionBaht(data.kpis.total_value_baht)}
               unit={t('kpi.valueUnit')}
+              note={t('kpi.valueNote', { average: averageValue })}
             />
           </div>
 
@@ -107,14 +126,9 @@ export function DashboardPage() {
             <ProjectRiskChart risks={data.project_risks} />
           </div>
 
-          <section className={styles.panel} aria-labelledby="panel-title">
-            <h2 id="panel-title" className={styles.chartTitle}>
-              {t(`panel.${panel}`)}
-            </h2>
-            {panel === 'projects' && <ProjectsPanel />}
-            {panel === 'indicators' && <TopIndicatorsPanel />}
-            {panel === 'islands' && <IslandsPanel islandName={(code) => tIslands(code)} />}
-          </section>
+          {panel === 'projects' && <ProjectsPanel />}
+          {panel === 'indicators' && <TopIndicatorsPanel />}
+          {panel === 'islands' && <IslandsPanel islandName={(code) => tIslands(code)} />}
         </>
       )}
     </section>
