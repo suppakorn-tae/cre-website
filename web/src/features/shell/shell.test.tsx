@@ -68,6 +68,37 @@ describe('AppShell', () => {
   });
 });
 
+describe('AppShell admin layout and header', () => {
+  const render = (variant: 'app' | 'admin', isAdmin: boolean) =>
+    wrap(
+      <AppShell variant={variant} user={{ email: 'x@example.co.th', isAdmin }}>
+        <p>x</p>
+      </AppShell>,
+    );
+
+  it('shows the admin badge for admins only', () => {
+    expect(render('admin', true)).toContain('data-testid="admin-badge"');
+    expect(render('app', true)).toContain('data-testid="admin-badge"');
+    expect(render('app', false)).not.toContain('admin-badge');
+  });
+
+  it('titles the sidebar card and collapses it behind a closed toggle', () => {
+    const html = render('admin', true);
+    expect(html).toContain('เมนูผู้ดูแลระบบ');
+    expect(html).toMatch(/<button[^>]*aria-expanded="false"[^>]*aria-controls="admin-nav"/);
+  });
+
+  it('renders the account button as a closed menu button', () => {
+    const html = render('app', false);
+    expect(html).toMatch(/aria-haspopup="menu"[^>]*aria-expanded="false"/);
+    expect(html).not.toContain('role="menu"');
+  });
+
+  it('does not render the admin sidebar for the app variant', () => {
+    expect(render('app', true)).not.toContain('<nav');
+  });
+});
+
 describe('ProjectSteps', () => {
   it('marks the current step and earlier ones as done', () => {
     const html = wrap(<ProjectSteps current="results" />);
