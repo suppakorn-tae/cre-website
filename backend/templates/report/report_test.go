@@ -1,6 +1,7 @@
 package report_test
 
 import (
+	"bytes"
 	"regexp"
 	"strings"
 	"testing"
@@ -43,6 +44,9 @@ func TestRenderContent(t *testing.T) {
 	}
 	if _, ok := assets["style.css"]; !ok {
 		t.Error("style.css asset missing")
+	}
+	if logo := assets["cre-logo-full.png"]; !bytes.HasPrefix(logo, []byte("\x89PNG")) {
+		t.Error("logo asset missing or not a PNG")
 	}
 	s := string(html)
 	for _, want := range []string{
@@ -175,7 +179,16 @@ func TestRenderSectionOrderAndNotes(t *testing.T) {
 	if strings.Index(s, disclaimer) > strings.Index(s, "<h2>6. การลงนาม") {
 		t.Error("disclaimer is after the signatures")
 	}
-	if !strings.Contains(s, `<p class="subtitle">TST1 &middot; เกาะเต่า &middot; เวอร์ชัน 2</p>`) {
+	if !strings.Contains(s, `<p class="subtitle">TST1 &middot; อาคารพักอาศัย &middot; เวอร์ชัน 2</p>`) {
 		t.Error("subtitle under the title is missing")
+	}
+	if strings.Count(s, `<img class="logo" src="cre-logo-full.png"`) != 1 {
+		t.Error("logo must be referenced once by its relative asset name")
+	}
+	if strings.Contains(s, "http://") || strings.Contains(s, "https://") {
+		t.Error("report must not reference external URLs")
+	}
+	if !strings.Contains(s, "<h1>รายงานการประเมินความเสี่ยงโครงการก่อสร้างบนเกาะ</h1>") {
+		t.Error("header title missing")
 	}
 }
