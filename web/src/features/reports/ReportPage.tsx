@@ -13,6 +13,7 @@ import {
   downloadUrl,
   fetchJob,
   fetchReportContext,
+  inlineUrl,
   jobKey,
   reportContextKey,
   requestReport,
@@ -121,6 +122,7 @@ export function ReportPage({ projectId, versionId }: Props) {
               finishedAt={job.data?.finished_at ?? null}
               title={t('cardTitle', { nickname: project.nickname, no: version.version_no })}
               downloadHref={downloadUrl(jobId ?? '')}
+              previewHref={inlineUrl(jobId ?? '')}
               onRetry={() => request.mutate()}
               retrying={request.isPending}
             />

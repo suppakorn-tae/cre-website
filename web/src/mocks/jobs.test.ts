@@ -28,6 +28,10 @@ describe('job mocks', () => {
     const pdf = await fetch(`${base}/reports/${job_id}/download`);
     expect(pdf.headers.get('Content-Type')).toBe('application/pdf');
     expect(await pdf.text()).toMatch(/^%PDF/);
+    expect(pdf.headers.get('Content-Disposition')).toMatch(/^attachment;/);
+    const inline = await fetch(`${base}/reports/${job_id}/download?disposition=inline`);
+    expect(inline.headers.get('Content-Disposition')).toMatch(/^inline;/);
+    expect(inline.headers.get('Content-Type')).toBe('application/pdf');
   });
 
   it('returns the existing job for the same version and a new one for another', async () => {

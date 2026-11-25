@@ -67,7 +67,7 @@ export function createJobHandlers({ failFirst = false }: Options = {}): HttpHand
       return HttpResponse.json(entry.job);
     }),
 
-    mswHttp.get('*/api/v1/reports/:jobId/download', ({ params }) => {
+    mswHttp.get('*/api/v1/reports/:jobId/download', ({ params, request }) => {
       const entry = jobs.get(String(params.jobId));
       if (!entry) return notFound();
       if (entry.job.status !== 'done') {
@@ -76,7 +76,14 @@ export function createJobHandlers({ failFirst = false }: Options = {}): HttpHand
           { status: 409 },
         );
       }
-      return new HttpResponse(PDF, { headers: { 'Content-Type': 'application/pdf' } });
+      // Like the api: attachment by default, inline when the page frames it.
+      const inline = new URL(request.url).searchParams.get('disposition') === 'inline';
+      return new HttpResponse(PDF, {
+        headers: {
+          'Content-Type': 'application/pdf',
+          'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="report-${String(params.jobId)}.pdf"`,
+        },
+      });
     }),
   ];
 }

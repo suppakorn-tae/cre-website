@@ -12,6 +12,8 @@ type Props = {
   finishedAt: string | null;
   title: string;
   downloadHref: string;
+  /** Download URL with `disposition=inline`, framed as the preview. */
+  previewHref: string;
   onRetry: () => void;
   retrying: boolean;
 };
@@ -28,6 +30,7 @@ export function ReportStatus({
   finishedAt,
   title,
   downloadHref,
+  previewHref,
   onRetry,
   retrying,
 }: Props) {
@@ -100,15 +103,18 @@ export function ReportStatus({
         <h2 id="report-preview-title" className={styles.previewCaption}>
           {t('previewCaption')}
         </h2>
-        {/* The download is always an attachment, so an inline frame would force a download. */}
-        <div className={styles.previewEmpty}>
-          <p className={styles.previewText}>{done ? t('previewSoon') : t('previewWaiting')}</p>
-          {done && (
-            <a className={styles.download} href={downloadHref} download>
-              {t('download')}
-            </a>
-          )}
-        </div>
+        {done ? (
+          <iframe
+            className={styles.previewFrame}
+            src={previewHref}
+            title={t('previewTitle')}
+            loading="lazy"
+          />
+        ) : (
+          <div className={styles.previewEmpty}>
+            <p className={styles.previewText}>{t('previewWaiting')}</p>
+          </div>
+        )}
       </section>
     </div>
   );

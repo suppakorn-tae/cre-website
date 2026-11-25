@@ -17,7 +17,7 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
 
 import { createJobHandlers } from '@/mocks/jobs';
 
-import { downloadUrl, fetchJob, requestReport } from './api';
+import { downloadUrl, fetchJob, inlineUrl, requestReport } from './api';
 import { backoffDelay, isFinished, pollInterval } from './polling';
 import { ReportStatus } from './ReportStatus';
 
@@ -34,6 +34,7 @@ const render = (status: Parameters<typeof ReportStatus>[0]['status']) =>
         finishedAt={status === 'done' ? '2026-11-14T10:02:00Z' : null}
         title="รายงาน TK2 · v3"
         downloadHref={downloadUrl('j1')}
+        previewHref={inlineUrl('j1')}
         onRetry={vi.fn()}
         retrying={false}
       />
@@ -103,13 +104,20 @@ describe('ReportStatus layout', () => {
     expect(html).toContain('ดาวน์โหลด PDF');
   });
 
-  it('shows a static preview placeholder and never frames the attachment download', () => {
+  it('frames the inline url and keeps the download button on the plain url', () => {
     const done = render('done');
     expect(done).toContain('ตัวอย่างหน้าแรกของ PDF');
-    expect(done).toContain('ตัวอย่างหน้าแรกยังไม่พร้อมแสดงในหน้านี้');
-    expect(done).not.toContain('<iframe');
+    expect(done).toContain('<iframe');
+    expect(done).toContain('src="/api/v1/reports/j1/download?disposition=inline"');
+    expect(done).toContain('href="/api/v1/reports/j1/download" download');
+    expect(done).not.toContain('href="/api/v1/reports/j1/download?disposition=inline"');
+  });
+
+  it('waits without a frame until the report is ready', () => {
+    for (const s of ['queued', 'running', 'failed'] as const) {
+      expect(render(s)).not.toContain('<iframe');
+    }
     expect(render('queued')).toContain('ตัวอย่างจะแสดงเมื่อรายงานพร้อม');
-    expect(render('queued')).not.toContain('<iframe');
   });
 });
 
