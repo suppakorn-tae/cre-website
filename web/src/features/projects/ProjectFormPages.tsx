@@ -16,9 +16,11 @@ function Head({ title, subtitle, current }: { title: string; subtitle: string; c
   const t = useTranslations('projects.form');
   return (
     <>
-      <p className={styles.breadcrumb}>
-        <Link href="/projects">{t('breadcrumbRoot')}</Link> / {current}
-      </p>
+      <nav aria-label={t('breadcrumbLabel')} className={styles.breadcrumb}>
+        <Link href="/dashboard">{t('breadcrumbRoot')}</Link>
+        <span aria-hidden="true"> / </span>
+        <span>{current}</span>
+      </nav>
       <header className={styles.pageHead}>
         <div>
           <h1 className={styles.title}>{title}</h1>
@@ -33,10 +35,14 @@ export function CreateProjectPage() {
   const t = useTranslations('projects.form');
   return (
     <ProjectMocks>
+      <Head
+        title={t('createTitle')}
+        subtitle={t('createSubtitle')}
+        current={t('breadcrumbCreate')}
+      />
       <div className={styles.steps}>
         <ProjectSteps current="project" />
       </div>
-      <Head title={t('createTitle')} subtitle={t('createSubtitle')} current={t('createTitle')} />
       <ProjectForm />
     </ProjectMocks>
   );
