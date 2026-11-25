@@ -79,7 +79,7 @@ export function RlTable() {
         <thead>
           <tr>
             {(['code', 'name', 'unit', 'direction'] as const).map((c) => (
-              <th key={c} scope="col">
+              <th key={c} scope="col" className={c === 'direction' ? styles.direction : undefined}>
                 {t(`rl.columns.${c}`)}
               </th>
             ))}

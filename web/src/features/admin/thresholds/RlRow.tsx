@@ -73,7 +73,7 @@ export function RlRow({ row, name, editing, busy, serverError, onEdit, onCancel,
         </td>
         <td data-label={t('columns.name')}>{name}</td>
         <td data-label={t('columns.unit')}>{row.unit}</td>
-        <td data-label={t('columns.direction')}>
+        <td data-label={t('columns.direction')} className={styles.direction}>
           <span className={inverse ? styles.inverse : styles.normal}>
             {t(`direction.${row.direction}`)}
           </span>
