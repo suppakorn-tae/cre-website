@@ -1,0 +1,76 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-6);
+}
+.header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.crumbs {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+.crumbs a,
+.link {
+  color: var(--color-blue-700);
+  text-decoration: none;
+}
+.title {
+  margin: 0;
+  font-size: var(--text-h1);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.intro {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 32rem;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+.cardTitle {
+  margin: 0;
+  font-size: var(--text-h3);
+  font-weight: 600;
+}
+.status,
+.statusFailed {
+  margin: 0;
+  font-weight: 600;
+}
+.statusFailed {
+  color: var(--color-error);
+}
+.hint {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}
+.download {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--color-blue-700);
+  color: var(--color-white);
+  font-weight: 600;
+  text-decoration: none;
+}
+@media (max-width: 40rem) {
+  .card {
+    max-width: none;
+  }
+}
