@@ -13,3 +13,10 @@ describe('dashboard level names', () => {
     expect(block).not.toMatch(/white-space:\s*nowrap/);
   });
 });
+
+describe('dashboard project table', () => {
+  it('turns into cards below 1024px so it cannot overflow the page', () => {
+    const css = readFileSync(join(__dirname, 'dashboard.module.css'), 'utf8');
+    expect(css).toMatch(/@media \(max-width: 1023px\)\s*\{\s*\.table,/);
+  });
+});
