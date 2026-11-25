@@ -6,7 +6,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"regexp"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -19,11 +18,9 @@ import (
 
 // Service is what the handlers need from the Results Service.
 type Service interface {
-	Get(ctx context.Context, projectID, versionID, owner uuid.UUID, locale string) (svc.Results, error)
+	Get(ctx context.Context, projectID, versionID, owner uuid.UUID) (svc.Results, error)
 	SetStrategy(ctx context.Context, projectID, versionID, owner uuid.UUID, code, strategy string) (svc.Choice, error)
 }
-
-var localeRE = regexp.MustCompile(`^[a-z]{2}$`)
 
 // Mount registers the results endpoints on r, which must be mounted at
 // /projects (the projects routes call it). Every route needs a session and
@@ -58,11 +55,7 @@ func get(s Service) handler {
 		if !ok {
 			return
 		}
-		locale := svc.DefaultLocale
-		if l := r.URL.Query().Get("locale"); localeRE.MatchString(l) {
-			locale = l
-		}
-		res, err := s.Get(r.Context(), pid, vid, owner, locale)
+		res, err := s.Get(r.Context(), pid, vid, owner)
 		if err != nil {
 			fail(w, r, err)
 			return

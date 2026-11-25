@@ -18,8 +18,8 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/dal/sqlc"
 )
 
-// DefaultLocale is the locale every advice item has; other locales fall back
-// to it.
+// DefaultLocale is the only locale v1 serves. Add a locale to the contract
+// before reading others.
 const DefaultLocale = "th"
 
 var (
@@ -81,8 +81,8 @@ type Service struct {
 func New(db dal.DBTX) *Service { return &Service{db: db} }
 
 // Get returns the stored results of a submitted version of an owned project.
-// Advice items use locale, falling back to DefaultLocale.
-func (s *Service) Get(ctx context.Context, projectID, versionID, owner uuid.UUID, locale string) (Results, error) {
+// Advice items are in DefaultLocale; v1 ships Thai only.
+func (s *Service) Get(ctx context.Context, projectID, versionID, owner uuid.UUID) (Results, error) {
 	q := sqlc.New(s.db)
 	v, err := q.GetResultsVersion(ctx, sqlc.GetResultsVersionParams{VersionID: versionID, ProjectID: projectID, OwnerID: owner})
 	if errors.Is(err, pgx.ErrNoRows) || (err == nil && v.SubmittedAt == nil) {
@@ -95,7 +95,7 @@ func (s *Service) Get(ctx context.Context, projectID, versionID, owner uuid.UUID
 	if err != nil {
 		return Results{}, fmt.Errorf("results: list results: %w", err)
 	}
-	texts, err := q.ListResultAdvice(ctx, sqlc.ListResultAdviceParams{Locale: locale, VersionID: versionID})
+	texts, err := q.ListResultAdvice(ctx, sqlc.ListResultAdviceParams{Locale: DefaultLocale, VersionID: versionID})
 	if err != nil {
 		return Results{}, fmt.Errorf("results: list advice: %w", err)
 	}

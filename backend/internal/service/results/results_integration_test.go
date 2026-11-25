@@ -84,7 +84,7 @@ func exec(t *testing.T, db *pgxpool.Pool, q string, args ...any) {
 
 func TestGetReturnsStoredResultsWithCounts(t *testing.T) {
 	f := setup(t)
-	res, err := f.svc.Get(context.Background(), f.project, f.version, f.owner, "th")
+	res, err := f.svc.Get(context.Background(), f.project, f.version, f.owner)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,37 +101,30 @@ func TestEditedAdviceShowsWithoutResubmitting(t *testing.T) {
 	f := setup(t)
 	ctx := context.Background()
 	exec(t, f.db, `UPDATE advice_item_text SET text = 'แก้แล้ว' WHERE item_id = $1`, f.adviceItems[0])
+	// An en text must never be served: v1 reads th only.
 	exec(t, f.db, `INSERT INTO locale (code) VALUES ('en') ON CONFLICT DO NOTHING`)
 	exec(t, f.db, `INSERT INTO advice_item_text (item_id, locale, text) VALUES ($1, 'en', 'edited')`, f.adviceItems[0])
 
-	res, err := f.svc.Get(ctx, f.project, f.version, f.owner, "th")
+	res, err := f.svc.Get(ctx, f.project, f.version, f.owner)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if got := byCode(res, f.high).Advice[0].Items[0]; got != "แก้แล้ว" {
 		t.Fatalf("th text = %q", got)
 	}
-	en, err := f.svc.Get(ctx, f.project, f.version, f.owner, "en")
-	if err != nil {
-		t.Fatal(err)
-	}
-	// en exists for item 1 only; item 2 falls back to th.
-	if got := byCode(en, f.high).Advice[0].Items; !reflect.DeepEqual(got, []string{"edited", "ข้อ 2"}) {
-		t.Fatalf("en items = %v", got)
-	}
 }
 
 func TestOtherAccountAndDraftLookAbsent(t *testing.T) {
 	f := setup(t)
 	ctx := context.Background()
-	if _, err := f.svc.Get(ctx, f.project, f.version, uuid.New(), "th"); !errors.Is(err, results.ErrNotFound) {
+	if _, err := f.svc.Get(ctx, f.project, f.version, uuid.New()); !errors.Is(err, results.ErrNotFound) {
 		t.Fatalf("other owner: err = %v, want ErrNotFound", err)
 	}
 	if _, err := f.svc.SetStrategy(ctx, f.project, f.version, uuid.New(), f.high, "REDUCE"); !errors.Is(err, results.ErrNotFound) {
 		t.Fatalf("other owner strategy: err = %v, want ErrNotFound", err)
 	}
 	draft := testutil.NewVersionWithSnapshot(t, f.db, f.project.String())
-	if _, err := f.svc.Get(ctx, f.project, uuid.MustParse(draft.ID), f.owner, "th"); !errors.Is(err, results.ErrNotFound) {
+	if _, err := f.svc.Get(ctx, f.project, uuid.MustParse(draft.ID), f.owner); !errors.Is(err, results.ErrNotFound) {
 		t.Fatalf("draft: err = %v, want ErrNotFound", err)
 	}
 }
@@ -147,7 +140,7 @@ func TestSetStrategyOnlyForHighRiskOnLatestVersion(t *testing.T) {
 	if c, err = f.svc.SetStrategy(ctx, f.project, f.version, f.owner, f.high, "ACCEPT"); err != nil || c.Strategy != "ACCEPT" {
 		t.Fatalf("change = %+v, err %v", c, err)
 	}
-	res, err := f.svc.Get(ctx, f.project, f.version, f.owner, "th")
+	res, err := f.svc.Get(ctx, f.project, f.version, f.owner)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,7 +162,7 @@ func TestSetStrategyOnlyForHighRiskOnLatestVersion(t *testing.T) {
 	if _, err := f.svc.SetStrategy(ctx, f.project, f.version, f.owner, f.high, "AVOID"); !errors.Is(err, results.ErrNotLatest) {
 		t.Fatalf("old version: err = %v, want ErrNotLatest", err)
 	}
-	res, err = f.svc.Get(ctx, f.project, f.version, f.owner, "th")
+	res, err = f.svc.Get(ctx, f.project, f.version, f.owner)
 	if err != nil || res.Editable {
 		t.Fatalf("old version editable = %v, err %v", res.Editable, err)
 	}
