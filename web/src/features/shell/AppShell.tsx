@@ -8,7 +8,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { browserApi } from '@/lib/api/client';
 import '@/styles/tokens.css';
 
-import { LOGIN_PATH } from './login-path';
+import { LOGGED_OUT_PATH } from './login-path';
 import { signOut } from './logout';
 import styles from './shell.module.css';
 
@@ -143,7 +143,7 @@ export function AccountMenu({ user }: { user: ShellUser }) {
       setFailed(true);
       return;
     }
-    router.replace(LOGIN_PATH);
+    router.replace(LOGGED_OUT_PATH);
     router.refresh();
   }
 

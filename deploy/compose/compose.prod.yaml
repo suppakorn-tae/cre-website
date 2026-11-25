@@ -1,0 +1,96 @@
+# Production overrides (IO-80). Layer on compose.yaml (and compose.backup.yaml
+# when BACKUP_ENABLED=true):
+#   docker compose -f compose.yaml -f compose.backup.yaml -f compose.prod.yaml ...
+# See docs/runbooks/deploy.md. Images are built and pushed by
+# .github/workflows/release.yml and pinned by git SHA through IMAGE_TAG.
+# Never set IMAGE_TAG to "latest" or a branch name.
+
+x-limits-small: &limits-small
+  limits: { cpus: "0.50", memory: 256M }
+x-limits-medium: &limits-medium
+  limits: { cpus: "1.00", memory: 512M }
+x-limits-large: &limits-large
+  limits: { cpus: "2.00", memory: 1G }
+
+services:
+  caddy:
+    restart: always
+    volumes:
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-conriskexpert.com}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL for Lets Encrypt notices}
+    deploy:
+      resources:
+        <<: *limits-small
+
+  web:
+    image: ${IMAGE_REGISTRY:?}/cre-web:${IMAGE_TAG:?pin a git SHA}
+    build: !reset null
+    restart: always
+    deploy:
+      resources:
+        <<: *limits-medium
+
+  api:
+    image: ${IMAGE_REGISTRY:?}/cre-api:${IMAGE_TAG:?pin a git SHA}
+    build: !reset null
+    restart: always
+    environment:
+      APP_ENV: production
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:?}
+      SESSION_SECRET: ${SESSION_SECRET:?required in production}
+      SMTP_HOST: ${SMTP_HOST:-smtp-relay.brevo.com}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:?Brevo SMTP login}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:?Brevo SMTP key}
+      SMTP_FROM: ${SMTP_FROM:-no-reply@conriskexpert.com}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?}
+    deploy:
+      resources:
+        <<: *limits-medium
+
+  worker:
+    image: ${IMAGE_REGISTRY:?}/cre-worker:${IMAGE_TAG:?pin a git SHA}
+    build: !reset null
+    restart: always
+    deploy:
+      resources:
+        <<: *limits-large
+
+  migrate:
+    image: ${IMAGE_REGISTRY:?}/cre-migrate:${IMAGE_TAG:?pin a git SHA}
+    build: !reset null
+    restart: "no"
+    deploy:
+      resources:
+        <<: *limits-small
+
+  db:
+    restart: always
+    deploy:
+      resources:
+        <<: *limits-large
+
+  valkey:
+    restart: always
+    deploy:
+      resources:
+        <<: *limits-small
+
+  rustfs:
+    restart: always
+    deploy:
+      resources:
+        <<: *limits-medium
+
+  gotenberg:
+    restart: always
+    deploy:
+      resources:
+        <<: *limits-large
+
+  # No Mailpit in production: it sits in the dev profile and is never
+  # started. Do not put "dev" in COMPOSE_PROFILES.
