@@ -26,9 +26,31 @@
 
 - Log in and report request limits are lifted for the run
   (`compose.loadtest.yaml`) because all traffic comes from one IP.
-- Run: 20 727 requests, 113.9 requests/s, 0 failed.
+- Run (IO-113 branch, first run): 20 727 requests, 113.9 requests/s, 0 failed.
 
-## Results (3 min run, api built from IO-113, commit 95fc8d5)
+## Results (re-run on main, 2026-11-25, commit c335206)
+
+Same setup, data set, load and host as above, with the api and worker built
+from `main` (all routes mounted; IO-113 is merged). 3 minute run, 2 api
+replicas: 21 474 requests, 118.1 requests/s, 0 failed.
+
+| Endpoint | Requests | p50 (ms) | p95 (ms) | p99 (ms) | p95 < 1 s |
+| --- | ---: | ---: | ---: | ---: | :---: |
+| `POST /auth/login` | 1597 | 89 | 207 | 409 | pass |
+| `GET /dashboard` | 3448 | 11 | 76 | 196 | pass |
+| `GET /projects` | 3485 | 5 | 43 | 83 | pass |
+| `PATCH .../answers` (5 indicators) | 3397 | 21 | 122 | 203 | pass |
+| `PATCH .../answers` (55 indicators) | 390 | 124 | 366 | 475 | pass |
+| `POST .../submit` (55 indicators) | 390 | 88 | 253 | 350 | pass |
+| `GET .../results` | 3445 | 10 | 75 | 188 | pass |
+| `POST .../reports` | 434 | 9 | 78 | 190 | pass |
+| `GET /jobs/{id}` | 434 | 3 | 24 | 63 | pass |
+
+Every endpoint is under 1 s at p95 (NFR-04). The numbers are a little lower
+than the IO-113 run; both runs share one busy 2 vCPU host, so treat the
+difference as noise rather than a gain.
+
+## Earlier results (3 min run, api built from the IO-113 branch, commit 95fc8d5)
 
 | Endpoint | Requests | p50 (ms) | p95 (ms) | p99 (ms) | p95 < 1 s |
 | --- | ---: | ---: | ---: | ---: | :---: |
@@ -52,7 +74,7 @@ do not block requests.
   submit, results and reports routes returned 404 (IO-113, PR #100, is
   not merged). The dashboard and project list were already served. The
   table above comes from the api and worker built from the IO-113 branch
-  with the same compose file. Re-run on `main` after IO-113 merges.
+  with the same compose file. Re-run on `main` after IO-113 merged: see the 2026-11-25 table above.
 - Report jobs fail in this stack with "The specified bucket does not exist":
   nothing creates the `cre` bucket in RustFS. This does not affect the
   request path measured here, but report downloads need that bucket.
