@@ -49,6 +49,9 @@ type Version struct {
 	HighCount        *int
 	VeryHighCount    *int
 	AverageRM        *float64
+	ScoredCount      *int
+	// LevelCounts holds VL, L, M, H and VH for a submitted version.
+	LevelCounts map[string]int
 }
 
 // Rounding is the scoring precision copied into each new version.
@@ -169,6 +172,11 @@ func fromRow(r sqlc.ListVersionsRow) Version {
 	if v.Status == StatusSubmitted {
 		high, veryHigh, avg := int(r.HighCount), int(r.VeryHighCount), r.AverageRm
 		v.HighCount, v.VeryHighCount, v.AverageRM = &high, &veryHigh, &avg
+		scored := int(r.ScoredCount)
+		v.ScoredCount = &scored
+		v.LevelCounts = map[string]int{
+			"VL": int(r.VlCount), "L": int(r.LCount), "M": int(r.MCount), "H": high, "VH": veryHigh,
+		}
 		if r.ProgressAtSubmit.Valid {
 			p := int(r.ProgressAtSubmit.Int16)
 			v.ProgressAtSubmit = &p

@@ -35,7 +35,7 @@ var (
 type fake struct{}
 
 func (fake) versions() []svc.Version {
-	one, two, four, avg := 12, 3, 80, 3.25
+	one, two, four, scored, avg := 12, 3, 80, 55, 3.25
 	return []svc.Version{
 		{
 			ID: newID, ProjectID: project, No: 2, Status: svc.StatusDraft, Editable: true,
@@ -45,6 +45,7 @@ func (fake) versions() []svc.Version {
 			ID: oldID, ProjectID: project, No: 1, Status: svc.StatusSubmitted, SubmissionNo: 1,
 			ValueBaht: 1e8, StartDate: at, EndDate: at.AddDate(1, 0, 0), CreatedAt: at, SubmittedAt: &at,
 			ProgressAtSubmit: &four, HighCount: &one, VeryHighCount: &two, AverageRM: &avg,
+			ScoredCount: &scored, LevelCounts: map[string]int{"VL": 5, "L": 10, "M": 25, "H": 12, "VH": 3},
 		},
 	}
 }

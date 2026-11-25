@@ -149,8 +149,16 @@ func toSummary(v svc.Version) api.VersionSummary {
 		Id: v.ID, ProjectId: v.ProjectID, VersionNo: v.No, Status: api.VersionStatus(v.Status),
 		Editable: v.Editable, CreatedAt: v.CreatedAt, SubmittedAt: v.SubmittedAt,
 		ProgressAtSubmit: v.ProgressAtSubmit, HighCount: v.HighCount, VeryHighCount: v.VeryHighCount,
-		AverageRm: f32(v.AverageRM),
+		AverageRm: f32(v.AverageRM), ScoredCount: v.ScoredCount, LevelCounts: levelCounts(v.LevelCounts),
 	}
+}
+
+// levelCounts maps the stored counts, nil for a draft.
+func levelCounts(m map[string]int) *api.LevelCounts {
+	if m == nil {
+		return nil
+	}
+	return &api.LevelCounts{VL: m["VL"], L: m["L"], M: m["M"], H: m["H"], VH: m["VH"]}
 }
 
 func toAPI(v svc.Version) api.Version {
@@ -158,7 +166,8 @@ func toAPI(v svc.Version) api.Version {
 		Id: v.ID, ProjectId: v.ProjectID, VersionNo: v.No, Status: api.VersionStatus(v.Status),
 		Editable: v.Editable, CreatedAt: v.CreatedAt, SubmittedAt: v.SubmittedAt,
 		ProgressAtSubmit: v.ProgressAtSubmit, HighCount: v.HighCount, VeryHighCount: v.VeryHighCount,
-		AverageRm: f32(v.AverageRM), SubmissionNo: v.SubmissionNo, ValueBaht: float32(v.ValueBaht),
+		AverageRm: f32(v.AverageRM), ScoredCount: v.ScoredCount, LevelCounts: levelCounts(v.LevelCounts),
+		SubmissionNo: v.SubmissionNo, ValueBaht: float32(v.ValueBaht),
 		StartDate: openapi_types.Date{Time: v.StartDate}, EndDate: openapi_types.Date{Time: v.EndDate},
 	}
 }

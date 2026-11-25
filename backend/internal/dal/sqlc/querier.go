@@ -204,6 +204,9 @@ type Querier interface {
 	ListExistingIndicatorCodes(ctx context.Context, codes []string) ([]string, error)
 	// Done exports past their expiry. Served by job_expiry_ix.
 	ListExpiredExports(ctx context.Context, now time.Time) ([]ListExpiredExportsRow, error)
+	// Mean stored RM per factor of a version, rounded with the rounding frozen in
+	// the version, in catalogue order. Only factors with a stored result appear.
+	ListFactorAverages(ctx context.Context, versionID uuid.UUID) ([]ListFactorAveragesRow, error)
 	// @q is a LIKE pattern already escaped by the caller, or empty for all.
 	// latest_version_no is 0 when the project has no live version.
 	ListProjects(ctx context.Context, arg ListProjectsParams) ([]ListProjectsRow, error)

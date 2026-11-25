@@ -34,6 +34,9 @@
                     scored_count: 3
                     level_counts: {VL: 0, L: 1, M: 0, H: 1, VH: 1}
                     average_rm: 3.412
+                  factor_averages:
+                    - {factor_code: EC-MG, scored_count: 1, average_rm: 2}
+                    - {factor_code: EC-HS, scored_count: 2, average_rm: 4.232}
                   items:
                     - indicator_code: EC-MG-1
                       x: 2

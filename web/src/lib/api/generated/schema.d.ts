@@ -1449,12 +1449,28 @@ export interface components {
             strategy?: components["schemas"]["RiskStrategy"];
             strategy_updated_at?: components["schemas"]["Timestamp"];
         };
+        /**
+         * @description Mean stored RM of the scored indicators of one factor, rounded with the
+         *     version's RM decimals. Read from the stored results; nothing is
+         *     recalculated (FR-47, BR-26).
+         */
+        FactorAverage: {
+            /** @description Factor code, for example EC-MG. */
+            factor_code: string;
+            scored_count: number;
+            average_rm: number;
+        };
         ResultsResponse: {
             version_id: components["schemas"]["Uuid"];
             submitted_at: components["schemas"]["Timestamp"];
             /** @description False when a newer version exists; strategies can then no longer change. */
             editable: boolean;
             summary: components["schemas"]["ResultsSummary"];
+            /**
+             * @description Average RM per factor, only for factors with a scored indicator, in
+             *     catalogue order (overview chart, FR-47).
+             */
+            factor_averages: components["schemas"]["FactorAverage"][];
             items: components["schemas"]["IndicatorResult"][];
         };
         SubmitResponse: {
@@ -1959,6 +1975,13 @@ export interface components {
             very_high_count: number | null;
             /** @description Mean RM of the scored indicators; null while `draft`. */
             average_rm: number | null;
+            /**
+             * @description Number of indicators with a stored result at the last submission; null
+             *     while `draft`. The total of the catalogue is in the catalogue endpoint.
+             */
+            scored_count?: number | null;
+            /** @description Stored indicators per level at the last submission; null while `draft`. */
+            level_counts?: components["schemas"]["LevelCounts"] | null;
         };
         Version: components["schemas"]["VersionSummary"] & {
             /** @description Number of submissions, 0 when never submitted. */

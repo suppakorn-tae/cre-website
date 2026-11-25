@@ -26,6 +26,19 @@ LEFT JOIN strategy_choice s ON s.version_id = r.version_id AND s.indicator_code 
 WHERE r.version_id = @version_id
 ORDER BY f.sort_no, i.f_code;
 
+-- name: ListFactorAverages :many
+-- Mean stored RM per factor of a version, rounded with the rounding frozen in
+-- the version, in catalogue order. Only factors with a stored result appear.
+SELECT i.factor_code, count(*)::int AS scored_count,
+    round(avg(r.rm), v.snap_rm_decimals::int)::float8 AS average_rm
+FROM risk_result r
+JOIN assessment_version v ON v.id = r.version_id
+JOIN indicator i ON i.code = r.indicator_code
+JOIN factor f ON f.code = i.factor_code
+WHERE r.version_id = @version_id
+GROUP BY i.factor_code, f.sort_no, v.snap_rm_decimals
+ORDER BY f.sort_no;
+
 -- name: ListResultAdvice :many
 -- Current advice text of the lists stored at submission, in admin-defined
 -- order. The text is read now, not copied at submission. A missing locale

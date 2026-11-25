@@ -90,6 +90,46 @@ func (q *Queries) GetResultsVersion(ctx context.Context, arg GetResultsVersionPa
 	return i, err
 }
 
+const listFactorAverages = `-- name: ListFactorAverages :many
+SELECT i.factor_code, count(*)::int AS scored_count,
+    round(avg(r.rm), v.snap_rm_decimals::int)::float8 AS average_rm
+FROM risk_result r
+JOIN assessment_version v ON v.id = r.version_id
+JOIN indicator i ON i.code = r.indicator_code
+JOIN factor f ON f.code = i.factor_code
+WHERE r.version_id = $1
+GROUP BY i.factor_code, f.sort_no, v.snap_rm_decimals
+ORDER BY f.sort_no
+`
+
+type ListFactorAveragesRow struct {
+	FactorCode  string
+	ScoredCount int32
+	AverageRm   float64
+}
+
+// Mean stored RM per factor of a version, rounded with the rounding frozen in
+// the version, in catalogue order. Only factors with a stored result appear.
+func (q *Queries) ListFactorAverages(ctx context.Context, versionID uuid.UUID) ([]ListFactorAveragesRow, error) {
+	rows, err := q.db.Query(ctx, listFactorAverages, versionID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListFactorAveragesRow
+	for rows.Next() {
+		var i ListFactorAveragesRow
+		if err := rows.Scan(&i.FactorCode, &i.ScoredCount, &i.AverageRm); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listResultAdvice = `-- name: ListResultAdvice :many
 SELECT l.indicator_code, l.list, COALESCE(tl.text, th.text)::text AS text
 FROM result_advice_list l
