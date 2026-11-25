@@ -4,8 +4,11 @@
   gap: var(--space-6);
 }
 .head {
-  display: grid;
-  gap: var(--space-1);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
 }
 .title {
   margin: 0;

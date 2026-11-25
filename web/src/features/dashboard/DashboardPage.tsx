@@ -31,8 +31,13 @@ export function DashboardPage() {
   return (
     <section className={styles.page}>
       <header className={styles.head}>
-        <h1 className={styles.title}>{t('title')}</h1>
-        <p className={styles.subtitle}>{t('subtitle')}</p>
+        <div>
+          <h1 className={styles.title}>{t('title')}</h1>
+          <p className={styles.subtitle}>{t('subtitle')}</p>
+        </div>
+        <Link href="/projects/new" className={styles.createLink}>
+          {t('addProject')}
+        </Link>
       </header>
 
       {dashboard.isPending && (
