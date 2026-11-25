@@ -117,6 +117,7 @@ type view struct {
 	AverageRM                                              string
 	Indicators, HighRisk                                   []indicatorView
 	Slots                                                  []string
+	ResultsTitle, AdviceTitle                              string
 }
 
 // Render returns the HTML page and the assets (style sheet) it links to. The
@@ -201,6 +202,8 @@ func buildView(d Data) (view, error) {
 		}
 		v.HighRisk = append(v.HighRisk, iv)
 	}
+	v.ResultsTitle = fmt.Sprintf(m("section.results"), v.Total)
+	v.AdviceTitle = fmt.Sprintf(m("section.advice"), len(v.HighRisk))
 	for _, l := range Levels {
 		v.Counts = append(v.Counts, levelCount{Level: l, Count: counts[l]})
 	}
