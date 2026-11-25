@@ -26,7 +26,8 @@ const LOAD = {
 
 export const options = {
   insecureSkipTLSVerify: true,
-  summaryTrendStats: ['avg', 'med', 'p(95)', 'p(99)', 'max'],
+  noCookiesReset: true, // a VU keeps its session across iterations
+  summaryTrendStats: ['avg', 'med', 'p(95)', 'p(99)', 'max', 'count'],
   scenarios: Object.fromEntries(
     Object.entries(LOAD).map(([name, vus]) => [
       name,
@@ -54,7 +55,9 @@ function api(method, path, body, endpoint, expected) {
     tags: { endpoint },
   };
   const res = http.request(method, `${BASE}/api/v1${path}`, body ? JSON.stringify(body) : null, params);
-  ok.add(expected.includes(res.status), { endpoint, status: String(res.status) });
+  const good = expected.includes(res.status);
+  if (!good && __ENV.DEBUG) console.error(`${method} ${path} -> ${res.status} ${String(res.body).slice(0, 200)}`);
+  ok.add(good, { endpoint });
   return res;
 }
 
