@@ -101,3 +101,32 @@ func TestCatalogueHasNoSpecCodes(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderLevelSummaryChips(t *testing.T) {
+	html, _, err := report.Render(sample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(html)
+	prev := -1
+	for _, l := range []string{"VL", "L", "M", "H", "VH"} {
+		chip := `<span class="chip lvl-` + l + `">` + l + ` `
+		i := strings.Index(s, chip)
+		if i < 0 {
+			t.Fatalf("no chip for level %s", l)
+		}
+		if i < prev {
+			t.Errorf("chip %s is out of VL to VH order", l)
+		}
+		prev = i
+	}
+	if !strings.Contains(s, `<span class="chip lvl-VH">VH 1</span>`) {
+		t.Error("VH chip does not carry its count")
+	}
+	if !strings.Contains(s, `<span class="chip lvl-VL">VL 1</span>`) {
+		t.Error("VL chip does not carry its count")
+	}
+	if strings.Contains(s, "<td class=\"lvl lvl-VL\">VL</td><td class=\"num\">1</td>") {
+		t.Error("the one-row-per-level summary table is still there")
+	}
+}

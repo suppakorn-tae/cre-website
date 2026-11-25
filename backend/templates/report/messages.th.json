@@ -29,8 +29,6 @@
   "type.utilities": "ระบบสาธารณูปโภค",
   "type.coastal": "โครงสร้างชายฝั่ง",
   "type.other": "อื่น ๆ",
-  "summary.level": "ระดับ",
-  "summary.count": "จำนวนตัวชี้วัด",
   "summary.total": "ตัวชี้วัดที่ประเมินแล้ว",
   "summary.average": "ค่า RM เฉลี่ย",
   "col.indicator": "ตัวชี้วัด",

@@ -18,15 +18,8 @@
 </table>
 
 <h2>{{t "section.summary"}}</h2>
-<table>
-<thead><tr><th>{{t "summary.level"}}</th><th class="num">{{t "summary.count"}}</th></tr></thead>
-<tbody>
-{{range .Counts}}<tr><td class="lvl lvl-{{.Level}}">{{.Level}}</td><td class="num">{{.Count}}</td></tr>
-{{end}}
-<tr><th>{{t "summary.total"}}</th><td class="num">{{.Total}}</td></tr>
-<tr><th>{{t "summary.average"}}</th><td class="num">{{.AverageRM}}</td></tr>
-</tbody>
-</table>
+<p class="chips">{{range .Counts}}<span class="chip lvl-{{.Level}}">{{.Level}} {{.Count}}</span> {{end}}</p>
+<p class="sumline">{{t "summary.total"}}: <b>{{.Total}}</b> &middot; {{t "summary.average"}}: <b>{{.AverageRM}}</b></p>
 <div class="disclaimer">{{t "disclaimer"}}</div>
 
 <h2>{{t "section.results"}}</h2>
