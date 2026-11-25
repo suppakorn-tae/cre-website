@@ -1,9 +1,16 @@
 'use client';
 
+import {
+  IconArrowDown,
+  IconArrowUp,
+  IconGripVertical,
+  IconPlus,
+  IconTrash,
+} from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState } from 'react';
 
-import { Button, Toast } from '@/components/ui';
+import { Button, Icon, Toast } from '@/components/ui';
 import { FieldMessage } from '@/components/ui/Field';
 import { errorToToast } from '@/lib/api/errors';
 import { formatDate } from '@/lib/format/locale';
@@ -123,55 +130,31 @@ export function AdviceListEditor({
 
   return (
     <div ref={root} className={styles.editor}>
-      <div className={styles.listHead}>
-        <h2 className={styles.listTitle}>
-          {t(list)} (<Notation list={list} />) · {code}
-        </h2>
-        <span className={styles.count}>{t('count', { n: rows.length, max: MAX_ITEMS })}</span>
-      </div>
-      <p className={styles.hint}>{t('hint')}</p>
+      <div className={styles.card}>
+        <div className={styles.listHead}>
+          <h2 className={styles.listTitle}>
+            {t(list)} (<Notation list={list} />) · {code}
+          </h2>
+          <span className={styles.count}>{t('count', { n: rows.length, max: MAX_ITEMS })}</span>
+        </div>
+        <p className={styles.hint}>{t('hint')}</p>
 
-      <ol className={styles.items}>
-        {rows.map((row, index) => {
-          const n = index + 1;
-          const fieldId = `advice-${list}-${row.id}`;
-          return (
-            <li
-              key={row.id}
-              className={styles.item}
-              data-dragging={dragFrom === index || undefined}
-              onDragOver={(e) => dragFrom !== null && e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                if (dragFrom !== null) move(dragFrom, index);
-                setDragFrom(null);
-              }}
-            >
-              <span className={styles.number} aria-hidden="true">
-                {n}
-              </span>
-              <div className={styles.itemBody}>
-                <label htmlFor={fieldId} className={styles.itemLabel}>
-                  {t('itemLabel')}
-                  <span className={styles.required} aria-hidden="true">
-                    *
-                  </span>
-                  <span className={styles.srOnly}> {n}</span>
-                </label>
-                <textarea
-                  id={fieldId}
-                  className={styles.textarea}
-                  rows={2}
-                  required
-                  value={row.text}
-                  placeholder={t('itemPlaceholder')}
-                  aria-invalid={errors[row.id] ? true : undefined}
-                  aria-describedby={errors[row.id] ? `${fieldId}-error` : undefined}
-                  onChange={(e) => edit(updateItem(rows, row.id, e.target.value))}
-                />
-                <FieldMessage id={fieldId} error={errors[row.id] ? t('itemRequired') : undefined} />
-              </div>
-              <div className={styles.tools}>
+        <ol className={styles.items}>
+          {rows.map((row, index) => {
+            const n = index + 1;
+            const fieldId = `advice-${list}-${row.id}`;
+            return (
+              <li
+                key={row.id}
+                className={styles.item}
+                data-dragging={dragFrom === index || undefined}
+                onDragOver={(e) => dragFrom !== null && e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (dragFrom !== null) move(dragFrom, index);
+                  setDragFrom(null);
+                }}
+              >
                 <span
                   className={styles.handle}
                   draggable
@@ -186,55 +169,87 @@ export function AdviceListEditor({
                   }}
                   onDragEnd={() => setDragFrom(null)}
                 >
-                  ⠿
+                  <Icon icon={IconGripVertical} size={20} />
                 </span>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  data-move={`${row.id}-up`}
-                  aria-label={t('moveUp', { n })}
-                  disabled={index === 0}
-                  onClick={() => move(index, index - 1, { id: row.id, dir: 'up' })}
-                >
-                  <span aria-hidden="true">↑</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  data-move={`${row.id}-down`}
-                  aria-label={t('moveDown', { n })}
-                  disabled={index === rows.length - 1}
-                  onClick={() => move(index, index + 1, { id: row.id, dir: 'down' })}
-                >
-                  <span aria-hidden="true">↓</span>
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  aria-label={t('remove', { n })}
-                  title={canRemove(rows) ? undefined : t('removeDisabled')}
-                  disabled={!canRemove(rows)}
-                  onClick={() => edit(removeItem(rows, row.id))}
-                >
-                  <span aria-hidden="true">✕</span>
-                </Button>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
-      <p className={styles.srOnly} role="status" aria-live="polite">
-        {announce}
-      </p>
+                <span className={styles.number} aria-hidden="true">
+                  {n}
+                </span>
+                <div className={styles.itemBody}>
+                  <label htmlFor={fieldId} className={styles.itemLabel}>
+                    {t('itemLabel')}
+                    <span className={styles.required} aria-hidden="true">
+                      *
+                    </span>
+                    <span className={styles.srOnly}> {n}</span>
+                  </label>
+                  <textarea
+                    id={fieldId}
+                    className={styles.textarea}
+                    rows={2}
+                    required
+                    value={row.text}
+                    placeholder={t('itemPlaceholder')}
+                    aria-invalid={errors[row.id] ? true : undefined}
+                    aria-describedby={errors[row.id] ? `${fieldId}-error` : undefined}
+                    onChange={(e) => edit(updateItem(rows, row.id, e.target.value))}
+                  />
+                  <FieldMessage
+                    id={fieldId}
+                    error={errors[row.id] ? t('itemRequired') : undefined}
+                  />
+                </div>
+                <div className={styles.tools}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    data-move={`${row.id}-up`}
+                    aria-label={t('moveUp', { n })}
+                    disabled={index === 0}
+                    onClick={() => move(index, index - 1, { id: row.id, dir: 'up' })}
+                  >
+                    <Icon icon={IconArrowUp} size={18} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    data-move={`${row.id}-down`}
+                    aria-label={t('moveDown', { n })}
+                    disabled={index === rows.length - 1}
+                    onClick={() => move(index, index + 1, { id: row.id, dir: 'down' })}
+                  >
+                    <Icon icon={IconArrowDown} size={18} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={t('remove', { n })}
+                    title={canRemove(rows) ? undefined : t('removeDisabled')}
+                    disabled={!canRemove(rows)}
+                    onClick={() => edit(removeItem(rows, row.id))}
+                  >
+                    <Icon icon={IconTrash} size={18} />
+                  </Button>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+        <p className={styles.srOnly} role="status" aria-live="polite">
+          {announce}
+        </p>
 
-      <Button
-        variant="secondary"
-        disabled={!canAdd(rows)}
-        title={canAdd(rows) ? undefined : t('addDisabled')}
-        onClick={() => edit(addItem(rows))}
-      >
-        {canAdd(rows) ? t('add', { n: MAX_ITEMS - rows.length }) : t('addDisabled')}
-      </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={styles.add}
+          icon={<Icon icon={IconPlus} size={18} />}
+          disabled={!canAdd(rows)}
+          title={canAdd(rows) ? undefined : t('addDisabled')}
+          onClick={() => edit(addItem(rows))}
+        >
+          {canAdd(rows) ? t('add', { n: MAX_ITEMS - rows.length }) : t('addDisabled')}
+        </Button>
+      </div>
 
       {attempted && invalid && (
         <div className={styles.banner} role="alert">
