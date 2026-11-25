@@ -40,6 +40,8 @@ const version = (no: number, rest: Partial<VersionSummary>): VersionSummary => (
   high_count: null,
   very_high_count: null,
   average_rm: null,
+  scored_count: null,
+  level_counts: null,
   ...rest,
 });
 
@@ -53,6 +55,8 @@ export const mockVersions = (): VersionSummary[] => [
     high_count: 11,
     very_high_count: 2,
     average_rm: 2.71,
+    scored_count: 55,
+    level_counts: { VL: 8, L: 14, M: 20, H: 11, VH: 2 },
   }),
   version(2, {
     created_at: '2026-11-02T03:00:00Z',
@@ -61,6 +65,8 @@ export const mockVersions = (): VersionSummary[] => [
     high_count: 14,
     very_high_count: 4,
     average_rm: 3.03,
+    scored_count: 55,
+    level_counts: { VL: 5, L: 12, M: 19, H: 14, VH: 4 },
   }),
   version(1, { status: 'draft' }),
 ];

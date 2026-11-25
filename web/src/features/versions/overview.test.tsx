@@ -2,6 +2,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
+import ui from '../../../messages/th/ui.json';
 import versions from '../../../messages/th/versions.json';
 import { mockProject, mockVersions } from './mocks';
 import { OverviewPanel } from './OverviewPanel';
@@ -10,18 +11,19 @@ import { hvhDelta, periodDays, recentVersions } from './rules';
 
 const wrap = (node: React.ReactNode) =>
   renderToStaticMarkup(
-    <NextIntlClientProvider locale="th" messages={{ versions }}>
+    <NextIntlClientProvider locale="th" messages={{ versions, ui }}>
       {node}
     </NextIntlClientProvider>,
   );
 
-const panel = (items = mockVersions()) =>
+const panel = (items = mockVersions(), indicatorTotal?: number) =>
   wrap(
     <OverviewPanel
       project={mockProject}
       versions={items}
       onCreate={vi.fn()}
       onShowVersions={vi.fn()}
+      indicatorTotal={indicatorTotal}
     />,
   );
 
@@ -99,5 +101,37 @@ describe('OverviewPanel', () => {
     const html = panel([]);
     expect(html).toContain('ยังไม่มีเวอร์ชัน');
     expect(html).toContain('ข้อมูลโครงการ');
+  });
+});
+
+describe('latest version card levels', () => {
+  it('shows chips VL to VH with their stored counts and the stacked bar', () => {
+    const html = panel(mockVersions(), 55);
+    const chips = ['VL<span>8<', 'L<span>14<', 'M<span>20<', 'H<span>11<', 'VH<span>2<'].map((c) =>
+      html.indexOf(c),
+    );
+    expect(chips.every((i) => i >= 0)).toBe(true);
+    expect(chips).toEqual([...chips].sort((a, b) => a - b));
+    expect(html).toContain('role="img"');
+    expect(html.match(/data-level="/g)).toHaveLength(5);
+    expect(html).toContain('flex-grow:20');
+  });
+
+  it('prints scored/total with the total taken from the catalogue', () => {
+    expect(panel(mockVersions(), 55)).toContain('55/55 ตัวชี้วัด');
+    expect(panel(mockVersions(), 60)).toContain('55/60 ตัวชี้วัด');
+  });
+
+  it('prints only the scored count while the catalogue total is unknown', () => {
+    const html = panel(mockVersions());
+    expect(html).toContain('55 ตัวชี้วัด');
+    expect(html).not.toContain('55/');
+  });
+
+  it('shows the draft state and no chips or bar while level_counts is null', () => {
+    const html = panel(mockVersions().slice(2), 55);
+    expect(html).toContain('ยังเป็นฉบับร่าง');
+    expect(html).not.toContain('data-level="');
+    expect(html).not.toContain('/55');
   });
 });
