@@ -19,4 +19,7 @@ func Routes(r chi.Router, d app.Deps) {
 	}); ok && d.Sessions != nil {
 		mountUsers(r, admin.NewUserService(db, audit.New(audit.NewRepository()), d.Sessions))
 	}
+	if d.DB != nil {
+		mountAudit(r, audit.NewReader(d.DB))
+	}
 }
