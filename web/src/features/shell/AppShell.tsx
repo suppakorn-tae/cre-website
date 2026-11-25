@@ -10,6 +10,7 @@ import '@/styles/tokens.css';
 
 import { LOGGED_OUT_PATH } from './login-path';
 import { signOut } from './logout';
+import { nextMenuIndex } from './menu-keys';
 import styles from './shell.module.css';
 
 export type ShellVariant = 'app' | 'admin';
@@ -40,20 +41,40 @@ export function AppShell({
   const t = useTranslations('shell');
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [navOpen, setNavOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const [lastPath, setLastPath] = useState(pathname);
 
   // Close both layers when the page changes.
   if (lastPath !== pathname) {
     setLastPath(pathname);
     setMenuOpen(false);
+    setNavOpen(false);
   }
 
   useEffect(() => {
     if (!menuOpen) return;
+    const items = menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]');
+    items?.[0]?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setMenuOpen(false);
+        buttonRef.current?.focus();
+        return;
+      }
+      if (e.key === 'Tab') {
+        setMenuOpen(false);
+        return;
+      }
+      const list = Array.from(
+        menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)') ?? [],
+      );
+      const current = list.indexOf(document.activeElement as HTMLElement);
+      const next = nextMenuIndex(e.key, current, list.length);
+      if (next !== null) {
+        e.preventDefault();
+        list[next]?.focus();
       }
     };
     const onPointer = (e: MouseEvent) => {
@@ -82,6 +103,7 @@ export function AppShell({
         <div className={styles.account} ref={menuRef}>
           <button
             type="button"
+            ref={buttonRef}
             className={styles.accountButton}
             aria-label={t('account.menuLabel')}
             aria-haspopup="menu"
@@ -92,6 +114,11 @@ export function AppShell({
               {user.email.charAt(0).toUpperCase()}
             </span>
             <span className={styles.email}>{user.email}</span>
+            {user.isAdmin && (
+              <span className={styles.badge} data-testid="admin-badge">
+                {t('account.adminBadge')}
+              </span>
+            )}
           </button>
           {menuOpen && <AccountMenu user={user} />}
         </div>
@@ -99,21 +126,38 @@ export function AppShell({
 
       {admin ? (
         <div className={styles.adminBody}>
-          <nav aria-label={t('adminNav.label')} className={styles.sideNav}>
-            <ul className={styles.navList}>
-              {ADMIN_NAV.map((item) => (
-                <li key={item.href}>
-                  <Link
-                    href={item.href}
-                    className={styles.navLink}
-                    aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-                  >
-                    {t(`adminNav.${item.key}`)}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </nav>
+          <div className={styles.sideCard}>
+            <h2 className={styles.sideTitle}>{t('adminNav.label')}</h2>
+            <button
+              type="button"
+              className={styles.sideToggle}
+              aria-expanded={navOpen}
+              aria-controls="admin-nav"
+              onClick={() => setNavOpen((o) => !o)}
+            >
+              {t('adminNav.label')}
+            </button>
+            <nav
+              id="admin-nav"
+              aria-label={t('adminNav.label')}
+              className={styles.sideNav}
+              data-open={navOpen}
+            >
+              <ul className={styles.navList}>
+                {ADMIN_NAV.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className={styles.navLink}
+                      aria-current={isActive(pathname, item.href) ? 'page' : undefined}
+                    >
+                      {t(`adminNav.${item.key}`)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          </div>
           <main id="main" className={styles.main}>
             {children}
           </main>
@@ -150,11 +194,11 @@ export function AccountMenu({ user }: { user: ShellUser }) {
   return (
     <div role="menu" className={styles.menu}>
       <span className={styles.role}>{user.isAdmin ? t('roleAdmin') : t('roleUser')}</span>
-      <Link role="menuitem" href="/account" className={styles.menuItem}>
+      <Link role="menuitem" tabIndex={-1} href="/account" className={styles.menuItem}>
         {t('myAccount')}
       </Link>
       {user.isAdmin && (
-        <Link role="menuitem" href="/admin/users" className={styles.menuItem}>
+        <Link role="menuitem" tabIndex={-1} href="/admin/users" className={styles.menuItem}>
           {t('admin')}
         </Link>
       )}
@@ -162,6 +206,7 @@ export function AccountMenu({ user }: { user: ShellUser }) {
         type="button"
         role="menuitem"
         className={styles.menuItem}
+        tabIndex={-1}
         disabled={busy}
         onClick={logout}
       >
