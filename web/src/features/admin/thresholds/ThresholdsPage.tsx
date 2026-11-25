@@ -2,11 +2,10 @@
 
 import { useTranslations } from 'next-intl';
 
-import { ImpactTables } from './ImpactTables';
 import { RlTable } from './RlTable';
 import styles from './thresholds.module.css';
 
-/** Admin: RL thresholds per indicator and the shared RI_C / RI_T tables. */
+/** Admin: RL thresholds per indicator. */
 export function ThresholdsPage() {
   const t = useTranslations('admin-thresholds');
   return (
@@ -25,13 +24,6 @@ export function ThresholdsPage() {
         </h2>
         <p className={styles.muted}>{t('rl.subtitle')}</p>
         <RlTable />
-      </section>
-      <section className={styles.card} aria-labelledby="impact-title">
-        <h2 id="impact-title" className={styles.cardTitle}>
-          {t('impact.title')}
-        </h2>
-        <p className={styles.muted}>{t('impact.subtitle')}</p>
-        <ImpactTables />
       </section>
     </div>
   );

@@ -10,6 +10,8 @@ import { createApiClient } from '@/lib/api/client';
 
 import { saveErrorKey } from './api';
 import { ImpactForm } from './ImpactTables';
+import { ImpactPage } from './ImpactPage';
+import { ThresholdsPage } from './ThresholdsPage';
 import {
   adminThresholdHandlers,
   getImpactStore,
@@ -182,6 +184,20 @@ afterEach(() => server.resetHandlers());
 afterAll(() => server.close());
 
 const api = createApiClient({ baseUrl: 'http://localhost/api/v1', fetch: (r) => fetch(r) });
+
+describe('page split', () => {
+  const page = (node: React.ReactNode) =>
+    renderToStaticMarkup(
+      <NextIntlClientProvider locale="th" messages={{ 'admin-thresholds': adminThresholds, ui }}>
+        <QueryClientProvider client={new QueryClient()}>{node}</QueryClientProvider>
+      </NextIntlClientProvider>,
+    );
+
+  it('serves the impact tables on their own page, not on the RL page', () => {
+    expect(page(<ImpactPage />)).toContain('ตารางกลางที่ใช้ร่วมกัน');
+    expect(page(<ThresholdsPage />)).not.toContain('ตารางกลางที่ใช้ร่วมกัน');
+  });
+});
 
 describe('admin thresholds against the MSW mocks', () => {
   it('lists the 55 indicators and saves a valid edit', async () => {
