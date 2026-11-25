@@ -64,6 +64,45 @@ export function fromAnswer(a: Answer): Draft {
   };
 }
 
+type UnitField = 'y1' | 'y2';
+type Drafts = Record<string, Draft | undefined>;
+
+/** The unit every listed row uses for `field`, or null when rows differ. */
+export function sharedUnit(codes: string[], drafts: Drafts, field: UnitField): string | null {
+  const units = new Set(codes.map((c) => (drafts[c] ?? emptyDraft())[field].unit));
+  return units.size === 1 ? ([...units][0] ?? null) : null;
+}
+
+/**
+ * Sets `unit` on the listed rows. A row whose typed amount is not valid in the new
+ * unit (e.g. above 100 for %) keeps its unit and value, so a unit switch never turns
+ * a stored value into an invalid one. `changed` lists rows with an amount that
+ * moved to the new unit (the only ones that need saving); `skipped` lists the kept rows.
+ */
+export function switchSharedUnit(
+  codes: string[],
+  drafts: Drafts,
+  field: UnitField,
+  unit: string,
+): { drafts: Drafts; changed: string[]; skipped: string[] } {
+  const next = { ...drafts };
+  const changed: string[] = [];
+  const skipped: string[] = [];
+  const max = unit === 'percent' ? 100 : undefined;
+  for (const code of codes) {
+    const d = next[code] ?? emptyDraft();
+    if (d[field].unit === unit) continue;
+    const typed = d[field].amount.trim() !== '';
+    if (typed && parseAmount(d[field].amount, max) === null) {
+      skipped.push(code);
+      continue;
+    }
+    next[code] = { ...d, [field]: { ...d[field], unit } };
+    if (typed) changed.push(code);
+  }
+  return { drafts: next, changed, skipped };
+}
+
 export function countGroup(codes: string[], drafts: Record<string, Draft | undefined>) {
   let answered = 0;
   let complete = 0;
