@@ -3,9 +3,11 @@ package main
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -13,6 +15,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/mailer"
+	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/queue"
+	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/s3"
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
 	"github.com/suppakorn-tae/cre-website/backend/internal/config"
 	apihttp "github.com/suppakorn-tae/cre-website/backend/internal/http"
@@ -21,6 +25,8 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/httpserver"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/metrics"
+	"github.com/suppakorn-tae/cre-website/backend/internal/service/catalogue"
+	"github.com/suppakorn-tae/cre-website/backend/internal/service/versions"
 )
 
 func main() {
@@ -49,7 +55,7 @@ func main() {
 	}
 	defer func() { _ = cache.Close() }()
 
-	deps := app.Deps{Config: cfg, Logger: l}
+	deps := apihttp.Deps{Deps: app.Deps{Config: cfg, Logger: l}}
 	if cfg.SMTPHost != "" {
 		m, err := mailer.NewSMTP(mailer.Config{
 			Host: cfg.SMTPHost, Port: cfg.SMTPPort, User: cfg.SMTPUser,
@@ -68,6 +74,36 @@ func main() {
 		os.Exit(1)
 	}
 
+	cat := catalogue.New(catalogue.PGRepository{DB: pool}, cache, l)
+	if err := cat.Start(ctx); err != nil {
+		l.Error("cannot listen for catalogue changes, exiting", "error", err.Error())
+		os.Exit(1)
+	}
+	deps.Catalogue = cat
+	deps.Rounding = versions.Rounding{
+		ScoreDecimals: decimals("SCORE_DECIMALS", 2, l),
+		RMDecimals:    decimals("RM_DECIMALS", 3, l),
+	}
+	if ep := os.Getenv("S3_ENDPOINT"); ep != "" {
+		store, err := s3.New(s3.Config{
+			Endpoint: ep, Region: os.Getenv("S3_REGION"), Bucket: os.Getenv("S3_BUCKET"),
+			AccessKey: os.Getenv("S3_ACCESS_KEY"), SecretKey: os.Getenv("S3_SECRET_KEY"),
+		})
+		if err != nil {
+			l.Error("invalid S3 settings, exiting", "error", err.Error())
+			os.Exit(1)
+		}
+		enq, err := queue.NewClient(valkeyURL(cfg.ValkeyAddr))
+		if err != nil {
+			l.Error("cannot create the queue client, exiting", "error", err.Error())
+			os.Exit(1)
+		}
+		defer func() { _ = enq.Close() }()
+		deps.FileStore, deps.Enqueuer = store, enq
+	} else {
+		l.Warn("S3_ENDPOINT is not set: report endpoints are unavailable")
+	}
+
 	hc := health.New(2 * time.Second)
 	dbAddr, err := health.HostPortFromURL(cfg.DatabaseURL, "5432")
 	if err != nil {
@@ -77,13 +113,10 @@ func main() {
 	hc.Add("db", health.TCP(dbAddr))
 	hc.Add("valkey", cache.Check)
 
+	deps.Metrics, deps.Health = metrics.New(), hc
 	srv := &http.Server{
-		Addr: cfg.HTTPAddr,
-		Handler: apihttp.NewRouter(apihttp.Deps{
-			Deps:    deps,
-			Metrics: metrics.New(),
-			Health:  hc,
-		}),
+		Addr:              cfg.HTTPAddr,
+		Handler:           apihttp.NewRouter(deps),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
@@ -100,4 +133,19 @@ func valkeyURL(addr string) string {
 		return addr
 	}
 	return "redis://" + addr
+}
+
+// decimals reads SCORE_DECIMALS or RM_DECIMALS (0 to 6), falling back to def
+// with a warning when the value is missing or invalid.
+func decimals(key string, def int16, l *slog.Logger) int16 {
+	v := os.Getenv(key)
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 || n > 6 {
+		l.Warn("invalid decimals, using the default", "key", key, "default", def)
+		return def
+	}
+	return int16(n)
 }

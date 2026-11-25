@@ -17,6 +17,7 @@ import (
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/pdf"
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/queue"
+	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/s3"
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
 	"github.com/suppakorn-tae/cre-website/backend/internal/config"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/health"
@@ -24,6 +25,8 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/metrics"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/jobs"
+	"github.com/suppakorn-tae/cre-website/backend/internal/worker/export"
+	"github.com/suppakorn-tae/cre-website/backend/internal/worker/report"
 	"github.com/suppakorn-tae/cre-website/backend/internal/worker/runtime"
 )
 
@@ -86,8 +89,18 @@ func run() int {
 	hc.Add("valkey", vk.Check)
 	hc.Add("gotenberg", pdf.New(gotenbergURL).Ready)
 
-	// Job runners are registered per kind by the report and export issues.
+	store, err := s3.New(s3.Config{
+		Endpoint: os.Getenv("S3_ENDPOINT"), Region: os.Getenv("S3_REGION"), Bucket: os.Getenv("S3_BUCKET"),
+		AccessKey: os.Getenv("S3_ACCESS_KEY"), SecretKey: os.Getenv("S3_SECRET_KEY"),
+	})
+	if err != nil {
+		return fail("invalid S3 settings, exiting", err)
+	}
+
+	// One runner per job kind.
 	rt := runtime.New(jobs.New(pool, enq), srv, l)
+	rt.Register(jobs.KindReport, report.NewRunner(report.NewStore(pool), pdf.New(gotenbergURL), store))
+	rt.Register(jobs.KindExport, export.NewRunner(export.NewRepository(pool), store))
 	if err := rt.Start(ctx); err != nil {
 		return fail("worker runtime, exiting", err)
 	}
