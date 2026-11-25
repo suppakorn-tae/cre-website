@@ -100,15 +100,15 @@ export function ReportStatus({
         <h2 id="report-preview-title" className={styles.previewCaption}>
           {t('previewCaption')}
         </h2>
-        {done ? (
-          <iframe
-            className={styles.frame}
-            src={`${downloadHref}#page=1&toolbar=0&navpanes=0`}
-            title={t('previewTitle')}
-          />
-        ) : (
-          <p className={styles.previewEmpty}>{t('previewWaiting')}</p>
-        )}
+        {/* The download is always an attachment, so an inline frame would force a download. */}
+        <div className={styles.previewEmpty}>
+          <p className={styles.previewText}>{done ? t('previewSoon') : t('previewWaiting')}</p>
+          {done && (
+            <a className={styles.download} href={downloadHref} download>
+              {t('download')}
+            </a>
+          )}
+        </div>
       </section>
     </div>
   );

@@ -103,9 +103,12 @@ describe('ReportStatus layout', () => {
     expect(html).toContain('ดาวน์โหลด PDF');
   });
 
-  it('previews the first page of the pdf only when done', () => {
-    expect(render('done')).toContain('ตัวอย่างหน้าแรกของ PDF');
-    expect(render('done')).toContain('<iframe');
+  it('shows a static preview placeholder and never frames the attachment download', () => {
+    const done = render('done');
+    expect(done).toContain('ตัวอย่างหน้าแรกของ PDF');
+    expect(done).toContain('ตัวอย่างหน้าแรกยังไม่พร้อมแสดงในหน้านี้');
+    expect(done).not.toContain('<iframe');
+    expect(render('queued')).toContain('ตัวอย่างจะแสดงเมื่อรายงานพร้อม');
     expect(render('queued')).not.toContain('<iframe');
   });
 });
