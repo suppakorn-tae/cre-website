@@ -28,7 +28,7 @@ export const projectPaths = {
   edit: (projectId: string) => `/projects/${projectId}/edit`,
   compare: (projectId: string) => `/projects/${projectId}/compare`,
   assessment: (projectId: string, versionId: string) =>
-    `/projects/${projectId}/versions/${versionId}/assessment`,
+    `/projects/${projectId}/versions/${versionId}/assess`,
   results: (projectId: string, versionId: string) =>
     `/projects/${projectId}/versions/${versionId}/results`,
 };
