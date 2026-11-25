@@ -49,10 +49,11 @@ func (r route) bodyFor(f fixture) string {
 // A mounted route missing here fails TestRouteInventory, so a new route
 // cannot ship without security coverage.
 var covered = map[string]route{
-	"GET /account":          {access: accessSession},
-	"PATCH /account":        {access: accessSession},
-	"DELETE /account":       {access: accessSession},
-	"PUT /account/password": {access: accessSession},
+	"GET /account":           {access: accessSession},
+	"PATCH /account":         {access: accessSession},
+	"DELETE /account":        {access: accessSession},
+	"PUT /account/password":  {access: accessSession},
+	"DELETE /account/google": {access: accessSession},
 
 	"GET /admin/audit-log":            {access: accessAdmin},
 	"GET /admin/audit-log/{}":         {access: accessAdmin, path: static("/admin/audit-log/0193a5c2-7b1e-4c3a-9d4f-2a6b8e1f5c70")},
@@ -89,6 +90,10 @@ var covered = map[string]route{
 	// without a session, so it is checked as public (CSRF still applies).
 	"POST /auth/logout":          {access: accessPublic},
 	"GET /auth/me":               {access: accessSession},
+	"POST /auth/google/start":    {access: accessPublic},
+	"GET /auth/google/callback":  {access: accessPublic},
+	"GET /auth/google/pending":   {access: accessPublic},
+	"POST /auth/google/complete": {access: accessPublic},
 	"POST /auth/password/forgot": {access: accessPublic},
 	"POST /auth/password/reset":  {access: accessPublic},
 	"POST /auth/register/resend": {access: accessPublic},
@@ -194,9 +199,6 @@ var covered = map[string]route{
 // mounted (so it never blocks that PR) and runs the fixture-free checks on it.
 // Owner of the missing implementation in brackets.
 var pending = []string{
-	// IO-106: google sign-in endpoints (the oidc adapter is merged, the handlers are not)
-	"DELETE /account/google",
-	"POST /auth/google/start", "GET /auth/google/callback", "GET /auth/google/pending", "POST /auth/google/complete",
 	// IO-45 follow-up: the dashboard handler serves GET /dashboard only; the
 	// three panel endpoints of the contract have no handler yet.
 	"GET /dashboard/panels/projects", "GET /dashboard/panels/top-indicators", "GET /dashboard/panels/islands",
