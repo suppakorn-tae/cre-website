@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Noto_Sans_Thai } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 
 import { MockGate } from '@/lib/mocks/mock-gate';
 import { QueryProvider } from '@/lib/query/provider';
@@ -12,9 +13,12 @@ const notoSansThai = Noto_Sans_Thai({
   display: 'swap',
 });
 
-export const metadata: Metadata = {
-  title: 'CRE',
-};
+// Pages set `{page} · {context}`; the template adds the product name.
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('shell.brand');
+  const name = t('name');
+  return { title: { default: name, template: `%s – ${name}` } };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
