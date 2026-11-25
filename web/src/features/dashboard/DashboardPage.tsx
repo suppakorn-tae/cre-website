@@ -7,9 +7,10 @@ import { useState } from 'react';
 import { Button, EmptyState, KpiCard, Skeleton } from '@/components/ui';
 import { formatNumber } from '@/lib/format/locale';
 
-import { useDashboard } from './api';
+import { useDashboard, useIslandsPanel } from './api';
 import { LevelChart, ProjectRiskChart } from './Charts';
 import styles from './dashboard.module.css';
+import { formatMillionBaht } from './format';
 import { IslandsPanel, ProjectsPanel, TopIndicatorsPanel } from './Panels';
 
 type PanelId = 'projects' | 'indicators' | 'islands';
@@ -21,6 +22,8 @@ export function DashboardPage() {
   const [panel, setPanel] = useState<PanelId>('projects');
   const dashboard = useDashboard();
   const data = dashboard.data;
+  const islands = useIslandsPanel(Boolean(data && data.kpis.island_count > 0));
+  const islandNames = islands.data?.map((g) => tIslands(g.island_code)).join(' · ');
 
   const pick = (id: PanelId) => ({
     onSelect: () => setPanel(id),
@@ -89,11 +92,12 @@ export function DashboardPage() {
               label={t('kpi.islands')}
               value={formatNumber(data.kpis.island_count)}
               unit={t('kpi.islandsUnit')}
+              note={islandNames}
               {...pick('islands')}
             />
             <KpiCard
               label={t('kpi.value')}
-              value={formatNumber(data.kpis.total_value_baht)}
+              value={formatMillionBaht(data.kpis.total_value_baht)}
               unit={t('kpi.valueUnit')}
             />
           </div>

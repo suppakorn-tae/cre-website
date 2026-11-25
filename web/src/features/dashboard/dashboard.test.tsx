@@ -14,17 +14,28 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 import { barPercent, LevelChart, ProjectRiskChart } from './Charts';
 import { DashboardPage } from './DashboardPage';
+import { formatMillionBaht } from './format';
 import { dashboardHandlers, emptySummary, seedSummary, seedTop, setDashboardEmpty } from './mocks';
 
-function render(node: ReactNode, summary?: typeof seedSummary) {
+function render(node: ReactNode, summary?: typeof seedSummary, islands?: unknown) {
   const client = new QueryClient();
   if (summary) client.setQueryData(['dashboard', 'summary'], summary);
+  if (islands) client.setQueryData(['dashboard', 'islands'], islands);
   return renderToStaticMarkup(
     <NextIntlClientProvider locale="th" messages={{ dashboard, projects, common, ui }}>
       <QueryClientProvider client={client}>{node}</QueryClientProvider>
     </NextIntlClientProvider>,
   );
 }
+
+describe('formatMillionBaht', () => {
+  it('shows million baht with at most one decimal', () => {
+    expect(formatMillionBaht(203_500_000)).toBe('203.5');
+    expect(formatMillionBaht(120_000_000)).toBe('120');
+    expect(formatMillionBaht(1_234_567_890)).toBe('1,234.6');
+    expect(formatMillionBaht(0)).toBe('0');
+  });
+});
 
 describe('barPercent', () => {
   it('scales to the largest value and keeps a sliver for small values', () => {
@@ -77,7 +88,18 @@ describe('DashboardPage', () => {
       expect(html).toContain(text);
     }
     expect(html).toContain('aria-pressed="true"');
-    expect(html).toContain('317,950,000');
+    expect(html).toContain('318<span');
+    expect(html).toContain('ล้านบาท');
+    expect(html).not.toContain('317,950,000');
+  });
+
+  it('names the islands under the islands card', () => {
+    const islands = [
+      { island_code: 'koh_tao', projects: [] },
+      { island_code: 'koh_samui', projects: [] },
+    ];
+    const html = render(<DashboardPage />, seedSummary, islands);
+    expect(html).toContain('เกาะเต่า · เกาะสมุย');
   });
 
   it('shows the empty state for a new user, without charts', () => {

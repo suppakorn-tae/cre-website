@@ -21,7 +21,7 @@
     "islands": "เกาะที่มีโครงการ",
     "islandsUnit": "เกาะ",
     "value": "มูลค่ารวมโครงการ",
-    "valueUnit": "บาท"
+    "valueUnit": "ล้านบาท"
   },
   "levelChart": {
     "title": "การกระจายระดับความเสี่ยง",
