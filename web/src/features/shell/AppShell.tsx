@@ -8,6 +8,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { browserApi } from '@/lib/api/client';
 import '@/styles/tokens.css';
 
+import { AdminNav } from './AdminNav';
 import { LOGGED_OUT_PATH } from './login-path';
 import { signOut } from './logout';
 import { nextMenuIndex } from './menu-keys';
@@ -15,19 +16,6 @@ import styles from './shell.module.css';
 
 export type ShellVariant = 'app' | 'admin';
 export type ShellUser = { email: string; isAdmin: boolean };
-
-const ADMIN_NAV = [
-  { key: 'users', href: '/admin/users' },
-  { key: 'advice', href: '/admin/advice' },
-  { key: 'thresholds', href: '/admin/thresholds' },
-  { key: 'impactThresholds', href: '/admin/impact-thresholds' },
-  { key: 'export', href: '/admin/export' },
-  { key: 'audit', href: '/admin/audit' },
-] as const;
-
-function isActive(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
 
 export function AppShell({
   variant,
@@ -41,16 +29,14 @@ export function AppShell({
   const t = useTranslations('shell');
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [navOpen, setNavOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const [lastPath, setLastPath] = useState(pathname);
 
-  // Close both layers when the page changes.
+  // Close the account menu when the page changes.
   if (lastPath !== pathname) {
     setLastPath(pathname);
     setMenuOpen(false);
-    setNavOpen(false);
   }
 
   useEffect(() => {
@@ -126,38 +112,7 @@ export function AppShell({
 
       {admin ? (
         <div className={styles.adminBody}>
-          <div className={styles.sideCard}>
-            <h2 className={styles.sideTitle}>{t('adminNav.label')}</h2>
-            <button
-              type="button"
-              className={styles.sideToggle}
-              aria-expanded={navOpen}
-              aria-controls="admin-nav"
-              onClick={() => setNavOpen((o) => !o)}
-            >
-              {t('adminNav.label')}
-            </button>
-            <nav
-              id="admin-nav"
-              aria-label={t('adminNav.label')}
-              className={styles.sideNav}
-              data-open={navOpen}
-            >
-              <ul className={styles.navList}>
-                {ADMIN_NAV.map((item) => (
-                  <li key={item.href}>
-                    <Link
-                      href={item.href}
-                      className={styles.navLink}
-                      aria-current={isActive(pathname, item.href) ? 'page' : undefined}
-                    >
-                      {t(`adminNav.${item.key}`)}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </nav>
-          </div>
+          <AdminNav />
           <main id="main" className={styles.main}>
             {children}
           </main>
