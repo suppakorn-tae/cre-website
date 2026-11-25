@@ -117,6 +117,7 @@ func (s *ResetService) RequestCode(ctx context.Context, email string) (ResetChal
 		return ch, fmt.Errorf("auth: generate code: %w", err)
 	}
 	if !eligible {
+		s.maybeSendGoogleMail(ctx, email, acc, err)
 		return ch, nil
 	}
 	salt, err := NewSalt()
@@ -139,6 +140,22 @@ func (s *ResetService) RequestCode(ctx context.Context, email string) (ResetChal
 		}
 	})
 	return ch, nil
+}
+
+// maybeSendGoogleMail tells an active Google-only account (no password) to
+// continue with Google. It sends async like the OTP mail and returns nothing
+// to the caller, so the answer is the same for every e-mail.
+func (s *ResetService) maybeSendGoogleMail(ctx context.Context, email string, acc LoginAccount, loadErr error) {
+	if loadErr != nil || acc.Status != loginStatusActive || acc.PasswordHash != "" || !acc.HasGoogle {
+		return
+	}
+	s.Async(func() {
+		c, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
+		defer cancel()
+		if err := mailer.SendContinueWithGoogle(c, s.mail, email); err != nil {
+			s.log.Error("continue-with-google e-mail failed", "error", err)
+		}
+	})
 }
 
 // ResetValidatePassword checks a new password and its confirmation.

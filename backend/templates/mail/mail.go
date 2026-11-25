@@ -11,7 +11,7 @@ import (
 	"text/template"
 )
 
-//go:embed otp.subject.txt.tmpl otp.body.txt.tmpl
+//go:embed otp.subject.txt.tmpl otp.body.txt.tmpl google.subject.txt.tmpl google.body.txt.tmpl
 var files embed.FS
 
 var tmpl = template.Must(template.ParseFS(files, "*.tmpl"))
@@ -35,6 +35,19 @@ func RenderOTP(d OTPData) (subject, body string, err error) {
 	}
 	if err := tmpl.ExecuteTemplate(&b, "otp.body.txt.tmpl", d); err != nil {
 		return "", "", fmt.Errorf("mail: render otp body: %w", err)
+	}
+	return strings.TrimSpace(s.String()), b.String(), nil
+}
+
+// RenderContinueWithGoogle returns the Thai subject and plain-text body of
+// the e-mail sent when a Google-only account asks for a password reset.
+func RenderContinueWithGoogle() (subject, body string, err error) {
+	var s, b bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&s, "google.subject.txt.tmpl", nil); err != nil {
+		return "", "", fmt.Errorf("mail: render google subject: %w", err)
+	}
+	if err := tmpl.ExecuteTemplate(&b, "google.body.txt.tmpl", nil); err != nil {
+		return "", "", fmt.Errorf("mail: render google body: %w", err)
 	}
 	return strings.TrimSpace(s.String()), b.String(), nil
 }
