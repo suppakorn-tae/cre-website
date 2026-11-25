@@ -9,8 +9,8 @@ import type { ImpactValues, RlValues } from './validation';
 export type RlThreshold = components['schemas']['AdminRlThreshold'];
 export type ImpactTables = components['schemas']['AdminImpactTables'];
 
-/** Indicator name and the dimension it belongs to, from the catalogue. */
-export type IndicatorInfo = { name: string; dimensionCode: string; dimensionName: string };
+/** Indicator name and the factor it belongs to, from the catalogue. */
+export type IndicatorInfo = { name: string; factorCode: string };
 
 const keys = {
   rl: ['admin-thresholds', 'rl'] as const,
@@ -33,16 +33,16 @@ export function useIndicatorInfo() {
     queryFn: async () => {
       const { data } = await browserApi().GET('/catalogue');
       const info = new Map<string, IndicatorInfo>();
-      const dimensions: { code: string; name: string }[] = [];
+      const factors: { code: string; name: string }[] = [];
       for (const d of data!.dimensions) {
-        dimensions.push({ code: d.code, name: d.name });
         for (const f of d.factors) {
+          factors.push({ code: f.code, name: f.name });
           for (const i of f.indicators) {
-            info.set(i.code, { name: i.name, dimensionCode: d.code, dimensionName: d.name });
+            info.set(i.code, { name: i.name, factorCode: f.code });
           }
         }
       }
-      return { info, dimensions };
+      return { info, factors };
     },
   });
 }
