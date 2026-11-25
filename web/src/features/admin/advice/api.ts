@@ -54,6 +54,7 @@ export function useReplaceList(code: string) {
               ...old,
               lists: { ...old.lists, [saved.list]: saved.items },
               updated_at: saved.updated_at,
+              updated_by: saved.updated_by,
             }
           : old,
       ),

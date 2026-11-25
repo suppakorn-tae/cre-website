@@ -100,6 +100,7 @@ function Lists({ code }: { code: string }) {
         list={list}
         saved={advice.data.lists[list]}
         updatedAt={advice.data.updated_at}
+        updatedBy={advice.data.updated_by}
         draft={drafts[list]}
         onDraft={(d) => setDrafts((prev) => ({ ...prev, [list]: d }))}
       />

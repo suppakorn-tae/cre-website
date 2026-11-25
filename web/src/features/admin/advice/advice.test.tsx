@@ -22,13 +22,14 @@ const wrap = (node: ReactNode) =>
 const items = (n: number): AdviceItems =>
   Array.from({ length: n }, (_, i) => ({ text: { th: `ข้อ ${i + 1}` } })) as AdviceItems;
 
-const editor = (n: number, list: 'RL' | 'RI_E' = 'RI_E') =>
+const editor = (n: number, list: 'RL' | 'RI_E' = 'RI_E', updatedBy: string | null = null) =>
   wrap(
     <AdviceListEditor
       code="EC-TC-2"
       list={list}
       saved={items(n)}
       updatedAt="2026-11-12T03:00:00Z"
+      updatedBy={updatedBy}
       draft={undefined}
       onDraft={() => {}}
     />,
@@ -81,6 +82,27 @@ describe('AdviceListEditor', () => {
       />,
     );
     expect(html).not.toMatch(/disabled=""[^>]*>บันทึกคำแนะนำ/);
+  });
+});
+
+describe('last edited label', () => {
+  it('shows the editor e-mail and the date', () => {
+    const html = editor(2, 'RL', 'somchai@example.com');
+    expect(html).toContain('แก้ไขล่าสุดโดย');
+    expect(html).toContain('somchai@example.com');
+    expect(html).toContain(' · ');
+  });
+
+  it('shows the date only when the list was never edited', () => {
+    const html = editor(2, 'RL', null);
+    expect(html).toContain('แก้ไขล่าสุด');
+    expect(html).not.toContain('แก้ไขล่าสุดโดย');
+    expect(html).not.toContain('@');
+  });
+
+  it('mock: never edited at first, then the saving admin', () => {
+    resetAdviceStore();
+    expect(getAdvice('EC-TC-2')!.updated_by).toBeNull();
   });
 });
 
