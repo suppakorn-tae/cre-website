@@ -175,7 +175,7 @@
 .link:focus-visible,
 .dangerLink:focus-visible,
 .secondaryLink:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   border-radius: var(--radius-badge);
   box-shadow: var(--focus-ring);
 }
@@ -202,7 +202,7 @@
   min-width: 0;
 }
 .panel:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 .overview {
@@ -283,7 +283,7 @@
   background: var(--color-blue-700);
 }
 .primaryLink:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 .infoList {

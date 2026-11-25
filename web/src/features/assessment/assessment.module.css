@@ -199,7 +199,7 @@
 .select:focus-visible,
 .input:focus-visible,
 .pickerHead:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 .segment:disabled {

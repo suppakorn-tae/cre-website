@@ -37,7 +37,7 @@
   background: var(--color-blue-700);
 }
 .createLink:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 .skeletons {

@@ -27,7 +27,7 @@
   cursor: pointer;
 }
 .btn:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 .btn:disabled {
@@ -156,7 +156,7 @@
   border-color: var(--color-text-muted);
 }
 .control:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   border-color: var(--color-blue-600);
   box-shadow: var(--focus-ring);
 }
@@ -218,7 +218,7 @@
   font-weight: var(--weight-medium);
 }
 .segment:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 .segment:disabled {

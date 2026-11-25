@@ -140,7 +140,7 @@
   text-align: end;
 }
 .cell:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 .cell[aria-invalid='true'] {
