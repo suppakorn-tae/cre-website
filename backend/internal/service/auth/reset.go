@@ -83,6 +83,10 @@ type resetCode struct {
 
 func resetCodeKey(email string) string     { return "otp:reset:" + email }
 func resetCooldownKey(email string) string { return "otp:reset:cd:" + email }
+func resetUsedKey(email, nonce string) string {
+	return "otp:reset:used:" + email + ":" + nonce
+}
+
 func resetAttemptsKey(email, nonce string) string {
 	return "otp:reset:att:" + email + ":" + nonce
 }
@@ -113,6 +117,7 @@ func (s *ResetService) RequestCode(ctx context.Context, email string) (ResetChal
 		return ch, fmt.Errorf("auth: generate code: %w", err)
 	}
 	if !eligible {
+		s.maybeSendGoogleMail(ctx, email, acc, err)
 		return ch, nil
 	}
 	salt, err := NewSalt()
@@ -135,6 +140,22 @@ func (s *ResetService) RequestCode(ctx context.Context, email string) (ResetChal
 		}
 	})
 	return ch, nil
+}
+
+// maybeSendGoogleMail tells an active Google-only account (no password) to
+// continue with Google. It sends async like the OTP mail and returns nothing
+// to the caller, so the answer is the same for every e-mail.
+func (s *ResetService) maybeSendGoogleMail(ctx context.Context, email string, acc LoginAccount, loadErr error) {
+	if loadErr != nil || acc.Status != loginStatusActive || acc.PasswordHash != "" || !acc.HasGoogle {
+		return
+	}
+	s.Async(func() {
+		c, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
+		defer cancel()
+		if err := mailer.SendContinueWithGoogle(c, s.mail, email); err != nil {
+			s.log.Error("continue-with-google e-mail failed", "error", err)
+		}
+	})
 }
 
 // ResetValidatePassword checks a new password and its confirmation.
@@ -178,19 +199,31 @@ func (s *ResetService) Reset(ctx context.Context, email, otp, newPassword, confi
 	if !OTPMatches(rc.Hash, rc.Salt, email, otp) {
 		return ErrResetOTPInvalid
 	}
+	// Consume the code atomically: of two concurrent requests with the same
+	// valid code only the one that wins this SetNX goes on.
+	won, err := s.cache.SetNX(ctx, resetUsedKey(email, rc.Nonce), []byte("1"), ResetOTPTTL)
+	if err != nil {
+		return fmt.Errorf("auth: consume code: %w", err)
+	}
+	if !won {
+		return ErrResetOTPExpired
+	}
 	acc, err := s.store.ByEmail(ctx, email)
 	if errors.Is(err, ErrLoginNoAccount) || (err == nil && acc.Status != loginStatusActive) {
 		_ = s.cache.Del(ctx, resetCodeKey(email))
 		return ErrResetOTPExpired
 	}
 	if err != nil {
+		_ = s.cache.Del(ctx, resetUsedKey(email, rc.Nonce)) // not spent: allow a retry
 		return fmt.Errorf("auth: load account: %w", err)
 	}
 	hash, err := HashPassword(newPassword)
 	if err != nil {
+		_ = s.cache.Del(ctx, resetUsedKey(email, rc.Nonce))
 		return err
 	}
 	if err := s.store.SetPasswordHash(ctx, acc.ID, hash); err != nil {
+		_ = s.cache.Del(ctx, resetUsedKey(email, rc.Nonce))
 		return fmt.Errorf("auth: store password: %w", err)
 	}
 	if _, err := s.sessions.BumpVersion(ctx, acc.ID); err != nil {

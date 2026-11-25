@@ -16,6 +16,14 @@ type Querier interface {
 	// Sign-up start and verify: is the e-mail taken? Deleted accounts have no
 	// e-mail, so they never match.
 	AccountEmailExists(ctx context.Context, email pgtype.Text) (bool, error)
+	// The signed-in user's own account (UC-04 1). Never takes an id from the
+	// request: the handler passes the session's account id.
+	AccountGetOwn(ctx context.Context, id uuid.UUID) (AccountGetOwnRow, error)
+	// Locks the row for the rest of the transaction and returns the hash for
+	// re-authentication.
+	AccountLockOwn(ctx context.Context, id uuid.UUID) (AccountLockOwnRow, error)
+	AccountSetOrganisation(ctx context.Context, arg AccountSetOrganisationParams) error
+	AccountSetOwnPassword(ctx context.Context, arg AccountSetOwnPasswordParams) error
 	AdminAdviceIndicatorExists(ctx context.Context, code string) (bool, error)
 	// Serialises concurrent replaces of one indicator's advice (released at commit).
 	AdminAdviceLock(ctx context.Context, key string) error
@@ -60,6 +68,7 @@ type Querier interface {
 	// Created only after the OTP was verified. Role and status take their
 	// defaults (user, active); the e-mail counts as verified.
 	CreateRegisteredAccount(ctx context.Context, arg CreateRegisteredAccountParams) (CreateRegisteredAccountRow, error)
+	DeleteAnswerY3(ctx context.Context, arg DeleteAnswerY3Params) error
 	// A strategy only exists for H and VH results.
 	DeleteLowRiskStrategies(ctx context.Context, versionID uuid.UUID) error
 	DeleteResultAdvice(ctx context.Context, arg DeleteResultAdviceParams) error
@@ -77,6 +86,12 @@ type Querier interface {
 	// The record the session middleware checks on every request. Role, status
 	// and session version come from here, never from the token.
 	GetAccountSession(ctx context.Context, id uuid.UUID) (GetAccountSessionRow, error)
+	// Owner and editability live in the query: a version of another account, of a
+	// deleted project or of a deleted version looks absent (no row). A version is
+	// editable only while it is the highest version_no ever created for the
+	// project (deleted versions count, BR-11). The row lock keeps the version
+	// from being superseded while the answers are written.
+	GetAnswerVersionAccess(ctx context.Context, arg GetAnswerVersionAccessParams) (bool, error)
 	GetAuditEntry(ctx context.Context, id int64) (GetAuditEntryRow, error)
 	GetJob(ctx context.Context, id uuid.UUID) (Job, error)
 	// The owner check lives in the query: another account's job looks absent.
@@ -88,6 +103,7 @@ type Querier interface {
 	// Owner and deletion checks live in the query: a version of another
 	// account, or a deleted version or project, looks absent.
 	GetVersionForReport(ctx context.Context, arg GetVersionForReportParams) (GetVersionForReportRow, error)
+	InsertAnswerY3(ctx context.Context, arg InsertAnswerY3Params) error
 	// Append-only: the application role has INSERT and SELECT on audit_log only.
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
@@ -95,6 +111,8 @@ type Querier interface {
 	InsertResultAdvice(ctx context.Context, arg InsertResultAdviceParams) error
 	// The number counts deleted versions too, so it is never reused.
 	InsertVersion(ctx context.Context, arg InsertVersionParams) (uuid.UUID, error)
+	ListAnswerY3(ctx context.Context, versionID uuid.UUID) ([]AnswerY3, error)
+	ListAnswers(ctx context.Context, versionID uuid.UUID) ([]Answer, error)
 	// Newest first. Each filter is optional. The sort matches audit_log_time_ix,
 	// the admin and target filters match audit_log_admin_ix and
 	// audit_log_target_ix. The admin e-mail is '' (mapped to null by the service) once the account is
@@ -114,6 +132,7 @@ type Querier interface {
 	ListCatalogueRiEOptions(ctx context.Context) ([]ListCatalogueRiEOptionsRow, error)
 	// Complete indicators (BR-09): x, y1, y2 and at least one y3 option.
 	ListCompleteAnswers(ctx context.Context, versionID uuid.UUID) ([]ListCompleteAnswersRow, error)
+	ListExistingIndicatorCodes(ctx context.Context, codes []string) ([]string, error)
 	// @q is a LIKE pattern already escaped by the caller, or empty for all.
 	// latest_version_no is 0 when the project has no live version.
 	ListProjects(ctx context.Context, arg ListProjectsParams) ([]ListProjectsRow, error)
@@ -141,6 +160,12 @@ type Querier interface {
 	// A job left running by a crashed worker may be claimed again.
 	MarkJobRunning(ctx context.Context, id uuid.UUID) (Job, error)
 	MarkVersionSubmitted(ctx context.Context, versionID uuid.UUID) (*time.Time, error)
+	// Advice items of the lists stored with each H or VH result.
+	ReportDataAdvice(ctx context.Context, arg ReportDataAdviceParams) ([]ReportDataAdviceRow, error)
+	// Project and snapshot fields of the version a report job is for.
+	ReportDataHead(ctx context.Context, jobID uuid.UUID) (ReportDataHeadRow, error)
+	// Stored results with the chosen strategy, in factor order.
+	ReportDataResults(ctx context.Context, arg ReportDataResultsParams) ([]ReportDataResultsRow, error)
 	// Stores the new password hash after a reset. Only an active account changes.
 	SetAccountPasswordHash(ctx context.Context, arg SetAccountPasswordHashParams) (int64, error)
 	SnapshotImpactThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
@@ -150,6 +175,8 @@ type Querier interface {
 	SoftDeleteProject(ctx context.Context, arg SoftDeleteProjectParams) (uuid.UUID, error)
 	SoftDeleteVersion(ctx context.Context, arg SoftDeleteVersionParams) (int64, error)
 	UpdateProject(ctx context.Context, arg UpdateProjectParams) (int64, error)
+	// Replaces the stored answer of one indicator; NULL columns are cleared.
+	UpsertAnswer(ctx context.Context, arg UpsertAnswerParams) error
 	// Upserted, not replaced, so a chosen strategy survives a resubmission.
 	UpsertRiskResult(ctx context.Context, arg UpsertRiskResultParams) error
 }

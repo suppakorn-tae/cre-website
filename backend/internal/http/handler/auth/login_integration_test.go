@@ -185,6 +185,11 @@ func TestLoginLogout(t *testing.T) {
 		t.Fatalf("body = %s (%v)", w.Body, err)
 	}
 
+	// /csrf matches the contract too.
+	if cw := e.do(t, "GET", "/csrf", "", nil); cw.Code != 200 || cookieNamed(cw, middleware.CSRFCookie) == nil {
+		t.Fatalf("csrf: %d %s", cw.Code, cw.Body)
+	}
+
 	// The cookie works on /me.
 	if w := e.do(t, "GET", "/me", c.Value, nil); w.Code != 200 {
 		t.Fatalf("me: %d %s", w.Code, w.Body)
@@ -209,8 +214,13 @@ func TestLoginLogout(t *testing.T) {
 	if w := e.do(t, "GET", "/me", rc.Value, nil); w.Code != 200 {
 		t.Errorf("other device after logout: %d", w.Code)
 	}
-	if w := e.do(t, "POST", "/logout", "", nil); w.Code != 401 {
-		t.Errorf("logout without session: %d", w.Code)
+	// An expired, invalid or missing session still gets its cookie cleared.
+	for _, tok := range []string{"", "not-a-session-token", c.Value + "x"} {
+		w := e.do(t, "POST", "/logout", tok, nil)
+		cc := cookieNamed(w, session.CookieName)
+		if w.Code != 204 || cc == nil || cc.MaxAge >= 0 {
+			t.Errorf("logout with token %q: %d cookie=%+v, want 204 and cleared", tok, w.Code, cc)
+		}
 	}
 }
 
