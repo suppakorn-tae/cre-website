@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { browserApi } from '@/lib/api/client';
 import type { components } from '@/lib/api/generated/schema';
 
-import type { AdviceItems, AdviceList } from './rules';
+import { flattenCatalogue, type AdviceItems, type AdviceList } from './rules';
 
 export type AdminAdvice = components['schemas']['AdminAdviceLists'];
 
@@ -18,7 +18,7 @@ export function useIndicatorCatalogue() {
     queryKey: keys.catalogue,
     queryFn: async () => {
       const { data } = await browserApi().GET('/catalogue', {});
-      return data!;
+      return { catalogue: data!, indicators: flattenCatalogue(data!) };
     },
   });
 }

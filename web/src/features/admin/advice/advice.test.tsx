@@ -9,8 +9,10 @@ import adviceMessages from '../../../../messages/th/admin-advice.json';
 import ui from '../../../../messages/th/ui.json';
 
 import { AdviceListEditor } from './AdviceListEditor';
+import { IndicatorPicker } from './IndicatorPicker';
 import { getAdvice, isValidItems, resetAdviceStore } from './mocks';
-import { draftFrom, type AdviceItems } from './rules';
+import { mockCatalogue } from '@/mocks/catalogue';
+import { draftFrom, flattenCatalogue, type AdviceItems } from './rules';
 
 const wrap = (node: ReactNode) =>
   renderToStaticMarkup(
@@ -103,6 +105,23 @@ describe('last edited label', () => {
   it('mock: never edited at first, then the saving admin', () => {
     resetAdviceStore();
     expect(getAdvice('EC-TC-2')!.updated_by).toBeNull();
+  });
+});
+
+describe('IndicatorPicker', () => {
+  it('offers dimension, factor, search and the indicator list from the catalogue', () => {
+    const html = wrap(
+      <IndicatorPicker
+        catalogue={mockCatalogue}
+        indicators={flattenCatalogue(mockCatalogue)}
+        value="EC-TC-2"
+        onChange={() => {}}
+      />,
+    );
+    for (const text of ['มิติ', 'ปัจจัย', 'ค้นหาตัวชี้วัด', 'เลือกตัวชี้วัด', 'พบ 55 ตัวชี้วัด']) {
+      expect(html).toContain(text);
+    }
+    expect(html).toMatch(/<option value="EC-TC-2" selected/);
   });
 });
 
