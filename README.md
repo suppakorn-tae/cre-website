@@ -176,13 +176,14 @@ flowchart LR
     end
 
     user --> caddy
-    caddy -- "/" --> web
+    caddy -- pages --> web
     caddy -- "/api/v1" --> api
     web -- server-side fetch --> api
     api --> db & valkey & s3
     worker --> db & valkey & s3 & pdf
     migrate -- schema + seed --> db
-    api -. egress-net .-> google & mail
+    api -. egress-net .-> google
+    api -.-> mail
 ```
 
 <details>
