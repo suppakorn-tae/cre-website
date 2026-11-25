@@ -46,9 +46,9 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const [tab, setTab] = useState<ProjectTab>('overview');
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<VersionSummary | null>(null);
-  const [failure, setFailure] = useState<'create.failed' | 'delete.failed' | 'delete.lastVersion' | null>(
-    null,
-  );
+  const [failure, setFailure] = useState<
+    'create.failed' | 'delete.failed' | 'delete.lastVersion' | null
+  >(null);
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: versionsKey(projectId) });
