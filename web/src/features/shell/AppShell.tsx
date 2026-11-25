@@ -8,6 +8,7 @@ import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 import { browserApi } from '@/lib/api/client';
 import '@/styles/tokens.css';
 
+import { AdminNav, AdminNavMenu } from './AdminNav';
 import { LOGGED_OUT_PATH } from './login-path';
 import { signOut } from './logout';
 import { nextMenuIndex } from './menu-keys';
@@ -15,19 +16,6 @@ import styles from './shell.module.css';
 
 export type ShellVariant = 'app' | 'admin';
 export type ShellUser = { email: string; isAdmin: boolean };
-
-const ADMIN_NAV = [
-  { key: 'users', href: '/admin/users' },
-  { key: 'advice', href: '/admin/advice' },
-  { key: 'thresholds', href: '/admin/thresholds' },
-  { key: 'impactThresholds', href: '/admin/impact-thresholds' },
-  { key: 'export', href: '/admin/export' },
-  { key: 'audit', href: '/admin/audit' },
-] as const;
-
-function isActive(pathname: string, href: string) {
-  return pathname === href || pathname.startsWith(`${href}/`);
-}
 
 /**
  * The frame around every signed-in page: skip link, header with the logo, the
@@ -83,61 +71,9 @@ export function AppShell({
 export function AdminSide() {
   // usePathname() needs the request URL, so it waits behind a boundary.
   return (
-    <Suspense fallback={<AdminSideMenu pathname={null} />}>
-      <AdminSideWithPath />
+    <Suspense fallback={<AdminNavMenu pathname={null} />}>
+      <AdminNav />
     </Suspense>
-  );
-}
-
-function AdminSideWithPath() {
-  return <AdminSideMenu pathname={usePathname()} />;
-}
-
-/** Admin side menu. `pathname` is null until the URL is known. */
-function AdminSideMenu({ pathname }: { pathname: string | null }) {
-  const t = useTranslations('shell');
-  const [navOpen, setNavOpen] = useState(false);
-  const [lastPath, setLastPath] = useState(pathname);
-
-  // Close the mobile menu when the page changes.
-  if (lastPath !== pathname) {
-    setLastPath(pathname);
-    setNavOpen(false);
-  }
-
-  return (
-    <div className={styles.sideCard}>
-      <h2 className={styles.sideTitle}>{t('adminNav.label')}</h2>
-      <button
-        type="button"
-        className={styles.sideToggle}
-        aria-expanded={navOpen}
-        aria-controls="admin-nav"
-        onClick={() => setNavOpen((o) => !o)}
-      >
-        {t('adminNav.label')}
-      </button>
-      <nav
-        id="admin-nav"
-        aria-label={t('adminNav.label')}
-        className={styles.sideNav}
-        data-open={navOpen}
-      >
-        <ul className={styles.navList}>
-          {ADMIN_NAV.map((item) => (
-            <li key={item.href}>
-              <Link
-                href={item.href}
-                className={styles.navLink}
-                aria-current={pathname && isActive(pathname, item.href) ? 'page' : undefined}
-              >
-                {t(`adminNav.${item.key}`)}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </div>
   );
 }
 
