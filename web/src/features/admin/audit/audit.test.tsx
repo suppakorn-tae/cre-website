@@ -8,7 +8,7 @@ import adminAudit from '../../../../messages/th/admin-audit.json';
 import ui from '../../../../messages/th/ui.json';
 
 import { AuditFilters } from './AuditFilters';
-import { formatValue } from './AuditDetail';
+import { diffRows, formatValue } from './AuditDetail';
 import { AUDIT_ACTIONS, EMPTY_FILTERS, TARGET_TYPES } from './filters';
 import { filterEntries, mockEntries, MOCK_ENTRY_COUNT } from './mocks';
 
@@ -54,6 +54,24 @@ describe('audit view is read-only', () => {
     expect(formatValue(null)).toBeNull();
     expect(formatValue({ a: 1 })).toBe('{\n  "a": 1\n}');
     expect(formatValue('x')).toBe('x');
+  });
+
+  it('lines old and new values up field by field', () => {
+    const rows = diffRows({ a: '9.33', d: '3.5' }, { a: '9.33', d: '3', e: '2.58' });
+    expect(rows).toEqual([
+      { field: 'a', old: '9.33', next: '9.33', changed: false },
+      { field: 'd', old: '3.5', next: '3', changed: true },
+      { field: 'e', old: null, next: '2.58', changed: true },
+    ]);
+  });
+
+  it('handles a missing side and values that are not objects', () => {
+    expect(diffRows(null, { level: 'H' })).toEqual([
+      { field: 'level', old: null, next: 'H', changed: true },
+    ]);
+    expect(diffRows(null, null)).toEqual([]);
+    expect(diffRows('x', 'y')).toEqual([{ field: null, old: 'x', next: 'y', changed: true }]);
+    expect(diffRows({ n: 1 }, { n: 1 })[0]?.changed).toBe(false);
   });
 });
 
