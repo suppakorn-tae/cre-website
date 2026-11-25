@@ -1,0 +1,29 @@
+{
+	# Public ACME certificates (Let's Encrypt) for the production domain.
+	email {$ACME_EMAIL}
+}
+
+{$SITE_ADDRESS:conriskexpert.com} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# The API serves its liveness probe at /healthz, outside the /api/v1 prefix.
+	handle /api/v1/healthz {
+		rewrite * /healthz
+		reverse_proxy api:4000
+	}
+
+	handle /api/v* {
+		reverse_proxy api:4000
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}

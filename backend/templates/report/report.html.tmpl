@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><title>{{t "title"}}</title>
+<link rel="stylesheet" href="style.css"></head>
+<body>
+<h1>{{t "title"}}</h1>
+<h2>{{t "section.project"}}</h2>
+<table class="meta">
+<tr><th>{{t "project.name"}}</th><td>{{.ProjectName}}</td></tr>
+<tr><th>{{t "project.nickname"}}</th><td>{{.Nickname}}</td></tr>
+<tr><th>{{t "project.island"}}</th><td>{{.Island}}</td></tr>
+<tr><th>{{t "project.type"}}</th><td>{{.Type}}</td></tr>
+<tr><th>{{t "project.value"}}</th><td>{{.Value}} {{t "unit.baht"}}</td></tr>
+<tr><th>{{t "project.period"}}</th><td>{{.Start}} - {{.End}}</td></tr>
+<tr><th>{{t "project.progress"}}</th><td>{{.Progress}}%</td></tr>
+<tr><th>{{t "project.version"}}</th><td>{{.VersionNo}}</td></tr>
+<tr><th>{{t "project.submitted"}}</th><td>{{.Submitted}}</td></tr>
+<tr><th>{{t "project.generated"}}</th><td>{{.Generated}}</td></tr>
+</table>
+
+<h2>{{t "section.summary"}}</h2>
+<table>
+<thead><tr><th>{{t "summary.level"}}</th><th class="num">{{t "summary.count"}}</th></tr></thead>
+<tbody>
+{{range .Counts}}<tr><td class="lvl lvl-{{.Level}}">{{.Level}}</td><td class="num">{{.Count}}</td></tr>
+{{end}}
+<tr><th>{{t "summary.total"}}</th><td class="num">{{.Total}}</td></tr>
+<tr><th>{{t "summary.average"}}</th><td class="num">{{.AverageRM}}</td></tr>
+</tbody>
+</table>
+<div class="disclaimer">{{t "disclaimer"}}</div>
+
+<h2>{{t "section.results"}}</h2>
+<table>
+<thead><tr><th>{{t "col.indicator"}}</th><th>RL</th><th>RI_C</th><th>RI_T</th><th>RI_E</th><th>RI_max</th><th>RM</th><th>{{t "col.level"}}</th></tr></thead>
+<tbody>
+{{range .Indicators}}<tr><td>{{.Code}} {{.Name}}</td><td class="num">{{.RL}}</td><td class="num">{{.RIC}}</td><td class="num">{{.RIT}}</td><td class="num">{{.RIE}}</td><td class="num">{{.RIMax}}</td><td class="num">{{.RM}}</td><td class="lvl lvl-{{.Level}}">{{.Level}}</td></tr>
+{{end}}
+</tbody>
+</table>
+
+<h2>{{t "section.advice"}}</h2>
+{{range .HighRisk}}<div class="indicator">
+<h3>{{.Code}} {{.Name}} <span class="lvl lvl-{{.Level}}">{{.Level}}</span> RM {{.RM}}</h3>
+{{range .Advice}}<h4>{{.Label}}</h4>
+<ul>{{range .Items}}<li>{{.}}</li>{{end}}</ul>
+{{end}}
+<p><b>{{t "strategy.label"}}:</b> {{.Strategy}}</p>
+</div>
+{{else}}<p>{{t "advice.none"}}</p>
+{{end}}
+
+<h2>{{t "section.signatures"}}</h2>
+<div class="sign">
+{{range .Slots}}<div class="slot"><b>{{.}}</b><div class="line"></div>
+<div>{{t "signature.name"}}: ................................</div>
+<div>{{t "signature.date"}}: ................................</div></div>
+{{end}}
+</div>
+<div class="disclaimer">{{t "disclaimer"}}</div>
+</body></html>
