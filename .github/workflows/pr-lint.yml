@@ -21,13 +21,14 @@ jobs:
           TITLE: ${{ github.event.pull_request.title }}
           AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
-          base='^(feat|fix|refactor|perf|test|docs|build|ci|chore|revert)\([a-z0-9-]+\)!?: [a-z].{3,68}'
+          head='^(feat|fix|refactor|perf|test|docs|build|ci|chore|revert)\([a-z0-9-]+\)!?: [a-z]'
           if [ "$AUTHOR" = "dependabot[bot]" ]; then
-            # Dependabot cannot add the (IO-n) suffix; type, scope and
-            # lowercase are still enforced.
-            re="${base}\$"
+            # Dependabot cannot add the (IO-n) suffix and its titles can
+            # be long (it wraps the commit headline, so commitlint still
+            # passes); type, scope and lowercase are still enforced.
+            re="${head}.+\$"
           else
-            re="${base} \(IO-[0-9]+\)\$"
+            re="${head}.{3,68} \(IO-[0-9]+\)\$"
           fi
           if ! printf '%s' "$TITLE" | grep -Eq "$re"; then
             echo "PR title does not match: $re"
