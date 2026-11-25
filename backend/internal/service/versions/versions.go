@@ -102,7 +102,16 @@ func (s *Service) Create(ctx context.Context, projectID, owner uuid.UUID) (Versi
 }
 
 // List returns the non-deleted versions of an owned project, newest first.
+// A missing, deleted or foreign project is ErrNotFound; an owned project
+// without versions is an empty list.
 func (s *Service) List(ctx context.Context, projectID, owner uuid.UUID) ([]Version, error) {
+	owned, err := sqlc.New(s.db).OwnedProjectExists(ctx, sqlc.OwnedProjectExistsParams{ID: projectID, OwnerID: owner})
+	if err != nil {
+		return nil, fmt.Errorf("versions: list: %w", err)
+	}
+	if !owned {
+		return nil, ErrNotFound
+	}
 	rows, err := sqlc.New(s.db).ListVersions(ctx, sqlc.ListVersionsParams{ProjectID: projectID, OwnerID: owner})
 	if err != nil {
 		return nil, fmt.Errorf("versions: list: %w", err)

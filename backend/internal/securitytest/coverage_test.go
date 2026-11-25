@@ -122,12 +122,9 @@ var covered = map[string]route{
 		access: accessSession, owned: true,
 		path: func(f fixture) string { return "/projects/" + f.project.ID },
 	},
-	// Not owned: a project of someone else lists as 200 with no items, where
-	// the contract says 404. No data leaks, but the status is wrong; the
-	// versions service needs a follow-up issue (IO-113 may not edit it).
 	"GET /projects/{}/versions": {
-		access: accessSession,
-		path:   func(f fixture) string { return "/projects/" + f.project.ID + "/versions" },
+		access: accessSession, owned: true,
+		path: func(f fixture) string { return "/projects/" + f.project.ID + "/versions" },
 	},
 	"POST /projects/{}/versions": {
 		access: accessSession, owned: true,
