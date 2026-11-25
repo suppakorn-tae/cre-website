@@ -20,3 +20,4 @@ ul { margin: 2pt 0 4pt; padding-left: 18pt; }
 .sign { display: flex; gap: 12pt; break-inside: avoid; margin-top: 24pt; }
 .slot { flex: 1; }
 .slot .line { border-bottom: 1px solid #0f1e33; height: 48pt; }
+sub { font-size: 70%; line-height: 0; }

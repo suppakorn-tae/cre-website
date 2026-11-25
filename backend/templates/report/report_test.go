@@ -101,3 +101,19 @@ func TestCatalogueHasNoSpecCodes(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderUsesSubscriptsNotCodes(t *testing.T) {
+	html, _, err := report.Render(sample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(html)
+	if strings.Contains(s, "RI_") {
+		t.Error("an internal RI_ code is shown")
+	}
+	for _, want := range []string{"RI<sub>C</sub>", "RI<sub>T</sub>", "RI<sub>E</sub>", "RI<sub>max</sub>"} {
+		if !strings.Contains(s, want) {
+			t.Errorf("html lacks %q", want)
+		}
+	}
+}
