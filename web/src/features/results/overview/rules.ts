@@ -41,10 +41,13 @@ export function parseTab(value: string | null | undefined): TabId {
 export const CHART_MIN = 1;
 export const CHART_MAX = 5;
 /**
- * Where the H line is drawn: the hi-fi default for level H. The api does not return
- * the level cut-offs with the results, so bars are coloured by this line only.
+ * Fallback for the H line, used only when a response carries no `level_cutoffs`
+ * (an older api). The api returns the real cut-off; do not read this directly.
  */
-export const H_LINE_RM = 3.5;
+export const FALLBACK_H_LINE_RM = 3.5;
+
+/** Where the H line is drawn: the api's cut-off for level H, else the fallback. */
+export const hLineRm = (cutoffs?: { h: number }): number => cutoffs?.h ?? FALLBACK_H_LINE_RM;
 
 /** Bar height as a share of the plot, 0 to 100. */
 export function chartPct(rm: number): number {
@@ -53,4 +56,4 @@ export function chartPct(rm: number): number {
 }
 
 /** A bar counts as high when its stored average reaches the H line. */
-export const reachesH = (rm: number): boolean => rm >= H_LINE_RM;
+export const reachesH = (rm: number, hLine: number = FALLBACK_H_LINE_RM): boolean => rm >= hLine;

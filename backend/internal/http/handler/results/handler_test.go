@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -17,6 +18,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
+	"github.com/suppakorn-tae/cre-website/backend/internal/engine"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/handler/results"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/middleware"
 	svc "github.com/suppakorn-tae/cre-website/backend/internal/service/results"
@@ -43,7 +45,8 @@ func (fake) Get(_ context.Context, p, v, o uuid.UUID) (svc.Results, error) {
 	strategy := "REDUCE"
 	return svc.Results{
 		VersionID: v, SubmittedAt: at, Editable: v == latest, AverageRM: 3.2,
-		LevelCounts: map[string]int{"L": 1, "H": 1},
+		LevelCounts:  map[string]int{"L": 1, "H": 1},
+		LevelCutoffs: engine.Cutoffs(),
 		FactorAverages: []svc.FactorAverage{
 			{FactorCode: "EC-MG", ScoredCount: 1, AverageRM: 2},
 			{FactorCode: "EC-HS", ScoredCount: 1, AverageRM: 3.5},
@@ -204,6 +207,21 @@ func TestFactorAveragesAreServedInOrder(t *testing.T) {
 	if len(got.FactorAverages) != 2 || got.FactorAverages[0].FactorCode != "EC-MG" || got.FactorAverages[0].AverageRM != 2 ||
 		got.FactorAverages[1].FactorCode != "EC-HS" || got.FactorAverages[1].AverageRM != 3.5 || got.FactorAverages[1].ScoredCount != 1 {
 		t.Fatalf("factor_averages = %+v", got.FactorAverages)
+	}
+}
+
+func TestLevelCutoffsAreServed(t *testing.T) {
+	base := "/api/v1/projects/" + project.String() + "/versions/"
+	_, body := call(t, owner.String(), http.MethodGet, base+latest.String()+"/results", "")
+	var got struct {
+		LevelCutoffs map[string]float64 `json:"level_cutoffs"`
+	}
+	if err := json.Unmarshal([]byte(body), &got); err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]float64{"l": 1.5, "m": 2.5, "h": 3.5, "vh": 4.5}
+	if !reflect.DeepEqual(got.LevelCutoffs, want) {
+		t.Fatalf("level_cutoffs = %v, want %v", got.LevelCutoffs, want)
 	}
 }
 

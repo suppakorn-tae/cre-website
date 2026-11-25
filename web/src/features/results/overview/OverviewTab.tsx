@@ -83,7 +83,11 @@ export function OverviewTab({ results, names }: Props) {
         </ul>
       </section>
 
-      <FactorChart averages={results.factor_averages} names={names} />
+      <FactorChart
+        averages={results.factor_averages}
+        names={names}
+        cutoffs={results.level_cutoffs}
+      />
 
       <section aria-labelledby="results-top-title">
         <h2 id="results-top-title" className={styles.sectionTitle}>

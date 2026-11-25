@@ -4,11 +4,13 @@ import { formatNumber } from '@/lib/format/locale';
 
 import type { IndicatorName, ResultsResponse } from './api';
 import styles from './results.module.css';
-import { CHART_MAX, CHART_MIN, chartPct, H_LINE_RM, reachesH } from './rules';
+import { CHART_MAX, CHART_MIN, chartPct, hLineRm, reachesH } from './rules';
 
 type Props = {
   averages: ResultsResponse['factor_averages'];
   names: Map<string, IndicatorName>;
+  /** `level_cutoffs` of the results response; the H line falls back to 3.5 when absent. */
+  cutoffs?: ResultsResponse['level_cutoffs'];
 };
 
 const TICKS = [5, 4, 3, 2, 1];
@@ -16,7 +18,8 @@ const fmt = (value: number) =>
   formatNumber(value, undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /** Average RM per factor (FR-47), drawn from the stored averages without recalculating. */
-export function FactorChart({ averages, names }: Props) {
+export function FactorChart({ averages, names, cutoffs }: Props) {
+  const hLine = hLineRm(cutoffs);
   const t = useTranslations('results.overview.factorChart');
   const factorNames = new Map<string, string>();
   for (const { factorCode, factorName } of names.values()) factorNames.set(factorCode, factorName);
@@ -45,10 +48,10 @@ export function FactorChart({ averages, names }: Props) {
           ))}
           <span
             className={styles.factorLine}
-            style={{ bottom: `${chartPct(H_LINE_RM)}%` }}
+            style={{ bottom: `${chartPct(hLine)}%` }}
             data-testid="h-line"
           >
-            <span className={styles.factorLineLabel}>{t('threshold', { rm: H_LINE_RM })}</span>
+            <span className={styles.factorLineLabel}>{t('threshold', { rm: hLine })}</span>
           </span>
           <ol
             className={styles.factorBars}
@@ -59,7 +62,7 @@ export function FactorChart({ averages, names }: Props) {
                 key={a.factor_code}
                 className={styles.factorCol}
                 title={factorNames.get(a.factor_code)}
-                data-high={reachesH(a.average_rm)}
+                data-high={reachesH(a.average_rm, hLine)}
               >
                 <span
                   className={styles.factorValue}
@@ -70,7 +73,7 @@ export function FactorChart({ averages, names }: Props) {
                 <span
                   className={styles.factorBar}
                   style={{ height: `${chartPct(a.average_rm)}%` }}
-                  data-high={reachesH(a.average_rm)}
+                  data-high={reachesH(a.average_rm, hLine)}
                 />
                 <span className={styles.factorCode}>{a.factor_code}</span>
               </li>

@@ -190,6 +190,26 @@ FactorAverage:
       minimum: 1
     average_rm:
       type: number
+LevelCutoffs:
+  type: object
+  description: |
+    Lower bound of each RM level: an RM at or above `h` and below `vh` is
+    level H, and an RM exactly on a border takes the higher level. These are
+    the fixed borders of the risk engine (risk-engine v1.1, Risk level), not
+    a per-version snapshot, and nothing is recalculated on read. Optional so
+    older clients and responses stay valid.
+  required: [l, m, h, vh]
+  properties:
+    l:
+      type: number
+      description: RM from which the level is L (below it, VL).
+    m:
+      type: number
+    h:
+      type: number
+      description: RM from which the level is H; where the H line is drawn.
+    vh:
+      type: number
 ResultsResponse:
   type: object
   required: [version_id, submitted_at, editable, summary, factor_averages, items]
@@ -210,6 +230,8 @@ ResultsResponse:
         catalogue order (overview chart, FR-47).
       items:
         $ref: '#/FactorAverage'
+    level_cutoffs:
+      $ref: '#/LevelCutoffs'
     items:
       type: array
       items:

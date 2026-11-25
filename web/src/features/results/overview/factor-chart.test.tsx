@@ -6,12 +6,15 @@ import results from '../../../../messages/th/results.json';
 
 import { FactorChart } from './FactorChart';
 import { mockResults } from './mocks';
-import { chartPct, H_LINE_RM, reachesH } from './rules';
+import { chartPct, FALLBACK_H_LINE_RM, hLineRm, reachesH } from './rules';
 
-function render(averages: ReturnType<typeof mockResults>['factor_averages']) {
+function render(
+  averages: ReturnType<typeof mockResults>['factor_averages'],
+  cutoffs?: ReturnType<typeof mockResults>['level_cutoffs'],
+) {
   return renderToStaticMarkup(
     <NextIntlClientProvider locale="th" messages={{ results }}>
-      <FactorChart averages={averages} names={new Map()} />
+      <FactorChart averages={averages} names={new Map()} cutoffs={cutoffs} />
     </NextIntlClientProvider>,
   );
 }
@@ -46,9 +49,23 @@ describe('factor chart', () => {
   it('places the line and bars on the 1 to 5 scale', () => {
     expect(chartPct(1)).toBe(0);
     expect(chartPct(5)).toBe(100);
-    expect(chartPct(H_LINE_RM)).toBe(62.5);
+    expect(chartPct(FALLBACK_H_LINE_RM)).toBe(62.5);
     expect(reachesH(3.49)).toBe(false);
     expect(reachesH(3.5)).toBe(true);
     expect(render(averages)).toContain('bottom:62.5%');
+  });
+
+  it('draws the H line at the cut-off from the response', () => {
+    const cutoffs = { l: 1.5, m: 2.5, h: 4, vh: 4.5 };
+    expect(hLineRm(cutoffs)).toBe(4);
+    const html = render(averages, cutoffs);
+    expect(html).toContain('ระดับสูง ≥ 4');
+    expect(html).toContain('bottom:75%'); // (4 - 1) / 4
+    expect(html.match(/data-high="true"/g)).toHaveLength(2); // only 4.2 reaches 4
+  });
+
+  it('falls back to 3.5 when the response has no cut-offs', () => {
+    expect(hLineRm(undefined)).toBe(3.5);
+    expect(render(averages, undefined)).toContain('bottom:62.5%');
   });
 });

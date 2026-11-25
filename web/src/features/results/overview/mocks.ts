@@ -7,7 +7,7 @@ import { mockProject, mockProjectId, mockVersions } from '@/features/versions/mo
 
 import type { IndicatorResult, Level, ResultsResponse, Version } from './api';
 
-/** Level cut-offs of the mock only; the real ones are stored by the api. */
+/** Level cut-offs of the mock only; the real ones come from `level_cutoffs`. */
 function levelOf(rm: number): Level {
   if (rm >= 4.5) return 'VH';
   if (rm >= 3.5) return 'H';
@@ -69,6 +69,7 @@ export function mockResults(versionId: string, items = mockResultItems()): Resul
       level_counts,
       average_rm: items.reduce((sum, i) => sum + i.rm, 0) / items.length,
     },
+    level_cutoffs: { l: 1.5, m: 2.5, h: 3.5, vh: 4.5 },
     factor_averages: mockFactorAverages(items),
     items,
   };

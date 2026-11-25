@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/suppakorn-tae/cre-website/backend/internal/engine"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/results"
 	"github.com/suppakorn-tae/cre-website/backend/internal/testutil"
 )
@@ -121,6 +122,17 @@ func TestGetReturnsStoredFactorAverages(t *testing.T) {
 		if a.ScoredCount != count[a.FactorCode] || a.AverageRM != sum[a.FactorCode]/float64(count[a.FactorCode]) {
 			t.Fatalf("average of %s = %+v, want %v over %d", a.FactorCode, a, sum[a.FactorCode], count[a.FactorCode])
 		}
+	}
+}
+
+func TestGetReturnsLevelCutoffs(t *testing.T) {
+	f := setup(t)
+	res, err := f.svc.Get(context.Background(), f.project, f.version, f.owner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.LevelCutoffs != (engine.LevelCutoffs{L: 1.5, M: 2.5, H: 3.5, VH: 4.5}) {
+		t.Fatalf("cutoffs = %+v", res.LevelCutoffs)
 	}
 }
 
