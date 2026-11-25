@@ -1,5 +1,23 @@
+import type { Metadata } from 'next';
+import { getTranslations } from 'next-intl/server';
+
+import { versionTitleContext } from '@/lib/meta/context';
+import { pageTitle } from '@/lib/meta/title';
 import { ReportMocks } from '@/features/reports/ReportMocks';
 import { ReportPage } from '@/features/reports/ReportPage';
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ projectId: string; versionId: string }>;
+}): Promise<Metadata> {
+  const { projectId, versionId } = await params;
+  const [t, context] = await Promise.all([
+    getTranslations('reports.meta'),
+    versionTitleContext(projectId, versionId),
+  ]);
+  return { title: pageTitle(t('title'), context) };
+}
 
 export default async function VersionReportPage({
   params,

@@ -1,4 +1,12 @@
 {
+  "meta": {
+    "notFound": "ไม่พบหน้านี้",
+    "error": "เกิดข้อผิดพลาด"
+  },
+  "pageState": {
+    "backToDashboard": "กลับไปแดชบอร์ด",
+    "retry": "ลองใหม่"
+  },
   "appName": "CRE",
   "loading": "กำลังโหลด…",
   "errors": {
