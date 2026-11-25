@@ -47,9 +47,9 @@
 }
 .notice {
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--color-info-border);
+  border: 1px solid var(--color-warning-border);
   border-radius: var(--radius-card);
-  background: var(--color-info-bg);
+  background: var(--color-warning-bg);
 }
 .noticeTitle {
   margin: 0;
@@ -72,11 +72,33 @@
 }
 .filters {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  grid-template-columns: minmax(0, 300px) minmax(0, 320px);
+  align-items: end;
   gap: var(--space-4);
+}
+.banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-error-border);
+  border-radius: var(--radius-card);
+  background: var(--color-error-bg);
+  color: var(--color-error);
+}
+.banner svg {
+  flex: none;
+  margin-top: 1px;
 }
 
 /* RL table: a real table on desktop, stacked cards on mobile. */
+.tableCard {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
 .table,
 .impactTable {
   width: 100%;
@@ -89,54 +111,117 @@
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--color-divider);
   text-align: start;
-  vertical-align: top;
+  vertical-align: middle;
 }
 .table th,
 .impactTable th {
   color: var(--color-text-secondary);
-  font-weight: var(--weight-semibold);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-medium);
+}
+.table th {
+  height: 44px;
+  background: var(--color-subtle);
+  white-space: nowrap;
+}
+.table th:first-child,
+.table td:first-child {
+  padding-inline-start: var(--space-5);
+}
+.table td {
+  height: 60px;
+  font-size: var(--text-small);
+}
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.table td[hidden] {
+  display: table-cell;
 }
 .num {
   text-align: end !important;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 .code {
-  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+.nameCell {
+  min-width: 10rem;
+}
+.truncate {
+  display: block;
+  max-width: 14rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.unit {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.truncate.unitText {
+  max-width: 8rem;
+}
+.editingLabel {
+  display: block;
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+}
+.normal,
+.inverse {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-badge);
+  font-size: var(--text-caption);
   white-space: nowrap;
 }
 .normal {
+  background: var(--color-disabled-bg);
   color: var(--color-text-secondary);
-  font-weight: var(--weight-semibold);
 }
 .inverse {
+  background: var(--color-orange-50);
   color: var(--color-warning);
-  font-weight: var(--weight-semibold);
 }
-.editing {
-  background: var(--color-info-bg);
-}
-.errorRow td {
-  background: var(--color-error-bg);
+.editing td {
+  background: var(--color-subtle);
 }
 .actions {
-  display: flex;
-  gap: var(--space-2);
-  justify-content: flex-end;
   min-width: max-content;
+  text-align: end;
   white-space: nowrap;
+}
+.actions > button + button {
+  margin-inline-start: var(--space-2);
+}
+.editButton {
+  width: var(--control-sm);
+  padding: 0;
+  color: var(--color-text-secondary);
+}
+.empty {
+  margin: 0;
+  padding: var(--space-6);
+  color: var(--color-text-secondary);
+  text-align: center;
 }
 .direction {
   white-space: nowrap;
 }
 .cell {
   box-sizing: border-box;
-  width: 5.5rem;
+  width: 4.5rem;
+  min-height: var(--control-sm);
   padding: var(--space-1) var(--space-2);
-  border: 1px solid var(--color-field-border);
+  border: 1px solid var(--color-blue-600);
   border-radius: var(--radius-control);
   background: var(--color-white);
   color: var(--color-text);
   font: inherit;
+  font-size: var(--text-small);
   text-align: end;
 }
 .cell:focus-visible {
@@ -145,6 +230,8 @@
 }
 .cell[aria-invalid='true'] {
   border-color: var(--color-error);
+  background: var(--color-error-bg);
+  color: var(--color-error);
 }
 .cellError {
   display: block;
@@ -179,13 +266,18 @@
   margin-top: var(--space-4);
 }
 
-@media (max-width: 800px) {
+@media (max-width: 767px) {
   .card {
     padding: var(--space-4);
   }
   .filters,
   .impactGrid {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .tableCard {
+    overflow: visible;
+    border: 0;
+    background: transparent;
   }
   .table thead {
     position: absolute;
@@ -201,24 +293,57 @@
     display: block;
   }
   .table tr {
-    padding: var(--space-2) 0;
-    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-card);
+    background: var(--color-surface);
   }
   .table td[hidden] {
     display: none;
   }
-  .table td {
+  .table td,
+  .table th:first-child,
+  .table td:first-child {
     display: flex;
     flex-wrap: wrap;
+    align-items: center;
     gap: var(--space-2);
     justify-content: space-between;
+    height: auto;
+    min-height: 32px;
+    padding: var(--space-1) 0;
     border: 0;
+  }
+  .table .editing td {
+    background: transparent;
   }
   .table td[data-label]::before {
     content: attr(data-label);
     color: var(--color-text-muted);
+    font-size: var(--text-caption);
+  }
+  /* The code is the card title. */
+  .table td.code {
+    font-size: var(--text-body);
+    font-weight: var(--weight-semibold);
+  }
+  .table td.code::before {
+    content: none;
+  }
+  .table .nameCell {
+    min-width: 0;
+  }
+  .table .nameCell .truncate,
+  .table .unit .truncate {
+    max-width: none;
+    white-space: normal;
+    text-align: end;
   }
   .table .num {
-    text-align: start !important;
+    text-align: end !important;
+  }
+  .table td.actions {
+    justify-content: flex-end;
   }
 }
