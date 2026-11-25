@@ -118,6 +118,8 @@ export function ReportPage({ projectId, versionId }: Props) {
           {status ? (
             <ReportStatus
               status={status}
+              finishedAt={job.data?.finished_at ?? null}
+              title={t('cardTitle', { nickname: project.nickname, no: version.version_no })}
               downloadHref={downloadUrl(jobId ?? '')}
               onRetry={() => request.mutate()}
               retrying={request.isPending}

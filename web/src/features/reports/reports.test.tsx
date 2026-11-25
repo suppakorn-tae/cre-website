@@ -31,6 +31,8 @@ const render = (status: Parameters<typeof ReportStatus>[0]['status']) =>
     <NextIntlClientProvider locale="th" messages={{ reports }}>
       <ReportStatus
         status={status}
+        finishedAt={status === 'done' ? '2026-11-14T10:02:00Z' : null}
+        title="รายงาน TK2 · v3"
         downloadHref={downloadUrl('j1')}
         onRetry={vi.fn()}
         retrying={false}
@@ -66,7 +68,7 @@ describe('ReportStatus', () => {
 
   it('links to the download when done', () => {
     const html = render('done');
-    expect(html).toContain('รายงานพร้อมดาวน์โหลด');
+    expect(html).toContain('พร้อมแล้ว');
     expect(html).toContain('href="/api/v1/reports/j1/download"');
   });
 
@@ -75,6 +77,39 @@ describe('ReportStatus', () => {
     expect(html).toContain('สร้างรายงานไม่สำเร็จ');
     expect(html).toContain('สร้างรายงานอีกครั้ง');
     expect(html).not.toContain('ดาวน์โหลด PDF');
+  });
+});
+
+describe('ReportStatus layout', () => {
+  it('lists every state and marks the current one', () => {
+    const html = render('running');
+    for (const text of [
+      'อยู่ในคิว',
+      'กรุณารอสักครู่',
+      'กำลังสร้าง…',
+      'ใช้เวลาประมาณ 10–30 วินาที',
+      'ไม่สำเร็จ',
+    ]) {
+      expect(html).toContain(text);
+    }
+    expect(html).toContain('aria-current="step"');
+    expect(html).toContain('เนื้อหาในรายงาน');
+  });
+
+  it('shows the ready card with a chip and a download button when done', () => {
+    const html = render('done');
+    expect(html).toContain('รายงาน TK2 · v3');
+    expect(html).toContain('พร้อมแล้ว');
+    expect(html).toContain('ดาวน์โหลด PDF');
+  });
+
+  it('shows a static preview placeholder and never frames the attachment download', () => {
+    const done = render('done');
+    expect(done).toContain('ตัวอย่างหน้าแรกของ PDF');
+    expect(done).toContain('ตัวอย่างหน้าแรกยังไม่พร้อมแสดงในหน้านี้');
+    expect(done).not.toContain('<iframe');
+    expect(render('queued')).toContain('ตัวอย่างจะแสดงเมื่อรายงานพร้อม');
+    expect(render('queued')).not.toContain('<iframe');
   });
 });
 
