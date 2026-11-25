@@ -396,6 +396,8 @@
         $ref: ../schemas/common.yaml#/responses/ValidationFailed
       '429':
         $ref: ../schemas/common.yaml#/responses/TooManyRequests
+      '503':
+        $ref: ../schemas/common.yaml#/responses/ServiceUnavailable
 /auth/google/callback:
   get:
     operationId: googleCallback
@@ -440,6 +442,8 @@
           Set-Cookie:
             schema:
               type: string
+      '503':
+        $ref: ../schemas/common.yaml#/responses/ServiceUnavailable
 /auth/google/pending:
   get:
     operationId: getGooglePending
@@ -457,6 +461,8 @@
               $ref: ../schemas/auth.yaml#/GooglePending
       '404':
         $ref: ../schemas/common.yaml#/responses/NotFound
+      '503':
+        $ref: ../schemas/common.yaml#/responses/ServiceUnavailable
 /auth/google/complete:
   post:
     operationId: completeGoogleSignup
@@ -499,3 +505,5 @@
         $ref: ../schemas/common.yaml#/responses/ValidationFailed
       '429':
         $ref: ../schemas/common.yaml#/responses/TooManyRequests
+      '503':
+        $ref: ../schemas/common.yaml#/responses/ServiceUnavailable

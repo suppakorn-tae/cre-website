@@ -465,21 +465,39 @@ func TestGoogleStateReplayedOrExpired(t *testing.T) {
 	}
 }
 
-// Without Google credentials the routes stay mounted and answer 503.
+// Without Google credentials the routes stay mounted and answer 503 with the
+// error envelope the contract declares.
 func TestGoogleUnavailableWithoutConfig(t *testing.T) {
 	t.Setenv("GOOGLE_CLIENT_ID", "")
 	r := chi.NewRouter()
-	googleRoutes(r, app.Deps{})
+	r.Route("/api/v1/auth", func(r chi.Router) { googleRoutes(r, app.Deps{}) })
+	spec, err := api.GetSpec()
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, c := range [][2]string{
-		{http.MethodPost, "/google/start"},
-		{http.MethodGet, "/google/callback"},
-		{http.MethodGet, "/google/pending"},
-		{http.MethodPost, "/google/complete"},
+		{http.MethodPost, "/api/v1/auth/google/start"},
+		{http.MethodGet, "/api/v1/auth/google/callback"},
+		{http.MethodGet, "/api/v1/auth/google/pending"},
+		{http.MethodPost, "/api/v1/auth/google/complete"},
 	} {
+		body := ""
+		if c[0] == http.MethodPost {
+			body = "{}"
+		}
+		req := httptest.NewRequest(c[0], c[1], strings.NewReader(body))
+		if body != "" {
+			req.Header.Set("Content-Type", "application/json")
+		}
 		w := httptest.NewRecorder()
-		r.ServeHTTP(w, httptest.NewRequest(c[0], c[1], nil))
+		r.ServeHTTP(w, req)
 		if w.Code != http.StatusServiceUnavailable {
 			t.Fatalf("%s %s: %d, want 503", c[0], c[1], w.Code)
+		}
+		creq := httptest.NewRequest(c[0], c[1], strings.NewReader(body))
+		creq.Header = req.Header
+		if err := contract.Validate(spec, creq, w.Result()); err != nil {
+			t.Fatalf("%s %s 503 does not match the contract: %v", c[0], c[1], err)
 		}
 	}
 }
