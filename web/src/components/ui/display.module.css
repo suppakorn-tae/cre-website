@@ -15,7 +15,27 @@
   overflow-x: auto;
   border-bottom: 1px solid var(--color-border);
 }
+/* Narrow screens: the strip scrolls inside itself; a fade shows which side has more. */
+@media (max-width: 767px) {
+  .tablist {
+    gap: var(--space-5);
+    scrollbar-width: none;
+    background:
+      linear-gradient(to right, var(--color-canvas) 30%, transparent) left center / 2rem 100%
+        no-repeat local,
+      linear-gradient(to left, var(--color-canvas) 30%, transparent) right center / 2rem 100%
+        no-repeat local,
+      linear-gradient(to right, var(--color-border), transparent) left center / 0.75rem 100%
+        no-repeat scroll,
+      linear-gradient(to left, var(--color-border), transparent) right center / 0.75rem 100%
+        no-repeat scroll;
+  }
+  .tablist::-webkit-scrollbar {
+    display: none;
+  }
+}
 .tab {
+  flex: none;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -139,6 +159,15 @@
 .end {
   text-align: end !important;
   font-variant-numeric: tabular-nums;
+}
+.nowrap {
+  white-space: nowrap;
+  overflow-wrap: normal !important;
+}
+.bare {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 .caption {
   position: absolute;
