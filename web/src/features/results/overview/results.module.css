@@ -91,6 +91,12 @@
   position: relative;
   min-width: 0;
 }
+.countBadge {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+  z-index: 1;
+}
 .count::before {
   content: '';
   position: absolute;
