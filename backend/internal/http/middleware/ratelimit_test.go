@@ -109,3 +109,15 @@ func TestLimitFromEnv(t *testing.T) {
 		t.Fatalf("%d %v", l, w)
 	}
 }
+
+func TestLimitFromEnvDaySuffix(t *testing.T) {
+	t.Setenv("D_LIMIT", "3")
+	t.Setenv("D_WINDOW", "2d")
+	if l, w := middleware.LimitFromEnv("D", 1, time.Hour); l != 3 || w != 48*time.Hour {
+		t.Fatalf("%d %v", l, w)
+	}
+	t.Setenv("D_WINDOW", "xd")
+	if _, w := middleware.LimitFromEnv("D", 1, time.Hour); w != time.Hour {
+		t.Fatalf("bad day window -> %v", w)
+	}
+}

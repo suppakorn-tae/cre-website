@@ -1,3 +1,6 @@
+import { useTranslations } from 'next-intl';
+
 export default function Home() {
-  return <main>CRE</main>;
+  const t = useTranslations('shell.brand');
+  return <main>{t('name')}</main>;
 }
