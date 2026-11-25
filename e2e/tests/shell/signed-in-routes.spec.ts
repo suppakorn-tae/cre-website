@@ -2,6 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { loggedIn } from '../../helpers/api';
 import { ADMIN, USER } from '../../helpers/env';
 import { answerBody, go, json, send, VH_ANSWER } from '../admin/support';
+import { msg } from '../assessment/support';
 import { shellText } from '../auth/support';
 
 test.describe.configure({ timeout: 120_000 });
@@ -75,7 +76,7 @@ test('a non-admin gets a 404 on the admin area', async ({ browser }) => {
   const page = await context.newPage();
   await go(page, '/admin/users');
   await expect(page.getByTestId('admin-badge')).toHaveCount(0);
-  await expect(page.getByRole('heading', { name: /404/ })).toBeVisible();
+  await expect(page.getByRole('heading', { name: msg('common', 'meta.notFound') })).toBeVisible();
   // The admin side menu is never sent to a non-admin.
   await expect(page.getByRole('navigation', { name: shellText('adminNav.label') })).toHaveCount(0);
   await Promise.all([user.dispose(), context.close()]);
