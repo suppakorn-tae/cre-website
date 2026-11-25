@@ -220,6 +220,9 @@ type Querier interface {
 	// A job left running by a crashed worker may be claimed again.
 	MarkJobRunning(ctx context.Context, id uuid.UUID) (Job, error)
 	MarkVersionSubmitted(ctx context.Context, versionID uuid.UUID) (*time.Time, error)
+	// Owner check without a lock, for reads. Another account's project, or a
+	// deleted one, looks absent.
+	OwnedProjectExists(ctx context.Context, arg OwnedProjectExistsParams) (bool, error)
 	// Advice items of the lists stored with each H or VH result.
 	ReportDataAdvice(ctx context.Context, arg ReportDataAdviceParams) ([]ReportDataAdviceRow, error)
 	// Project and snapshot fields of the version a report job is for.

@@ -150,8 +150,19 @@ func TestOwnerCheck(t *testing.T) {
 	if err := svc.Delete(ctx, pid, v.ID, other); !errors.Is(err, versions.ErrNotFound) {
 		t.Fatalf("delete: err = %v, want ErrNotFound", err)
 	}
-	if l, err := svc.List(ctx, pid, other); err != nil || len(l) != 0 {
-		t.Fatalf("list = %v, err %v, want empty", l, err)
+	if l, err := svc.List(ctx, pid, other); !errors.Is(err, versions.ErrNotFound) {
+		t.Fatalf("list foreign = %v, err %v, want ErrNotFound", l, err)
+	}
+	if _, err := svc.List(ctx, uuid.New(), owner); !errors.Is(err, versions.ErrNotFound) {
+		t.Fatalf("list missing: err = %v, want ErrNotFound", err)
+	}
+}
+
+func TestListOwnProjectWithoutVersionsIsEmpty(t *testing.T) {
+	_, svc, pid, owner := setup(t)
+	l, err := svc.List(context.Background(), pid, owner)
+	if err != nil || len(l) != 0 {
+		t.Fatalf("list = %v, err %v, want empty and no error", l, err)
 	}
 }
 

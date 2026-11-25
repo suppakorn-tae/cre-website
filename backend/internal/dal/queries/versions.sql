@@ -6,6 +6,14 @@ FROM project
 WHERE id = @id AND owner_id = @owner_id AND deleted_at IS NULL
 FOR UPDATE;
 
+-- name: OwnedProjectExists :one
+-- Owner check without a lock, for reads. Another account's project, or a
+-- deleted one, looks absent.
+SELECT EXISTS (
+    SELECT 1 FROM project
+    WHERE id = @id AND owner_id = @owner_id AND deleted_at IS NULL
+)::boolean AS owned;
+
 -- name: InsertVersion :one
 -- The number counts deleted versions too, so it is never reused.
 INSERT INTO assessment_version (id, project_id, version_no, snap_value_baht,

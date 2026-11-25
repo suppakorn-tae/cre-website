@@ -151,6 +151,27 @@ func (q *Queries) LockOwnedProject(ctx context.Context, arg LockOwnedProjectPara
 	return id, err
 }
 
+const ownedProjectExists = `-- name: OwnedProjectExists :one
+SELECT EXISTS (
+    SELECT 1 FROM project
+    WHERE id = $1 AND owner_id = $2 AND deleted_at IS NULL
+)::boolean AS owned
+`
+
+type OwnedProjectExistsParams struct {
+	ID      uuid.UUID
+	OwnerID uuid.UUID
+}
+
+// Owner check without a lock, for reads. Another account's project, or a
+// deleted one, looks absent.
+func (q *Queries) OwnedProjectExists(ctx context.Context, arg OwnedProjectExistsParams) (bool, error) {
+	row := q.db.QueryRow(ctx, ownedProjectExists, arg.ID, arg.OwnerID)
+	var owned bool
+	err := row.Scan(&owned)
+	return owned, err
+}
+
 const snapshotImpactThresholds = `-- name: SnapshotImpactThresholds :execrows
 INSERT INTO version_impact_threshold (version_id, impact_code, a, b, c, d, e)
 SELECT $1, code, a, b, c, d, e FROM impact_table
