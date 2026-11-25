@@ -76,5 +76,7 @@ test('a non-admin gets a 404 on the admin area', async ({ browser }) => {
   await go(page, '/admin/users');
   await expect(page.getByTestId('admin-badge')).toHaveCount(0);
   await expect(page.getByRole('heading', { name: /404/ })).toBeVisible();
+  // The admin side menu is never sent to a non-admin.
+  await expect(page.getByRole('navigation', { name: shellText('adminNav.label') })).toHaveCount(0);
   await Promise.all([user.dispose(), context.close()]);
 });

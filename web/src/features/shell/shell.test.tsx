@@ -10,7 +10,7 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
 }));
 
-import { AccountControl, AccountMenu, AppShell } from './AppShell';
+import { AccountControl, AccountMenu, AdminSide, AppShell } from './AppShell';
 import { ProjectSteps } from './ProjectSteps';
 import { ContentSkeleton } from './Skeletons';
 
@@ -56,6 +56,7 @@ describe('AppShell', () => {
       <AppShell
         variant="admin"
         account={<AccountControl user={{ email: 'admin@example.co.th', isAdmin: true }} />}
+        side={<AdminSide />}
       >
         <p>x</p>
       </AppShell>,
@@ -81,6 +82,7 @@ describe('AppShell admin layout and header', () => {
       <AppShell
         variant={variant}
         account={<AccountControl user={{ email: 'x@example.co.th', isAdmin }} />}
+        side={variant === 'admin' ? <AdminSide /> : undefined}
       >
         <p>x</p>
       </AppShell>,
@@ -114,6 +116,17 @@ describe('AppShell admin layout and header', () => {
     expect(html).toContain('href="/dashboard"');
     expect(html).toContain('skeleton');
     expect(html).not.toContain('aria-haspopup');
+  });
+
+  it('sends no admin menu until the side slot is filled', () => {
+    const html = wrap(
+      <AppShell variant="admin" account={<span>skeleton</span>} side={<span>side skeleton</span>}>
+        <p>x</p>
+      </AppShell>,
+    );
+    expect(html).toContain('side skeleton');
+    expect(html).not.toContain('<nav');
+    expect(html).not.toContain('/admin/users');
   });
 
   it('does not render the admin sidebar for the app variant', () => {

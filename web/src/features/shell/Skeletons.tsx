@@ -31,3 +31,17 @@ export function ContentSkeleton() {
     </div>
   );
 }
+
+/** Stands in for the admin side menu while the session is checked. */
+export function SideSkeleton() {
+  return (
+    <div className={styles.sideCard} aria-hidden="true">
+      <div className={styles.contentSkeleton}>
+        <Skeleton width="60%" height={20} />
+        <Skeleton height={16} />
+        <Skeleton height={16} />
+        <Skeleton height={16} />
+      </div>
+    </div>
+  );
+}

@@ -39,10 +39,13 @@ function isActive(pathname: string, href: string) {
 export function AppShell({
   variant,
   account,
+  side,
   children,
 }: {
   variant: ShellVariant;
   account: ReactNode;
+  /** The admin side menu. Only given after the session check, see SessionGate. */
+  side?: ReactNode;
   children: ReactNode;
 }) {
   const t = useTranslations('shell');
@@ -62,10 +65,7 @@ export function AppShell({
 
       {variant === 'admin' ? (
         <div className={styles.adminBody}>
-          {/* usePathname() needs the request URL, so it waits behind a boundary. */}
-          <Suspense fallback={<AdminSideMenu pathname={null} />}>
-            <AdminSide />
-          </Suspense>
+          {side}
           <main id="main" className={styles.main}>
             {children}
           </main>
@@ -79,7 +79,17 @@ export function AppShell({
   );
 }
 
-function AdminSide() {
+/** The admin side menu. Render it only once the session is known to be an admin's. */
+export function AdminSide() {
+  // usePathname() needs the request URL, so it waits behind a boundary.
+  return (
+    <Suspense fallback={<AdminSideMenu pathname={null} />}>
+      <AdminSideWithPath />
+    </Suspense>
+  );
+}
+
+function AdminSideWithPath() {
   return <AdminSideMenu pathname={usePathname()} />;
 }
 
