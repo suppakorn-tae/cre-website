@@ -9,11 +9,11 @@ type Page = { name: string; path: string; texts: (string | RegExp)[] };
 
 /** Each page, with text that only shows once its mock data has loaded. */
 const PAGES: Page[] = [
-  { name: 'dashboard', path: '/dashboard', texts: ['ภาพรวมความเสี่ยง', 'TK2', 'ตัวชี้วัดที่เสี่ยงสูง'] },
+  { name: 'dashboard', path: '/dashboard', texts: ['Dashboard', 'TK2', 'การกระจายระดับความเสี่ยง'] },
   {
     name: 'projects',
     path: '/projects',
-    texts: ['โครงการของฉัน', 'โครงการก่อสร้างเกาะลันตา ระยะที่ 19'],
+    texts: ['โครงการของฉัน', 'ท่าเรือเกาะเต่า ระยะที่ 2'],
   },
   {
     name: 'project',

@@ -48,4 +48,34 @@ describe('DataTable', () => {
     expect(html).toContain('ยังไม่มีโครงการ');
     expect(html).not.toContain('<tbody>');
   });
+
+  it('adds one card per row when renderCard is given, and none otherwise', () => {
+    const withCards = renderToStaticMarkup(
+      <DataTable
+        caption="โครงการ"
+        columns={columns}
+        rows={rows}
+        rowKey={(r) => r.id}
+        renderCard={(r) => <b>{r.name}</b>}
+      />,
+    );
+    expect(withCards.match(/<li/g)).toHaveLength(2);
+    expect(withCards).toContain('<table');
+    const plain = renderToStaticMarkup(
+      <DataTable caption="โครงการ" columns={columns} rows={rows} rowKey={(r) => r.id} />,
+    );
+    expect(plain).not.toContain('<li');
+  });
+
+  it('keeps a hidden header readable by screen readers', () => {
+    const html = renderToStaticMarkup(
+      <DataTable
+        caption="โครงการ"
+        columns={[{ key: 'a', header: 'การทำงาน', hideHeader: true, render: () => 'x' }]}
+        rows={rows}
+        rowKey={(r) => r.id}
+      />,
+    );
+    expect(html).toMatch(/<th[^>]*><span[^>]*>การทำงาน<\/span><\/th>/);
+  });
 });

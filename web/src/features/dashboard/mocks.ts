@@ -22,6 +22,14 @@ const names: [string, string, string, number, number, number | null][] = [
   ['เขื่อนกันคลื่นเกาะพีพี', 'PPB', 'koh_phi_phi', 86_400_000, 12, null],
 ];
 
+// Thai island names, as the backend search sees them (code read with spaces, or Thai name).
+const islandNames: Record<string, string> = {
+  koh_tao: 'เกาะเต่า',
+  koh_samui: 'เกาะสมุย',
+  koh_phangan: 'เกาะพะงัน',
+  koh_phi_phi: 'เกาะพีพี',
+};
+
 // Per project: [H count, VH count] of the latest submitted version.
 const risk: ([number, number] | null)[] = [[6, 3], [3, 1], [9, 5], [2, 0], null];
 
@@ -116,7 +124,12 @@ export const dashboardHandlers: HttpHandler[] = [
     const needle = (url.searchParams.get('q') ?? '').trim().toLowerCase();
     const found = empty
       ? []
-      : seedProjects.filter((p) => `${p.name} ${p.nickname}`.toLowerCase().includes(needle));
+      : seedProjects.filter((p) =>
+          [p.name, p.nickname, p.island_code.replaceAll('_', ' '), islandNames[p.island_code] ?? '']
+            .join('\n')
+            .toLowerCase()
+            .includes(needle),
+        );
     return response(200).json({
       items: found.slice((page - 1) * pageSize, page * pageSize),
       page: { page, page_size: pageSize, total: found.length },
