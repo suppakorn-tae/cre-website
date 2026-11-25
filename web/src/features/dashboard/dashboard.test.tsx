@@ -237,10 +237,17 @@ describe('mock dashboard api', () => {
     setDashboardEmpty(false);
   });
 
-  it('searches the projects panel by name or nickname', async () => {
+  it('searches the projects panel by name, nickname or island', async () => {
+    const nicknames = (r: { items: { nickname: string }[] }) => r.items.map((p) => p.nickname);
     const byNick = await get('/dashboard/panels/projects?q=smr&page=1&page_size=10');
-    expect(byNick.items.map((p: { nickname: string }) => p.nickname)).toEqual(['SMR']);
+    expect(nicknames(byNick)).toEqual(['SMR']);
     expect(byNick.page.total).toBe(1);
+    const byCode = await get('/dashboard/panels/projects?q=koh%20tao&page=1&page_size=10');
+    expect(nicknames(byCode)).toEqual(['TK2', 'TKR1']);
+    const byThai = await get(
+      `/dashboard/panels/projects?q=${encodeURIComponent('สมุย')}&page=1&page_size=10`,
+    );
+    expect(nicknames(byThai)).toEqual(['SMR']);
   });
 
   it('serves ten ranked indicators and the islands grouping', async () => {

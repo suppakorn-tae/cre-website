@@ -53,7 +53,7 @@
   },
   "projectsPanel": {
     "searchLabel": "ค้นหาโครงการ",
-    "searchPlaceholder": "ค้นหาด้วยชื่อหรือชื่อเล่น",
+    "searchPlaceholder": "ค้นหาโครงการหรือเกาะ",
     "noResults": {
       "title": "ไม่พบโครงการที่ค้นหา",
       "text": "ลองค้นหาด้วยชื่อหรือชื่อเล่นอื่น"
