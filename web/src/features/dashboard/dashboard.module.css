@@ -84,7 +84,7 @@
   }
 }
 
-/* Charts: plain CSS bars. The level chart uses one blue hue, light (VL) to dark (VH). */
+/* Charts: plain CSS bars. Every level keeps its own level colour, as in the hi-fi. */
 .chart,
 .panel {
   display: grid;
@@ -159,13 +159,13 @@
   height: 100%;
 }
 .fill[data-level='VL'] {
-  background: var(--color-blue-200);
+  background: var(--level-vl);
 }
 .fill[data-level='L'] {
-  background: var(--color-blue-400);
+  background: var(--level-l);
 }
 .fill[data-level='M'] {
-  background: var(--color-blue-600);
+  background: var(--level-m);
 }
 .fill[data-level='H'] {
   background: var(--level-h);
@@ -173,18 +173,8 @@
 .fill[data-level='VH'] {
   background: var(--level-vh);
 }
-.fill[data-level='H'],
-.fill[data-level='VH'] {
-  min-width: 0;
-}
 .track > .fill {
   border-radius: var(--radius-pill);
-}
-.track > .fill[data-level='VH'] {
-  background: var(--color-blue-800);
-}
-.stack > .fill[data-level='VH'] {
-  background: var(--level-vh);
 }
 .legend {
   display: flex;
