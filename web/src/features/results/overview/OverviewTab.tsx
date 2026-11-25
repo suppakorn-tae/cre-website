@@ -6,6 +6,7 @@ import { DataTable, LevelBadge, type DataTableColumn } from '@/components/ui';
 import { formatNumber } from '@/lib/format/locale';
 
 import type { IndicatorName, IndicatorResult, ResultsResponse } from './api';
+import { FactorChart } from './FactorChart';
 import { formatRm } from './format';
 import styles from './results.module.css';
 import { distribution, topRisks, TOP_COUNT } from './rules';
@@ -81,6 +82,8 @@ export function OverviewTab({ results, names }: Props) {
           ))}
         </ul>
       </section>
+
+      <FactorChart averages={results.factor_averages} names={names} />
 
       <section aria-labelledby="results-top-title">
         <h2 id="results-top-title" className={styles.sectionTitle}>
