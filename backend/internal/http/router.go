@@ -74,6 +74,7 @@ func NewRouter(d Deps) http.Handler {
 		r.Route("/catalogue", func(r chi.Router) { catalogue.Routes(r, d.Deps); w.catalogueRoutes(r) })
 		w.lookups(r) // /islands and /project-types sit outside /catalogue
 		r.Route("/projects", func(r chi.Router) { projects.Routes(r, d.Deps); w.projectRoutes(r) })
+		w.answerRoutes(r)
 		r.Route("/versions", func(r chi.Router) { versions.Routes(r, d.Deps) })
 		r.Route("/assessments", func(r chi.Router) { assessments.Routes(r, d.Deps) })
 		r.Route("/results", func(r chi.Router) { results.Routes(r, d.Deps) })

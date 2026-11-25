@@ -33,6 +33,16 @@ type route struct {
 	// body is a JSON request body that passes validation, for owned
 	// mutations (so a 404 proves the ownership check, not a 400).
 	body string
+	// bodyOf builds the body from the fixture when it must name its ids; it
+	// wins over body.
+	bodyOf func(f fixture) string
+}
+
+func (r route) bodyFor(f fixture) string {
+	if r.bodyOf != nil {
+		return r.bodyOf(f)
+	}
+	return r.body
 }
 
 // covered lists every route that is mounted today, with the checks it gets.
@@ -131,6 +141,22 @@ var covered = map[string]route{
 		access: accessSession, owned: true,
 		path: func(f fixture) string { return "/projects/" + f.project.ID + "/versions/" + f.version.ID },
 	},
+	"GET /projects/{}/versions/{}/answers": {
+		access: accessSession, owned: true,
+		path: func(f fixture) string { return "/projects/" + f.project.ID + "/versions/" + f.version.ID + "/answers" },
+	},
+	"PATCH /projects/{}/versions/{}/answers": {
+		access: accessSession, owned: true,
+		bodyOf: func(f fixture) string { return `{"answers":[{"indicator_code":"` + f.indicator + `","x":1}]}` },
+		path:   func(f fixture) string { return "/projects/" + f.project.ID + "/versions/" + f.version.ID + "/answers" },
+	},
+	"PUT /projects/{}/versions/{}/answers/{}": {
+		access: accessSession, owned: true,
+		bodyOf: func(f fixture) string { return `{"indicator_code":"` + f.indicator + `","x":1}` },
+		path: func(f fixture) string {
+			return "/projects/" + f.project.ID + "/versions/" + f.version.ID + "/answers/" + f.indicator
+		},
+	},
 	"GET /projects/{}/compare": {
 		access: accessSession, owned: true,
 		path: func(f fixture) string {
@@ -177,9 +203,6 @@ var pending = []string{
 	// IO-45 follow-up: the dashboard handler serves GET /dashboard only; the
 	// three panel endpoints of the contract have no handler yet.
 	"GET /dashboard/panels/projects", "GET /dashboard/panels/top-indicators", "GET /dashboard/panels/islands",
-	// IO-99: answer handlers (the service is merged)
-	"GET /projects/{}/versions/{}/answers", "PATCH /projects/{}/versions/{}/answers",
-	"PUT /projects/{}/versions/{}/answers/{}",
 }
 
 func static(p string) func(fixture) string { return func(fixture) string { return p } }

@@ -114,7 +114,7 @@ func TestCSRFOnEveryMutation(t *testing.T) {
 		}
 		path, as := pathOf(key, r, f), e.callerFor(r)
 
-		w := e.do(req{method: method, path: path, as: as, body: r.body})
+		w := e.do(req{method: method, path: path, as: as, body: r.bodyFor(f)})
 		wantStatus(t, w.Code, http.StatusForbidden, w.Body.String())
 		if !strings.Contains(w.Body.String(), "csrf_invalid") {
 			t.Fatalf("no token: want csrf_invalid, got %s", w.Body)
@@ -124,17 +124,17 @@ func TestCSRFOnEveryMutation(t *testing.T) {
 			"wrong scheme":   "http://app.example.com",
 			"null origin":    "null",
 		} {
-			w := e.do(req{method: method, path: path, as: as, csrf: true, origin: o, body: r.body})
+			w := e.do(req{method: method, path: path, as: as, csrf: true, origin: o, body: r.bodyFor(f)})
 			if w.Code != http.StatusForbidden || !strings.Contains(w.Body.String(), "csrf_invalid") {
 				t.Errorf("%s: status %d, want 403 csrf_invalid: %s", name, w.Code, w.Body)
 			}
 		}
 		// A token that does not match the cookie is rejected too.
-		w = e.do(req{method: method, path: path, as: as, badCSRF: true, body: r.body})
+		w = e.do(req{method: method, path: path, as: as, badCSRF: true, body: r.bodyFor(f)})
 		wantStatus(t, w.Code, http.StatusForbidden, w.Body.String())
 
 		// Control: token and allowed origin get past the guard.
-		w = e.do(req{method: method, path: path, as: as, csrf: true, origin: origin, body: r.body})
+		w = e.do(req{method: method, path: path, as: as, csrf: true, origin: origin, body: r.bodyFor(f)})
 		if w.Code == http.StatusForbidden && strings.Contains(w.Body.String(), "csrf_invalid") {
 			t.Fatalf("valid token and origin rejected: %s", w.Body)
 		}
@@ -146,7 +146,7 @@ func TestAdminRoutesRefuseUsers(t *testing.T) {
 	e := newEnv(t)
 	f := e.newFixture(t)
 	each(t, adminOnly, func(t *testing.T, method, key string, r route) {
-		w := e.do(req{method: method, path: pathOf(key, r, f), as: &e.bob, csrf: true, body: r.body})
+		w := e.do(req{method: method, path: pathOf(key, r, f), as: &e.bob, csrf: true, body: r.bodyFor(f)})
 		wantStatus(t, w.Code, http.StatusForbidden, w.Body.String())
 	})
 }
@@ -162,7 +162,7 @@ func TestObjectLevelAuthorisation(t *testing.T) {
 			name string
 			who  *who
 		}{{"other user", &e.bob}, {"admin", &e.admin}} {
-			w := e.do(req{method: method, path: path, as: c.who, csrf: true, body: r.body})
+			w := e.do(req{method: method, path: path, as: c.who, csrf: true, body: r.bodyFor(f)})
 			if w.Code != http.StatusNotFound {
 				t.Errorf("%s: status %d, want 404: %s", c.name, w.Code, w.Body)
 			}
@@ -171,7 +171,7 @@ func TestObjectLevelAuthorisation(t *testing.T) {
 			}
 		}
 		// Control: the owner reaches it, so the 404s above are the check.
-		w := e.do(req{method: method, path: path, as: &e.alice, csrf: true, body: r.body})
+		w := e.do(req{method: method, path: path, as: &e.alice, csrf: true, body: r.bodyFor(f)})
 		if w.Code == http.StatusNotFound || w.Code == http.StatusForbidden || w.Code >= 500 {
 			t.Errorf("owner: status %d: %s", w.Code, w.Body)
 		}

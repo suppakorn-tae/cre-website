@@ -125,6 +125,17 @@ func (w wiring) projectRoutes(r chi.Router) {
 	}
 }
 
+// answerRoutes mounts the answer endpoints, which spell out their full
+// /projects/... path, so r is the /api/v1 root.
+func (w wiring) answerRoutes(r chi.Router) {
+	if w.versions != nil {
+		assessments.MountAnswers(r, svcassess.NewAnswerService(w.d.DB.(interface {
+			dal.DBTX
+			dal.Beginner
+		})), w.d.Auth)
+	}
+}
+
 func (w wiring) reportRoutes(r chi.Router) {
 	if w.reports != nil {
 		reports.Mount(r, w.reports, w.d.Auth)
