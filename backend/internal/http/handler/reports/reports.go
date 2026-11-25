@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -68,6 +69,11 @@ func Download(s Service) http.HandlerFunc {
 			middleware.WriteError(w, r, http.StatusNotFound, "not_found", "report not found")
 			return
 		}
+		disposition := r.URL.Query().Get("disposition")
+		if disposition != "" && disposition != "attachment" && disposition != "inline" {
+			middleware.WriteError(w, r, http.StatusBadRequest, "bad_request", "disposition must be attachment or inline")
+			return
+		}
 		f, err := s.Download(r.Context(), requester, jobID)
 		switch {
 		case errors.Is(err, svc.ErrNotFound):
@@ -81,7 +87,11 @@ func Download(s Service) http.HandlerFunc {
 		default:
 			defer func() { _ = f.Body.Close() }()
 			w.Header().Set("Content-Type", "application/pdf")
-			w.Header().Set("Content-Disposition", f.Disposition)
+			header := f.Disposition
+			if disposition == "inline" {
+				header = "inline" + strings.TrimPrefix(header, "attachment")
+			}
+			w.Header().Set("Content-Disposition", header)
 			w.WriteHeader(http.StatusOK)
 			_, _ = io.Copy(w, f.Body)
 		}
