@@ -65,7 +65,10 @@ In Google Cloud Console, OAuth client (Web application):
 - Authorized redirect URI: `https://conriskexpert.com/api/v1/auth/google/callback`
 - Authorized JavaScript origin: `https://conriskexpert.com`
 
-Put the client id and secret in `.env.prod`.
+Put the client id and secret in `.env.prod` as `GOOGLE_CLIENT_ID` and
+`GOOGLE_CLIENT_SECRET`. These names must match what the Google auth
+backend reads (IO-105, IO-106); if they differ once it lands, align
+`compose.prod.yaml`, `env.prod.example` and this page.
 
 ### Backup
 
@@ -75,41 +78,31 @@ restore steps are in [restore.md](restore.md).
 
 ## Deploy or upgrade
 
-On the server, in `deploy/compose`, with the SHA in `.env.prod`:
+On the server, from the repository root, with the SHA in `.env.prod`:
 
 ```sh
-set -a; . ../../.env.prod; set +a
-export DB_IMAGE=cre-pgbackrest:local POSTGRES_ARCHIVE_MODE=on \
-  COMPOSE_PROFILES=backup
-../backup/preflight.sh
-docker compose --env-file ../../.env.prod \
-  -f compose.yaml -f compose.backup.yaml -f compose.prod.yaml \
-  build backup
-docker compose --env-file ../../.env.prod \
-  -f compose.yaml -f compose.backup.yaml -f compose.prod.yaml \
-  pull --ignore-buildable
-docker compose --env-file ../../.env.prod \
-  -f compose.yaml -f compose.backup.yaml -f compose.prod.yaml \
-  up -d
+export ENV_FILE=.env.prod COMPOSE_EXTRA=compose.prod.yaml
+deploy/backup/deploy.sh pull --ignore-buildable
+deploy/backup/deploy.sh up -d
 ```
 
-The `migrate` service runs to completion before `api` and `worker` start.
-Without backup (staging only), drop `compose.backup.yaml` and the three
-exports of backup settings, and set `BACKUP_ENABLED=false`.
+The wrapper reads `ENV_FILE`, maps `BACKUP_ENABLED` to the `backup`
+profile, runs preflight, builds the backup image and adds each file in
+`COMPOSE_EXTRA` (space or comma separated; relative names resolve in
+`deploy/compose`) after `compose.yaml` and `compose.backup.yaml`.
+Without `COMPOSE_EXTRA` it behaves as before.
 
-The production overlay is not yet understood by `deploy/backup/deploy.sh`
-(it always uses `compose.yaml` plus `compose.backup.yaml`); the commands
-above do the same steps by hand. Follow-up: let the wrapper accept an
-extra compose file.
+The `migrate` service runs to completion before `api` and `worker` start.
+Without backup (staging only), set `BACKUP_ENABLED=false`.
 
 ## Verify
 
-1. `docker compose ... ps`: all services healthy, no `mailpit`.
+1. `deploy/backup/deploy.sh ps`: all services healthy, no `mailpit`.
 2. `curl -fsS https://conriskexpert.com/api/v1/healthz`.
 3. Sign up with an e-mail address: the OTP arrives from Brevo (check
    Brevo transactional logs if not).
 4. Sign in with Google: the callback returns to the app.
-5. Backup: `docker compose ... exec backup pgbackrest --stanza=cre info`
+5. Backup: `deploy/backup/deploy.sh exec backup pgbackrest --stanza=cre info`
    shows a full backup in repo1, then run the restore check from
    [restore.md](restore.md).
 6. Confirm the SHA with the `docker inspect` command above.
