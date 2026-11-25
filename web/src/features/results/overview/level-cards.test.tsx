@@ -44,6 +44,16 @@ describe('results level cards', () => {
     }
   });
 
+  it('shows the level badge on every level card', () => {
+    const html = renderPage();
+    for (const level of ['VH', 'H', 'M', 'L', 'VL']) {
+      const card = new RegExp(
+        `data-level="${level}"><span class="[^"]*countBadge[^"]*"><span class="[^"]*badge[^"]*"[^>]*>${level}</span>`,
+      );
+      expect(html).toMatch(card);
+    }
+  });
+
   it('colours the stripe of every level with its level token', () => {
     for (const level of ['VL', 'L', 'M', 'H', 'VH']) {
       const rule = new RegExp(`\\.count\\[data-level='${level}'\\]\\s*\\{([^}]*)\\}`).exec(css);
