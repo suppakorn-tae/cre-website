@@ -364,13 +364,12 @@
 }
 .levelLink {
   display: inline-flex;
-  border-radius: var(--radius-sm, 0.25rem);
+  border-radius: var(--radius-badge);
   text-decoration: none;
 }
 .levelLink:hover {
   filter: brightness(0.95);
 }
 .levelLink:focus-visible {
-  outline: 2px solid var(--color-focus, currentColor);
-  outline-offset: 2px;
+  box-shadow: var(--focus-ring);
 }
