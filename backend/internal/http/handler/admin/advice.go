@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/api"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/middleware"
@@ -38,7 +39,7 @@ func getAdvice(s Advice) http.HandlerFunc {
 			fail(w, r, err)
 			return
 		}
-		out := api.AdminAdviceLists{IndicatorCode: set.IndicatorCode, UpdatedAt: set.UpdatedAt}
+		out := api.AdminAdviceLists{IndicatorCode: set.IndicatorCode, UpdatedAt: set.UpdatedAt, UpdatedBy: toAPIEmail(set.UpdatedBy)}
 		out.Lists.RL = toAPIItems(set.Lists["RL"])
 		out.Lists.RIC = toAPIItems(set.Lists["RI_C"])
 		out.Lists.RIT = toAPIItems(set.Lists["RI_T"])
@@ -72,7 +73,7 @@ func replaceAdvice(s Advice) http.HandlerFunc {
 		}
 		writeJSON(w, http.StatusOK, api.AdminAdviceListResponse{
 			IndicatorCode: res.IndicatorCode, List: api.AdviceList(res.List),
-			Items: toAPIItems(res.Items), UpdatedAt: res.UpdatedAt,
+			Items: toAPIItems(res.Items), UpdatedAt: res.UpdatedAt, UpdatedBy: toAPIEmail(res.UpdatedBy),
 		})
 	}
 }
@@ -101,4 +102,12 @@ func fromAPIItems(items api.AdminAdviceItemList) []svc.AdviceItem {
 		out[i] = svc.AdviceItem{Text: text}
 	}
 	return out
+}
+
+func toAPIEmail(s *string) *openapi_types.Email {
+	if s == nil {
+		return nil
+	}
+	e := openapi_types.Email(*s)
+	return &e
 }

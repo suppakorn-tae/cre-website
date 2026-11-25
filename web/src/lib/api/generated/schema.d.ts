@@ -1260,12 +1260,22 @@ export interface components {
                 RI_E: components["schemas"]["AdminAdviceItemList"];
             };
             updated_at: components["schemas"]["Timestamp"];
+            /**
+             * Format: email
+             * @description E-mail of the admin who made the latest edit. Null when never edited (seed data).
+             */
+            updated_by?: string | null;
         };
         AdminAdviceListResponse: {
             indicator_code: string;
             list: components["schemas"]["AdviceList"];
             items: components["schemas"]["AdminAdviceItemList"];
             updated_at: components["schemas"]["Timestamp"];
+            /**
+             * Format: email
+             * @description E-mail of the admin who made the latest edit. Null when never edited (seed data).
+             */
+            updated_by?: string | null;
         };
         AdminReplaceAdviceRequest: {
             items: components["schemas"]["AdminAdviceItemList"];

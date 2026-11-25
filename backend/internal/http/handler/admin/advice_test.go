@@ -2,6 +2,7 @@ package admin_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -29,14 +30,17 @@ const (
 )
 
 // fakeAdvice validates like the real service and stores nothing.
-type fakeAdvice struct{ replaced []svc.AdviceItem }
+type fakeAdvice struct {
+	replaced []svc.AdviceItem
+	editor   *string
+}
 
 func (f *fakeAdvice) Get(_ context.Context, code string) (svc.AdviceSet, error) {
 	if code != "EC-HS-2" {
 		return svc.AdviceSet{}, svc.ErrIndicatorNotFound
 	}
 	item := svc.AdviceItem{Text: map[string]string{"th": "ข้อ 1"}}
-	set := svc.AdviceSet{IndicatorCode: code, UpdatedAt: time.Date(2026, 11, 24, 8, 0, 0, 0, time.UTC), Lists: map[string][]svc.AdviceItem{}}
+	set := svc.AdviceSet{IndicatorCode: code, UpdatedAt: time.Date(2026, 11, 24, 8, 0, 0, 0, time.UTC), Lists: map[string][]svc.AdviceItem{}, UpdatedBy: f.editor}
 	for _, l := range svc.AdviceLists {
 		set.Lists[l] = []svc.AdviceItem{item}
 	}
@@ -51,7 +55,7 @@ func (f *fakeAdvice) Replace(_ context.Context, _ uuid.UUID, code, list string, 
 		return svc.AdviceList{}, svc.ErrIndicatorNotFound
 	}
 	f.replaced = items
-	return svc.AdviceList{IndicatorCode: code, List: list, Items: items, UpdatedAt: time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC)}, nil
+	return svc.AdviceList{IndicatorCode: code, List: list, Items: items, UpdatedAt: time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC), UpdatedBy: f.editor}, nil
 }
 
 type advAccounts struct{}
@@ -143,6 +147,31 @@ func TestGetAdvice(t *testing.T) {
 	}
 	if resp := advCall(t, &fakeAdvice{}, advAdmin, http.MethodGet, "/api/v1/admin/advice/NOPE", ""); resp.StatusCode != http.StatusNotFound {
 		t.Fatalf("status = %d, want 404", resp.StatusCode)
+	}
+}
+
+func TestAdviceUpdatedBy(t *testing.T) {
+	email := "somchai@example.com"
+	for _, tc := range []struct {
+		name   string
+		editor *string
+		want   any
+	}{{"edited", &email, email}, {"never edited", nil, nil}} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := &fakeAdvice{editor: tc.editor}
+			get := advCall(t, f, advAdmin, http.MethodGet, advBase, "")
+			put := advCall(t, f, advAdmin, http.MethodPut, advBase+"/RL", `{"items":[{"text":{"th":"ก"}}]}`)
+			for name, resp := range map[string]*http.Response{"get": get, "put": put} {
+				var body map[string]any
+				if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+					t.Fatal(err)
+				}
+				got, ok := body["updated_by"]
+				if !ok || got != tc.want {
+					t.Fatalf("%s: updated_by = %v (present %v), want %v", name, got, ok, tc.want)
+				}
+			}
+		})
 	}
 }
 
