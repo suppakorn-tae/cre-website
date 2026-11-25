@@ -74,8 +74,8 @@ export function pdfText(pdf: Buffer): string {
 
 import type { Api } from '../../helpers/api';
 
-/** PUT/PATCH on /api/v1 with the CSRF token (helpers/api.ts only has post/get). */
-export async function send(api: Api, method: 'put' | 'patch', path: string, data: unknown) {
+/** Write on /api/v1 with a fresh CSRF token (the token changes at log-in, so Api.post's cached one goes stale). */
+export async function send(api: Api, method: 'post' | 'put' | 'patch', path: string, data: unknown) {
   const csrf = ((await (await api.ctx.get('/api/v1/auth/csrf')).json()) as { csrf_token: string }).csrf_token;
   return api.ctx[method](`/api/v1${path}`, { data, headers: { 'X-CSRF-Token': csrf } });
 }

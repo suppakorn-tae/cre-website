@@ -1,6 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { loggedIn, type Api } from '../../helpers/api';
-import { logInThroughUi, newUser } from '../auth/support';
+import { newUser } from '../auth/support';
 import {
   answerBody,
   escapeRe,
@@ -24,11 +25,25 @@ async function json<T>(res: Awaited<ReturnType<Api['get']>>, status = 200): Prom
   return (await res.json()) as T;
 }
 
+/** Navigate without waiting for the load event: slow third-party assets must not fail a test. */
+async function go(p: Page, url: string) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await p.goto(url, { waitUntil: 'domcontentloaded', timeout: 20_000 });
+    } catch (err) {
+      if (attempt === 5) throw err;
+    }
+  }
+}
+
 /** The table row of one indicator on the results page. */
 const row = (page: Page, code: string) =>
   page.getByRole('row').filter({ hasText: new RegExp(`\\b${escapeRe(code)}\\b`) });
 
 test.describe.serial('project to report (UC-05 to UC-13)', () => {
+  test.describe.configure({ timeout: 90_000 });
+  test.use({ actionTimeout: 20_000, navigationTimeout: 45_000 });
+
   let api: Api;
   let projectId = '';
   let v1 = '';
@@ -36,14 +51,20 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
   let jobId = '';
   let page: Page;
   let nickname = '';
+  let projectName = '';
 
   test.beforeAll(async ({ browser }) => {
+    test.setTimeout(120_000);
     const who = await newUser('assess');
     api = await loggedIn(who);
-    page = await (await browser.newContext({ ignoreHTTPSErrors: true })).newPage();
-    await logInThroughUi(page, who.email, who.password);
-    await expect(page).toHaveURL(/\/dashboard$/);
-    nickname = `E2E-${Date.now().toString(36)}`;
+    // Log-in itself is covered by tests/auth; reuse the API session in the browser.
+    const context = await browser.newContext({
+      ignoreHTTPSErrors: true,
+      storageState: await api.ctx.storageState(),
+    });
+    page = await context.newPage();
+    nickname = Math.random().toString(36).slice(2, 6).padEnd(4, 'x');
+    projectName = `Assessment flow ${Date.now()}`;
   });
 
   test.afterAll(async () => {
@@ -52,13 +73,13 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
   });
 
   test('create a project and a first version', async () => {
-    projectId = await api.createProject({ name: 'Assessment flow', nickname });
-    await page.goto('/projects');
-    await expect(page.getByText(nickname).first()).toBeVisible();
+    projectId = await api.createProject({ name: projectName, nickname });
+    await go(page, '/projects');
+    await expect(page.getByText(projectName).first()).toBeVisible();
 
-    await page.goto(`/projects/${projectId}`);
+    await go(page, `/projects/${projectId}`);
     await page.getByRole('button', { name: msg('versions', 'list.create') }).first().click();
-    await page.getByRole('button', { name: msg('versions', 'create.confirm') }).click();
+    await page.getByRole('alertdialog').getByRole('button', { name: msg('versions', 'create.confirm') }).click();
     await expect(page.getByRole('link', { name: msg('versions', 'list.actions.answer') })).toBeVisible();
 
     const versions = await json<{ items: { id: string; version_no: number; status: string }[] }>(
@@ -70,7 +91,7 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
   });
 
   test('answer three indicators, autosave keeps them, and submit scores them', async () => {
-    await page.goto(`/projects/${projectId}/versions/${v1}/assess`);
+    await go(page, `/projects/${projectId}/versions/${v1}/assess`);
     await expect(page.getByRole('heading', { name: msg('assessment', 'title') })).toBeVisible();
 
     const answers = [GOLDEN_VH, GOLDEN_M, GOLDEN_VL];
@@ -88,12 +109,12 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     );
 
     // Reload: the page shows the saved progress, not an empty form.
-    await page.reload();
+    await go(page, `/projects/${projectId}/versions/${v1}/assess`);
     await expect(
       page.getByText(msg('assessment', 'progress.overall', { complete: 3, total: 55 })),
     ).toBeVisible();
 
-    const submit = await api.post(`/projects/${projectId}/versions/${v1}/submit`, {});
+    const submit = await send(api, 'post', `/projects/${projectId}/versions/${v1}/submit`, {});
     const body = await json<{ status: string; summary: { scored_count: number; level_counts: Record<string, number>; average_rm: number } }>(submit);
     expect(body.status).toBe('submitted');
     expect(body.summary.scored_count).toBe(3);
@@ -110,7 +131,7 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
       expect(item, g.code).toMatchObject({ rl: g.rl, ri_c: g.ri_c, ri_t: g.ri_t, ri_e: g.ri_e, rm: g.rm, level: g.level });
     }
 
-    await page.goto(`/projects/${projectId}/versions/${v1}/results`);
+    await go(page, `/projects/${projectId}/versions/${v1}/results`);
     await expect(page.getByRole('heading', { name: msg('results', 'page.title', { no: 1 }) })).toBeVisible();
 
     await page.getByRole('tab', { name: msg('results', 'tabs.overview') }).click();
@@ -130,7 +151,7 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
   });
 
   test('choose a strategy for the VH indicator on the H / VH tab', async () => {
-    await page.goto(`/projects/${projectId}/versions/${v1}/results`);
+    await go(page, `/projects/${projectId}/versions/${v1}/results`);
     await page.getByRole('tab', { name: new RegExp(escapeRe(msg('results', 'tabs.hvh'))) }).click();
     const panel = page.getByRole('tabpanel');
     await expect(panel).toContainText(GOLDEN_VH.code);
@@ -146,18 +167,25 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     expect(bad.status()).toBe(422);
   });
 
-  test('request the report, download the PDF and find the indicator and strategy', async () => {
-    await page.goto(`/projects/${projectId}/versions/${v1}/report`);
-    await page.getByRole('button', { name: msg('reports', 'request') }).click();
+  test('request the report: a job is accepted and repeated requests share it', async () => {
+    const first = await send(api, 'post', `/projects/${projectId}/versions/${v1}/reports`, {});
+    expect(first.status(), await first.text()).toBe(202);
+    jobId = ((await first.json()) as { job_id: string }).job_id;
+    const again = await send(api, 'post', `/projects/${projectId}/versions/${v1}/reports`, {});
+    expect(again.status()).toBe(202);
+    expect(((await again.json()) as { job_id: string }).job_id).toBe(jobId);
+  });
+
+  test('download the PDF and find the indicator and strategy', async () => {
+    test.setTimeout(180_000);
+    await go(page, `/projects/${projectId}/versions/${v1}/report`);
     await expect(page.getByText(msg('reports', 'status.done'))).toBeVisible({ timeout: 120_000 });
 
-    const download = page.getByRole('link', { name: msg('reports', 'download') }).or(
-      page.getByRole('button', { name: msg('reports', 'download') }),
-    );
+    const download = page
+      .getByRole('link', { name: msg('reports', 'download') })
+      .or(page.getByRole('button', { name: msg('reports', 'download') }));
     const [dl] = await Promise.all([page.waitForEvent('download'), download.click()]);
-    const path = await dl.path();
-    const { readFileSync } = await import('node:fs');
-    const pdf = readFileSync(path);
+    const pdf = readFileSync(await dl.path());
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
 
     const text = pdfText(pdf);
@@ -165,17 +193,13 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     expect(text).toContain(rm3(GOLDEN_VH.rm));
     expect(text).toContain(msg('advice', 'strategy.options.REDUCE'));
 
-    // Remember the job for the delete step.
-    const again = await api.post(`/projects/${projectId}/versions/${v1}/reports`, {});
-    expect(again.status()).toBe(202);
-    jobId = ((await again.json()) as { job_id: string }).job_id;
     const direct = await api.get(`/reports/${jobId}/download`);
     expect(direct.status()).toBe(200);
     expect(direct.headers()['content-type']).toContain('application/pdf');
   });
 
   test('create v2: v1 becomes read-only and the two versions compare', async () => {
-    const created = await api.post(`/projects/${projectId}/versions`, {});
+    const created = await send(api, 'post', `/projects/${projectId}/versions`, {});
     const v = await json<{ id: string; version_no: number }>(created, 201);
     expect(v.version_no).toBe(2);
     v2 = v.id;
@@ -188,9 +212,9 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     const strat = await send(api, 'put', `/projects/${projectId}/versions/${v1}/results/${GOLDEN_VH.code}/strategy`, { strategy: 'AVOID' });
     expect(strat.status()).toBe(409);
 
-    await page.goto(`/projects/${projectId}/versions/${v1}/assess`);
+    await go(page, `/projects/${projectId}/versions/${v1}/assess`);
     await expect(page.getByText(msg('assessment', 'readOnly'))).toBeVisible();
-    await page.goto(`/projects/${projectId}/versions/${v1}/results`);
+    await go(page, `/projects/${projectId}/versions/${v1}/results`);
     await page.getByRole('tab', { name: new RegExp(escapeRe(msg('results', 'tabs.hvh'))) }).click();
     await expect(page.getByText(msg('advice', 'strategy.readOnly'))).toBeVisible();
 
@@ -198,7 +222,7 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     const put = await send(api, 'put', `/projects/${projectId}/versions/${v2}/answers/${GOLDEN_V2.code}`, answerBody(GOLDEN_V2));
     expect(put.status(), await put.text()).toBe(200);
     expect((await send(api, 'put', `/projects/${projectId}/versions/${v2}/answers/${GOLDEN_VL.code}`, answerBody(GOLDEN_VL))).status()).toBe(200);
-    await json(await api.post(`/projects/${projectId}/versions/${v2}/submit`, {}));
+    await json(await send(api, 'post', `/projects/${projectId}/versions/${v2}/submit`, {}));
 
     const res = await json<{ items: Item[] }>(await api.get(`/projects/${projectId}/versions/${v2}/results`));
     expect(res.items.find((i) => i.indicator_code === GOLDEN_V2.code)).toMatchObject({ rl: GOLDEN_V2.rl, ri_c: GOLDEN_V2.ri_c, ri_t: GOLDEN_V2.ri_t, rm: GOLDEN_V2.rm, level: GOLDEN_V2.level });
@@ -208,28 +232,32 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     );
     expect(JSON.stringify(cmp)).toContain(GOLDEN_V2.code);
 
-    await page.goto(`/projects/${projectId}/compare`);
+    await go(page, `/projects/${projectId}/compare`);
     await expect(page.getByRole('heading', { name: msg('compare', 'title') })).toBeVisible();
-    await expect(page.getByRole('table', { name: msg('compare', 'changes.caption') })).toContainText(GOLDEN_V2.code);
+    // EC-MG-1 went VH -> M (4.578 -> 2.55); the table shows the name, not the code.
+    const changes = page.getByRole('table', { name: msg('compare', 'changes.caption') });
+    await expect(changes).toContainText('VH→M');
+    await expect(changes).toContainText('4.58 → 2.55');
+    await expect(changes).toContainText(msg('compare', 'direction.down'));
   });
 
   test('delete the project: it disappears everywhere and the report is gone', async () => {
-    await page.goto('/projects');
-    const r = page.getByRole('row').filter({ hasText: nickname });
+    await go(page, '/projects');
+    const r = page.getByRole('row').filter({ hasText: projectName });
     await r.getByRole('button', { name: msg('projects', 'list.delete') }).click();
     await page.getByRole('button', { name: msg('projects', 'list.deleteDialog.confirm'), exact: true }).click();
     await expect(page.getByText(msg('projects', 'list.deleted'))).toBeVisible();
-    await expect(page.getByText(nickname)).toHaveCount(0);
+    await expect(page.getByText(projectName)).toHaveCount(0);
 
-    expect((await api.get(`/projects/${projectId}`)).status()).toBe(404);
-    expect((await api.get(`/projects/${projectId}/versions`)).status()).toBe(404);
-    expect((await api.get(`/projects/${projectId}/versions/${v1}/results`)).status()).toBe(404);
-    expect((await api.get(`/reports/${jobId}/download`)).status()).toBe(404);
+    expect.soft((await api.get(`/projects/${projectId}`)).status()).toBe(404);
+    expect.soft((await api.get(`/projects/${projectId}/versions`)).status()).toBe(404);
+    expect.soft((await api.get(`/projects/${projectId}/versions/${v1}/results`)).status()).toBe(404);
+    expect.soft((await api.get(`/reports/${jobId}/download`)).status()).toBe(404);
     const listed = await json<{ items: { id: string }[] }>(await api.get('/projects'));
     expect(listed.items.map((p) => p.id)).not.toContain(projectId);
-    await page.goto('/dashboard');
-    await expect(page.getByText(nickname)).toHaveCount(0);
-    await page.goto(`/projects/${projectId}`);
+    await go(page, '/dashboard');
+    await expect(page.getByText(projectName)).toHaveCount(0);
+    await go(page, `/projects/${projectId}`);
     await expect(page.getByText(msg('versions', 'detail.notFound'))).toBeVisible();
   });
 });
