@@ -75,3 +75,17 @@ describe('readCookie', () => {
     expect(readCookie('a=1', 'cre_csrf')).toBeUndefined();
   });
 });
+
+describe('ApiError.fromBody fields', () => {
+  it('keeps field errors of a 422 answer', () => {
+    const error = ApiError.fromBody(422, {
+      error: {
+        code: 'validation_failed',
+        message: 'x',
+        fields: [{ field: '/email', code: 'invalid' }],
+      },
+    });
+    expect(error.fields).toEqual([{ field: '/email', code: 'invalid' }]);
+    expect(ApiError.fromBody(500, null).fields).toEqual([]);
+  });
+});

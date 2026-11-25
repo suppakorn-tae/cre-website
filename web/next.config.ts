@@ -8,6 +8,12 @@ import { loadCatalogue } from './src/lib/i18n/catalogue';
 const withNextIntl = createNextIntlPlugin('./src/lib/i18n/request.ts');
 
 const nextConfig: NextConfig = {
+  // Self-contained server for the Docker runtime image (web/Dockerfile).
+  output: 'standalone',
+  // Trace from the repo root so backend/seed/cre-indicators.json (imported by
+  // the mocks) and the pnpm workspace's node_modules are resolved the same way
+  // locally and in the image build.
+  outputFileTracingRoot: path.join(__dirname, '..'),
   cacheComponents: true,
   partialPrefetching: true,
   // msw/browser has a `node: null` export condition, which Turbopack applies

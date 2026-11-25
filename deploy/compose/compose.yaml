@@ -30,7 +30,8 @@ services:
 
   web:
     build:
-      context: ../../web
+      context: ../..
+      dockerfile: web/Dockerfile
     restart: unless-stopped
     environment:
       API_INTERNAL_URL: http://api:4000
@@ -44,6 +45,9 @@ services:
     restart: unless-stopped
     environment:
       <<: *app-env
+      APP_ENV: ${APP_ENV:-production}
+      SESSION_SECRET: ${SESSION_SECRET}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-${PUBLIC_BASE_URL}}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       SMTP_HOST: ${SMTP_HOST}
@@ -63,7 +67,10 @@ services:
       context: ../../backend
       target: worker
     restart: unless-stopped
-    environment: *app-env
+    environment:
+      <<: *app-env
+      WORKER_REPORTS_CONCURRENCY: ${WORKER_REPORTS_CONCURRENCY:-}
+      WORKER_EXPORTS_CONCURRENCY: ${WORKER_EXPORTS_CONCURRENCY:-}
     networks: [private-net]
     depends_on:
       migrate: { condition: service_completed_successfully }
@@ -112,7 +119,7 @@ services:
     networks: [private-net]
 
   rustfs:
-    image: rustfs/rustfs:latest
+    image: rustfs/rustfs:1.0.6
     restart: unless-stopped
     environment:
       RUSTFS_ACCESS_KEY: ${S3_ACCESS_KEY}
@@ -140,7 +147,7 @@ services:
 
   mailpit:
     profiles: [dev]
-    image: axllent/mailpit:latest
+    image: axllent/mailpit:v1.21
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "/mailpit", "readyz"]

@@ -21,8 +21,8 @@ export type FailureShape = { status: number; code: string; fields: Record<string
 export function classifyOtpFailure(failure: FailureShape, wrongTries: number): OtpFailure {
   const otpCode = failure.fields['/otp'];
   if (otpCode === 'otp_invalid') {
-    const remaining = Math.max(0, MAX_OTP_ATTEMPTS - wrongTries);
-    return remaining === 0 ? { kind: 'locked' } : { kind: 'wrong', remaining };
+    // 5 wrong codes are allowed; only the 6th makes the api answer `otp_locked`.
+    return { kind: 'wrong', remaining: Math.max(0, MAX_OTP_ATTEMPTS - wrongTries) };
   }
   if (otpCode === 'otp_expired') return { kind: 'expired' };
   if (otpCode === 'otp_locked') return { kind: 'locked' };
