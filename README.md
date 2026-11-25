@@ -72,7 +72,7 @@ Stop with `make down`. To also delete the data, run `docker compose -f deploy/co
 
 ### 4. Get an admin account
 
-There is no admin sign-up. Sign up as a normal user, then promote the account in the database.
+There is no admin sign-up. Sign up as a normal user, then promote the account in the database. These steps are for local development only. Never run them on a real deployment.
 
 1. Sign up at <https://localhost> with an e-mail such as `admin@example.com`.
 2. Read the OTP. In dev, e-mail goes to Mailpit, which is not published on the host. Read it from inside the network:
