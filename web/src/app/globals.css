@@ -1,5 +1,173 @@
+/*
+ * Global styles: Tailwind v4 next to the CSS modules.
+ *
+ * Preflight is NOT loaded (only the theme and utilities layers), so the
+ * existing pages keep their look. Utilities live in a cascade layer, so a
+ * rule from a CSS module on the same element and property wins over a
+ * utility. Colours, spacing, radius, shadow and type all come from
+ * styles/tokens.css, the single source of truth: no hex values here.
+ */
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities) source(none);
+@import '../styles/tokens.css';
+
+/* Scan only src/ for class names, so files the dev server writes outside it
+   (.next, AGENTS.md) do not trigger rebuilds. */
+@source '../';
+
+/* Drop Tailwind's default palette, type scale, radius, shadow and weights so
+   only token-backed names exist. */
+@theme {
+  --color-*: initial;
+  --text-*: initial;
+  --font-weight-*: initial;
+  --radius-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --font-*: initial;
+}
+
+/* Font family. The @font-face rules come from @fontsource in layout.tsx. */
+@theme static {
+  --font-sans: 'IBM Plex Sans Thai', system-ui, sans-serif;
+}
+
+/* Every name below points at a variable in tokens.css. `inline` makes a
+   utility use `var(--token)` directly, and `reference` stops Tailwind from
+   emitting a second, self-referencing copy of each variable. */
+@theme inline reference {
+  /* Brand */
+  --color-blue-50: var(--color-blue-50);
+  --color-blue-100: var(--color-blue-100);
+  --color-blue-200: var(--color-blue-200);
+  --color-blue-400: var(--color-blue-400);
+  --color-blue-600: var(--color-blue-600);
+  --color-blue-700: var(--color-blue-700);
+  --color-blue-800: var(--color-blue-800);
+  --color-navy-900: var(--color-navy-900);
+  --color-orange-50: var(--color-orange-50);
+  --color-orange-500: var(--color-orange-500);
+  --color-primary: var(--color-blue-600);
+  --color-primary-hover: var(--color-blue-700);
+  --color-primary-pressed: var(--color-blue-800);
+
+  /* Neutrals */
+  --color-canvas: var(--color-canvas);
+  --color-surface: var(--color-surface);
+  --color-white: var(--color-white);
+  --color-subtle: var(--color-subtle);
+  --color-divider: var(--color-divider);
+  --color-border: var(--color-border);
+  --color-field-border: var(--color-field-border);
+  --color-disabled-bg: var(--color-disabled-bg);
+  --color-disabled: var(--color-disabled);
+  --color-placeholder: var(--color-placeholder);
+  --color-text-muted: var(--color-text-muted);
+  --color-text-secondary: var(--color-text-secondary);
+  --color-text: var(--color-text);
+
+  /* Status */
+  --color-success: var(--color-success);
+  --color-success-bg: var(--color-success-bg);
+  --color-success-border: var(--color-success-border);
+  --color-warning: var(--color-warning);
+  --color-warning-bg: var(--color-warning-bg);
+  --color-warning-border: var(--color-warning-border);
+  --color-error: var(--color-error);
+  --color-error-bg: var(--color-error-bg);
+  --color-error-border: var(--color-error-border);
+  --color-info: var(--color-info);
+  --color-info-bg: var(--color-info-bg);
+  --color-info-border: var(--color-info-border);
+  --color-danger-hover: var(--color-danger-hover);
+  --color-danger-pressed: var(--color-danger-pressed);
+
+  /* Risk levels: bg-level-h, text-level-h-text, bg-level-h-tint, text-level-h-on */
+  --color-level-vl: var(--level-vl);
+  --color-level-vl-on: var(--level-vl-on);
+  --color-level-vl-tint: var(--level-vl-tint);
+  --color-level-vl-text: var(--level-vl-text);
+  --color-level-l: var(--level-l);
+  --color-level-l-on: var(--level-l-on);
+  --color-level-l-tint: var(--level-l-tint);
+  --color-level-l-text: var(--level-l-text);
+  --color-level-m: var(--level-m);
+  --color-level-m-on: var(--level-m-on);
+  --color-level-m-tint: var(--level-m-tint);
+  --color-level-m-text: var(--level-m-text);
+  --color-level-h: var(--level-h);
+  --color-level-h-on: var(--level-h-on);
+  --color-level-h-tint: var(--level-h-tint);
+  --color-level-h-text: var(--level-h-text);
+  --color-level-vh: var(--level-vh);
+  --color-level-vh-on: var(--level-vh-on);
+  --color-level-vh-tint: var(--level-vh-tint);
+  --color-level-vh-text: var(--level-vh-text);
+
+  /* Type scale: text-body, text-h1 ... Each size carries its line-height. */
+  --text-display: var(--text-display);
+  --text-display--line-height: var(--leading-display);
+  --text-h1: var(--text-h1);
+  --text-h1--line-height: var(--leading-h1);
+  --text-h2: var(--text-h2);
+  --text-h2--line-height: var(--leading-h2);
+  --text-h3: var(--text-h3);
+  --text-h3--line-height: var(--leading-h3);
+  --text-body: var(--text-body);
+  --text-body--line-height: var(--leading-body);
+  --text-small: var(--text-small);
+  --text-small--line-height: var(--leading-small);
+  --text-caption: var(--text-caption);
+  --text-caption--line-height: var(--leading-caption);
+  --text-overline: var(--text-overline);
+  --text-overline--line-height: var(--leading-overline);
+  --text-kpi: var(--text-kpi);
+  --text-kpi--line-height: var(--leading-kpi);
+  --font-weight-regular: var(--weight-regular);
+  --font-weight-medium: var(--weight-medium);
+  --font-weight-semibold: var(--weight-semibold);
+  --font-weight-bold: var(--weight-bold);
+
+  /* Spacing: p-4 is --space-4 (16px). The base step is the 4px grid. */
+  --spacing: var(--space-1);
+  --spacing-gutter: var(--gutter);
+  --spacing-page: var(--margin-page);
+  --spacing-nav: var(--nav-height);
+  --spacing-control-sm: var(--control-sm);
+  --spacing-control-md: var(--control-md);
+  --spacing-control-lg: var(--control-lg);
+  --spacing-field: var(--field-height);
+  --spacing-hit: var(--hit-area);
+  --container-page: var(--container-max);
+
+  /* Radius */
+  --radius-badge: var(--radius-badge);
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --radius-dialog: var(--radius-dialog);
+  --radius-pill: var(--radius-pill);
+
+  /* Elevation: cards are flat, so there is no shadow-card. */
+  --shadow-floating: var(--shadow-floating);
+}
+
+/* The focus ring of the design system (tokens.css --focus-ring). The
+   transparent outline keeps a visible focus in forced-colors mode. */
+@utility focus-ring {
+  &:focus-visible {
+    outline: 2px solid transparent;
+    box-shadow: var(--focus-ring);
+  }
+}
+
 html,
 body {
   margin: 0;
   padding: 0;
+}
+
+html {
+  font-family: var(--font-sans);
 }

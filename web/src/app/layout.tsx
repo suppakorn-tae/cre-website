@@ -1,16 +1,17 @@
 import type { Metadata } from 'next';
-import { Noto_Sans_Thai } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 
 import { MockGate } from '@/lib/mocks/mock-gate';
 import { QueryProvider } from '@/lib/query/provider';
 
+// IBM Plex Sans Thai, self-hosted by @fontsource (no request to Google Fonts
+// at build or run time). Thai and Latin come as separate files with a
+// unicode-range, so a page loads only the ones it uses.
+import '@fontsource/ibm-plex-sans-thai/400.css';
+import '@fontsource/ibm-plex-sans-thai/500.css';
+import '@fontsource/ibm-plex-sans-thai/600.css';
+import '@fontsource/ibm-plex-sans-thai/700.css';
 import './globals.css';
-
-const notoSansThai = Noto_Sans_Thai({
-  subsets: ['thai', 'latin'],
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'CRE',
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="th" className={notoSansThai.className}>
+    <html lang="th">
       <body>
         <NextIntlClientProvider>
           <MockGate>
