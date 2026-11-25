@@ -33,31 +33,50 @@ var googleReturn = map[string]string{
 	svc.IntentLink: "/account", svc.IntentReauth: "/account",
 }
 
-// googleRoutes mounts Google sign-in when GOOGLE_CLIENT_ID,
-// GOOGLE_CLIENT_SECRET and PUBLIC_BASE_URL are set (config.API has no Google
-// fields yet). GOOGLE_ISSUER overrides the issuer for tests.
+// googleRoutes mounts the Google endpoints. They need GOOGLE_CLIENT_ID and
+// GOOGLE_CLIENT_SECRET (config.API has no Google fields). The redirect URL is
+// GOOGLE_REDIRECT_URL, or PUBLIC_BASE_URL + the callback path. Without them
+// the routes stay mounted and answer 503 google_unavailable, so the api
+// starts and the contract stays complete. GOOGLE_ISSUER overrides the issuer
+// for tests.
 func googleRoutes(r chi.Router, d app.Deps) {
+	limit := app.PassThrough
+	if d.RateLimit != nil {
+		limit = d.RateLimit("RL_GOOGLE_IP", 30, 15*time.Minute, middleware.KeyIP)
+	}
 	id, secret := os.Getenv("GOOGLE_CLIENT_ID"), os.Getenv("GOOGLE_CLIENT_SECRET")
 	base := strings.TrimSuffix(os.Getenv("PUBLIC_BASE_URL"), "/")
-	if id == "" || secret == "" || base == "" || d.DB == nil || d.Valkey == nil || d.Sessions == nil {
+	redirect := os.Getenv("GOOGLE_REDIRECT_URL")
+	if redirect == "" && base != "" {
+		redirect = base + googleCookiePath + "/callback"
+	}
+	if id == "" || secret == "" || redirect == "" || base == "" || d.DB == nil || d.Valkey == nil || d.Sessions == nil {
+		slog.Warn("google sign-in disabled: set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and PUBLIC_BASE_URL (or GOOGLE_REDIRECT_URL)")
+		mountGoogleUnavailable(r, limit)
 		return
 	}
 	issuer := os.Getenv("GOOGLE_ISSUER")
 	if issuer == "" {
 		issuer = "https://accounts.google.com"
 	}
-	idp := oidc.New(oidc.Config{
-		Issuer: issuer, ClientID: id, ClientSecret: secret, RedirectURL: base + googleCookiePath + "/callback",
-	})
+	idp := oidc.New(oidc.Config{Issuer: issuer, ClientID: id, ClientSecret: secret, RedirectURL: redirect})
 	h := &googleHandler{
 		svc:      svc.NewGoogle(idp, svc.GooglePGStore{DB: d.DB}, d.Valkey, d.Sessions),
 		sessions: d.Sessions, web: base, insecure: d.Config.Insecure(),
 	}
-	limit := app.PassThrough
-	if d.RateLimit != nil {
-		limit = d.RateLimit("RL_GOOGLE_IP", 30, 15*time.Minute, middleware.KeyIP)
-	}
 	h.mount(r, limit)
+}
+
+// mountGoogleUnavailable keeps the Google routes mounted (same limits) but
+// answers 503 until Google is configured.
+func mountGoogleUnavailable(r chi.Router, limit app.Middleware) {
+	off := func(w http.ResponseWriter, req *http.Request) {
+		middleware.WriteError(w, req, http.StatusServiceUnavailable, "google_unavailable", "Google sign-in is not configured")
+	}
+	r.With(limit).Post("/google/start", off)
+	r.Get("/google/callback", off)
+	r.Get("/google/pending", off)
+	r.With(limit).Post("/google/complete", off)
 }
 
 type googleHandler struct {
@@ -69,7 +88,7 @@ type googleHandler struct {
 
 func (h *googleHandler) mount(r chi.Router, limit app.Middleware) {
 	r.With(limit).Post("/google/start", h.start)
-	r.With(limit).Get("/google/callback", h.callback)
+	r.Get("/google/callback", h.callback) // the contract declares no 429; a valid single-use state is needed to get past it
 	r.Get("/google/pending", h.pending)
 	r.With(limit).Post("/google/complete", h.complete)
 }

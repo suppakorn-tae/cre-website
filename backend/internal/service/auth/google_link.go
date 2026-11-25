@@ -30,8 +30,10 @@ var (
 )
 
 // ReauthKey marks a fresh Google re-authentication of the account; account
-// deletion checks it.
-func ReauthKey(accountID string) string { return "auth:reauth:" + accountID }
+// deletion checks it. It must equal account.ReauthKey (the account service
+// imports this package, so it cannot be shared; TestReauthKeyMatchesAccount
+// pins it).
+func ReauthKey(accountID string) string { return "account:reauth:" + accountID }
 
 // StartForAccount starts a link or reauth for the signed-in accountID; the
 // callback must arrive in the same account's session.
