@@ -132,7 +132,20 @@ export function ResultsPage({ projectId, versionId }: { projectId: string; versi
           <span aria-hidden="true"> / </span>
           <Link href={`/projects/${projectId}`}>{project.data?.nickname ?? '…'}</Link>
         </nav>
-        <h1 className={styles.title}>{t('page.title', { no: version.data.version_no })}</h1>
+        <div className={styles.titleRow}>
+          <h1 className={styles.title}>{t('page.title', { no: version.data.version_no })}</h1>
+          <div className={styles.actions}>
+            <Link
+              className={styles.actionSecondary}
+              href={`/projects/${projectId}/versions/${versionId}/report`}
+            >
+              {t('page.reportAction')}
+            </Link>
+            <button type="button" className={styles.actionPrimary} onClick={() => setTab('hvh')}>
+              {t('page.adviceAction')}
+            </button>
+          </div>
+        </div>
         <p className={styles.muted}>
           {[
             project.data?.name,

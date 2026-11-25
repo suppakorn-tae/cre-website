@@ -22,6 +22,44 @@
 .link:hover {
   text-decoration: underline;
 }
+.titleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.actionPrimary,
+.actionSecondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.5rem;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--color-blue-700);
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  cursor: pointer;
+}
+.actionPrimary {
+  background: var(--color-blue-600);
+  color: var(--color-white);
+}
+.actionSecondary {
+  background: var(--color-white);
+  color: var(--color-blue-700);
+}
+.actionPrimary:focus-visible,
+.actionSecondary:focus-visible {
+  outline: 2px solid var(--color-blue-700);
+  outline-offset: 2px;
+}
 .title {
   margin: 0;
   color: var(--color-navy-900);
