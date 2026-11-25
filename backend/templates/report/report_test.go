@@ -130,3 +130,36 @@ func TestRenderLevelSummaryChips(t *testing.T) {
 		t.Error("the one-row-per-level summary table is still there")
 	}
 }
+
+func TestRenderSectionOrderAndNotes(t *testing.T) {
+	html, _, err := report.Render(sample())
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(html)
+	order := []string{
+		"<h2>1. ข้อมูลโครงการ", "<h2>2. สรุประดับความเสี่ยง", "<h2>3. ผล 3 ตัวชี้วัด",
+		"<h2>4. คำแนะนำและกลยุทธ์ (2 ตัวชี้วัด H / VH)", "<h2>5. หมายเหตุ", "<h2>6. การลงนาม",
+	}
+	prev := -1
+	for _, h := range order {
+		i := strings.Index(s, h)
+		if i < 0 {
+			t.Fatalf("html lacks heading %q", h)
+		}
+		if i < prev {
+			t.Errorf("heading %q is out of order", h)
+		}
+		prev = i
+	}
+	const disclaimer = "ผลลัพธ์เป็นข้อมูลเบื้องต้นสำหรับใช้ประกอบการพิจารณาเท่านั้น"
+	if n := strings.Count(s, disclaimer); n != 1 {
+		t.Errorf("disclaimer appears %d times, want once", n)
+	}
+	if strings.Index(s, disclaimer) > strings.Index(s, "<h2>6. การลงนาม") {
+		t.Error("disclaimer is after the signatures")
+	}
+	if !strings.Contains(s, `<p class="subtitle">TST1 &middot; เกาะเต่า &middot; เวอร์ชัน 2</p>`) {
+		t.Error("subtitle under the title is missing")
+	}
+}
