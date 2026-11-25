@@ -32,7 +32,11 @@ export function contrast(a: string, b: string): number {
   return (hi + 0.05) / (lo + 0.05);
 }
 
-const ring = /--focus-ring:\s*0 0 0 (\d+)px (var\(--[\w-]+\)|#[0-9a-f]{6})\s*;/i.exec(tokens);
+// The ring is a white gap followed by the coloured band, so a blue control still shows it.
+const ring =
+  /--focus-ring:\s*0 0 0 \d+px (?:var\(--color-white\)|#fff(?:fff)?),\s*0 0 0 (\d+)px (var\(--[\w-]+\)|#[0-9a-f]{6})\s*;/i.exec(
+    tokens,
+  );
 
 function cssFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((f) => {
@@ -42,7 +46,7 @@ function cssFiles(dir: string): string[] {
 }
 
 describe('focus ring token', () => {
-  it('is a solid ring at least 2px thick', () => {
+  it('is a white-gapped ring at least 2px thick', () => {
     expect(ring).not.toBeNull();
     expect(Number(ring![1])).toBeGreaterThanOrEqual(2);
   });
