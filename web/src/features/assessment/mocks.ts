@@ -25,6 +25,28 @@ export function createAnswerHandlers(readOnlyVersions: string[] = []): HttpHandl
   const base = '*/api/v1/projects/:projectId/versions/:versionId/answers';
   return [
     mswHttp.get(base, ({ params }) => HttpResponse.json(list(String(params.versionId)))),
+    mswHttp.post(`${base.replace(/answers$/, '')}submit`, ({ params }) => {
+      const id = String(params.versionId);
+      if (readOnlyVersions.includes(id)) {
+        return HttpResponse.json(
+          { error: { code: 'conflict', message: 'Version is not the latest' } },
+          { status: 409 },
+        );
+      }
+      const done = list(id).items.filter((a) => a.complete).length;
+      if (done === 0) {
+        return HttpResponse.json(
+          { error: { code: 'no_complete_indicator', message: 'No complete indicator' } },
+          { status: 422 },
+        );
+      }
+      return HttpResponse.json({
+        version_id: id,
+        status: 'submitted',
+        submitted_at: new Date().toISOString(),
+        summary: { scored_count: done, level_counts: { VL: 0, L: done, M: 0, H: 0, VH: 0 } },
+      });
+    }),
     mswHttp.patch(base, async ({ params, request }) => {
       const id = String(params.versionId);
       const body = (await request.json()) as { answers: AnswerInput[] };

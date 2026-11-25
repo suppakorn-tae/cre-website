@@ -7,6 +7,7 @@ import type { CheckboxOption } from '@/components/ui';
 
 import type { Catalogue } from './api';
 import styles from './assessment.module.css';
+import type { ServerErrors } from './fieldErrors';
 import { IndicatorCard } from './IndicatorCard';
 import { countGroup, emptyDraft, type Draft } from './rules';
 
@@ -14,6 +15,7 @@ type Props = {
   catalogue: Catalogue;
   drafts: Record<string, Draft | undefined>;
   disabled: boolean;
+  serverErrors?: ServerErrors;
   onChange: (code: string, draft: Draft) => void;
 };
 
@@ -28,7 +30,7 @@ function Progress({ codes, drafts }: { codes: string[]; drafts: Props['drafts'] 
 }
 
 /** Dimensions and factors as collapsible groups with per-group progress. */
-export function GroupList({ catalogue, drafts, disabled, onChange }: Props) {
+export function GroupList({ catalogue, drafts, disabled, serverErrors, onChange }: Props) {
   const y3Options = useMemo<CheckboxOption[]>(
     () =>
       catalogue.ri_e_options.map((o) => ({
@@ -65,6 +67,7 @@ export function GroupList({ catalogue, drafts, disabled, onChange }: Props) {
                     draft={drafts[indicator.code] ?? emptyDraft()}
                     y3Options={y3Options}
                     disabled={disabled}
+                    serverErrors={serverErrors?.[indicator.code]}
                     onChange={(draft) => onChange(indicator.code, draft)}
                   />
                 ))}

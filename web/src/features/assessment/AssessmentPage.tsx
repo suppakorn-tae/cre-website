@@ -1,15 +1,19 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import { Button, Skeleton } from '@/components/ui';
 import { ProjectSteps } from '@/features/shell/ProjectSteps';
 
 import { saveAnswers, useAnswers, useCatalogue, type AnswerList, type Catalogue } from './api';
 import styles from './assessment.module.css';
+import { fieldErrorsOf, type ServerErrors } from './fieldErrors';
 import { GroupList } from './GroupList';
 import { countGroup, fromAnswer, toInput, type Draft } from './rules';
+import { SubmitBar } from './SubmitBar';
+import { classifySubmitFailure, resultsPath, submitVersion, type SubmitFailure } from './submit';
 import { useAutosave } from './useAutosave';
 
 type Ids = { projectId: string; versionId: string };
@@ -27,15 +31,73 @@ function Form({
   const [drafts, setDrafts] = useState<Record<string, Draft | undefined>>(() =>
     Object.fromEntries(answers.items.map((a) => [a.indicator_code, fromAnswer(a)])),
   );
+  const router = useRouter();
+  const [serverErrors, setServerErrors] = useState<ServerErrors>({});
+  const [confirming, setConfirming] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [failure, setFailure] = useState<SubmitFailure | null>(null);
+  const submitLock = useRef(false);
+
   const save = useCallback(
-    (items: Parameters<typeof saveAnswers>[2]) => saveAnswers(projectId, versionId, items),
+    async (items: Parameters<typeof saveAnswers>[2]) => {
+      const codes = items.map((i) => i.indicator_code);
+      try {
+        await saveAnswers(projectId, versionId, items);
+      } catch (error) {
+        // The server refuses the whole batch; show each problem by its input.
+        const found = fieldErrorsOf(error, codes);
+        if (Object.keys(found).length > 0) setServerErrors((prev) => ({ ...prev, ...found }));
+        throw error;
+      }
+    },
     [projectId, versionId],
   );
-  const { status, queue, flush } = useAutosave(save);
+  const rejected = useCallback(
+    (error: unknown, items: Parameters<typeof saveAnswers>[2]) =>
+      new Set(
+        Object.keys(
+          fieldErrorsOf(
+            error,
+            items.map((i) => i.indicator_code),
+          ),
+        ),
+      ),
+    [],
+  );
+  const { status, queue, flush } = useAutosave(save, undefined, rejected);
 
   const change = (code: string, draft: Draft) => {
     setDrafts((prev) => ({ ...prev, [code]: draft }));
+    setServerErrors((prev) => {
+      if (!(code in prev)) return prev;
+      const rest = { ...prev };
+      delete rest[code];
+      return rest;
+    });
+    setFailure(null);
     queue(toInput(code, draft));
+  };
+
+  const confirmSubmit = async () => {
+    if (submitLock.current) return;
+    submitLock.current = true;
+    setSubmitting(true);
+    setFailure(null);
+    try {
+      if (!(await flush()) || Object.keys(serverErrors).length > 0) {
+        setConfirming(false);
+        setFailure('saveFailed');
+        return;
+      }
+      await submitVersion(projectId, versionId);
+      router.push(resultsPath(projectId, versionId));
+    } catch (error) {
+      setConfirming(false);
+      setFailure(classifySubmitFailure(error));
+    } finally {
+      submitLock.current = false;
+      setSubmitting(false);
+    }
   };
 
   const all = catalogue.dimensions.flatMap((d) =>
@@ -59,6 +121,17 @@ function Form({
             </Button>
           )}
         </div>
+        <SubmitBar
+          complete={complete}
+          total={total}
+          editable={answers.editable}
+          open={confirming}
+          busy={submitting}
+          failure={failure}
+          onOpen={() => setConfirming(true)}
+          onCancel={() => setConfirming(false)}
+          onConfirm={() => void confirmSubmit()}
+        />
       </header>
       <p className={styles.overall}>{t('progress.overall', { complete, total })}</p>
       {!answers.editable && <p className={styles.notice}>{t('readOnly')}</p>}
@@ -66,6 +139,7 @@ function Form({
         catalogue={catalogue}
         drafts={drafts}
         disabled={!answers.editable}
+        serverErrors={serverErrors}
         onChange={change}
       />
     </div>
