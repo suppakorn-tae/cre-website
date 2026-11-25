@@ -2,7 +2,7 @@
 
 up:
 	@if [ -f deploy/compose/compose.yaml ]; then \
-		docker compose -f deploy/compose/compose.yaml up -d; \
+		docker compose -f deploy/compose/compose.yaml up -d --build; \
 	else \
 		echo "deploy/compose/compose.yaml does not exist yet"; \
 	fi
