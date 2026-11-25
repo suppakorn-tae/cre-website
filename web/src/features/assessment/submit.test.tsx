@@ -18,7 +18,7 @@ import { ApiError } from '@/lib/api/errors';
 
 import { saveAnswers } from './api';
 import { fieldErrorsOf, fieldMessageKey, mapFieldErrors } from './fieldErrors';
-import { IndicatorCard } from './IndicatorCard';
+import { IndicatorRow } from './IndicatorRow';
 import { createAnswerHandlers } from './mocks';
 import { emptyDraft } from './rules';
 import { SubmitBar } from './SubmitBar';
@@ -160,22 +160,26 @@ describe('422 field errors', () => {
   });
   it('shows the server message next to the input', () => {
     const html = wrap(
-      <IndicatorCard
-        indicator={{
-          code: 'EC-MG-1',
-          name: 'n',
-          unit: 'u',
-          question_x: null,
-          question_y1: null,
-          question_y2: null,
-          question_y3: null,
-        }}
-        draft={emptyDraft()}
-        y3Options={[{ value: 'A', label: 'A' }]}
-        disabled={false}
-        serverErrors={{ x: 'out_of_range', y3: 'exclusive_option' }}
-        onChange={vi.fn()}
-      />,
+      <table>
+        <tbody>
+          <IndicatorRow
+            indicator={{
+              code: 'EC-MG-1',
+              name: 'n',
+              unit: 'u',
+              question_x: null,
+              question_y1: null,
+              question_y2: null,
+              question_y3: null,
+            }}
+            draft={emptyDraft()}
+            y3Options={[{ value: 'A', label: 'A' }]}
+            disabled={false}
+            serverErrors={{ x: 'out_of_range', y3: 'exclusive_option' }}
+            onChange={vi.fn()}
+          />
+        </tbody>
+      </table>,
     );
     expect(html).toContain('ค่านี้อยู่นอกช่วงที่กำหนด');
     expect(html).toContain('ข้อ A ใช้เดี่ยวเท่านั้น เลือกร่วมกับข้ออื่นไม่ได้');

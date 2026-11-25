@@ -9,9 +9,28 @@ import {
   isAnswered,
   isComplete,
   parseAmount,
+  sharedUnit,
   toInput,
+  withSharedUnit,
   type Draft,
 } from './rules';
+
+describe('global units', () => {
+  const codes = ['a', 'b'];
+  it('reads the shared unit, or null when rows differ', () => {
+    expect(sharedUnit(codes, {}, 'y1')).toBe('baht');
+    const mixed = { a: { ...emptyDraft(), y1: { amount: '5', unit: 'percent' } } };
+    expect(sharedUnit(codes, mixed, 'y1')).toBeNull();
+    expect(sharedUnit(['a'], mixed, 'y1')).toBe('percent');
+  });
+  it('switches the unit of every row and keeps what was typed', () => {
+    const drafts = { a: { ...emptyDraft(), y2: { amount: '7', unit: 'day' } } };
+    const next = withSharedUnit(codes, drafts, 'y2', 'percent');
+    expect(next.a?.y2).toEqual({ amount: '7', unit: 'percent' });
+    expect(next.b?.y2).toEqual({ amount: '', unit: 'percent' });
+    expect(next.a?.y1.unit).toBe('baht');
+  });
+});
 
 const options = [
   { value: 'A', label: 'A', exclusive: true },

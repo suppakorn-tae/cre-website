@@ -64,6 +64,30 @@ export function fromAnswer(a: Answer): Draft {
   };
 }
 
+type UnitField = 'y1' | 'y2';
+type Drafts = Record<string, Draft | undefined>;
+
+/** The unit every listed row uses for `field`, or null when rows differ. */
+export function sharedUnit(codes: string[], drafts: Drafts, field: UnitField): string | null {
+  const units = new Set(codes.map((c) => (drafts[c] ?? emptyDraft())[field].unit));
+  return units.size === 1 ? ([...units][0] ?? null) : null;
+}
+
+/** Drafts with `unit` set on every listed row; typed amounts are kept. */
+export function withSharedUnit(
+  codes: string[],
+  drafts: Drafts,
+  field: UnitField,
+  unit: string,
+): Drafts {
+  const next = { ...drafts };
+  for (const code of codes) {
+    const d = next[code] ?? emptyDraft();
+    next[code] = { ...d, [field]: { ...d[field], unit } };
+  }
+  return next;
+}
+
 export function countGroup(codes: string[], drafts: Record<string, Draft | undefined>) {
   let answered = 0;
   let complete = 0;

@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useCallback, useRef, useState } from 'react';
@@ -11,8 +12,18 @@ import { saveAnswers, useAnswers, useCatalogue, type AnswerList, type Catalogue 
 import styles from './assessment.module.css';
 import { fieldErrorsOf, type ServerErrors } from './fieldErrors';
 import { GroupList } from './GroupList';
-import { countGroup, fromAnswer, toInput, type Draft } from './rules';
+import {
+  COST_UNITS,
+  TIME_UNITS,
+  countGroup,
+  fromAnswer,
+  sharedUnit,
+  toInput,
+  withSharedUnit,
+  type Draft,
+} from './rules';
 import { SubmitBar } from './SubmitBar';
+import { Toolbar } from './Toolbar';
 import { classifySubmitFailure, resultsPath, submitVersion, type SubmitFailure } from './submit';
 import { useAutosave } from './useAutosave';
 
@@ -36,6 +47,7 @@ function Form({
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [failure, setFailure] = useState<SubmitFailure | null>(null);
+  const [filter, setFilter] = useState('all');
   const submitLock = useRef(false);
 
   const save = useCallback(
@@ -65,6 +77,11 @@ function Form({
     [],
   );
   const { status, queue, flush } = useAutosave(save, undefined, rejected);
+  const all = catalogue.dimensions.flatMap((d) =>
+    d.factors.flatMap((f) => f.indicators.map((i) => i.code)),
+  );
+  const factors = catalogue.dimensions.flatMap((d) => d.factors);
+  const options = catalogue.ri_e_options;
 
   const change = (code: string, draft: Draft) => {
     setDrafts((prev) => ({ ...prev, [code]: draft }));
@@ -76,6 +93,18 @@ function Form({
     });
     setFailure(null);
     queue(toInput(code, draft));
+  };
+
+  const setUnit = (field: 'y1' | 'y2', unit: string) => {
+    const next = withSharedUnit(all, drafts, field, unit);
+    setDrafts(next);
+    setFailure(null);
+    for (const code of all) {
+      const before = drafts[code];
+      if (before && before[field].amount.trim() !== '' && before[field].unit !== unit) {
+        queue(toInput(code, next[code] ?? before));
+      }
+    }
   };
 
   const confirmSubmit = async () => {
@@ -100,9 +129,6 @@ function Form({
     }
   };
 
-  const all = catalogue.dimensions.flatMap((d) =>
-    d.factors.flatMap((f) => f.indicators.map((i) => i.code)),
-  );
   const { complete, total } = countGroup(all, drafts);
 
   return (
@@ -121,27 +147,61 @@ function Form({
             </Button>
           )}
         </div>
-        <SubmitBar
-          complete={complete}
-          total={total}
-          editable={answers.editable}
-          open={confirming}
-          busy={submitting}
-          failure={failure}
-          onOpen={() => setConfirming(true)}
-          onCancel={() => setConfirming(false)}
-          onConfirm={() => void confirmSubmit()}
-        />
       </header>
-      <p className={styles.overall}>{t('progress.overall', { complete, total })}</p>
       {!answers.editable && <p className={styles.notice}>{t('readOnly')}</p>}
+      <Toolbar
+        firstOption={options[0]?.code ?? ''}
+        lastOption={options[options.length - 1]?.code ?? ''}
+        complete={complete}
+        total={total}
+        filter={filter}
+        filterOptions={[
+          { value: 'all', label: t('toolbar.filterAll', { count: factors.length }) },
+          ...factors.map((f) => ({ value: f.code, label: `${f.code} ${f.name}` })),
+        ]}
+        costUnit={sharedUnit(all, drafts, 'y1')}
+        timeUnit={sharedUnit(all, drafts, 'y2')}
+        costUnits={COST_UNITS}
+        timeUnits={TIME_UNITS}
+        disabled={!answers.editable}
+        onFilter={setFilter}
+        onCostUnit={(unit) => setUnit('y1', unit)}
+        onTimeUnit={(unit) => setUnit('y2', unit)}
+      />
       <GroupList
         catalogue={catalogue}
         drafts={drafts}
         disabled={!answers.editable}
+        factor={filter === 'all' ? undefined : filter}
         serverErrors={serverErrors}
         onChange={change}
       />
+      <footer className={styles.footer}>
+        <span className={styles.showing}>
+          {filter === 'all'
+            ? t('footer.showingAll', { total: factors.length })
+            : t('footer.showing', { shown: 1, total: factors.length })}
+        </span>
+        <div className={styles.footerActions}>
+          <Link href={`/projects/${projectId}`} className={styles.projectLink}>
+            {t('footer.project')}
+          </Link>
+          <Button variant="secondary" disabled={!answers.editable} onClick={() => void flush()}>
+            {t('footer.save')}
+          </Button>
+          <SubmitBar
+            complete={complete}
+            total={total}
+            editable={answers.editable}
+            open={confirming}
+            busy={submitting}
+            failure={failure}
+            onOpen={() => setConfirming(true)}
+            onCancel={() => setConfirming(false)}
+            onConfirm={() => void confirmSubmit()}
+          />
+        </div>
+      </footer>
     </div>
   );
 }
