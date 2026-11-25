@@ -104,6 +104,8 @@
           application/json:
             schema:
               $ref: ../schemas/common.yaml#/schemas/ErrorEnvelope
+      '503':
+        $ref: ../schemas/common.yaml#/responses/ServiceUnavailable
 /auth/register/verify:
   post:
     operationId: verifyRegistration
@@ -186,6 +188,8 @@
           application/json:
             schema:
               $ref: ../schemas/common.yaml#/schemas/ErrorEnvelope
+      '503':
+        $ref: ../schemas/common.yaml#/responses/ServiceUnavailable
 /auth/login:
   post:
     operationId: login
@@ -316,6 +320,8 @@
           application/json:
             schema:
               $ref: ../schemas/common.yaml#/schemas/ErrorEnvelope
+      '503':
+        $ref: ../schemas/common.yaml#/responses/ServiceUnavailable
 /auth/password/reset:
   post:
     operationId: resetPassword

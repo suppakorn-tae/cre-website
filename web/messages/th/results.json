@@ -1,0 +1,76 @@
+{
+  "page": {
+    "breadcrumbLabel": "เส้นทางหน้า",
+    "breadcrumbRoot": "แดชบอร์ด",
+    "title": "ผลการประเมินความเสี่ยง – v{no}",
+    "submittedAt": "ส่งล่าสุด {at}",
+    "formula": "RM = √(RL × RI<sub>max</sub>)",
+    "disclaimer": "ผลลัพธ์เป็นข้อมูลเบื้องต้นสำหรับใช้ประกอบการพิจารณาเท่านั้น",
+    "loading": "กำลังโหลดผลการประเมิน",
+    "loadFailed": "โหลดผลการประเมินไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+    "retry": "ลองใหม่",
+    "notFound": "ไม่พบเวอร์ชันนี้",
+    "backToProject": "กลับไปหน้าโครงการ",
+    "countsLabel": "จำนวนตัวชี้วัดแต่ละระดับ",
+    "indicatorUnit": "ตัวชี้วัด"
+  },
+  "draft": {
+    "title": "ยังไม่มีผลการประเมิน",
+    "text": "เวอร์ชันนี้ยังเป็นฉบับร่าง กรุณาส่งการประเมินก่อน จึงจะเห็นผลลัพธ์",
+    "action": "ไปที่หน้าประเมินความเสี่ยง"
+  },
+  "tabs": {
+    "label": "มุมมองผลการประเมิน",
+    "overview": "ภาพรวม",
+    "table": "ตารางรายละเอียด",
+    "heatmap": "Heat Map",
+    "hvh": "H / VH เท่านั้น",
+    "pending": "มุมมองนี้ยังไม่เปิดให้ใช้งาน"
+  },
+  "overview": {
+    "distributionTitle": "การกระจายระดับความเสี่ยง",
+    "distributionLabel": "สัดส่วนตัวชี้วัดแต่ละระดับ",
+    "total": "{count} ตัวชี้วัด",
+    "legendItem": "{count} · {pct}%",
+    "topTitle": "{count} อันดับความเสี่ยงสูงสุด (เรียงตาม RM)",
+    "topCaption": "ตัวชี้วัดที่มีค่า RM สูงสุด",
+    "columns": {
+      "rank": "#",
+      "code": "รหัส",
+      "indicator": "ตัวชี้วัด",
+      "factor": "ด้าน",
+      "rm": "RM",
+      "level": "ระดับ"
+    }
+  },
+  "table": {
+    "title": "ตารางผลการประเมินทั้งหมด",
+    "caption": "ผลการประเมินรายตัวชี้วัด",
+    "searchLabel": "ค้นหารหัส / ชื่อตัวชี้วัด",
+    "searchPlaceholder": "เช่น EC-HS-2 หรือชื่อตัวชี้วัด",
+    "levelLabel": "ระดับ",
+    "allLevels": "ทุกระดับ",
+    "count": "แสดง {shown} จาก {total} ตัวชี้วัด",
+    "emptyTitle": "ไม่พบตัวชี้วัดที่ตรงกับเงื่อนไข",
+    "emptyText": "ลองเปลี่ยนคำค้นหาหรือเลือกทุกระดับ",
+    "columns": {
+      "code": "รหัส",
+      "indicator": "ตัวชี้วัด",
+      "rl": "RL",
+      "riC": "RI<sub>C</sub>",
+      "riT": "RI<sub>T</sub>",
+      "riE": "RI<sub>E</sub>",
+      "riMax": "RI<sub>max</sub>",
+      "rm": "RM",
+      "level": "ระดับ"
+    },
+    "labels": {
+      "rl": "RL",
+      "riC": "RI C",
+      "riT": "RI T",
+      "riE": "RI E",
+      "riMax": "RI max"
+    },
+    "legend": "RL = โอกาสเกิดความเสี่ยง · RI<sub>C</sub> / RI<sub>T</sub> / RI<sub>E</sub> = ผลกระทบด้านต้นทุน / เวลา / สิ่งแวดล้อม · RI<sub>max</sub> = ผลกระทบสูงสุด · RM = ขนาดความเสี่ยง = √(RL × RI<sub>max</sub>)"
+  }
+}

@@ -42,9 +42,7 @@ export function useCreateProject() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (body: ProjectFields) => {
-      // The contract types the create body as `ProjectFields & Record<string, never>`,
-      // which no object satisfies, so the body is cast.
-      const { data } = await browserApi().POST('/projects', { body: body as never });
+      const { data } = await browserApi().POST('/projects', { body });
       return data as Project;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.all }),

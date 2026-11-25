@@ -1894,7 +1894,7 @@ export interface components {
             progress_pct: number;
             description?: string | null;
         };
-        ProjectCreate: components["schemas"]["ProjectFields"] & Record<string, never>;
+        ProjectCreate: components["schemas"]["ProjectFields"] & unknown;
         /**
          * @description Partial update; send only the fields to change, at least one. The
          *     rules of `ProjectFields` apply to the stored result.
@@ -2104,6 +2104,15 @@ export interface components {
         };
         /** @description Rate limit exceeded. */
         TooManyRequests: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description A dependency is unavailable. Code `mail_unavailable` when e-mail cannot be sent. */
+        ServiceUnavailable: {
             headers: {
                 [name: string]: unknown;
             };
@@ -2951,6 +2960,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     verifyRegistration: {
@@ -3029,6 +3039,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     login: {
@@ -3166,6 +3177,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            503: components["responses"]["ServiceUnavailable"];
         };
     };
     resetPassword: {
