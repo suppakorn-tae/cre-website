@@ -4,7 +4,7 @@ import { formatNumber } from '@/lib/format/locale';
 
 import type { IndicatorName, ResultsResponse } from './api';
 import styles from './results.module.css';
-import { CHART_MAX, CHART_MIN, chartPct, hLineRm, reachesH } from './rules';
+import { CHART_MAX, CHART_MIN, chartPct, hLineRm, reachesH, valuePlacement } from './rules';
 
 type Props = {
   averages: ResultsResponse['factor_averages'];
@@ -57,27 +57,31 @@ export function FactorChart({ averages, names, cutoffs }: Props) {
             className={styles.factorBars}
             aria-label={t('label', { min: CHART_MIN, max: CHART_MAX })}
           >
-            {averages.map((a) => (
-              <li
-                key={a.factor_code}
-                className={styles.factorCol}
-                title={factorNames.get(a.factor_code)}
-                data-high={reachesH(a.average_rm, hLine)}
-              >
-                <span
-                  className={styles.factorValue}
-                  style={{ bottom: `${chartPct(a.average_rm)}%` }}
-                >
-                  {fmt(a.average_rm)}
-                </span>
-                <span
-                  className={styles.factorBar}
-                  style={{ height: `${chartPct(a.average_rm)}%` }}
+            {averages.map((a) => {
+              const place = valuePlacement(a.average_rm, hLine);
+              return (
+                <li
+                  key={a.factor_code}
+                  className={styles.factorCol}
+                  title={factorNames.get(a.factor_code)}
                   data-high={reachesH(a.average_rm, hLine)}
-                />
-                <span className={styles.factorCode}>{a.factor_code}</span>
-              </li>
-            ))}
+                >
+                  <span
+                    className={styles.factorValue}
+                    style={{ bottom: `${place.bottomPct}%` }}
+                    data-placement={place.mode}
+                  >
+                    {fmt(a.average_rm)}
+                  </span>
+                  <span
+                    className={styles.factorBar}
+                    style={{ height: `${chartPct(a.average_rm)}%` }}
+                    data-high={reachesH(a.average_rm, hLine)}
+                  />
+                  <span className={styles.factorCode}>{a.factor_code}</span>
+                </li>
+              );
+            })}
           </ol>
         </div>
       </div>
