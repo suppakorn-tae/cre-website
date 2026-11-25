@@ -57,7 +57,7 @@ describe('charts', () => {
 
   it('says so when no level has a count', () => {
     expect(render(<LevelChart counts={emptySummary.level_distribution} />)).toContain(
-      'ยังไม่มีผลประเมินที่ส่งแล้ว',
+      'ยังไม่มีผลการประเมินที่ส่งแล้ว',
     );
   });
 

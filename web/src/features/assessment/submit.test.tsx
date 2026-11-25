@@ -55,15 +55,15 @@ const bar = (over: Partial<React.ComponentProps<typeof SubmitBar>> = {}) =>
 describe('SubmitBar and confirm dialog', () => {
   it('enables the button and explains the dialog with the counts', () => {
     const html = bar();
-    expect(html).not.toMatch(/<button[^>]*disabled[^>]*>ส่งผลประเมิน/);
-    expect(html).toContain('ส่งผลประเมินหรือไม่');
+    expect(html).not.toMatch(/<button[^>]*disabled[^>]*>ส่งผลการประเมิน/);
+    expect(html).toContain('ส่งผลการประเมินหรือไม่');
     expect(html).toContain('คำนวณคะแนนจาก 2 ตัวชี้วัดที่ตอบครบ จากทั้งหมด 11 ตัวชี้วัด');
     expect(html).toContain('ยกเลิก');
     expect(html).toContain('role="alertdialog"');
   });
   it('disables the button and says why when no indicator is complete', () => {
     const html = bar({ complete: 0 });
-    expect(html).toMatch(/<button[^>]*disabled[^>]*>ส่งผลประเมิน/);
+    expect(html).toMatch(/<button[^>]*disabled[^>]*>ส่งผลการประเมิน/);
     expect(html).toContain('ต้องมีอย่างน้อย 1 ตัวชี้วัดที่ตอบครบทั้ง 4 ข้อ');
   });
   it('disables the button in read-only mode and while submitting', () => {
@@ -72,9 +72,9 @@ describe('SubmitBar and confirm dialog', () => {
   });
   it.each([
     ['conflict', 'มีเวอร์ชันใหม่กว่า'],
-    ['noComplete', 'ส่งผลประเมินไม่ได้'],
+    ['noComplete', 'ส่งผลการประเมินไม่ได้'],
     ['invalid', 'แก้ไขช่องที่ไม่ถูกต้อง'],
-    ['unknown', 'ส่งผลประเมินไม่สำเร็จ'],
+    ['unknown', 'ส่งผลการประเมินไม่สำเร็จ'],
   ] as const)('shows the %s failure as an alert', (failure, text) => {
     const html = bar({ failure });
     expect(html).toContain('role="alert"');

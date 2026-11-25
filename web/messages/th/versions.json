@@ -23,7 +23,7 @@
       "koh_lanta": "เกาะลันตา",
       "koh_chang": "เกาะช้าง",
       "koh_kood": "เกาะกูด",
-      "other": "อื่นๆ"
+      "other": "อื่น ๆ"
     },
     "types": {
       "building": "อาคาร / ที่พัก",
@@ -31,7 +31,7 @@
       "road": "ถนน / โครงสร้างพื้นฐาน",
       "utilities": "ระบบสาธารณูปโภค",
       "coastal": "โครงสร้างชายฝั่ง",
-      "other": "อื่นๆ"
+      "other": "อื่น ๆ"
     }
   },
   "list": {
@@ -52,7 +52,7 @@
       "progress": "ความก้าวหน้าตอนส่ง",
       "levels": "ความเสี่ยงสูง",
       "averageRm": "RM เฉลี่ย",
-      "actions": "การทำงาน"
+      "actions": "การดำเนินการ"
     },
     "versionNo": "v{no}",
     "status": {
@@ -67,7 +67,7 @@
     "levelHigh": "ความเสี่ยงสูง",
     "levelVeryHigh": "ความเสี่ยงสูงมาก",
     "actions": {
-      "answer": "ตอบประเมิน",
+      "answer": "ตอบแบบประเมิน",
       "viewAnswers": "ดูคำตอบ",
       "results": "ดูผลการประเมิน",
       "delete": "ลบ",
