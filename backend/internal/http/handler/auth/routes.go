@@ -15,4 +15,5 @@ func Routes(r chi.Router, d app.Deps) {
 	r.With(d.Auth).Get("/me", me(d.Sessions))
 	registerRoutes(r, d)        // sign-up (register_handler.go)
 	loginRoutes(r, d, d.Mailer) // log in, log out, password reset
+	googleRoutes(r, d)          // Google sign-in, sign-up and linking (google.go)
 }

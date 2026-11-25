@@ -13,12 +13,25 @@ SELECT id, status, session_version, (password_hash IS NOT NULL)::boolean AS has_
 FROM account
 WHERE email = $1;
 
+-- name: GetAccountForGoogleByID :one
+-- Link, unlink and re-authentication of the signed-in account.
+SELECT id, status, session_version, (password_hash IS NOT NULL)::boolean AS has_password,
+       (google_sub IS NOT NULL)::boolean AS has_google
+FROM account
+WHERE id = $1;
+
 -- name: LinkGoogleSub :execrows
 -- Stores the Google id on an active account that has none yet. A Google id
 -- used by another account fails on account_google_sub_uq.
 UPDATE account
 SET google_sub = $2, updated_at = now()
 WHERE id = $1 AND status = 'active' AND google_sub IS NULL;
+
+-- name: UnlinkGoogleSub :execrows
+-- Removes the Google id, only while a password remains to sign in with.
+UPDATE account
+SET google_sub = NULL, updated_at = now()
+WHERE id = $1 AND status = 'active' AND google_sub IS NOT NULL AND password_hash IS NOT NULL;
 
 -- name: CreateGoogleAccount :one
 -- Created when a new Google user accepts the retention notice and terms. No
