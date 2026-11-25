@@ -1,13 +1,11 @@
 'use client';
 
-import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, type ReactNode } from 'react';
 
 import { Button, EmptyState, Input, Pagination, Skeleton } from '@/components/ui';
 import { formatNumber } from '@/lib/format/locale';
 
-import { projectPaths } from '../versions/rules';
 import {
   PANEL_PAGE_SIZE,
   useIndicatorNames,
@@ -16,6 +14,7 @@ import {
   useTopIndicatorsPanel,
 } from './api';
 import styles from './dashboard.module.css';
+import { ProjectsTable } from './ProjectsTable';
 
 const SEARCH_DELAY_MS = 300;
 
@@ -85,34 +84,7 @@ export function ProjectsPanel() {
         autoComplete="off"
       />
       <PanelState query={projects} empty={data?.items.length === 0}>
-        <ul className={styles.list}>
-          {data?.items.map((p) => (
-            <li key={p.project_id} className={styles.listItem}>
-              <div>
-                <p className={styles.itemTitle}>
-                  <span className={styles.nickname}>{p.nickname}</span> {p.name}
-                </p>
-                <p className={styles.itemMeta}>
-                  {t('progress', { pct: p.progress_pct })} ·{' '}
-                  {t('versions', { count: p.version_count })} ·{' '}
-                  {p.h_vh_count === null
-                    ? t('notSubmitted')
-                    : t('riskCount', { count: formatNumber(p.h_vh_count) })}
-                </p>
-              </div>
-              <span className={styles.itemActions}>
-                <Link href={projectPaths.assessment(p.project_id, p.latest_version_id)}>
-                  {t('assess')}
-                </Link>
-                {p.latest_submitted_version_id && (
-                  <Link href={projectPaths.results(p.project_id, p.latest_submitted_version_id)}>
-                    {t('results')}
-                  </Link>
-                )}
-              </span>
-            </li>
-          ))}
-        </ul>
+        {data && <ProjectsTable items={data.items} />}
         {data && pageCount > 1 && (
           <Pagination
             page={page}

@@ -1,6 +1,6 @@
 import { useTranslations } from 'next-intl';
 
-import { LEVELS, LevelBadge } from '@/components/ui';
+import { LEVELS, LevelBadge, type Level } from '@/components/ui';
 import { formatNumber } from '@/lib/format/locale';
 
 import type { DashboardSummary } from './api';
@@ -12,38 +12,82 @@ export function barPercent(value: number, max: number): number {
   return Math.max(2, Math.round((value / max) * 100));
 }
 
-/** Horizontal bars, one per level, each in its level colour. */
+/** Whole-percent share of a level; display only, the counts stay the source. */
+export function levelPercent(count: number, total: number): number {
+  return total <= 0 ? 0 : Math.round((count / total) * 100);
+}
+
+export type DonutSegment = { level: Level; length: number; offset: number };
+
+/** Arcs on a ring of circumference 100: one per non-empty level, in level order. */
+export function donutSegments(counts: DashboardSummary['level_distribution']): DonutSegment[] {
+  const total = LEVELS.reduce((sum, l) => sum + counts[l], 0);
+  if (total === 0) return [];
+  let offset = 0;
+  const segments: DonutSegment[] = [];
+  for (const level of LEVELS) {
+    if (counts[level] === 0) continue;
+    const length = (counts[level] / total) * 100;
+    segments.push({ level, length, offset });
+    offset += length;
+  }
+  return segments;
+}
+
+const RING_RADIUS = 15.9155; // circumference 100
+
+/** Donut of the level distribution with a legend of counts and percentages. */
 export function LevelChart({ counts }: { counts: DashboardSummary['level_distribution'] }) {
   const t = useTranslations('dashboard.levelChart');
   const tLevels = useTranslations('ui.levels');
-  const max = Math.max(...LEVELS.map((l) => counts[l]));
+  const total = LEVELS.reduce((sum, l) => sum + counts[l], 0);
+  const label = t('donutLabel', {
+    total: formatNumber(total),
+    parts: LEVELS.map((l) => `${tLevels(l)} ${formatNumber(counts[l])}`).join(', '),
+  });
   return (
     <section className={styles.chart} aria-labelledby="level-chart-title">
       <h2 id="level-chart-title" className={styles.chartTitle}>
         {t('title')}
       </h2>
       <p className={styles.chartCaption}>{t('caption')}</p>
-      {max === 0 ? (
+      {total === 0 ? (
         <p className={styles.chartNone}>{t('none')}</p>
       ) : (
-        <ul className={styles.bars}>
-          {LEVELS.map((level) => (
-            <li key={level} className={styles.barRow}>
-              <span className={styles.barLabel}>
+        <div className={styles.donutWrap}>
+          <div className={styles.donut}>
+            <svg viewBox="0 0 40 40" role="img" aria-label={label} className={styles.donutSvg}>
+              <circle cx="20" cy="20" r={RING_RADIUS} fill="none" className={styles.donutTrack} />
+              {donutSegments(counts).map((seg) => (
+                <circle
+                  key={seg.level}
+                  cx="20"
+                  cy="20"
+                  r={RING_RADIUS}
+                  fill="none"
+                  stroke={`var(--level-${seg.level.toLowerCase()})`}
+                  strokeWidth="6"
+                  strokeDasharray={`${seg.length} ${100 - seg.length}`}
+                  strokeDashoffset={25 - seg.offset}
+                />
+              ))}
+            </svg>
+            <span className={styles.donutCentre} aria-hidden="true">
+              <span className={styles.donutTotal}>{formatNumber(total)}</span>
+              <span className={styles.donutUnit}>{t('unit')}</span>
+            </span>
+          </div>
+          <ul className={styles.donutLegend}>
+            {LEVELS.map((level) => (
+              <li key={level} className={styles.donutRow}>
                 <LevelBadge level={level} variant="solid" label={tLevels(level)} />
                 <span className={styles.barName}>{tLevels(level)}</span>
-              </span>
-              <span className={styles.track} aria-hidden="true">
-                <span
-                  className={styles.fill}
-                  data-level={level}
-                  style={{ width: `${barPercent(counts[level], max)}%` }}
-                />
-              </span>
-              <span className={styles.barValue}>{formatNumber(counts[level])}</span>
-            </li>
-          ))}
-        </ul>
+                <span className={styles.barValue}>{formatNumber(counts[level])}</span>
+                <span className={styles.donutPct}>{levelPercent(counts[level], total)}%</span>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );
