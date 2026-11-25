@@ -130,7 +130,7 @@ export function ExportForm({ pending, failed, onSubmit }: Props) {
 
       <p className={styles.muted}>{t('format')}</p>
       {failed && <p role="alert">{t('failed')}</p>}
-      <Button type="submit" disabled={pending}>
+      <Button type="submit" className={styles.submit} disabled={pending}>
         {pending ? t('submitting') : t('submit')}
       </Button>
     </form>

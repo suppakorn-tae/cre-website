@@ -52,8 +52,11 @@ export function ImpactTables() {
 }
 
 /** RI_C and RI_T side by side, validated together and saved in one call. */
+const sub = { sub: (chunks: React.ReactNode) => <sub>{chunks}</sub> };
+
 export function ImpactForm({ stored }: { stored: Tables }) {
   const t = useTranslations('admin-thresholds.impact');
+  const tNotice = useTranslations('admin-thresholds.notice');
   const tField = useTranslations('admin-thresholds.field');
   const tSave = useTranslations('admin-thresholds.save');
   const update = useUpdateImpact();
@@ -93,6 +96,7 @@ export function ImpactForm({ stored }: { stored: Tables }) {
 
   return (
     <form
+      className={styles.impactForm}
       onSubmit={(e) => {
         e.preventDefault();
         save();
@@ -103,14 +107,14 @@ export function ImpactForm({ stored }: { stored: Tables }) {
         {TABLES.map(({ key, text }) => (
           <section key={key} className={styles.impactCard} aria-labelledby={`impact-${key}`}>
             <h3 id={`impact-${key}`} className={styles.cardTitle}>
-              {t(`${text}.title`)}
+              {t.rich(`${text}.titleRich`, sub)}
             </h3>
             <table className={styles.impactTable}>
               <thead>
                 <tr>
                   <th scope="col">{t('threshold')}</th>
                   <th scope="col">{t(`${text}.unit`)}</th>
-                  <th scope="col">{t(`${text}.score`)}</th>
+                  <th scope="col">{t.rich(`${text}.scoreRich`, sub)}</th>
                 </tr>
               </thead>
               <tbody>
@@ -133,7 +137,9 @@ export function ImpactForm({ stored }: { stored: Tables }) {
                         </span>
                       )}
                     </td>
-                    <td className={styles.score}>{i + 1}</td>
+                    <td>
+                      <span className={styles.score}>{i + 1}</span>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -153,6 +159,10 @@ export function ImpactForm({ stored }: { stored: Tables }) {
         </p>
       )}
       {saved && <Toast tone="success" title={t('saved')} />}
+      <aside className={styles.notice}>
+        <p className={styles.noticeTitle}>{tNotice('title')}</p>
+        <p className={styles.noticeBody}>{tNotice('body')}</p>
+      </aside>
       <div className={styles.formActions}>
         <Button type="submit" disabled={update.isPending}>
           {update.isPending ? tSave('saving') : t('save')}

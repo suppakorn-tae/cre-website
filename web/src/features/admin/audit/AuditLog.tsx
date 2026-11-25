@@ -1,9 +1,10 @@
 'use client';
 
+import { IconChevronDown, IconChevronRight } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { Fragment, useState } from 'react';
 
-import { Button, EmptyState, Skeleton } from '@/components/ui';
+import { Button, EmptyState, Icon, Skeleton } from '@/components/ui';
 import { formatDateTime, formatNumber } from '@/lib/format/locale';
 
 import { useAuditLog, type AuditSummary } from './api';
@@ -110,6 +111,7 @@ export function AuditLog() {
                             onClick={() => setOpen(expanded ? null : row.id)}
                           >
                             {expanded ? t('table.hide') : t('table.view')}
+                            <Icon icon={expanded ? IconChevronDown : IconChevronRight} size={16} />
                           </button>
                         </td>
                       </tr>
