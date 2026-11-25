@@ -57,3 +57,30 @@ export function chartPct(rm: number): number {
 
 /** A bar counts as high when its stored average reaches the H line. */
 export const reachesH = (rm: number, hLine: number = FALLBACK_H_LINE_RM): boolean => rm >= hLine;
+
+/** Height of a value label as a share of the plot (caption text over a 14rem plot, with margin). */
+export const LABEL_PCT = 10;
+/** Thickness of the H line as a share of the plot (2px over 14rem). */
+const LINE_PCT = 1;
+
+export type ValuePlacement = {
+  /** `above` sits over the bar top, `inside` sits under it (dark text on the bar). */
+  mode: 'above' | 'inside';
+  /** Distance of the label's bottom edge from the plot bottom, 0 to 100. */
+  bottomPct: number;
+};
+
+/**
+ * Where a bar's value label goes so it never sits on the H line. The label normally
+ * sits above the bar top; when the line falls within that label's height (a bar just
+ * below the line), the label moves inside the bar, or just above the line when the
+ * bar is too short to hold it.
+ */
+export function valuePlacement(rm: number, hLine: number = FALLBACK_H_LINE_RM): ValuePlacement {
+  const top = chartPct(rm);
+  const line = chartPct(hLine);
+  const collides = top < line && line < top + LABEL_PCT;
+  if (!collides) return { mode: 'above', bottomPct: top };
+  if (top >= LABEL_PCT) return { mode: 'inside', bottomPct: top - LABEL_PCT };
+  return { mode: 'above', bottomPct: line + LINE_PCT };
+}

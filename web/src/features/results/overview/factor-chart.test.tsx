@@ -6,7 +6,14 @@ import results from '../../../../messages/th/results.json';
 
 import { FactorChart } from './FactorChart';
 import { mockResults } from './mocks';
-import { chartPct, FALLBACK_H_LINE_RM, hLineRm, reachesH } from './rules';
+import {
+  chartPct,
+  FALLBACK_H_LINE_RM,
+  hLineRm,
+  LABEL_PCT,
+  reachesH,
+  valuePlacement,
+} from './rules';
 
 function render(
   averages: ReturnType<typeof mockResults>['factor_averages'],
@@ -67,5 +74,45 @@ describe('factor chart', () => {
   it('falls back to 3.5 when the response has no cut-offs', () => {
     expect(hLineRm(undefined)).toBe(3.5);
     expect(render(averages, undefined)).toContain('bottom:62.5%');
+  });
+
+  it('keeps value labels above the bar when the line is clear of them', () => {
+    expect(valuePlacement(2.78)).toEqual({ mode: 'above', bottomPct: chartPct(2.78) });
+    expect(valuePlacement(3.5)).toEqual({ mode: 'above', bottomPct: 62.5 }); // on the line
+    expect(valuePlacement(4.2).mode).toBe('above');
+    expect(valuePlacement(3.0).mode).toBe('above'); // line is above the label
+  });
+
+  it('moves a label inside the bar when the line would cross it', () => {
+    for (const rm of [3.2, 3.4, 3.49]) {
+      const place = valuePlacement(rm);
+      expect(place.mode).toBe('inside');
+      expect(place.bottomPct).toBeCloseTo(chartPct(rm) - LABEL_PCT);
+      expect(place.bottomPct + LABEL_PCT).toBeLessThanOrEqual(chartPct(3.5));
+    }
+  });
+
+  it('puts a label over the line when the bar is too short to hold it', () => {
+    const place = valuePlacement(1.2, 1.5); // line at 12.5%, bar top at 5%
+    expect(place.mode).toBe('above');
+    expect(place.bottomPct).toBeGreaterThan(chartPct(1.5));
+  });
+
+  it('never overlaps the line for any value, at any cut-off', () => {
+    for (const h of [2.5, 3, 3.5, 4, 4.5]) {
+      const line = chartPct(h);
+      for (let rm = 1; rm <= 5; rm += 0.01) {
+        const { bottomPct } = valuePlacement(rm, h);
+        const top = bottomPct + LABEL_PCT;
+        // the label box either ends below the line or starts above it
+        expect(top <= line || bottomPct >= line).toBe(true);
+      }
+    }
+  });
+
+  it('marks the placement on the rendered label', () => {
+    const html = render([{ factor_code: 'EC-TC', scored_count: 4, average_rm: 3.4 }]);
+    expect(html).toContain('data-placement="inside"');
+    expect(html).toContain('bottom:50%');
   });
 });

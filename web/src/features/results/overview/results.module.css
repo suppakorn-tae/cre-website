@@ -360,6 +360,11 @@
   color: var(--color-text-secondary);
   font-size: var(--text-caption);
 }
+.factorValue[data-placement='inside'] {
+  transform: none;
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+}
 .factorCode {
   position: absolute;
   top: 100%;
