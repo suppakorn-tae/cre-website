@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
-import { Button, EmptyState, KpiCard, LEVELS, Skeleton, Tabs } from '@/components/ui';
+import { Button, EmptyState, KpiCard, LEVELS, LevelBadge, Skeleton, Tabs } from '@/components/ui';
 import { ProjectSteps } from '@/features/shell/ProjectSteps';
 import { fetchProject, projectKey } from '@/features/versions/api';
 import { projectPaths } from '@/features/versions/rules';
@@ -165,12 +165,16 @@ export function ResultsPage({ projectId, versionId }: { projectId: string; versi
 
       <div className={styles.counts} role="group" aria-label={t('page.countsLabel')}>
         {[...LEVELS].reverse().map((level) => (
-          <KpiCard
-            key={level}
-            label={`${level} · ${tUi(`levels.${level}`)}`}
-            value={formatNumber(summary.level_counts[level])}
-            unit={t('page.indicatorUnit')}
-          />
+          <div key={level} className={styles.count} data-level={level}>
+            <span className={styles.countBadge}>
+              <LevelBadge level={level} label={tUi(`levels.${level}`)} />
+            </span>
+            <KpiCard
+              label={`${level} · ${tUi(`levels.${level}`)}`}
+              value={formatNumber(summary.level_counts[level])}
+              unit={t('page.indicatorUnit')}
+            />
+          </div>
         ))}
       </div>
 
