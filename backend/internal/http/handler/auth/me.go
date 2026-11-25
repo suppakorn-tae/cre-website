@@ -27,8 +27,12 @@ func me(svc *session.Service) http.HandlerFunc {
 			middleware.WriteError(w, r, http.StatusUnauthorized, "unauthenticated", "session is not valid")
 			return
 		}
+		if err != nil {
+			middleware.WriteError(w, r, http.StatusInternalServerError, "internal", "profile load failed")
+			return
+		}
 		id, perr := uuid.Parse(pr.ID)
-		if err != nil || perr != nil {
+		if perr != nil {
 			middleware.WriteError(w, r, http.StatusInternalServerError, "internal", "profile load failed")
 			return
 		}
