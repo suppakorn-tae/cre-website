@@ -149,6 +149,18 @@ func TestPanels(t *testing.T) {
 	if s, _ := svc.Projects(ctx, owner, dashboard.ProjectsParams{Q: "%", Page: 1, PageSize: 10}); len(s.Items) != 0 {
 		t.Fatalf("a literal %% must not match everything: %+v", s)
 	}
+	for _, q := range []string{"_", `\`, "Al_ha"} {
+		if s, _ := svc.Projects(ctx, owner, dashboard.ProjectsParams{Q: q, Page: 1, PageSize: 10}); len(s.Items) != 0 {
+			t.Fatalf("%q must match literally, got %+v", q, s)
+		}
+	}
+	if s, _ := svc.Projects(ctx, owner, dashboard.ProjectsParams{Q: "  beta  ", Page: 1, PageSize: 10}); len(s.Items) != 1 {
+		t.Fatalf("search is case-insensitive and trimmed: %+v", s)
+	}
+	// Newest project first.
+	if len(page.Items) != 3 || page.Items[0].Name != "Gamma" || page.Items[1].Name != "Beta" || page.Items[2].Name != "Alpha pier" {
+		t.Fatalf("order = %+v, want newest first", page.Items)
+	}
 	if s, _ := svc.Projects(ctx, owner, dashboard.ProjectsParams{Page: 3, PageSize: 2}); len(s.Items) != 0 || s.Total != 3 {
 		t.Fatalf("page past the end = %+v, want no items and total 3", s)
 	}

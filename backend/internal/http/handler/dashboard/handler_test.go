@@ -38,7 +38,7 @@ func (f *fakeReader) Summary(_ context.Context, o uuid.UUID) (svc.Summary, error
 	}, nil
 }
 
-func (f *fakeReader) Projects(_ context.Context, o uuid.UUID, p svc.ProjectsParams) (svc.ProjectsPage, error) {
+func (f *fakeReader) Projects(_ context.Context, o uuid.UUID, _ svc.ProjectsParams) (svc.ProjectsPage, error) {
 	f.asked = append(f.asked, o)
 	sub, n, rm, other := uuid.New(), 7, "3.25", "dock"
 	return svc.ProjectsPage{Total: 2, Items: []svc.ProjectItem{
