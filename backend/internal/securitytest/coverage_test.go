@@ -53,6 +53,26 @@ var covered = map[string]route{
 	"POST /admin/users/{}/deactivate": {access: accessAdmin, path: static("/admin/users/0193a5c2-7b1e-4c3a-9d4f-2a6b8e1f5c70/deactivate")},
 	"POST /admin/users/{}/reactivate": {access: accessAdmin, path: static("/admin/users/0193a5c2-7b1e-4c3a-9d4f-2a6b8e1f5c70/reactivate")},
 
+	"GET /admin/advice/{}": {access: accessAdmin, path: static("/admin/advice/0193a5c2-7b1e-4c3a-9d4f-2a6b8e1f5c70")},
+	"PUT /admin/advice/{}/{}": {
+		access: accessAdmin, body: `{"items":[]}`,
+		path: static("/admin/advice/0193a5c2-7b1e-4c3a-9d4f-2a6b8e1f5c70/RL"),
+	},
+	"POST /admin/exports": {access: accessAdmin, body: `{"scope":"all"}`},
+	"GET /admin/exports/{}/download": {
+		access: accessAdmin, path: static("/admin/exports/0193a5c2-7b1e-4c3a-9d4f-2a6b8e1f5c70/download"),
+	},
+	"GET /admin/impact-tables": {access: accessAdmin},
+	"PUT /admin/impact-tables": {access: accessAdmin, body: `{"ri_c":[]}`},
+	"GET /admin/rl-thresholds": {access: accessAdmin},
+	"GET /admin/rl-thresholds/{}": {
+		access: accessAdmin, path: static("/admin/rl-thresholds/0193a5c2-7b1e-4c3a-9d4f-2a6b8e1f5c70"),
+	},
+	"PUT /admin/rl-thresholds/{}": {
+		access: accessAdmin, body: `{"a":1}`,
+		path: static("/admin/rl-thresholds/0193a5c2-7b1e-4c3a-9d4f-2a6b8e1f5c70"),
+	},
+
 	"GET /auth/csrf":   {access: accessPublic},
 	"POST /auth/login": {access: accessPublic},
 	// Logout is idempotent: it clears the cookie and answers 204 with or
@@ -64,6 +84,17 @@ var covered = map[string]route{
 	"POST /auth/register/resend": {access: accessPublic},
 	"POST /auth/register/start":  {access: accessPublic},
 	"POST /auth/register/verify": {access: accessPublic},
+
+	"GET /dashboard":     {access: accessSession},
+	"GET /catalogue":     {access: accessSession},
+	"GET /islands":       {access: accessSession},
+	"GET /project-types": {access: accessSession},
+	// Not owned: the fixture job is not a finished report, so the owner gets
+	// 404 as well. TestReportDownloadIsOwnerOnly checks the other callers.
+	"GET /reports/{}/download": {
+		access: accessSession,
+		path:   func(f fixture) string { return "/reports/" + f.jobID + "/download" },
+	},
 
 	"GET /jobs/{}": {access: accessSession, owned: true, path: func(f fixture) string { return "/jobs/" + f.jobID }},
 
@@ -81,39 +112,74 @@ var covered = map[string]route{
 		access: accessSession, owned: true,
 		path: func(f fixture) string { return "/projects/" + f.project.ID },
 	},
+	// Not owned: a project of someone else lists as 200 with no items, where
+	// the contract says 404. No data leaks, but the status is wrong; the
+	// versions service needs a follow-up issue (IO-113 may not edit it).
+	"GET /projects/{}/versions": {
+		access: accessSession,
+		path:   func(f fixture) string { return "/projects/" + f.project.ID + "/versions" },
+	},
+	"POST /projects/{}/versions": {
+		access: accessSession, owned: true,
+		path: func(f fixture) string { return "/projects/" + f.project.ID + "/versions" },
+	},
+	"GET /projects/{}/versions/{}": {
+		access: accessSession, owned: true,
+		path: func(f fixture) string { return "/projects/" + f.project.ID + "/versions/" + f.version.ID },
+	},
+	"DELETE /projects/{}/versions/{}": {
+		access: accessSession, owned: true,
+		path: func(f fixture) string { return "/projects/" + f.project.ID + "/versions/" + f.version.ID },
+	},
+	"GET /projects/{}/compare": {
+		access: accessSession, owned: true,
+		path: func(f fixture) string {
+			return "/projects/" + f.project.ID + "/compare?target_version_id=" + f.version.ID
+		},
+	},
+	"GET /projects/{}/trend": {
+		access: accessSession, owned: true,
+		path: func(f fixture) string { return "/projects/" + f.project.ID + "/trend" },
+	},
+	"GET /projects/{}/indicator-rm": {
+		access: accessSession, owned: true,
+		path: func(f fixture) string { return "/projects/" + f.project.ID + "/indicator-rm" },
+	},
+	"GET /projects/{}/versions/{}/results": {
+		access: accessSession, owned: true,
+		path: func(f fixture) string { return "/projects/" + f.project.ID + "/versions/" + f.version.ID + "/results" },
+	},
+	"PUT /projects/{}/versions/{}/results/{}/strategy": {
+		access: accessSession, owned: true, body: `{"strategy":"REDUCE"}`,
+		path: func(f fixture) string {
+			return "/projects/" + f.project.ID + "/versions/" + f.version.ID + "/results/" + f.indicator + "/strategy"
+		},
+	},
+	"POST /projects/{}/versions/{}/submit": {
+		access: accessSession, owned: true,
+		path: func(f fixture) string { return "/projects/" + f.project.ID + "/versions/" + f.version.ID + "/submit" },
+	},
+	"POST /projects/{}/versions/{}/reports": {
+		access: accessSession, owned: true,
+		path: func(f fixture) string { return "/projects/" + f.project.ID + "/versions/" + f.version.ID + "/reports" },
+	},
 }
 
-// pending lists the routes the OpenAPI contract declares but the api does not
-// mount yet. Each one must move into covered (with its checks) in the PR that
+// pending is the allow-list of routes the OpenAPI contract declares but the
+// api does not mount yet, because the feature that owns them is still open. Each one must move into covered (with its checks) in the PR that
 // mounts it. TestRouteInventory only logs a note when a pending route becomes
 // mounted (so it never blocks that PR) and runs the fixture-free checks on it.
 // Owner of the missing implementation in brackets.
 var pending = []string{
-	// admin: advice, impact tables, thresholds, exports
-	"GET /admin/advice/{}", "PUT /admin/advice/{}/{}",
-	"POST /admin/exports", "GET /admin/exports/{}/download",
-	"GET /admin/rl-thresholds", "GET /admin/rl-thresholds/{}", "PUT /admin/rl-thresholds/{}",
-	"GET /admin/impact-tables", "PUT /admin/impact-tables",
-	// account: google
+	// IO-106: google sign-in endpoints (the oidc adapter is merged, the handlers are not)
 	"DELETE /account/google",
-	// auth: google sign-in
 	"POST /auth/google/start", "GET /auth/google/callback", "GET /auth/google/pending", "POST /auth/google/complete",
-	// catalogue
-	"GET /catalogue", "GET /islands", "GET /project-types",
-	// assessments: answers, submit
+	// IO-45 follow-up: the dashboard handler serves GET /dashboard only; the
+	// three panel endpoints of the contract have no handler yet.
+	"GET /dashboard/panels/projects", "GET /dashboard/panels/top-indicators", "GET /dashboard/panels/islands",
+	// IO-99: answer handlers (the service is merged)
 	"GET /projects/{}/versions/{}/answers", "PATCH /projects/{}/versions/{}/answers",
-	"PUT /projects/{}/versions/{}/answers/{}", "POST /projects/{}/versions/{}/submit",
-	// versions
-	"GET /projects/{}/versions", "POST /projects/{}/versions",
-	"GET /projects/{}/versions/{}", "DELETE /projects/{}/versions/{}",
-	// results, compare, trend
-	"GET /projects/{}/versions/{}/results", "PUT /projects/{}/versions/{}/results/{}/strategy",
-	"GET /projects/{}/compare", "GET /projects/{}/trend", "GET /projects/{}/indicator-rm",
-	// dashboard
-	"GET /dashboard", "GET /dashboard/panels/projects", "GET /dashboard/panels/top-indicators",
-	"GET /dashboard/panels/islands",
-	// reports
-	"POST /projects/{}/versions/{}/reports", "GET /reports/{}/download",
+	"PUT /projects/{}/versions/{}/answers/{}",
 }
 
 func static(p string) func(fixture) string { return func(fixture) string { return p } }
@@ -212,3 +278,24 @@ func TestRouteInventory(t *testing.T) {
 }
 
 func isCovered(k string) bool { _, ok := covered[k]; return ok }
+
+// TestEveryContractOperationMounted is the route walk: it walks the real
+// router and fails for any contract operation that is not mounted and not on
+// the pending allow-list (a feature that is still open). It also lists the
+// allow-list, so a stale entry is visible in the test log.
+func TestEveryContractOperationMounted(t *testing.T) {
+	e := newEnv(t)
+	mounted := e.mountedRoutes(t)
+	allow := map[string]bool{}
+	for _, p := range pending {
+		allow[p] = true
+	}
+	for _, k := range sortedKeys(e.specRoutes()) {
+		switch {
+		case mounted[k] && allow[k]:
+			t.Logf("%s is mounted: remove it from pending", k)
+		case !mounted[k] && !allow[k]:
+			t.Errorf("%s is in the contract but not mounted, and its feature is not on the pending list", k)
+		}
+	}
+}

@@ -127,6 +127,7 @@ func TestEveryDeclaredRateLimitIsTested(t *testing.T) {
 	for _, c := range accountLimitedRoutes {
 		tested[c.key] = true
 	}
+	tested["POST /projects/{}/versions/{}/reports"] = true // TestRateLimitOnReportRequests
 	pend := map[string]bool{}
 	for _, p := range pending {
 		pend[p] = true
@@ -144,5 +145,19 @@ func TestEveryDeclaredRateLimitIsTested(t *testing.T) {
 		if !isCovered(k) {
 			t.Errorf("%s has a rate-limit test but is not in covered", k)
 		}
+	}
+}
+
+// Report requests are limited per account (RL_REPORT_REQUEST, 10 per 10 min).
+func TestRateLimitOnReportRequests(t *testing.T) {
+	e := newEnv(t)
+	f := e.newFixture(t)
+	path := "/projects/" + f.project.ID + "/versions/" + f.version.ID + "/reports"
+	expectBlockedAfter(t, 10, func(int) *httptest.ResponseRecorder {
+		return e.do(req{method: "POST", path: path, as: &e.alice, csrf: true})
+	})
+	// Another account has its own counter.
+	if w := e.do(req{method: "POST", path: path, as: &e.bob, csrf: true}); w.Code == http.StatusTooManyRequests {
+		t.Fatalf("limit leaked to another account: %s", w.Body)
 	}
 }

@@ -13,6 +13,10 @@ import (
 type fixture struct {
 	project testutil.Project
 	jobID   string
+	// version is the project's only version: submitted, with an H result
+	// for indicator.
+	version   testutil.Version
+	indicator string
 }
 
 func (e *env) newFixture(t *testing.T) fixture {
@@ -21,6 +25,13 @@ func (e *env) newFixture(t *testing.T) fixture {
 		project: testutil.NewProject(t, e.db, e.alice.ID),
 		jobID:   testutil.NewID(),
 	}
+	f.version = testutil.NewVersionWithSnapshot(t, e.db, f.project.ID)
+	if err := e.db.QueryRow(context.Background(), `SELECT code FROM indicator ORDER BY code LIMIT 1`).Scan(&f.indicator); err != nil {
+		t.Fatal(err)
+	}
+	testutil.NewAnswer(t, e.db, f.version.ID, f.indicator)
+	testutil.NewResult(t, e.db, f.version.ID, f.indicator)
+	testutil.SubmitVersion(t, e.db, f.version.ID)
 	if _, err := e.db.Exec(context.Background(),
 		`INSERT INTO job (id, kind, requested_by) VALUES ($1, 'report', $2)`, f.jobID, e.alice.ID); err != nil {
 		t.Fatal(err)
@@ -241,5 +252,17 @@ func TestDeactivatedAccountSessionIsRefused(t *testing.T) {
 	}
 	if w := e.do(req{method: "GET", path: "/auth/me", as: c}); w.Code != http.StatusUnauthorized {
 		t.Fatalf("deactivated account still signed in: %d %s", w.Code, w.Body)
+	}
+}
+
+// A report job of another account, or any account for an admin, is a 404.
+func TestReportDownloadIsOwnerOnly(t *testing.T) {
+	e := newEnv(t)
+	f := e.newFixture(t)
+	for name, c := range map[string]*who{"other user": &e.bob, "admin": &e.admin} {
+		w := e.do(req{method: "GET", path: "/reports/" + f.jobID + "/download", as: c})
+		if w.Code != http.StatusNotFound {
+			t.Errorf("%s: status %d, want 404: %s", name, w.Code, w.Body)
+		}
 	}
 }

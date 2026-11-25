@@ -2,6 +2,8 @@ package securitytest
 
 import (
 	"context"
+	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -110,7 +112,11 @@ func newEnv(t *testing.T) *env {
 		t.Fatal(err)
 	}
 	e := &env{
-		h:    apihttp.NewRouter(apihttp.Deps{Deps: d, Metrics: metrics.New(), Health: health.New(time.Second)}),
+		h: apihttp.NewRouter(apihttp.Deps{
+			Deps: d, Metrics: metrics.New(), Health: health.New(time.Second),
+			// Report requests need a store and a queue: stand-ins here.
+			FileStore: noStore{}, Enqueuer: noQueue{},
+		}),
 		db:   db,
 		sess: d.Sessions,
 		spec: spec,
@@ -165,3 +171,13 @@ func (e *env) do(r req) *httptest.ResponseRecorder {
 	e.h.ServeHTTP(w, hr)
 	return w
 }
+
+// noStore is a report store with no files.
+type noStore struct{}
+
+func (noStore) Get(context.Context, string) (io.ReadCloser, error) { return nil, errors.New("no file") }
+
+// noQueue accepts jobs and drops them.
+type noQueue struct{}
+
+func (noQueue) Enqueue(context.Context, string, []byte, string) error { return nil }
