@@ -137,8 +137,8 @@ func TestScoreAllMatchesGolden(t *testing.T) {
 		Cases []goldenCase `json:"cases"`
 	}
 	var th struct {
-		RIC        map[string]float64            `json:"ri_c"`
-		RIT        map[string]float64            `json:"ri_t"`
+		RIC        map[string]float64             `json:"ri_c"`
+		RIT        map[string]float64             `json:"ri_t"`
 		Indicators map[string]map[string]*float64 `json:"indicators"`
 	}
 	readJSON(t, "golden.json", &g)

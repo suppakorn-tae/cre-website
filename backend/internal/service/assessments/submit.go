@@ -39,12 +39,12 @@ type Frozen struct {
 
 // Complete is one complete indicator (BR-09), in the units it was answered.
 type Complete struct {
-	Code     string
-	X        float64
-	Y1, Y2   float64
-	Y1Unit   string
-	Y2Unit   string
-	Y3       []string
+	Code   string
+	X      float64
+	Y1, Y2 float64
+	Y1Unit string
+	Y2Unit string
+	Y3     []string
 }
 
 // Scored is the engine outcome of one indicator with the converted inputs.
