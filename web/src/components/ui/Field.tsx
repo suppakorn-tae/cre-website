@@ -1,6 +1,8 @@
+import { IconAlertCircle, IconCircleCheck } from '@tabler/icons-react';
 import type { ReactNode } from 'react';
 
 import styles from './forms.module.css';
+import { Icon } from './Icon';
 
 export type FieldMessages = {
   helper?: ReactNode;
@@ -42,6 +44,26 @@ export function LabelText({
   );
 }
 
+/** Error text under a field: alert icon (16) and the message. */
+export function FieldError({ id, children }: { id?: string; children: ReactNode }) {
+  return (
+    <p id={id} className={styles.errorText} role="alert">
+      <Icon icon={IconAlertCircle} size={16} className={styles.messageIcon} />
+      <span>{children}</span>
+    </p>
+  );
+}
+
+/** Success text under a field, e.g. "passwords match": check icon (16) and the message. */
+export function FieldOk({ id, children }: { id?: string; children: ReactNode }) {
+  return (
+    <p id={id} className={styles.okText}>
+      <Icon icon={IconCircleCheck} size={16} className={styles.messageIcon} />
+      <span>{children}</span>
+    </p>
+  );
+}
+
 export function FieldMessage({
   id,
   helper,
@@ -52,11 +74,7 @@ export function FieldMessage({
   const { helperId, errorId } = messageIds(id, { helper, error });
   return (
     <>
-      {error && (
-        <p id={errorId} className={styles.errorText} role="alert">
-          {error}
-        </p>
-      )}
+      {error && <FieldError id={errorId}>{error}</FieldError>}
       {helper && (
         <p id={helperId} className={styles.helper}>
           {helper}

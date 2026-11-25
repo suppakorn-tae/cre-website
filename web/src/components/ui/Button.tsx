@@ -12,6 +12,8 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
   fullWidth?: boolean;
   /** Leading icon. Icon-only buttons must also pass `aria-label`. */
   icon?: ReactNode;
+  /** Trailing icon, e.g. an arrow on the primary action of a form. */
+  trailingIcon?: ReactNode;
 };
 
 export function Button({
@@ -19,6 +21,7 @@ export function Button({
   size = 'md',
   fullWidth,
   icon,
+  trailingIcon,
   className,
   type = 'button',
   children,
@@ -39,6 +42,7 @@ export function Button({
     >
       {icon}
       {children}
+      {trailingIcon}
     </button>
   );
 }

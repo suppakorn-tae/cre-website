@@ -128,11 +128,24 @@
   font-size: var(--text-caption);
   line-height: var(--leading-caption);
 }
-.errorText {
+.errorText,
+.okText {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
   margin: 0;
-  color: var(--color-error);
   font-size: var(--text-caption);
   line-height: var(--leading-caption);
+}
+.errorText {
+  color: var(--color-error);
+}
+.okText {
+  color: var(--color-success);
+}
+.messageIcon {
+  flex: none;
+  margin-top: 1px;
 }
 
 /* Text input, number input, select */
@@ -170,6 +183,50 @@
 }
 .numeric {
   font-variant-numeric: tabular-nums;
+}
+
+/* Control with an icon inside: leading (mail, lock, search) or trailing (chevron, toggle) */
+.controlWrap {
+  position: relative;
+}
+.lead,
+.trail {
+  position: absolute;
+  top: 50%;
+  display: inline-flex;
+  transform: translateY(-50%);
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+.lead {
+  inset-inline-start: var(--space-3);
+}
+.trail {
+  inset-inline-end: var(--space-3);
+}
+.control:disabled ~ .lead,
+.control:disabled ~ .trail {
+  color: var(--color-disabled);
+}
+.control.hasLead {
+  padding-inline-start: var(--space-10);
+}
+.control.hasTrail {
+  padding-inline-end: var(--space-10);
+}
+.control[data-valid='true'] {
+  border-color: var(--color-success);
+}
+select.control {
+  appearance: none;
+}
+/* The password toggle is a real button, so it takes pointer events */
+.toggleSlot {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: var(--space-1);
+  display: flex;
+  align-items: center;
 }
 .withSuffix {
   display: flex;
