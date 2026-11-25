@@ -97,6 +97,33 @@ func TestGetReturnsStoredResultsWithCounts(t *testing.T) {
 	}
 }
 
+func TestGetReturnsStoredFactorAverages(t *testing.T) {
+	f := setup(t)
+	res, err := f.svc.Get(context.Background(), f.project, f.version, f.owner)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Stored RM: 4 for the H result, 3 for the M result.
+	sum := map[string]float64{}
+	count := map[string]int{}
+	for code, rm := range map[string]float64{f.high: 4, f.mid: 3} {
+		var factor string
+		if err := f.db.QueryRow(context.Background(), `SELECT factor_code FROM indicator WHERE code = $1`, code).Scan(&factor); err != nil {
+			t.Fatal(err)
+		}
+		sum[factor] += rm
+		count[factor]++
+	}
+	if len(res.FactorAverages) != len(count) {
+		t.Fatalf("factor averages = %+v, want %d factors", res.FactorAverages, len(count))
+	}
+	for _, a := range res.FactorAverages {
+		if a.ScoredCount != count[a.FactorCode] || a.AverageRM != sum[a.FactorCode]/float64(count[a.FactorCode]) {
+			t.Fatalf("average of %s = %+v, want %v over %d", a.FactorCode, a, sum[a.FactorCode], count[a.FactorCode])
+		}
+	}
+}
+
 func TestEditedAdviceShowsWithoutResubmitting(t *testing.T) {
 	f := setup(t)
 	ctx := context.Background()

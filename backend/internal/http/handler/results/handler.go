@@ -142,7 +142,11 @@ func toAPI(res svc.Results) api.ResultsResponse {
 			ScoredCount: len(res.Items), AverageRm: &avg,
 			LevelCounts: api.LevelCounts{VL: lc["VL"], L: lc["L"], M: lc["M"], H: lc["H"], VH: lc["VH"]},
 		},
-		Items: make([]api.IndicatorResult, len(res.Items)),
+		FactorAverages: make([]api.FactorAverage, len(res.FactorAverages)),
+		Items:          make([]api.IndicatorResult, len(res.Items)),
+	}
+	for i, f := range res.FactorAverages {
+		out.FactorAverages[i] = api.FactorAverage{FactorCode: f.FactorCode, ScoredCount: f.ScoredCount, AverageRm: float32(f.AverageRM)}
 	}
 	for i, it := range res.Items {
 		r := api.IndicatorResult{

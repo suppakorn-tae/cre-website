@@ -2,6 +2,7 @@ package results_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -43,6 +44,10 @@ func (fake) Get(_ context.Context, p, v, o uuid.UUID) (svc.Results, error) {
 	return svc.Results{
 		VersionID: v, SubmittedAt: at, Editable: v == latest, AverageRM: 3.2,
 		LevelCounts: map[string]int{"L": 1, "H": 1},
+		FactorAverages: []svc.FactorAverage{
+			{FactorCode: "EC-MG", ScoredCount: 1, AverageRM: 2},
+			{FactorCode: "EC-HS", ScoredCount: 1, AverageRM: 3.5},
+		},
 		Items: []svc.Indicator{
 			{Code: "EC-MG-1", X: 2, Y1Pct: 1.5, Y2Pct: 3, RL: 2, RIC: 2, RIT: 2, RIE: 2, RIMax: 2, RM: 2, Level: "L"},
 			{
@@ -180,6 +185,25 @@ func TestNotHighRiskCodeAndLatestFlag(t *testing.T) {
 	_, body = call(t, owner.String(), http.MethodGet, base+old.String()+"/results?locale=en", "")
 	if !strings.Contains(body, `"editable":false`) || !strings.Contains(body, "th one") || !strings.Contains(body, `"VH":0`) {
 		t.Fatalf("body = %s", body)
+	}
+}
+
+func TestFactorAveragesAreServedInOrder(t *testing.T) {
+	base := "/api/v1/projects/" + project.String() + "/versions/"
+	_, body := call(t, owner.String(), http.MethodGet, base+latest.String()+"/results", "")
+	var got struct {
+		FactorAverages []struct {
+			FactorCode  string  `json:"factor_code"`
+			ScoredCount int     `json:"scored_count"`
+			AverageRM   float64 `json:"average_rm"`
+		} `json:"factor_averages"`
+	}
+	if err := json.Unmarshal([]byte(body), &got); err != nil {
+		t.Fatal(err)
+	}
+	if len(got.FactorAverages) != 2 || got.FactorAverages[0].FactorCode != "EC-MG" || got.FactorAverages[0].AverageRM != 2 ||
+		got.FactorAverages[1].FactorCode != "EC-HS" || got.FactorAverages[1].AverageRM != 3.5 || got.FactorAverages[1].ScoredCount != 1 {
+		t.Fatalf("factor_averages = %+v", got.FactorAverages)
 	}
 }
 
