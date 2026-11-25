@@ -83,30 +83,22 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     await page.context().close();
   });
 
-  test('create a project and a first version', async () => {
+  test('create a project, which comes with a first version', async () => {
+    // Creating a project also stores v1 as a blank draft (IO-169).
     projectId = await api.createProject({ name: projectName, nickname });
-    await go(page, '/projects');
-    await expect(page.getByText(projectName).first()).toBeVisible();
-
-    await go(page, `/projects/${projectId}`);
-    await page
-      .getByRole('button', { name: msg('versions', 'list.create') })
-      .first()
-      .click();
-    await page
-      .getByRole('alertdialog')
-      .getByRole('button', { name: msg('versions', 'create.confirm') })
-      .click();
-    await expect(
-      page.getByRole('link', { name: msg('versions', 'list.actions.answer') }),
-    ).toBeVisible();
-
     const versions = await json<{ items: { id: string; version_no: number; status: string }[] }>(
       await api.get(`/projects/${projectId}/versions`),
     );
     expect(versions.items).toHaveLength(1);
     expect(versions.items[0]).toMatchObject({ version_no: 1, status: 'draft' });
     v1 = versions.items[0]!.id;
+
+    await go(page, '/projects');
+    await expect(page.getByText(projectName).first()).toBeVisible();
+
+    // The project page links straight to answering v1.
+    await go(page, `/projects/${projectId}`);
+    await expect(page.locator(`a[href$="/versions/${v1}/assess"]`).first()).toBeVisible();
   });
 
   test('answer three indicators, autosave keeps them, and submit scores them', async () => {
