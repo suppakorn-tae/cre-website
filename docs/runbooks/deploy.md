@@ -60,15 +60,26 @@ read-only token (`docker login ghcr.io`) if the packages are private.
 
 ### Google sign-in
 
-In Google Cloud Console, OAuth client (Web application):
+Without `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` the api still starts
+and `/api/v1/auth/google/*` answers 503 `google_unavailable`. To enable it:
 
-- Authorized redirect URI: `https://conriskexpert.com/api/v1/auth/google/callback`
-- Authorized JavaScript origin: `https://conriskexpert.com`
+1. In Google Cloud Console open APIs & Services, OAuth consent screen and
+   configure it (External, scopes `openid`, `email`, `profile`).
+2. Credentials, Create credentials, OAuth client ID, type Web application.
+3. Authorized redirect URI: `PUBLIC_BASE_URL` + `/api/v1/auth/google/callback`,
+   for example `https://conriskexpert.com/api/v1/auth/google/callback`.
+4. Authorized JavaScript origin: the value of `PUBLIC_BASE_URL`
+   (`https://conriskexpert.com`).
+5. Put the client id and secret in `.env.prod` as `GOOGLE_CLIENT_ID` and
+   `GOOGLE_CLIENT_SECRET`. `PUBLIC_BASE_URL` must be set (it already is).
+   Set `GOOGLE_REDIRECT_URL` only if the registered callback differs from
+   the default above.
+6. Redeploy the api and check that
+   `curl -si https://<host>/api/v1/auth/google/start` redirects to
+   `accounts.google.com` instead of returning 503.
 
-Put the client id and secret in `.env.prod` as `GOOGLE_CLIENT_ID` and
-`GOOGLE_CLIENT_SECRET`. These names must match what the Google auth
-backend reads (IO-105, IO-106); if they differ once it lands, align
-`compose.prod.yaml`, `env.prod.example` and this page.
+Optional limits: `RL_GOOGLE_IP_LIMIT`/`_WINDOW` (default 30 per 15m per IP)
+and `RL_REPORT_REQUEST_LIMIT`/`_WINDOW` (default 10 per 10m per account).
 
 ### Backup
 
