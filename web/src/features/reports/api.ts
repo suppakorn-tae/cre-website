@@ -37,3 +37,6 @@ export async function fetchJob(jobId: string): Promise<Job> {
 
 /** The api streams the PDF after its own session and ownership check. */
 export const downloadUrl = (jobId: string) => `/api/v1/reports/${jobId}/download`;
+
+/** Same file with `disposition=inline`, so a frame shows it instead of saving it. */
+export const inlineUrl = (jobId: string) => `${downloadUrl(jobId)}?disposition=inline`;
