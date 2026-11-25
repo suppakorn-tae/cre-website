@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	authh "github.com/suppakorn-tae/cre-website/backend/internal/http/handler/auth"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/middleware"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/app"
 	svc "github.com/suppakorn-tae/cre-website/backend/internal/service/account"
@@ -30,5 +31,6 @@ func Routes(r chi.Router, d app.Deps) {
 	r.Get("/", h.get)
 	r.Patch("/", h.update)
 	r.With(rl("RL_ACCOUNT_DELETE", 5, 15*time.Minute, keyAccount)).Delete("/", h.delete)
+	r.Delete("/google", authh.UnlinkGoogleHandler(d)) // unlink Google (IO-106, google.go in handler/auth)
 	r.With(rl("RL_ACCOUNT_PASSWORD", 10, 15*time.Minute, keyAccount)).Put("/password", h.changePassword)
 }

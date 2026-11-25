@@ -127,6 +127,8 @@ func TestEveryDeclaredRateLimitIsTested(t *testing.T) {
 	for _, c := range accountLimitedRoutes {
 		tested[c.key] = true
 	}
+	tested["POST /auth/google/start"] = true               // TestRateLimitOnGoogleRoutes
+	tested["POST /auth/google/complete"] = true            // TestRateLimitOnGoogleRoutes
 	tested["POST /projects/{}/versions/{}/reports"] = true // TestRateLimitOnReportRequests
 	pend := map[string]bool{}
 	for _, p := range pending {
@@ -159,5 +161,19 @@ func TestRateLimitOnReportRequests(t *testing.T) {
 	// Another account has its own counter.
 	if w := e.do(req{method: "POST", path: path, as: &e.bob, csrf: true}); w.Code == http.StatusTooManyRequests {
 		t.Fatalf("limit leaked to another account: %s", w.Body)
+	}
+}
+
+// Google start and complete are limited per IP only (RL_GOOGLE_IP, 30 per
+// 15 min); the handler behind the limit answers 503 here (no Google config).
+func TestRateLimitOnGoogleRoutes(t *testing.T) {
+	e := newEnv(t)
+	for n, p := range []string{"/auth/google/start", "/auth/google/complete"} {
+		t.Run("POST "+p, func(t *testing.T) {
+			addr := fmt.Sprintf("198.51.100.%d", n+1)
+			expectBlockedAfter(t, 30, func(int) *httptest.ResponseRecorder {
+				return e.do(req{method: "POST", path: p, csrf: true, addr: addr, body: `{"intent":"login"}`})
+			})
+		})
 	}
 }
