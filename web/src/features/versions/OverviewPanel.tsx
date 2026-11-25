@@ -10,6 +10,7 @@ import type { Project, VersionSummary } from './api';
 import {
   hvhDelta,
   latestVersion,
+  levelParts,
   newestFirst,
   periodDays,
   projectPaths,
@@ -22,10 +23,18 @@ type Props = {
   versions: VersionSummary[];
   onCreate: () => void;
   onShowVersions: () => void;
+  /** Indicators in the catalogue; undefined until it has loaded. */
+  indicatorTotal?: number;
 };
 
 /** Overview tab: latest version, project information and recent versions (UC-05, UC-06). */
-export function OverviewPanel({ project, versions, onCreate, onShowVersions }: Props) {
+export function OverviewPanel({
+  project,
+  versions,
+  onCreate,
+  onShowVersions,
+  indicatorTotal,
+}: Props) {
   const latest = latestVersion(versions) ?? newestFirst(versions)[0];
   return (
     <div className={styles.overview}>
@@ -35,6 +44,7 @@ export function OverviewPanel({ project, versions, onCreate, onShowVersions }: P
           versions={versions}
           latest={latest}
           onCreate={onCreate}
+          indicatorTotal={indicatorTotal}
         />
         <ProjectInfoCard project={project} />
       </div>
@@ -48,11 +58,13 @@ function LatestVersionCard({
   versions,
   latest,
   onCreate,
+  indicatorTotal,
 }: {
   projectId: string;
   versions: VersionSummary[];
   latest: VersionSummary | undefined;
   onCreate: () => void;
+  indicatorTotal?: number;
 }) {
   const t = useTranslations('versions.overview');
   const tList = useTranslations('versions.list');
@@ -93,18 +105,7 @@ function LatestVersionCard({
           <p className={styles.muted}>
             {t('latest.submittedAt', { at: formatDateTime(latest.submitted_at) })}
           </p>
-          <div className={styles.levelRow}>
-            {latest.very_high_count !== null && (
-              <LevelBadge
-                level="VH"
-                count={latest.very_high_count}
-                label={tList('levelVeryHigh')}
-              />
-            )}
-            {latest.high_count !== null && (
-              <LevelBadge level="H" count={latest.high_count} label={tList('levelHigh')} />
-            )}
-          </div>
+          <LevelSummary version={latest} indicatorTotal={indicatorTotal} />
           <dl className={styles.stats}>
             <div>
               <dt>{tList('columns.averageRm')}</dt>
@@ -153,6 +154,57 @@ function LatestVersionCard({
         {tList('create')}
       </Button>
     </section>
+  );
+}
+
+/** Level chips VL to VH, the stacked bar and "scored/total indicators" from the stored counts. */
+function LevelSummary({
+  version,
+  indicatorTotal,
+}: {
+  version: VersionSummary;
+  indicatorTotal?: number;
+}) {
+  const t = useTranslations('versions.overview.latest');
+  const tUi = useTranslations('ui');
+  const parts = levelParts(version);
+  if (!parts) {
+    return <p className={styles.muted}>{t('noLevels')}</p>;
+  }
+  const scored = version.scored_count ?? parts.reduce((sum, p) => sum + p.count, 0);
+  return (
+    <div className={styles.levelSummary}>
+      <div className={styles.levelRow}>
+        {parts.map((p) => (
+          <LevelBadge
+            key={p.level}
+            level={p.level}
+            count={p.count}
+            label={tUi(`levels.${p.level}`)}
+          />
+        ))}
+      </div>
+      <div role="img" aria-label={t('barLabel')} className={styles.levelBar}>
+        {parts
+          .filter((p) => p.count > 0)
+          .map((p) => (
+            <span
+              key={p.level}
+              className={styles.levelBarPart}
+              data-level={p.level}
+              style={{ flexGrow: p.count }}
+            />
+          ))}
+      </div>
+      <p className={styles.muted}>
+        {indicatorTotal
+          ? t('scoredOfTotal', {
+              scored: formatNumber(scored),
+              total: formatNumber(indicatorTotal),
+            })
+          : t('scored', { scored: formatNumber(scored) })}
+      </p>
+    </div>
   );
 }
 

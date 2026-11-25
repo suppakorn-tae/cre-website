@@ -4,6 +4,7 @@ import type { components } from '@/lib/api/generated/schema';
 export type Project = components['schemas']['Project'];
 export type VersionSummary = components['schemas']['VersionSummary'];
 
+export const catalogueTotalKey = ['catalogue', 'indicator-total'] as const;
 export const projectKey = (projectId: string) => ['projects', projectId] as const;
 export const versionsKey = (projectId: string) => ['projects', projectId, 'versions'] as const;
 
@@ -34,4 +35,14 @@ export async function deleteVersion(projectId: string, versionId: string): Promi
   await browserApi().DELETE('/projects/{project_id}/versions/{version_id}', {
     params: { path: { project_id: projectId, version_id: versionId } },
   });
+}
+
+/** Number of indicators in the catalogue, the denominator of "scored/total". */
+export async function fetchIndicatorTotal(): Promise<number> {
+  const { data } = await browserApi().GET('/catalogue', { params: { query: {} } });
+  let total = 0;
+  for (const dimension of data?.dimensions ?? []) {
+    for (const factor of dimension.factors) total += factor.indicators.length;
+  }
+  return total;
 }

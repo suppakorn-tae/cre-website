@@ -9,8 +9,10 @@ import { Button, ConfirmDialog, EmptyState, Skeleton, Toast } from '@/components
 import { ApiError } from '@/lib/api/errors';
 
 import {
+  catalogueTotalKey,
   createVersion,
   deleteVersion,
+  fetchIndicatorTotal,
   fetchProject,
   fetchVersions,
   projectKey,
@@ -31,6 +33,11 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const project = useQuery({
     queryKey: projectKey(projectId),
     queryFn: () => fetchProject(projectId),
+  });
+  const total = useQuery({
+    queryKey: catalogueTotalKey,
+    queryFn: fetchIndicatorTotal,
+    staleTime: Infinity,
   });
   const versions = useQuery({
     queryKey: versionsKey(projectId),
@@ -138,6 +145,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                   versions={versions.data}
                   onCreate={() => setCreating(true)}
                   onShowVersions={() => setTab('versions')}
+                  indicatorTotal={total.data}
                 />
               )
             ) : (

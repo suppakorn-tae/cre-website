@@ -55,3 +55,12 @@ export function hvhDelta(versions: VersionSummary[]): number | null {
 export function recentVersions(versions: VersionSummary[], count: number): VersionSummary[] {
   return newestFirst(versions).slice(0, count);
 }
+
+export const LEVEL_ORDER = ['VL', 'L', 'M', 'H', 'VH'] as const;
+
+/** The five counts, VL to VH, or null while the version is a draft (nothing stored). */
+export function levelParts(v: VersionSummary) {
+  const counts = v.level_counts;
+  if (!counts) return null;
+  return LEVEL_ORDER.map((level) => ({ level, count: counts[level] }));
+}

@@ -327,3 +327,38 @@
     width: 100%;
   }
 }
+
+.levelSummary {
+  margin-bottom: var(--space-3);
+}
+.levelSummary .levelRow {
+  margin-bottom: var(--space-2);
+}
+.levelSummary .muted {
+  margin: var(--space-2) 0 0;
+}
+.levelBar {
+  display: flex;
+  height: 0.75rem;
+  overflow: hidden;
+  border-radius: var(--radius-pill);
+  background: var(--color-subtle);
+}
+.levelBarPart {
+  min-width: 2px;
+}
+.levelBarPart[data-level='VL'] {
+  background: var(--level-vl);
+}
+.levelBarPart[data-level='L'] {
+  background: var(--level-l);
+}
+.levelBarPart[data-level='M'] {
+  background: var(--level-m);
+}
+.levelBarPart[data-level='H'] {
+  background: var(--level-h);
+}
+.levelBarPart[data-level='VH'] {
+  background: var(--level-vh);
+}
