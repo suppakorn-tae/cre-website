@@ -12,6 +12,15 @@
 .dialog::backdrop {
   background: rgba(15, 42, 74, 0.45);
 }
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+.headText {
+  flex: 1;
+  min-width: 0;
+}
 .title {
   margin: 0 0 var(--space-2);
   font-size: var(--text-h2);
@@ -64,6 +73,25 @@
 .info {
   border-inline-start-color: var(--color-info);
 }
+.warning {
+  border-inline-start-color: var(--color-warning);
+}
+.toastIcon {
+  flex: none;
+  margin-top: 1px;
+}
+.successIcon {
+  color: var(--color-success);
+}
+.errorIcon {
+  color: var(--color-error);
+}
+.infoIcon {
+  color: var(--color-info);
+}
+.warningIcon {
+  color: var(--color-warning);
+}
 .toastText {
   flex: 1;
   min-width: 0;
@@ -81,22 +109,4 @@
   color: var(--color-text-secondary);
   font-size: var(--text-small);
   line-height: var(--leading-small);
-}
-.close {
-  flex: none;
-  min-width: var(--control-sm);
-  min-height: var(--control-sm);
-  border: 0;
-  border-radius: var(--radius-control);
-  background: transparent;
-  color: var(--color-text-muted);
-  font: inherit;
-  cursor: pointer;
-}
-.close:hover {
-  background: var(--color-subtle);
-}
-.close:focus-visible {
-  outline: 2px solid transparent;
-  box-shadow: var(--focus-ring);
 }
