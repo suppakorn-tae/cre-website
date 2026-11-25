@@ -3,6 +3,8 @@
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 
+import { FieldError } from '@/components/ui';
+
 import { RETENTION_NOTICE_PATH, TERMS_PATH } from './google';
 import styles from './register.module.css';
 
@@ -47,11 +49,7 @@ export function ConsentCheckboxes({
             </a>
           </span>
         </label>
-        {retentionError && (
-          <p className={styles.errorText} role="alert">
-            {retentionError}
-          </p>
-        )}
+        {retentionError && <FieldError>{retentionError}</FieldError>}
       </div>
       <div>
         <label className={styles.consent}>
@@ -68,11 +66,7 @@ export function ConsentCheckboxes({
             </a>
           </span>
         </label>
-        {termsError && (
-          <p className={styles.errorText} role="alert">
-            {termsError}
-          </p>
-        )}
+        {termsError && <FieldError>{termsError}</FieldError>}
       </div>
     </fieldset>
   );

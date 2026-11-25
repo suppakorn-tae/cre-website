@@ -22,16 +22,12 @@ const wrap = (node: ReactNode) =>
   );
 
 describe('AccountMenu', () => {
-  it('shows role and the admin link only for admins', () => {
-    const user = wrap(<AccountMenu user={{ email: 'a@b.th', isAdmin: false }} />);
-    expect(user).toContain('บทบาท: ผู้ประเมิน');
-    expect(user).toContain('บัญชีของฉัน');
-    expect(user).toContain('ออกจากระบบ');
-    expect(user).not.toContain('/admin/users');
-
-    const admin = wrap(<AccountMenu user={{ email: 'a@b.th', isAdmin: true }} />);
-    expect(admin).toContain('บทบาท: ผู้ดูแลระบบ');
-    expect(admin).toContain('/admin/users');
+  it('renders the closed trigger with the e-mail, a chevron and a name', () => {
+    const html = wrap(<AccountMenu user={{ email: 'a@b.th', isAdmin: false }} />);
+    expect(html).toContain('a@b.th');
+    expect(html).toContain('aria-label="เมนูบัญชี"');
+    expect(html).toContain('tabler-icon-chevron-down');
+    expect(html).not.toContain('role="menu"');
   });
 });
 

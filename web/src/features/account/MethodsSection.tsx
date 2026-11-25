@@ -1,10 +1,11 @@
 'use client';
 
+import { IconLock, IconUnlink } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
-import { Button, ConfirmDialog } from '@/components/ui';
+import { Alert, Button, ConfirmDialog, GoogleMark, Icon } from '@/components/ui';
 
 import { canUnlinkGoogle, classifyUnlinkFailure } from './account';
 import styles from './account.module.css';
@@ -14,6 +15,7 @@ import { useFailureText } from './useFailureText';
 /** Sign-in methods: e-mail + password, and Google link / unlink (UC-04 1d-1f). */
 export function MethodsSection({ account }: { account: Account }) {
   const t = useTranslations('account.methods');
+  const tUi = useTranslations('ui');
   const failureText = useFailureText();
   const queryClient = useQueryClient();
   const methods = account.sign_in_methods;
@@ -57,19 +59,14 @@ export function MethodsSection({ account }: { account: Account }) {
         {t('title')}
       </h2>
       <p className={styles.muted}>{t('subtitle')}</p>
-      {error && (
-        <p className={styles.alert} role="alert">
-          {error}
-        </p>
-      )}
-      {done && !error && (
-        <p className={styles.success} role="status">
-          {t('unlinkDone')}
-        </p>
-      )}
+      {error && <Alert tone="error">{error}</Alert>}
+      {done && !error && <Alert tone="success">{t('unlinkDone')}</Alert>}
       <ul className={styles.methodList}>
         {methods.password && (
           <li className={styles.method}>
+            <span className={styles.methodMark}>
+              <Icon icon={IconLock} size={20} />
+            </span>
             <div className={styles.methodText}>
               <strong>{t('password')}</strong>
               <span className={styles.okState}>● {t('active')}</span>
@@ -77,6 +74,9 @@ export function MethodsSection({ account }: { account: Account }) {
           </li>
         )}
         <li className={styles.method}>
+          <span className={styles.methodMark}>
+            <GoogleMark size={20} />
+          </span>
           <div className={styles.methodText}>
             <strong>{t('google')}</strong>
             {methods.google ? (
@@ -93,12 +93,19 @@ export function MethodsSection({ account }: { account: Account }) {
               size="sm"
               disabled={!unlinkable || unlink.isPending}
               aria-describedby={unlinkable ? undefined : 'google-only-reason'}
+              icon={<Icon icon={IconUnlink} size={16} />}
               onClick={() => setConfirming(true)}
             >
               {t('unlink')}
             </Button>
           ) : (
-            <Button variant="secondary" size="sm" disabled={linkBusy} onClick={() => link.mutate()}>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={linkBusy}
+              icon={<GoogleMark size={16} />}
+              onClick={() => link.mutate()}
+            >
               {linkBusy ? t('linking') : t('link')}
             </Button>
           )}
@@ -112,6 +119,9 @@ export function MethodsSection({ account }: { account: Account }) {
       <ConfirmDialog
         open={confirming}
         destructive
+        icon={<Icon icon={IconUnlink} size={20} />}
+        confirmIcon={<Icon icon={IconUnlink} size={16} />}
+        closeLabel={tUi('close')}
         title={t('unlinkTitle')}
         confirmLabel={t('unlink')}
         cancelLabel={t('unlinkCancel')}

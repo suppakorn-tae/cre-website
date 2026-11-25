@@ -1,16 +1,19 @@
 'use client';
 
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import { IconChevronDown, IconLogout, IconShieldCheck, IconUser } from '@tabler/icons-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
+import { Suspense, useState, type ReactNode } from 'react';
 
+import { Icon } from '@/components/ui';
 import { browserApi } from '@/lib/api/client';
 import '@/styles/tokens.css';
 
+import { accountMenuLinks, roleKey } from './account-menu';
 import { LOGGED_OUT_PATH } from './login-path';
 import { signOut } from './logout';
-import { nextMenuIndex } from './menu-keys';
 import styles from './shell.module.css';
 
 export type ShellVariant = 'app' | 'admin';
@@ -141,87 +144,29 @@ function AdminSideMenu({ pathname }: { pathname: string | null }) {
   );
 }
 
-/** The header's account button and its menu. Needs the signed-in user. */
+/** The header's account control: the user menu. Needs the signed-in user. */
 export function AccountControl({ user }: { user: ShellUser }) {
-  const t = useTranslations('shell');
-  const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const [lastPath, setLastPath] = useState(pathname);
-
-  // Close the menu when the page changes.
-  if (lastPath !== pathname) {
-    setLastPath(pathname);
-    setMenuOpen(false);
-  }
-
-  useEffect(() => {
-    if (!menuOpen) return;
-    const items = menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]');
-    items?.[0]?.focus();
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setMenuOpen(false);
-        buttonRef.current?.focus();
-        return;
-      }
-      if (e.key === 'Tab') {
-        setMenuOpen(false);
-        return;
-      }
-      const list = Array.from(
-        menuRef.current?.querySelectorAll<HTMLElement>('[role="menuitem"]:not(:disabled)') ?? [],
-      );
-      const current = list.indexOf(document.activeElement as HTMLElement);
-      const next = nextMenuIndex(e.key, current, list.length);
-      if (next !== null) {
-        e.preventDefault();
-        list[next]?.focus();
-      }
-    };
-    const onPointer = (e: MouseEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) setMenuOpen(false);
-    };
-    document.addEventListener('keydown', onKey);
-    document.addEventListener('mousedown', onPointer);
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.removeEventListener('mousedown', onPointer);
-    };
-  }, [menuOpen]);
-
   return (
-    <div className={styles.account} ref={menuRef}>
-      <button
-        type="button"
-        ref={buttonRef}
-        className={styles.accountButton}
-        aria-label={t('account.menuLabel')}
-        aria-haspopup="menu"
-        aria-expanded={menuOpen}
-        onClick={() => setMenuOpen((o) => !o)}
-      >
-        <span className={styles.avatar} aria-hidden="true">
-          {user.email.charAt(0).toUpperCase()}
-        </span>
-        <span className={styles.email}>{user.email}</span>
-        {user.isAdmin && (
-          <span className={styles.badge} data-testid="admin-badge">
-            {t('account.adminBadge')}
-          </span>
-        )}
-      </button>
-      {menuOpen && <AccountMenu user={user} />}
+    <div className={styles.account}>
+      <AccountMenu user={user} />
     </div>
   );
 }
 
-export function AccountMenu({ user }: { user: ShellUser }) {
+const menuItemBase =
+  'flex h-control-md cursor-pointer select-none items-center gap-3 rounded-control px-3 text-body no-underline outline-none data-[disabled]:cursor-default data-[disabled]:text-disabled';
+const menuItem = `${menuItemBase} text-text data-[highlighted]:bg-blue-50 data-[highlighted]:text-primary aria-[current=page]:bg-blue-50 aria-[current=page]:font-semibold aria-[current=page]:text-primary`;
+const LINK_ICONS = { myAccount: IconUser, admin: IconShieldCheck } as const;
+const dangerItem = `${menuItemBase} text-error data-[highlighted]:bg-error-bg`;
+
+/** The user menu: avatar, e-mail and chevron open a Radix menu (arrow keys, Home/End, Esc). */
+export function AccountMenu({ user, defaultOpen }: { user: ShellUser; defaultOpen?: boolean }) {
   const t = useTranslations('shell.account');
+  const pathname = usePathname();
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const avatar = user.email.charAt(0).toUpperCase();
 
   async function logout() {
     setBusy(true);
@@ -238,31 +183,67 @@ export function AccountMenu({ user }: { user: ShellUser }) {
   }
 
   return (
-    <div role="menu" className={styles.menu}>
-      <span className={styles.role}>{user.isAdmin ? t('roleAdmin') : t('roleUser')}</span>
-      <Link role="menuitem" tabIndex={-1} href="/account" className={styles.menuItem}>
-        {t('myAccount')}
-      </Link>
-      {user.isAdmin && (
-        <Link role="menuitem" tabIndex={-1} href="/admin/users" className={styles.menuItem}>
-          {t('admin')}
-        </Link>
-      )}
-      <button
-        type="button"
-        role="menuitem"
-        className={styles.menuItem}
-        tabIndex={-1}
-        disabled={busy}
-        onClick={logout}
+    <DropdownMenu.Root defaultOpen={defaultOpen}>
+      <DropdownMenu.Trigger asChild>
+        <button type="button" className={styles.accountButton} aria-label={t('menuLabel')}>
+          <span className={styles.avatar} aria-hidden="true">
+            {avatar}
+          </span>
+          <span className={styles.email}>{user.email}</span>
+          {user.isAdmin && (
+            <span className={styles.badge} data-testid="admin-badge">
+              {t('adminBadge')}
+            </span>
+          )}
+          <Icon icon={IconChevronDown} size={16} className={styles.chevron} />
+        </button>
+      </DropdownMenu.Trigger>
+      <DropdownMenu.Content
+        align="end"
+        sideOffset={8}
+        className="z-50 min-w-60 max-w-80 rounded-card border border-border bg-white p-2 shadow-floating"
       >
-        {busy ? t('loggingOut') : t('logout')}
-      </button>
-      {failed && (
-        <p role="alert" className={styles.menuError}>
-          {t('logoutFailed')}
-        </p>
-      )}
-    </div>
+        <div className="flex items-center gap-3 px-3 py-2">
+          <span className={styles.avatar} aria-hidden="true">
+            {avatar}
+          </span>
+          <div className="min-w-0">
+            <p className="m-0 text-body font-semibold break-words">{user.email}</p>
+            <p className="m-0 text-caption text-text-muted">{t(roleKey(user))}</p>
+          </div>
+        </div>
+        <DropdownMenu.Separator className="my-1 h-px bg-divider" />
+        {accountMenuLinks(user, pathname).map((link) => (
+          <DropdownMenu.Item key={link.key} asChild>
+            <Link
+              href={link.href}
+              className={menuItem}
+              aria-current={link.current ? 'page' : undefined}
+            >
+              <Icon icon={LINK_ICONS[link.key]} size={18} />
+              {t(link.key)}
+            </Link>
+          </DropdownMenu.Item>
+        ))}
+        <DropdownMenu.Separator className="my-1 h-px bg-divider" />
+        <DropdownMenu.Item
+          disabled={busy}
+          className={dangerItem}
+          // Keep the menu open while signing out, so a failure shows in it.
+          onSelect={(e) => {
+            e.preventDefault();
+            void logout();
+          }}
+        >
+          <Icon icon={IconLogout} size={18} />
+          {busy ? t('loggingOut') : t('logout')}
+        </DropdownMenu.Item>
+        {failed && (
+          <p role="alert" className="m-0 px-3 py-1 text-caption text-error">
+            {t('logoutFailed')}
+          </p>
+        )}
+      </DropdownMenu.Content>
+    </DropdownMenu.Root>
   );
 }

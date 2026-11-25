@@ -1,7 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useId, useState, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
+
+import { FieldError, FieldOk, PasswordInput } from '@/components/ui';
 
 import styles from './register.module.css';
 
@@ -18,7 +20,7 @@ type Props = {
   maxLength?: number;
 };
 
-/** Password control with a show/hide toggle. Always required on sign-up. */
+/** Password control with a lock icon and a show/hide toggle. Always required on sign-up. */
 export function PasswordField({
   label,
   value,
@@ -31,7 +33,6 @@ export function PasswordField({
 }: Props) {
   const t = useTranslations('auth.register.form');
   const id = useId();
-  const [visible, setVisible] = useState(false);
   const messageId = `${id}-message`;
   const hasMessage = Boolean(error || okText);
   return (
@@ -42,40 +43,20 @@ export function PasswordField({
           *
         </span>
       </label>
-      <div className={styles.controlWrap}>
-        <input
-          id={id}
-          className={styles.control}
-          type={visible ? 'text' : 'password'}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          autoComplete={autoComplete}
-          maxLength={maxLength}
-          required
-          aria-invalid={error ? true : undefined}
-          aria-describedby={hasMessage ? messageId : undefined}
-          data-valid={okText ? 'true' : undefined}
-        />
-        <button
-          type="button"
-          className={styles.toggle}
-          aria-pressed={visible}
-          aria-label={visible ? t('hidePassword') : t('showPassword')}
-          onClick={() => setVisible((v) => !v)}
-        >
-          {visible ? t('hideShort') : t('showShort')}
-        </button>
-      </div>
-      {error && (
-        <p id={messageId} className={styles.errorText} role="alert">
-          {error}
-        </p>
-      )}
-      {!error && okText && (
-        <p id={messageId} className={styles.okText}>
-          {okText}
-        </p>
-      )}
+      <PasswordInput
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        autoComplete={autoComplete}
+        maxLength={maxLength}
+        required
+        aria-invalid={error ? true : undefined}
+        aria-describedby={hasMessage ? messageId : undefined}
+        valid={Boolean(okText) && !error}
+        labels={{ show: t('showPassword'), hide: t('hidePassword') }}
+      />
+      {error && <FieldError id={messageId}>{error}</FieldError>}
+      {!error && okText && <FieldOk id={messageId}>{okText}</FieldOk>}
       {children}
     </div>
   );
