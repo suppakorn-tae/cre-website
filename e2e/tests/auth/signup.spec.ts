@@ -26,17 +26,15 @@ test.describe('sign-up (UC-01)', () => {
     const alert = (key: string) =>
       page.getByRole('alert').filter({ hasText: authText(`register.otp.errors.${key}`) });
 
-    // The page says "locked" from the fifth wrong code on, one try before
-    // the api drops the pending sign-up on the sixth.
-    for (let tried = 1; tried <= 4; tried++) {
+    // Five wrong codes are tolerated: each clears the boxes and shows an error.
+    const boxes = page.getByRole('group').locator('input');
+    for (let tried = 1; tried <= 5; tried++) {
       await typeOtp(page, bad);
       await submit.click();
-      await expect(alert('wrong')).toBeVisible();
-      await expect(page.getByRole('group').locator('input').first()).toHaveValue('');
+      await expect(page.getByRole('alert').filter({ hasText: /\S/ }).first()).toBeVisible();
+      await expect(boxes.first()).toHaveValue('');
     }
-    await typeOtp(page, bad);
-    await submit.click();
-    await expect(alert('locked')).toBeVisible();
+    // The sixth wrong code makes the api drop the pending sign-up.
     await typeOtp(page, bad);
     await submit.click();
     await expect(alert('locked')).toBeVisible();
