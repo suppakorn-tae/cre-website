@@ -179,4 +179,14 @@ func TestSubmittedVersionStats(t *testing.T) {
 	if got.HighCount == nil || got.VeryHighCount == nil || got.AverageRM == nil || got.ProgressAtSubmit == nil {
 		t.Fatalf("submitted version lacks stats: %+v", got)
 	}
+	if got.ScoredCount == nil || got.LevelCounts == nil {
+		t.Fatalf("submitted version lacks level counts: %+v", got)
+	}
+	sum := 0
+	for _, n := range got.LevelCounts {
+		sum += n
+	}
+	if sum != *got.ScoredCount || got.LevelCounts["H"] != *got.HighCount || got.LevelCounts["VH"] != *got.VeryHighCount {
+		t.Fatalf("level counts %v do not match scored %d", got.LevelCounts, *got.ScoredCount)
+	}
 }
