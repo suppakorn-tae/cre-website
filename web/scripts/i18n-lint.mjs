@@ -20,10 +20,7 @@ const ALLOW_FILE = [
   /^src\/app\/\(dev\)\//,
 ];
 // Known violations in files owned by open feature PRs; fix there, then delete the entry.
-const ALLOW_KNOWN = [
-  // open PR #70, remove after fix
-  'src/features/admin/advice/Notation.tsx',
-];
+const ALLOW_KNOWN = [];
 
 const TEXT_ATTRS = new Set(['aria-label', 'aria-description', 'title', 'placeholder', 'alt']);
 const CODE_RE = /\b(UC|FR|BR|NFR)-\d+|snapshot/i;
