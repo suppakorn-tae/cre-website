@@ -60,6 +60,12 @@ type Querier interface {
 	// Created only after the OTP was verified. Role and status take their
 	// defaults (user, active); the e-mail counts as verified.
 	CreateRegisteredAccount(ctx context.Context, arg CreateRegisteredAccountParams) (CreateRegisteredAccountRow, error)
+	// A strategy only exists for H and VH results.
+	DeleteLowRiskStrategies(ctx context.Context, versionID uuid.UUID) error
+	DeleteResultAdvice(ctx context.Context, arg DeleteResultAdviceParams) error
+	// Results of indicators that are no longer complete; advice lists and
+	// strategies cascade.
+	DeleteStaleResults(ctx context.Context, arg DeleteStaleResultsParams) error
 	// The live job for a submission; a failed job does not count, so the user
 	// may ask again.
 	FindReportJob(ctx context.Context, arg FindReportJobParams) (uuid.UUID, error)
@@ -86,6 +92,7 @@ type Querier interface {
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
 	InsertReportJob(ctx context.Context, arg InsertReportJobParams) error
+	InsertResultAdvice(ctx context.Context, arg InsertResultAdviceParams) error
 	// The number counts deleted versions too, so it is never reused.
 	InsertVersion(ctx context.Context, arg InsertVersionParams) (uuid.UUID, error)
 	// Newest first. Each filter is optional. The sort matches audit_log_time_ix,
@@ -105,9 +112,14 @@ type Querier interface {
 	ListCatalogueIslands(ctx context.Context) ([]string, error)
 	ListCatalogueProjectTypes(ctx context.Context) ([]string, error)
 	ListCatalogueRiEOptions(ctx context.Context) ([]ListCatalogueRiEOptionsRow, error)
+	// Complete indicators (BR-09): x, y1, y2 and at least one y3 option.
+	ListCompleteAnswers(ctx context.Context, versionID uuid.UUID) ([]ListCompleteAnswersRow, error)
 	// @q is a LIKE pattern already escaped by the caller, or empty for all.
 	// latest_version_no is 0 when the project has no live version.
 	ListProjects(ctx context.Context, arg ListProjectsParams) ([]ListProjectsRow, error)
+	ListSnapshotImpact(ctx context.Context, versionID uuid.UUID) ([]ListSnapshotImpactRow, error)
+	// Raw numerics: a missing threshold stays NULL.
+	ListSnapshotRL(ctx context.Context, versionID uuid.UUID) ([]ListSnapshotRLRow, error)
 	ListUnfinishedJobs(ctx context.Context) ([]Job, error)
 	// Non-deleted versions of an owned project, newest first; version_id narrows
 	// it to one. editable is true only for the highest number ever created,
@@ -119,11 +131,16 @@ type Querier interface {
 	// Serialises report requests for one version, so that two requests for the
 	// same submission cannot both insert a job.
 	LockReportRequest(ctx context.Context, versionID string) error
+	// Owner check and the lock that serialises submits of one version. Another
+	// account's version, a deleted one or a deleted project looks absent. latest
+	// is true only for the highest number ever created, deleted rows included.
+	LockSubmitVersion(ctx context.Context, arg LockSubmitVersionParams) (LockSubmitVersionRow, error)
 	MarkJobDone(ctx context.Context, arg MarkJobDoneParams) (int64, error)
 	MarkJobExpired(ctx context.Context, id uuid.UUID) (int64, error)
 	MarkJobFailed(ctx context.Context, arg MarkJobFailedParams) (int64, error)
 	// A job left running by a crashed worker may be claimed again.
 	MarkJobRunning(ctx context.Context, id uuid.UUID) (Job, error)
+	MarkVersionSubmitted(ctx context.Context, versionID uuid.UUID) (*time.Time, error)
 	// Stores the new password hash after a reset. Only an active account changes.
 	SetAccountPasswordHash(ctx context.Context, arg SetAccountPasswordHashParams) (int64, error)
 	SnapshotImpactThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
@@ -133,6 +150,8 @@ type Querier interface {
 	SoftDeleteProject(ctx context.Context, arg SoftDeleteProjectParams) (uuid.UUID, error)
 	SoftDeleteVersion(ctx context.Context, arg SoftDeleteVersionParams) (int64, error)
 	UpdateProject(ctx context.Context, arg UpdateProjectParams) (int64, error)
+	// Upserted, not replaced, so a chosen strategy survives a resubmission.
+	UpsertRiskResult(ctx context.Context, arg UpsertRiskResultParams) error
 }
 
 var _ Querier = (*Queries)(nil)
