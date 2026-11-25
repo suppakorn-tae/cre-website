@@ -6,6 +6,7 @@
     "stack:up": "sh scripts/stack.sh up",
     "stack:down": "sh scripts/stack.sh down",
     "test": "playwright test",
+    "test:mock": "playwright test -c playwright.mock.config.ts",
     "typecheck": "tsc --noEmit",
     "format:check": "prettier --check ."
   },

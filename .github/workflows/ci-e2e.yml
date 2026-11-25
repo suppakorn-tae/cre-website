@@ -20,6 +20,38 @@ permissions:
   contents: read
 
 jobs:
+  # The web app alone in mock mode: no compose stack and no api.
+  e2e-mock:
+    name: e2e-mock
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Playwright in mock mode
+        working-directory: e2e
+        env:
+          CI: "true"
+        run: pnpm run test:mock
+      - name: Upload report and traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-mock
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+
   e2e:
     name: e2e
     runs-on: ubuntu-latest
