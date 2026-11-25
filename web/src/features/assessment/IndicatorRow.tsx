@@ -98,6 +98,7 @@ export function IndicatorRow({
   const done = isComplete(draft);
   const state = done ? 'complete' : isAnswered(draft) ? 'partial' : 'empty';
   const code = indicator.code;
+  const y3ErrorId = `${useId()}-y3-error`;
 
   const numberError = (text: string, max?: number): string | undefined =>
     text.trim() !== '' && parseAmount(text, max) === null
@@ -169,7 +170,10 @@ export function IndicatorRow({
             if (e.key === 'Escape') e.currentTarget.open = false;
           }}
         >
-          <summary className={styles.pickerHead}>
+          <summary
+            className={styles.pickerHead}
+            aria-describedby={serverError('y3') ? y3ErrorId : undefined}
+          >
             <span className={styles.srOnly}>{`${t('fields.y3')} ${code}`}</span>
             {draft.y3.length === 0 ? (
               <span className={styles.pick}>{t('table.pick')}</span>
@@ -193,12 +197,15 @@ export function IndicatorRow({
               value={draft.y3}
               disabled={disabled}
               helper={indicator.question_y3 ?? t('fields.y3Helper')}
-              error={serverError('y3')}
               onChange={(y3) => onChange({ ...draft, y3 })}
             />
           </div>
         </details>
-        {serverError('y3') && <p className={styles.cellError}>{serverError('y3')}</p>}
+        {serverError('y3') && (
+          <p id={y3ErrorId} className={styles.cellError}>
+            {serverError('y3')}
+          </p>
+        )}
       </td>
       <td className={styles.statusCell} data-label={t('table.status')}>
         <span className={styles.badge} data-state={state}>

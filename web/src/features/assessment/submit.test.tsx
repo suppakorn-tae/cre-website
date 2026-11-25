@@ -185,4 +185,34 @@ describe('422 field errors', () => {
     expect(html).toContain('ข้อ A ใช้เดี่ยวเท่านั้น เลือกร่วมกับข้ออื่นไม่ได้');
     expect(html).toContain('aria-invalid="true"');
   });
+  it('shows a y3 server error once and links it from the y3 control', () => {
+    const html = wrap(
+      <table>
+        <tbody>
+          <IndicatorRow
+            indicator={{
+              code: 'EC-MG-1',
+              name: 'n',
+              unit: 'u',
+              question_x: null,
+              question_y1: null,
+              question_y2: null,
+              question_y3: null,
+            }}
+            draft={emptyDraft()}
+            y3Options={[{ value: 'A', label: 'A' }]}
+            disabled={false}
+            serverErrors={{ y3: 'exclusive_option' }}
+            onChange={vi.fn()}
+          />
+        </tbody>
+      </table>,
+    );
+    const message = 'ข้อ A ใช้เดี่ยวเท่านั้น เลือกร่วมกับข้ออื่นไม่ได้';
+    expect(html.split(message)).toHaveLength(2);
+    const id = /<p id="([^"]+)"[^>]*>ข้อ A ใช้เดี่ยวเท่านั้น/.exec(html)?.[1];
+    expect(id).toBeTruthy();
+    const summary = /<summary[^>]*>/.exec(html)?.[0] ?? '';
+    expect(summary).toContain(`aria-describedby="${id}"`);
+  });
 });
