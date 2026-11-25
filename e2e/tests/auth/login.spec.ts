@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { PASSWORD, USER } from '../../helpers/env';
-import { authText, logInThroughUi, newUser } from './support';
+import { authText, logInThroughUi, newUser, shellText } from './support';
 
 test.describe('log in and out (UC-02)', () => {
   test('log in, then log out', async ({ page }) => {
@@ -10,19 +10,15 @@ test.describe('log in and out (UC-02)', () => {
 
     expect((await page.request.get('/api/v1/auth/me')).status()).toBe(200);
 
-    // Log out through the API: signed-in pages answer 500 on the production
-    // build (the server guard calls API_INTERNAL_URL=http://api:4000 without
-    // /api/v1 and gets 404), so the account menu cannot render yet.
-    const csrf = (await (await page.request.get('/api/v1/auth/csrf')).json()) as {
-      csrf_token: string;
-    };
-    const out = await page.request.post('/api/v1/auth/logout', {
-      headers: { 'X-CSRF-Token': csrf.csrf_token },
-    });
-    expect(out.ok()).toBe(true);
+    // Signed-in pages render (no 500); /dashboard has no page yet.
+    await page.goto('/projects');
+    // Log out through the account menu.
+    await page.getByRole('button', { name: shellText('account.menuLabel') }).click();
+    await page.getByRole('menuitem', { name: shellText('account.logout') }).click();
+    await expect(page).toHaveURL(/\/login/);
     expect((await page.request.get('/api/v1/auth/me')).status()).toBe(401);
-    await page.goto('/login');
-    await expect(page.locator('input[type="email"]')).toBeVisible();
+    await page.goto('/projects');
+    await expect(page).toHaveURL(/\/login/);
   });
 
   test('a wrong password is refused and shows the error', async ({ page }) => {
