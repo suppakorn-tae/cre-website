@@ -21,6 +21,8 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/api"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/middleware"
+	"github.com/suppakorn-tae/cre-website/backend/internal/platform/app"
+	"github.com/suppakorn-tae/cre-website/backend/internal/service/account"
 	svc "github.com/suppakorn-tae/cre-website/backend/internal/service/auth"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/session"
 	"github.com/suppakorn-tae/cre-website/backend/internal/testutil/contract"
@@ -157,11 +159,12 @@ func (s *gAccounts) GetProfile(_ context.Context, id string) (session.Profile, e
 }
 
 type gEnv struct {
-	t    *testing.T
-	h    http.Handler
-	fake *oidctest.Provider
-	accs *gAccounts
-	sess *session.Service
+	t     *testing.T
+	h     http.Handler
+	fake  *oidctest.Provider
+	accs  *gAccounts
+	sess  *session.Service
+	cache *gMem
 }
 
 func newGoogleEnv(t *testing.T) *gEnv {
@@ -178,7 +181,7 @@ func newGoogleEnv(t *testing.T) *gEnv {
 	r := chi.NewRouter()
 	r.Route("/api/v1/auth", func(r chi.Router) { h.mount(r, func(n http.Handler) http.Handler { return n }) })
 	r.With(middleware.Session(ss)).Delete("/api/v1/account/google", unlinkGoogle(g, ss))
-	return &gEnv{t: t, h: r, fake: fake, accs: accs, sess: ss}
+	return &gEnv{t: t, h: r, fake: fake, accs: accs, sess: ss, cache: cache}
 }
 
 // do sends a request with cookies and checks the response against the
@@ -408,5 +411,75 @@ func decodeJSON(t *testing.T, resp *http.Response, v any) {
 	t.Helper()
 	if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// A reauth sign-in sets the key that account deletion reads, so a Google-only
+// account can delete itself (UC-04).
+func TestGoogleReauthSetsAccountKey(t *testing.T) {
+	e := newGoogleEnv(t)
+	id := uuid.NewString()
+	e.accs.rows = []*gRow{{id: id, email: "alice@example.com", sub: "g-alice"}}
+	sc := e.sessionCookie(id)
+	state, bind := e.start("reauth", alice, sc)
+	if _, ok := e.cache.m[account.ReauthKey(id)]; ok {
+		t.Fatal("key set before the callback")
+	}
+	if _, loc := e.callback(state, bind, sc); loc != webBase+"/account?result=reauthenticated" {
+		t.Fatalf("location %s", loc)
+	}
+	if _, ok := e.cache.m[account.ReauthKey(id)]; !ok {
+		t.Fatal("account:reauth key not set")
+	}
+
+	// Another Google identity does not reauthenticate this account.
+	other := oidctest.Identity{Subject: "g-eve", Email: "eve@example.com", EmailVerified: true}
+	delete(e.cache.m, account.ReauthKey(id))
+	state, bind = e.start("reauth", other, sc)
+	if _, loc := e.callback(state, bind, sc); loc != webBase+"/account?result=failed" {
+		t.Fatalf("other identity: %s", loc)
+	}
+	if _, ok := e.cache.m[account.ReauthKey(id)]; ok {
+		t.Fatal("key set for another Google identity")
+	}
+}
+
+func TestGoogleStateReplayedOrExpired(t *testing.T) {
+	e := newGoogleEnv(t)
+	e.accs.rows = []*gRow{{id: uuid.NewString(), email: "alice@example.com", sub: "g-alice"}}
+	state, bind := e.start("login", alice)
+	if _, loc := e.callback(state, bind); loc != webBase+"/login?result=logged_in" {
+		t.Fatalf("first use: %s", loc)
+	}
+	if resp, loc := e.callback(state, bind); loc != webBase+"/login?result=failed" || cookie(resp, session.CookieName) != nil {
+		t.Fatalf("replayed state: %s", loc)
+	}
+	state, bind = e.start("login", alice)
+	for k := range e.cache.m { // the 10 minute TTL ran out
+		if strings.HasPrefix(k, "google:state:") {
+			delete(e.cache.m, k)
+		}
+	}
+	if resp, loc := e.callback(state, bind); loc != webBase+"/login?result=failed" || cookie(resp, session.CookieName) != nil {
+		t.Fatalf("expired state: %s", loc)
+	}
+}
+
+// Without Google credentials the routes stay mounted and answer 503.
+func TestGoogleUnavailableWithoutConfig(t *testing.T) {
+	t.Setenv("GOOGLE_CLIENT_ID", "")
+	r := chi.NewRouter()
+	googleRoutes(r, app.Deps{})
+	for _, c := range [][2]string{
+		{http.MethodPost, "/google/start"},
+		{http.MethodGet, "/google/callback"},
+		{http.MethodGet, "/google/pending"},
+		{http.MethodPost, "/google/complete"},
+	} {
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(c[0], c[1], nil))
+		if w.Code != http.StatusServiceUnavailable {
+			t.Fatalf("%s %s: %d, want 503", c[0], c[1], w.Code)
+		}
 	}
 }
