@@ -202,5 +202,5 @@ func TestFixtureVolume(t *testing.T) {
 		}
 		plan = append(plan, line)
 	}
-	t.Log(fmt.Sprintf("level distribution plan:\n%s", strings.Join(plan, "\n")))
+	t.Logf("level distribution plan:\n%s", strings.Join(plan, "\n"))
 }
