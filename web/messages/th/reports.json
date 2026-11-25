@@ -1,4 +1,7 @@
 {
+  "meta": {
+    "title": "รายงาน"
+  },
   "title": "รายงาน {nickname} · v{no}",
   "breadcrumbLabel": "เส้นทางหน้า",
   "breadcrumbRoot": "แดชบอร์ด",
