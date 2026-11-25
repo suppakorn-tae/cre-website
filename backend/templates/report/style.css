@@ -1,7 +1,11 @@
 @font-face { font-family: "Sarabun"; font-weight: 400; src: url("Sarabun-Regular.ttf"); }
 @font-face { font-family: "Sarabun"; font-weight: 700; src: url("Sarabun-Bold.ttf"); }
 body { font-family: "Sarabun", sans-serif; font-size: 11pt; line-height: 1.45; color: #0f1e33; }
-h1 { font-size: 20pt; margin: 0 0 4pt; }
+.doc-header { display: flex; align-items: center; gap: 12pt; padding-bottom: 8pt; border-bottom: 0.5pt solid #94a3b8; }
+.logo { height: 18mm; width: auto; flex: none; }
+.doc-title { flex: 1; }
+h1 { font-size: 18pt; margin: 0 0 2pt; }
+.subtitle { margin: 0; }
 h2 { font-size: 14pt; margin: 16pt 0 6pt; break-after: avoid; border-bottom: 1px solid #94a3b8; }
 h3 { font-size: 12pt; margin: 10pt 0 2pt; break-after: avoid; }
 h4 { font-size: 11pt; margin: 6pt 0 2pt; }

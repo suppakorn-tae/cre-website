@@ -2,8 +2,13 @@
 <html lang="th"><head><meta charset="utf-8"><title>{{t "title"}}</title>
 <link rel="stylesheet" href="style.css"></head>
 <body>
+<header class="doc-header">
+<img class="logo" src="cre-logo-full.png" alt="{{t "logo.alt"}}">
+<div class="doc-title">
 <h1>{{t "title"}}</h1>
-<p class="subtitle">{{.Nickname}} &middot; {{.Island}} &middot; {{t "subtitle.version"}} {{.VersionNo}}</p>
+<p class="subtitle">{{.Nickname}} &middot; {{.ProjectName}} &middot; {{t "subtitle.version"}} {{.VersionNo}}</p>
+</div>
+</header>
 <h2>1. {{t "section.project"}}</h2>
 <table class="meta">
 <tr><th>{{t "project.name"}}</th><td>{{.ProjectName}}</td></tr>

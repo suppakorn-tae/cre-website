@@ -24,6 +24,9 @@ var pageTmpl string
 //go:embed style.css
 var styleCSS []byte
 
+//go:embed cre-logo-full.png
+var logoPNG []byte
+
 // Levels in display order.
 var Levels = []string{"VL", "L", "M", "H", "VH"}
 
@@ -120,7 +123,7 @@ type view struct {
 	ResultsTitle, AdviceTitle                              string
 }
 
-// Render returns the HTML page and the assets (style sheet) it links to. The
+// Render returns the HTML page and the assets (style sheet, logo) it links to. The
 // caller adds the fonts and sends everything to the PDF adapter.
 func Render(d Data) (html []byte, assets map[string][]byte, err error) {
 	v, err := buildView(d)
@@ -152,7 +155,7 @@ func Render(d Data) (html []byte, assets map[string][]byte, err error) {
 	if terr != nil {
 		return nil, nil, terr
 	}
-	return buf.Bytes(), map[string][]byte{"style.css": styleCSS}, nil
+	return buf.Bytes(), map[string][]byte{"style.css": styleCSS, "cre-logo-full.png": logoPNG}, nil
 }
 
 func buildView(d Data) (view, error) {
