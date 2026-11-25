@@ -53,7 +53,7 @@ func TestRenderContent(t *testing.T) {
 		"ผลลัพธ์เป็นข้อมูลเบื้องต้นสำหรับใช้ประกอบการพิจารณาเท่านั้น",
 		"ผู้ประเมิน", "ผู้ตรวจสอบ", "ผู้อนุมัติ",
 		"ยังไม่ได้เลือกกลยุทธ์", // the VH indicator has no strategy
-		"คำแนะนำเพื่อลดโอกาสเกิดเหตุ", "คำแนะนำเพื่อลดผลกระทบด้านต้นทุน",
+		"คำแนะนำเพื่อลดโอกาสเกิดความเสี่ยง", "คำแนะนำเพื่อลดผลกระทบด้านต้นทุน",
 	} {
 		if !strings.Contains(s, want) {
 			t.Errorf("html lacks %q", want)
@@ -62,7 +62,7 @@ func TestRenderContent(t *testing.T) {
 	if strings.Contains(s, "ไม่ควรแสดง") {
 		t.Error("advice of a low-risk indicator is shown")
 	}
-	if strings.Index(s, "คำแนะนำเพื่อลดโอกาสเกิดเหตุ") > strings.Index(s, "คำแนะนำเพื่อลดผลกระทบด้านต้นทุน") {
+	if strings.Index(s, "คำแนะนำเพื่อลดโอกาสเกิดความเสี่ยง") > strings.Index(s, "คำแนะนำเพื่อลดผลกระทบด้านต้นทุน") {
 		t.Error("advice lists are not in RL, RI_C order")
 	}
 	if strings.Contains(s, "2026") || strings.Contains(s, "2027") {
