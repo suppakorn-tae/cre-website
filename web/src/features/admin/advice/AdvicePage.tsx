@@ -1,20 +1,22 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 
-import { Button, EmptyState, Select, Skeleton } from '@/components/ui';
+import { Button, EmptyState, Skeleton } from '@/components/ui';
 
 import styles from './advice.module.css';
 import { useAdvice, useIndicatorCatalogue } from './api';
 import { AdviceListEditor } from './AdviceListEditor';
 import { AdviceMocks } from './AdviceMocks';
+import { IndicatorPicker } from './IndicatorPicker';
+import { Notation } from './Notation';
 import { LISTS, type AdviceList, type Draft } from './rules';
 
-/**
- * Admin screen to edit the advice lists of one indicator: the one in
- * `?indicator=`, else the first of the catalogue. The picker and tabs follow.
- */
+const tabId = (l: AdviceList) => `advice-tab-${l}`;
+const panelId = (l: AdviceList) => `advice-panel-${l}`;
+
+/** Admin screen to edit the four advice lists of any indicator. */
 export function AdvicePage({ initialCode }: { initialCode?: string }) {
   return (
     <AdviceMocks>
@@ -26,8 +28,21 @@ export function AdvicePage({ initialCode }: { initialCode?: string }) {
 function Screen({ initialCode }: { initialCode?: string }) {
   const t = useTranslations('admin-advice');
   const catalogue = useIndicatorCatalogue();
-  const first = catalogue.data?.dimensions[0]?.factors[0]?.indicators[0]?.code;
-  const code = initialCode ?? first;
+  const [picked, setPicked] = useState<string | null>(initialCode ?? null);
+  // Unsaved edits, kept per indicator and list so switching never loses them.
+  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+
+  const indicators = catalogue.data?.indicators ?? [];
+  const code = picked ?? indicators[0]?.code ?? null;
+
+  function setDraft(key: string, draft: Draft | undefined) {
+    setDrafts((prev) => {
+      const next = { ...prev };
+      if (draft) next[key] = draft;
+      else delete next[key];
+      return next;
+    });
+  }
 
   return (
     <>
@@ -35,6 +50,7 @@ function Screen({ initialCode }: { initialCode?: string }) {
         <h1 className={styles.title}>{t('title')}</h1>
         <p className={styles.subtitle}>{t('subtitle')}</p>
       </header>
+
       {catalogue.isPending && (
         <div className={styles.status} role="status" aria-busy="true">
           <Skeleton height={64} />
@@ -49,22 +65,58 @@ function Screen({ initialCode }: { initialCode?: string }) {
           </Button>
         </div>
       )}
-      {catalogue.data &&
-        (code ? (
-          <Lists key={code} code={code} />
-        ) : (
-          <EmptyState title={t('empty.title')} description={t('empty.description')} />
-        ))}
+      {catalogue.data && (
+        <>
+          <IndicatorPicker
+            catalogue={catalogue.data.catalogue}
+            indicators={indicators}
+            value={code}
+            onChange={setPicked}
+          />
+          {code ? (
+            <Lists key={code} code={code} drafts={drafts} setDraft={setDraft} />
+          ) : (
+            <EmptyState title={t('empty.title')} description={t('empty.description')} />
+          )}
+        </>
+      )}
     </>
   );
 }
 
-function Lists({ code }: { code: string }) {
+function Lists({
+  code,
+  drafts,
+  setDraft,
+}: {
+  code: string;
+  drafts: Record<string, Draft>;
+  setDraft: (key: string, draft: Draft | undefined) => void;
+}) {
   const t = useTranslations('admin-advice');
   const advice = useAdvice(code);
   const [list, setList] = useState<AdviceList>('RL');
-  // Unsaved edits per list, so switching list never loses them.
-  const [drafts, setDrafts] = useState<Partial<Record<AdviceList, Draft>>>({});
+  const tabs = useRef<Record<string, HTMLButtonElement | null>>({});
+
+  function onKeyDown(e: KeyboardEvent, index: number) {
+    const last = LISTS.length - 1;
+    const next =
+      e.key === 'ArrowRight'
+        ? (index + 1) % LISTS.length
+        : e.key === 'ArrowLeft'
+          ? index === 0
+            ? last
+            : index - 1
+          : e.key === 'Home'
+            ? 0
+            : e.key === 'End'
+              ? last
+              : null;
+    if (next === null) return;
+    e.preventDefault();
+    setList(LISTS[next]);
+    tabs.current[LISTS[next]]?.focus();
+  }
 
   if (advice.isPending) {
     return (
@@ -85,25 +137,43 @@ function Lists({ code }: { code: string }) {
     );
   }
 
+  const data = advice.data;
   return (
-    <>
-      <Select
-        className={styles.switcher}
-        label={t('tabs.label')}
-        value={list}
-        options={LISTS.map((l) => ({ value: l, label: t(`list.${l}`) }))}
-        onChange={(e) => setList(e.target.value as AdviceList)}
-      />
-      <AdviceListEditor
-        key={list}
-        code={code}
-        list={list}
-        saved={advice.data.lists[list]}
-        updatedAt={advice.data.updated_at}
-        updatedBy={advice.data.updated_by}
-        draft={drafts[list]}
-        onDraft={(d) => setDrafts((prev) => ({ ...prev, [list]: d }))}
-      />
-    </>
+    <section className={styles.section}>
+      <div role="tablist" aria-label={t('tabs.label')} className={styles.tablist}>
+        {LISTS.map((l, i) => (
+          <button
+            key={l}
+            ref={(el) => {
+              tabs.current[l] = el;
+            }}
+            type="button"
+            role="tab"
+            id={tabId(l)}
+            aria-selected={l === list}
+            aria-controls={panelId(l)}
+            tabIndex={l === list ? 0 : -1}
+            className={styles.tab}
+            onClick={() => setList(l)}
+            onKeyDown={(e) => onKeyDown(e, i)}
+          >
+            <Notation list={l} /> · {t(`tabs.${l}`)}
+            {drafts[`${code}:${l}`] && <span className={styles.dot} aria-hidden="true" />}
+          </button>
+        ))}
+      </div>
+      <div role="tabpanel" id={panelId(list)} aria-labelledby={tabId(list)}>
+        <AdviceListEditor
+          key={list}
+          code={code}
+          list={list}
+          saved={data.lists[list]}
+          updatedAt={data.updated_at}
+          updatedBy={data.updated_by}
+          draft={drafts[`${code}:${list}`]}
+          onDraft={(d) => setDraft(`${code}:${list}`, d)}
+        />
+      </div>
+    </section>
   );
 }

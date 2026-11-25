@@ -7,12 +7,14 @@ import {
   canAdd,
   canRemove,
   draftFrom,
+  filterIndicators,
   isDirty,
   moveItem,
   removeItem,
   toItems,
   updateItem,
   validate,
+  type FlatIndicator,
 } from './rules';
 
 const texts = (d: { text: string }[]) => d.map((i) => i.text);
@@ -95,5 +97,25 @@ describe('validate and payload', () => {
     expect(isDirty(saved, moveItem(d, 0, 1))).toBe(true);
     expect(isDirty(saved, updateItem(d, d[0].id, 'ก '))).toBe(false);
     expect(isDirty(saved, addItem(d))).toBe(true);
+  });
+});
+
+describe('filterIndicators', () => {
+  const all: FlatIndicator[] = [
+    { code: 'EC-TC-2', name: 'การเปลี่ยนแปลงทางวิศวกรรม', dimension: 'EC', factor: 'EC-TC' },
+    { code: 'EC-HS-1', name: 'อุบัติเหตุหน้างาน', dimension: 'EC', factor: 'EC-HS' },
+    { code: 'EN-WQ-1', name: 'คุณภาพน้ำทะเล', dimension: 'EN', factor: 'EN-WQ' },
+  ];
+
+  it('filters by dimension, factor and search text', () => {
+    expect(filterIndicators(all, {}).map((i) => i.code)).toHaveLength(3);
+    expect(filterIndicators(all, { dimension: 'EC' }).map((i) => i.code)).toEqual([
+      'EC-TC-2',
+      'EC-HS-1',
+    ]);
+    expect(filterIndicators(all, { dimension: 'EC', factor: 'EC-HS' })).toHaveLength(1);
+    expect(filterIndicators(all, { q: ' ec-tc ' }).map((i) => i.code)).toEqual(['EC-TC-2']);
+    expect(filterIndicators(all, { q: 'น้ำทะเล' }).map((i) => i.code)).toEqual(['EN-WQ-1']);
+    expect(filterIndicators(all, { q: 'ไม่มี' })).toHaveLength(0);
   });
 });

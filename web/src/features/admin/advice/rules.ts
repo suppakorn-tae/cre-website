@@ -59,3 +59,28 @@ export function validate(draft: Draft): Record<number, 'required'> {
 export function isDirty(saved: AdviceItems, draft: Draft): boolean {
   return saved.length !== draft.length || saved.some((s, i) => s.text.th !== draft[i].text.trim());
 }
+
+export type FlatIndicator = { code: string; name: string; dimension: string; factor: string };
+
+export type IndicatorFilter = { dimension?: string; factor?: string; q?: string };
+
+type Catalogue = components['schemas']['Catalogue'];
+
+export function flattenCatalogue(catalogue: Catalogue): FlatIndicator[] {
+  return catalogue.dimensions.flatMap((d) =>
+    d.factors.flatMap((f) =>
+      f.indicators.map((i) => ({ code: i.code, name: i.name, dimension: d.code, factor: f.code })),
+    ),
+  );
+}
+
+/** Narrows by dimension, factor and a search over code and name. */
+export function filterIndicators(all: FlatIndicator[], f: IndicatorFilter): FlatIndicator[] {
+  const q = f.q?.trim().toLowerCase();
+  return all.filter(
+    (i) =>
+      (!f.dimension || i.dimension === f.dimension) &&
+      (!f.factor || i.factor === f.factor) &&
+      (!q || i.code.toLowerCase().includes(q) || i.name.toLowerCase().includes(q)),
+  );
+}
