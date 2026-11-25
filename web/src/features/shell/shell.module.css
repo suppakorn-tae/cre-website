@@ -276,3 +276,25 @@
     display: block;
   }
 }
+
+.avatarSkeleton {
+  display: inline-flex;
+}
+.avatarSkeleton > span {
+  border-radius: var(--radius-pill);
+}
+.contentSkeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

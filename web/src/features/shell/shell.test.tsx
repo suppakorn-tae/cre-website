@@ -10,8 +10,9 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: vi.fn(), refresh: vi.fn() }),
 }));
 
-import { AccountMenu, AppShell } from './AppShell';
+import { AccountControl, AccountMenu, AdminSide, AppShell } from './AppShell';
 import { ProjectSteps } from './ProjectSteps';
+import { ContentSkeleton } from './Skeletons';
 
 const wrap = (node: ReactNode) =>
   renderToStaticMarkup(
@@ -37,7 +38,10 @@ describe('AccountMenu', () => {
 describe('AppShell', () => {
   it('has no menu tabs; the logo returns to the dashboard', () => {
     const html = wrap(
-      <AppShell variant="app" user={{ email: 'somchai@example.co.th', isAdmin: false }}>
+      <AppShell
+        variant="app"
+        account={<AccountControl user={{ email: 'somchai@example.co.th', isAdmin: false }} />}
+      >
         <p>เนื้อหา</p>
       </AppShell>,
     );
@@ -49,7 +53,11 @@ describe('AppShell', () => {
 
   it('renders the six admin menu items for the admin variant', () => {
     const html = wrap(
-      <AppShell variant="admin" user={{ email: 'admin@example.co.th', isAdmin: true }}>
+      <AppShell
+        variant="admin"
+        account={<AccountControl user={{ email: 'admin@example.co.th', isAdmin: true }} />}
+        side={<AdminSide />}
+      >
         <p>x</p>
       </AppShell>,
     );
@@ -71,7 +79,11 @@ describe('AppShell', () => {
 describe('AppShell admin layout and header', () => {
   const render = (variant: 'app' | 'admin', isAdmin: boolean) =>
     wrap(
-      <AppShell variant={variant} user={{ email: 'x@example.co.th', isAdmin }}>
+      <AppShell
+        variant={variant}
+        account={<AccountControl user={{ email: 'x@example.co.th', isAdmin }} />}
+        side={variant === 'admin' ? <AdminSide /> : undefined}
+      >
         <p>x</p>
       </AppShell>,
     );
@@ -94,6 +106,29 @@ describe('AppShell admin layout and header', () => {
     expect(html).not.toContain('role="menu"');
   });
 
+  it('renders the frame without an account control while the session loads', () => {
+    const html = wrap(
+      <AppShell variant="app" account={<span>skeleton</span>}>
+        <p>x</p>
+      </AppShell>,
+    );
+    expect(html).toContain('href="#main"');
+    expect(html).toContain('href="/dashboard"');
+    expect(html).toContain('skeleton');
+    expect(html).not.toContain('aria-haspopup');
+  });
+
+  it('sends no admin menu until the side slot is filled', () => {
+    const html = wrap(
+      <AppShell variant="admin" account={<span>skeleton</span>} side={<span>side skeleton</span>}>
+        <p>x</p>
+      </AppShell>,
+    );
+    expect(html).toContain('side skeleton');
+    expect(html).not.toContain('<nav');
+    expect(html).not.toContain('/admin/users');
+  });
+
   it('does not render the admin sidebar for the app variant', () => {
     expect(render('app', true)).not.toContain('<nav');
   });
@@ -107,5 +142,13 @@ describe('ProjectSteps', () => {
     for (const label of ['ข้อมูลโครงการ', 'ประเมินความเสี่ยง', 'แผนจัดการ', 'รายงาน']) {
       expect(html).toContain(label);
     }
+  });
+});
+
+describe('ContentSkeleton', () => {
+  it('announces the loading state in Thai', () => {
+    const html = wrap(<ContentSkeleton />);
+    expect(html).toContain('role="status"');
+    expect(html).toContain('กำลังโหลด');
   });
 });
