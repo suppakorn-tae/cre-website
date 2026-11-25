@@ -53,9 +53,11 @@ var covered = map[string]route{
 	"POST /admin/users/{}/deactivate": {access: accessAdmin, path: static("/admin/users/0193a5c2-7b1e-4c3a-9d4f-2a6b8e1f5c70/deactivate")},
 	"POST /admin/users/{}/reactivate": {access: accessAdmin, path: static("/admin/users/0193a5c2-7b1e-4c3a-9d4f-2a6b8e1f5c70/reactivate")},
 
-	"GET /auth/csrf":             {access: accessPublic},
-	"POST /auth/login":           {access: accessPublic},
-	"POST /auth/logout":          {access: accessSession},
+	"GET /auth/csrf":   {access: accessPublic},
+	"POST /auth/login": {access: accessPublic},
+	// Logout is idempotent: it clears the cookie and answers 204 with or
+	// without a session, so it is checked as public (CSRF still applies).
+	"POST /auth/logout":          {access: accessPublic},
 	"GET /auth/me":               {access: accessSession},
 	"POST /auth/password/forgot": {access: accessPublic},
 	"POST /auth/password/reset":  {access: accessPublic},
