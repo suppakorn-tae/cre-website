@@ -12,10 +12,18 @@ import ui from '../../../messages/th/ui.json';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
-import { barPercent, LevelChart, ProjectRiskChart } from './Charts';
+import { barPercent, donutSegments, levelPercent, LevelChart, ProjectRiskChart } from './Charts';
 import { DashboardPage } from './DashboardPage';
 import { formatMillionBaht } from './format';
-import { dashboardHandlers, emptySummary, seedSummary, seedTop, setDashboardEmpty } from './mocks';
+import { ProjectsTable } from './ProjectsTable';
+import {
+  dashboardHandlers,
+  emptySummary,
+  seedProjects,
+  seedSummary,
+  seedTop,
+  setDashboardEmpty,
+} from './mocks';
 
 function render(node: ReactNode, summary?: typeof seedSummary, islands?: unknown) {
   const client = new QueryClient();
@@ -44,6 +52,68 @@ describe('barPercent', () => {
     expect(barPercent(1, 1000)).toBe(2);
     expect(barPercent(0, 100)).toBe(0);
     expect(barPercent(5, 0)).toBe(0);
+  });
+});
+
+describe('level donut', () => {
+  const counts = seedSummary.level_distribution;
+
+  it('shares are count over total, rounded to whole percent', () => {
+    expect(levelPercent(38, 172)).toBe(22);
+    expect(levelPercent(0, 0)).toBe(0);
+  });
+
+  it('draws one arc per non-empty level, in level order, filling the ring', () => {
+    const segs = donutSegments({ VL: 1, L: 0, M: 1, H: 2, VH: 0 });
+    expect(segs.map((s) => s.level)).toEqual(['VL', 'M', 'H']);
+    expect(segs.map((s) => s.length)).toEqual([25, 25, 50]);
+    expect(segs.map((s) => s.offset)).toEqual([0, 25, 50]);
+    expect(donutSegments({ VL: 0, L: 0, M: 0, H: 0, VH: 0 })).toEqual([]);
+  });
+
+  it('is an image with a Thai label and a legend of counts and percentages', () => {
+    const html = render(<LevelChart counts={counts} />);
+    expect(html).toContain('role="img"');
+    expect(html).toMatch(/aria-label="[^"]*ความเสี่ยงสูงมาก 9[^"]*"/);
+    expect(html).toContain('22%');
+    expect(html).toContain('stroke="var(--level-vh)"');
+  });
+});
+
+describe('projects table', () => {
+  it('shows island, type, value, progress, version status, H+VH and the three actions', () => {
+    const html = render(<ProjectsTable items={seedProjects} />);
+    for (const text of ['TK2', 'เกาะเต่า', 'ท่าเรือ', '48.5', 'ฉบับร่าง', 'ส่งแล้ว', 'ประเมินต่อ']) {
+      expect(html).toContain(text);
+    }
+    const [first] = seedProjects;
+    expect(html).toContain(
+      `href="/projects/${first.project_id}/versions/${first.latest_version_id}/assess"`,
+    );
+    expect(html).toContain(
+      `href="/projects/${first.project_id}/versions/${first.latest_submitted_version_id}/results"`,
+    );
+    expect(html).toContain(`href="/projects/${first.project_id}"`);
+    expect(html).toContain('role="progressbar"');
+  });
+
+  it('has no results link and says so when nothing was submitted', () => {
+    const html = render(<ProjectsTable items={seedProjects.slice(4)} />);
+    expect(html).toContain('ยังไม่ส่งผลการประเมิน');
+    expect(html).not.toContain('/results');
+  });
+
+  it('prints the typed island and type when the code is other', () => {
+    const item = {
+      ...seedProjects[0],
+      island_code: 'other',
+      island_other: 'เกาะหลีเป๊ะ',
+      type_code: 'other',
+      type_other: 'ท่าจอดเรือ',
+    };
+    const html = render(<ProjectsTable items={[item]} />);
+    expect(html).toContain('เกาะหลีเป๊ะ');
+    expect(html).toContain('ท่าจอดเรือ');
   });
 });
 

@@ -25,33 +25,35 @@ const names: [string, string, string, number, number, number | null][] = [
 // Per project: [H count, VH count] of the latest submitted version.
 const risk: ([number, number] | null)[] = [[6, 3], [3, 1], [9, 5], [2, 0], null];
 
-const items: DashboardProjectItem[] = names.map(([name, nickname, island, value, pct, hvh], i) => ({
-  project_id: id(i + 1),
-  name,
-  nickname,
-  island_code: island,
-  type_code: 'pier',
-  value_baht: value,
-  progress_pct: pct,
-  version_count: risk[i] ? 2 : 1,
-  latest_version_id: id(100 + i),
-  latest_version_no: risk[i] ? 2 : 1,
-  latest_version_status: risk[i] ? 'submitted' : 'draft',
-  latest_submitted_version_id: risk[i] ? id(100 + i) : null,
-  h_vh_count: hvh,
-  avg_rm: risk[i] ? 2.4 : null,
-}));
+export const seedProjects: DashboardProjectItem[] = names.map(
+  ([name, nickname, island, value, pct, hvh], i) => ({
+    project_id: id(i + 1),
+    name,
+    nickname,
+    island_code: island,
+    type_code: 'pier',
+    value_baht: value,
+    progress_pct: pct,
+    version_count: risk[i] ? 2 : 1,
+    latest_version_id: id(100 + i),
+    latest_version_no: risk[i] ? 2 : 1,
+    latest_version_status: risk[i] ? 'submitted' : 'draft',
+    latest_submitted_version_id: risk[i] ? id(100 + i) : null,
+    h_vh_count: hvh,
+    avg_rm: risk[i] ? 2.4 : null,
+  }),
+);
 
 export const seedSummary: DashboardSummary = {
   kpis: {
-    project_count: items.length,
+    project_count: seedProjects.length,
     version_count: 9,
     h_vh_indicator_count: 24,
     island_count: 4,
-    total_value_baht: items.reduce((sum, p) => sum + p.value_baht, 0),
+    total_value_baht: seedProjects.reduce((sum, p) => sum + p.value_baht, 0),
   },
   level_distribution: { VL: 38, L: 61, M: 44, H: 20, VH: 9 },
-  project_risks: items.flatMap((p, i) => {
+  project_risks: seedProjects.flatMap((p, i) => {
     const counts = risk[i];
     return counts
       ? [
@@ -114,7 +116,7 @@ export const dashboardHandlers: HttpHandler[] = [
     const needle = (url.searchParams.get('q') ?? '').trim().toLowerCase();
     const found = empty
       ? []
-      : items.filter((p) => `${p.name} ${p.nickname}`.toLowerCase().includes(needle));
+      : seedProjects.filter((p) => `${p.name} ${p.nickname}`.toLowerCase().includes(needle));
     return response(200).json({
       items: found.slice((page - 1) * pageSize, page * pageSize),
       page: { page, page_size: pageSize, total: found.length },
@@ -124,13 +126,13 @@ export const dashboardHandlers: HttpHandler[] = [
     response(200).json({ items: empty ? [] : seedTop }),
   ),
   http.get('/dashboard/panels/islands', ({ response }) => {
-    const codes = [...new Set(items.map((p) => p.island_code))];
+    const codes = [...new Set(seedProjects.map((p) => p.island_code))];
     return response(200).json({
       items: empty
         ? []
         : codes.map((code) => ({
             island_code: code,
-            projects: items
+            projects: seedProjects
               .filter((p) => p.island_code === code)
               .map((p) => ({
                 project_id: p.project_id,
