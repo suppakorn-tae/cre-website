@@ -55,6 +55,13 @@ type Indicator struct {
 	StrategyUpdatedAt            *time.Time
 }
 
+// FactorAverage is the mean stored RM of one factor.
+type FactorAverage struct {
+	FactorCode  string
+	ScoredCount int
+	AverageRM   float64
+}
+
 // Results is what a submission stored, with counts per level.
 type Results struct {
 	VersionID   uuid.UUID
@@ -62,7 +69,9 @@ type Results struct {
 	Editable    bool
 	AverageRM   float64
 	LevelCounts map[string]int
-	Items       []Indicator
+	// FactorAverages are read from the stored results, in catalogue order.
+	FactorAverages []FactorAverage
+	Items          []Indicator
 }
 
 // Choice is a saved strategy.
@@ -95,6 +104,10 @@ func (s *Service) Get(ctx context.Context, projectID, versionID, owner uuid.UUID
 	if err != nil {
 		return Results{}, fmt.Errorf("results: list results: %w", err)
 	}
+	factors, err := q.ListFactorAverages(ctx, versionID)
+	if err != nil {
+		return Results{}, fmt.Errorf("results: list factor averages: %w", err)
+	}
 	texts, err := q.ListResultAdvice(ctx, sqlc.ListResultAdviceParams{Locale: DefaultLocale, VersionID: versionID})
 	if err != nil {
 		return Results{}, fmt.Errorf("results: list advice: %w", err)
@@ -105,6 +118,10 @@ func (s *Service) Get(ctx context.Context, projectID, versionID, owner uuid.UUID
 		VersionID: v.ID, SubmittedAt: *v.SubmittedAt, Editable: v.Editable, AverageRM: v.AverageRm,
 		LevelCounts: map[string]int{"VL": 0, "L": 0, "M": 0, "H": 0, "VH": 0},
 		Items:       make([]Indicator, len(rows)),
+	}
+	out.FactorAverages = make([]FactorAverage, len(factors))
+	for i, f := range factors {
+		out.FactorAverages[i] = FactorAverage{FactorCode: f.FactorCode, ScoredCount: int(f.ScoredCount), AverageRM: f.AverageRm}
 	}
 	for i, r := range rows {
 		it := Indicator{

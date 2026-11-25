@@ -43,6 +43,20 @@ export function mockResultItems(): IndicatorResult[] {
   });
 }
 
+/** Mean RM per factor in catalogue order; a factor code is the indicator code minus its number. */
+function mockFactorAverages(items: IndicatorResult[]): ResultsResponse['factor_averages'] {
+  const groups = new Map<string, number[]>();
+  for (const item of items) {
+    const factor = item.indicator_code.split('-').slice(0, 2).join('-');
+    groups.set(factor, [...(groups.get(factor) ?? []), item.rm]);
+  }
+  return [...groups].map(([factor_code, rms]) => ({
+    factor_code,
+    scored_count: rms.length,
+    average_rm: Math.round((rms.reduce((a, b) => a + b, 0) / rms.length) * 1000) / 1000,
+  }));
+}
+
 export function mockResults(versionId: string, items = mockResultItems()): ResultsResponse {
   const level_counts = { VL: 0, L: 0, M: 0, H: 0, VH: 0 };
   for (const item of items) level_counts[item.level] += 1;
@@ -55,6 +69,7 @@ export function mockResults(versionId: string, items = mockResultItems()): Resul
       level_counts,
       average_rm: items.reduce((sum, i) => sum + i.rm, 0) / items.length,
     },
+    factor_averages: mockFactorAverages(items),
     items,
   };
 }
