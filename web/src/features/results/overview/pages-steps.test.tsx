@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { reportContextKey } from '@/features/reports/api';
 import { ReportPage } from '@/features/reports/ReportPage';
@@ -17,6 +17,12 @@ import ui from '../../../../messages/th/ui.json';
 
 import { mockResults } from './mocks';
 import { ResultsPage } from './ResultsPage';
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: vi.fn() }),
+  usePathname: () => '/projects/p/versions/v/results',
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 const [version] = mockVersions();
 const messages = { results, reports, common, ui, shell };

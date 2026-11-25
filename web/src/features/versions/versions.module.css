@@ -362,3 +362,15 @@
 .levelBarPart[data-level='VH'] {
   background: var(--level-vh);
 }
+.levelLink {
+  display: inline-flex;
+  border-radius: var(--radius-sm, 0.25rem);
+  text-decoration: none;
+}
+.levelLink:hover {
+  filter: brightness(0.95);
+}
+.levelLink:focus-visible {
+  outline: 2px solid var(--color-focus, currentColor);
+  outline-offset: 2px;
+}

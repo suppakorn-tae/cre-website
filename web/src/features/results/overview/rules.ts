@@ -29,6 +29,14 @@ export function highCount(summary: ResultsResponse['summary']): number {
 export const TAB_IDS = ['overview', 'table', 'heatmap', 'hvh'] as const;
 export type TabId = (typeof TAB_IDS)[number];
 
+/** Query key of the open tab, e.g. `?tab=hvh`. */
+export const TAB_PARAM = 'tab';
+
+/** Reads the `tab` query; anything unknown falls back to the overview. */
+export function parseTab(value: string | null | undefined): TabId {
+  return TAB_IDS.find((id) => id === value) ?? 'overview';
+}
+
 /** Scale of the factor chart (the RM score runs 1 to 5). */
 export const CHART_MIN = 1;
 export const CHART_MAX = 5;

@@ -72,6 +72,14 @@ describe('OverviewPanel', () => {
     expect(html).toContain(`${v3}/report`);
   });
 
+  it('links the H and VH chips to the advice tab of the results page', () => {
+    const html = panel();
+    const links = html.match(/<a [^>]*href="[^"]*\/results\?tab=hvh"[^>]*>/g) ?? [];
+    expect(links).toHaveLength(2);
+    expect(html).toContain('ดูคำแนะนำของตัวชี้วัดความเสี่ยงสูงมาก');
+    expect(html).toContain('ดูคำแนะนำของตัวชี้วัดความเสี่ยงสูง ');
+  });
+
   it('shows the project information card', () => {
     const html = panel();
     expect(html).toContain('ข้อมูลโครงการ');
