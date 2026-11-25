@@ -62,10 +62,13 @@
   flex-direction: column;
   gap: var(--space-2);
 }
-.figure svg {
+.plot {
   width: 100%;
-  max-width: 40rem;
-  height: auto;
+  min-width: 0;
+}
+.figure svg {
+  display: block;
+  max-width: 100%;
 }
 .line {
   stroke: var(--color-blue-700);

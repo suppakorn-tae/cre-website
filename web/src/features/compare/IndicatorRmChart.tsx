@@ -9,10 +9,10 @@ import { CheckboxGroup, Skeleton } from '@/components/ui';
 import { fetchIndicatorRm, indicatorRmKey } from './api';
 import styles from './compare.module.css';
 import { useNames } from './names';
+import { BOX_H, PAD_X, PLOT_H, plotWidth, useBoxWidth } from './chartBox';
 import { linePath, plotPoints } from './rules';
 
-const W = 320;
-const H = 120;
+const H = PLOT_H;
 
 /** RM of each indicator across versions, filtered by factor (FR-46). Plain SVG. */
 export function IndicatorRmChart({ projectId }: { projectId: string }) {
@@ -28,6 +28,8 @@ export function IndicatorRmChart({ projectId }: { projectId: string }) {
     queryFn: () => fetchIndicatorRm(projectId, factors),
   });
   const names = useNames();
+  const [boxRef, boxWidth] = useBoxWidth();
+  const W = plotWidth(boxWidth);
 
   if (!all.data) return <Skeleton height="8rem" />;
   const factorCodes = [...new Set(all.data.indicators.map((i) => i.factor_code))];
@@ -45,35 +47,45 @@ export function IndicatorRmChart({ projectId }: { projectId: string }) {
         onChange={(v) => setFactors(v)}
       />
       <figure className={styles.figure}>
-        <svg viewBox={`-8 -8 ${W + 16} ${H + 32}`} role="img" aria-label={t('title')}>
-          {matrix.indicators.map((row, n) => (
-            <path
-              key={row.indicator_code}
-              d={linePath(
-                plotPoints(
-                  row.points.map((p) => p.rm),
-                  W,
-                  H,
-                  5,
-                ),
-              )}
-              className={styles.series}
-              data-series={n % 6}
-              fill="none"
-            />
-          ))}
-          {matrix.versions.map((v, i) => (
-            <text
-              key={v.version_id}
-              x={matrix.versions.length > 1 ? (i * W) / (matrix.versions.length - 1) : 0}
-              y={H + 18}
-              textAnchor="middle"
-              className={styles.axis}
-            >
-              {tc('trend.versionShort', { no: v.version_no })}
-            </text>
-          ))}
-        </svg>
+        <div ref={boxRef} className={styles.plot}>
+          <svg
+            width={boxWidth}
+            height={BOX_H}
+            viewBox={`0 0 ${boxWidth} ${BOX_H}`}
+            role="img"
+            aria-label={t('title')}
+          >
+            <g transform={`translate(${PAD_X} 8)`}>
+              {matrix.indicators.map((row, n) => (
+                <path
+                  key={row.indicator_code}
+                  d={linePath(
+                    plotPoints(
+                      row.points.map((p) => p.rm),
+                      W,
+                      H,
+                      5,
+                    ),
+                  )}
+                  className={styles.series}
+                  data-series={n % 6}
+                  fill="none"
+                />
+              ))}
+              {matrix.versions.map((v, i) => (
+                <text
+                  key={v.version_id}
+                  x={matrix.versions.length > 1 ? (i * W) / (matrix.versions.length - 1) : 0}
+                  y={H + 22}
+                  textAnchor="middle"
+                  className={styles.axis}
+                >
+                  {tc('trend.versionShort', { no: v.version_no })}
+                </text>
+              ))}
+            </g>
+          </svg>
+        </div>
         <ul className={styles.legend}>
           {matrix.indicators.map((row, n) => (
             <li key={row.indicator_code} data-series={n % 6}>
