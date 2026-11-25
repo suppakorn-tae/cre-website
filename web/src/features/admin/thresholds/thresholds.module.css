@@ -77,18 +77,22 @@
 }
 
 /* RL table: a real table on desktop, stacked cards on mobile. */
-.table {
+.table,
+.impactTable {
   width: 100%;
   border-collapse: collapse;
 }
 .table th,
-.table td {
+.table td,
+.impactTable th,
+.impactTable td {
   padding: var(--space-2) var(--space-3);
   border-bottom: 1px solid var(--color-divider);
   text-align: start;
   vertical-align: top;
 }
-.table th {
+.table th,
+.impactTable th {
   color: var(--color-text-secondary);
   font-weight: var(--weight-semibold);
 }
@@ -144,11 +148,38 @@
   white-space: normal;
 }
 
+/* RI_C / RI_T side by side. */
+.impactGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.impactCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-white);
+}
+.score {
+  color: var(--color-blue-700);
+  font-weight: var(--weight-bold);
+}
+.formActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
 @media (max-width: 800px) {
   .card {
     padding: var(--space-4);
   }
-  .filters {
+  .filters,
+  .impactGrid {
     grid-template-columns: minmax(0, 1fr);
   }
   .table thead {

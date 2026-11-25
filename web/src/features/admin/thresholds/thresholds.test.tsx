@@ -9,9 +9,23 @@ import ui from '../../../../messages/th/ui.json';
 import { createApiClient } from '@/lib/api/client';
 
 import { saveErrorKey } from './api';
-import { adminThresholdHandlers, getRlStore, resetThresholdStore, setDirection } from './mocks';
+import { ImpactForm } from './ImpactTables';
+import {
+  adminThresholdHandlers,
+  getImpactStore,
+  getRlStore,
+  resetThresholdStore,
+  setDirection,
+} from './mocks';
 import { RlRow } from './RlRow';
-import { activeSlots, checkRl, parseDraft, parseValue, type Parsed } from './validation';
+import {
+  activeSlots,
+  checkImpact,
+  checkRl,
+  parseDraft,
+  parseValue,
+  type Parsed,
+} from './validation';
 
 const p = (
   a: number | null,
@@ -67,6 +81,15 @@ describe('RL rules mirror the api', () => {
     expect(activeSlots(p(1, 2, 3, null, null))).toEqual(['a', 'b', 'c']);
     expect(activeSlots(p(null, null, 3, 4, 5))).toEqual(['c', 'd', 'e']);
     expect(activeSlots(p(1, 2, 3, 4, 5))).toEqual(['a', 'b', 'c', 'd', 'e']);
+  });
+});
+
+describe('impact rules mirror the api', () => {
+  it('needs all five, not negative, strictly increasing', () => {
+    expect(checkImpact(p(1, 2, 3, 4, 5))).toEqual({ fields: {} });
+    expect(checkImpact(p(1, 2, 3, 4, null)).fields).toEqual({ e: 'required' });
+    expect(checkImpact(p(-1, 2, 3, 4, 5)).fields).toEqual({ a: 'negative' });
+    expect(checkImpact(p(1, 2, 2, 4, 5)).form).toBe('order');
   });
 });
 
@@ -134,6 +157,24 @@ describe('RlRow', () => {
   });
 });
 
+describe('ImpactForm', () => {
+  it('renders RIC and RIT side by side with their values, rule and one save', () => {
+    const html = wrap(<ImpactForm stored={getImpactStore()} />);
+    for (const text of [
+      'RIC · ผลกระทบด้านต้นทุน',
+      'RIT · ผลกระทบด้านเวลา',
+      'ต้องครบ 5 ค่า ไม่ติดลบ และเพิ่มขึ้นอย่างเคร่งครัด',
+      'บันทึกการเปลี่ยนแปลง',
+      'ยกเลิก',
+      'value="9.58"',
+      'value="79.33"',
+    ]) {
+      expect(html).toContain(text);
+    }
+    expect(html.match(/type="submit"/g)).toHaveLength(1);
+  });
+});
+
 const server = setupServer(...adminThresholdHandlers);
 beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
 beforeEach(() => resetThresholdStore());
@@ -163,5 +204,17 @@ describe('admin thresholds against the MSW mocks', () => {
       });
     await expect(put(p(1, 2, 3, 4, 5))).rejects.toMatchObject({ status: 422 });
     expect((await put(p(5, 4, 3, 2, 1))).data!.thresholds.a).toBe(5);
+  });
+
+  it('replaces both impact tables in one call and rejects a bad one with 422', async () => {
+    const ok = await api.PUT('/admin/impact-tables', {
+      body: { ri_c: { a: 1, b: 2, c: 3, d: 4, e: 5 }, ri_t: { a: 5, b: 6, c: 7, d: 8, e: 9 } },
+    });
+    expect(ok.data!.ri_t.thresholds.a).toBe(5);
+    expect(getImpactStore().ri_c.thresholds.e).toBe(5);
+    await expect(
+      api.PUT('/admin/impact-tables', { body: { ri_c: { a: 3, b: 2, c: 3, d: 4, e: 5 } } }),
+    ).rejects.toMatchObject({ status: 422 });
+    expect(getImpactStore().ri_c.thresholds.a).toBe(1);
   });
 });

@@ -2,6 +2,7 @@ import type { components } from '@/lib/api/generated/schema';
 
 export type Direction = components['schemas']['IndicatorDirection'];
 export type RlValues = components['schemas']['AdminRlThresholdValues'];
+export type ImpactValues = components['schemas']['AdminImpactThresholdValues'];
 
 export const SLOTS = ['a', 'b', 'c', 'd', 'e'] as const;
 export type Slot = (typeof SLOTS)[number];
@@ -67,6 +68,18 @@ export function checkRl(direction: Direction, v: Parsed): Check {
   if (!['11111', '11100', '00111'].includes(set)) return { fields: {}, form: 'pattern' };
   const values = SLOTS.map((s) => v[s]).filter((x): x is number => x !== null);
   return monotonic(values, direction === 'normal') ? { fields: {} } : { fields: {}, form: 'order' };
+}
+
+/** RI_C / RI_T rules: all five set, none negative, strictly increasing. */
+export function checkImpact(v: Parsed): Check {
+  const fields = checkEach(v, false);
+  if (Object.keys(fields).length > 0) return { fields };
+  return monotonic(
+    SLOTS.map((s) => v[s] as number),
+    true,
+  )
+    ? { fields: {} }
+    : { fields: {}, form: 'order' };
 }
 
 /** Inputs a stored indicator shows: a..c and c..e indicators show only their own. */
