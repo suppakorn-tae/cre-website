@@ -97,7 +97,7 @@ func (f *fake) IndicatorRM(_ context.Context, o, p uuid.UUID, factors, _ []strin
 
 type accounts struct{}
 
-func (accounts) GetRecord(_ context.Context, id string) (session.Record, error) {
+func (accounts) GetRecord(_ context.Context, _ string) (session.Record, error) {
 	return session.Record{Role: session.RoleUser, Status: session.StatusActive, Version: 1}, nil
 }
 
