@@ -81,6 +81,9 @@ type Querier interface {
 	// back too (status tells them apart); their figures are ignored.
 	CompareVersionMetrics(ctx context.Context, arg CompareVersionMetricsParams) (CompareVersionMetricsRow, error)
 	CountAuditLog(ctx context.Context, arg CountAuditLogParams) (int64, error)
+	// Created when a new Google user accepts the retention notice and terms. No
+	// password; Google has verified the e-mail.
+	CreateGoogleAccount(ctx context.Context, arg CreateGoogleAccountParams) (CreateGoogleAccountRow, error)
 	// Every query takes the owner id and hides soft-deleted rows. A project of
 	// another user and a deleted project look the same: no row.
 	CreateProject(ctx context.Context, arg CreateProjectParams) (uuid.UUID, error)
@@ -104,6 +107,11 @@ type Querier interface {
 	// The live job for a submission; a failed job does not count, so the user
 	// may ask again.
 	FindReportJob(ctx context.Context, arg FindReportJobParams) (uuid.UUID, error)
+	// Google sign-in: the account linked to this Google id. Deleted accounts
+	// have no Google id, so they never match.
+	GetAccountByGoogleSub(ctx context.Context, googleSub pgtype.Text) (GetAccountByGoogleSubRow, error)
+	// Google sign-in with a verified e-mail that is not linked yet (BR-16).
+	GetAccountForGoogleByEmail(ctx context.Context, email pgtype.Text) (GetAccountForGoogleByEmailRow, error)
 	// Looks an account up by e-mail for log in and password reset. A deleted
 	// account has no e-mail, so it never matches.
 	GetAccountForLogin(ctx context.Context, email pgtype.Text) (GetAccountForLoginRow, error)
@@ -155,6 +163,9 @@ type Querier interface {
 	InsertResultAdvice(ctx context.Context, arg InsertResultAdviceParams) error
 	// The number counts deleted versions too, so it is never reused.
 	InsertVersion(ctx context.Context, arg InsertVersionParams) (uuid.UUID, error)
+	// Stores the Google id on an active account that has none yet. A Google id
+	// used by another account fails on account_google_sub_uq.
+	LinkGoogleSub(ctx context.Context, arg LinkGoogleSubParams) (int64, error)
 	ListAnswerY3(ctx context.Context, versionID uuid.UUID) ([]AnswerY3, error)
 	ListAnswers(ctx context.Context, versionID uuid.UUID) ([]Answer, error)
 	// Newest first. Each filter is optional. The sort matches audit_log_time_ix,
