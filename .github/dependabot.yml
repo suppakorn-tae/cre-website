@@ -1,0 +1,85 @@
+# Weekly grouped updates, one PR per ecosystem (IO-155).
+# The stack is fixed (AGENTS.md), so only minor and patch updates are
+# proposed. Commit prefixes use an allowed type and scope so commitlint
+# passes; group names are short to keep the header within 72 characters.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /backend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Bangkok
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "chore(api)"
+    groups:
+      go:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Bangkok
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "chore(web)"
+    groups:
+      npm:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+      # Next.js is pinned exactly (AGENTS.md): patch updates only.
+      - dependency-name: next
+        update-types: ["version-update:semver-minor"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Bangkok
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "ci(ci)"
+    groups:
+      actions:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  - package-ecosystem: docker
+    directories:
+      - /backend
+      - /web
+      - /deploy/backup
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Asia/Bangkok
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: "chore(deploy)"
+    groups:
+      img:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: golang
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: node
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
+      - dependency-name: alpine
+        update-types: ["version-update:semver-major"]
