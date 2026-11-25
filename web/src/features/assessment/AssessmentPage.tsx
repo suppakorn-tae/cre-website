@@ -16,14 +16,14 @@ import {
   COST_UNITS,
   TIME_UNITS,
   countGroup,
-  emptyDraft,
   fromAnswer,
   sharedUnit,
   toInput,
-  switchSharedUnit,
   type Draft,
 } from './rules';
 import { SubmitBar } from './SubmitBar';
+import { UnitSwitchDialog } from './UnitSwitchDialog';
+import { commitUnitSwitch, requestUnitSwitch, type PendingSwitch } from './unitSwitch';
 import { Toolbar } from './Toolbar';
 import { classifySubmitFailure, resultsPath, submitVersion, type SubmitFailure } from './submit';
 import { useAutosave } from './useAutosave';
@@ -50,6 +50,7 @@ function Form({
   const [failure, setFailure] = useState<SubmitFailure | null>(null);
   const [filter, setFilter] = useState('all');
   const [unitSkipped, setUnitSkipped] = useState(0);
+  const [pendingUnit, setPendingUnit] = useState<PendingSwitch | null>(null);
   const submitLock = useRef(false);
 
   const save = useCallback(
@@ -97,12 +98,23 @@ function Form({
     queue(toInput(code, draft));
   };
 
-  const setUnit = (field: 'y1' | 'y2', unit: string) => {
-    const { drafts: next, changed, skipped } = switchSharedUnit(all, drafts, field, unit);
+  const applyUnit = (field: 'y1' | 'y2', unit: string, onlyEmpty: boolean) => {
+    const { drafts: next, skipped } = commitUnitSwitch(all, drafts, field, unit, onlyEmpty, queue);
     setDrafts(next);
     setFailure(null);
     setUnitSkipped(skipped.length);
-    for (const code of changed) queue(toInput(code, next[code] ?? emptyDraft()));
+  };
+
+  // Saved amounts keep their number but change meaning, so the user confirms first.
+  const setUnit = (field: 'y1' | 'y2', unit: string) => {
+    const request = requestUnitSwitch(all, drafts, field, unit);
+    if (request.kind === 'confirm') setPendingUnit(request.pending);
+    else applyUnit(field, unit, false);
+  };
+
+  const resolveUnit = (onlyEmpty: boolean) => {
+    if (pendingUnit) applyUnit(pendingUnit.field, pendingUnit.unit, onlyEmpty);
+    setPendingUnit(null);
   };
 
   const confirmSubmit = async () => {
@@ -166,6 +178,12 @@ function Form({
         onFilter={setFilter}
         onCostUnit={(unit) => setUnit('y1', unit)}
         onTimeUnit={(unit) => setUnit('y2', unit)}
+      />
+      <UnitSwitchDialog
+        pending={pendingUnit}
+        onAll={() => resolveUnit(false)}
+        onEmptyOnly={() => resolveUnit(true)}
+        onCancel={() => setPendingUnit(null)}
       />
       <GroupList
         catalogue={catalogue}

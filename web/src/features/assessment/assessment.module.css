@@ -573,3 +573,8 @@
 .statusCell {
   white-space: nowrap;
 }
+
+.dialogExtra {
+  display: flex;
+  margin-top: var(--space-3, 12px);
+}
