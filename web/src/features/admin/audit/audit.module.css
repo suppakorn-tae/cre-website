@@ -74,6 +74,10 @@
   background: var(--color-subtle);
 }
 .toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--control-sm);
   padding: 0;
   border: 0;
   border-radius: var(--radius-control);
