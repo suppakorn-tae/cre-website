@@ -55,7 +55,7 @@ export function HvhTab({ projectId, versionId, results, names }: Props) {
           return (
             <li key={row.indicator_code} className={styles.card}>
               <header className={styles.head}>
-                <LevelBadge level={row.level} variant="solid" label={tUi(`levels.${row.level}`)} />
+                <LevelBadge level={row.level} label={tUi(`levels.${row.level}`)} />
                 <div className={styles.name}>
                   <h3 className={styles.heading}>
                     {row.indicator_code} {meta?.name ?? ''}

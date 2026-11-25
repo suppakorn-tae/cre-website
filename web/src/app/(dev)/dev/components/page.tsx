@@ -36,6 +36,12 @@ import '@/styles/tokens.css';
 
 import { RadixExamples } from './radix-examples';
 
+const MUTED_SWATCHES = [
+  { bg: 'white', name: '#FFFFFF' },
+  { bg: 'canvas', name: '#F1F4F8' },
+  { bg: 'blue-50', name: '#EAF1FD' },
+];
+
 type Row = { id: string; name: string; value: string; progress: string };
 
 // Review page for the shared kit. Dev-only: the (dev) layout 404s in production.
@@ -77,6 +83,47 @@ export default function ComponentsPage() {
     >
       <h1>{t('dev.title')}</h1>
       <p>{t('dev.intro')}</p>
+
+      <h2>{t('dev.colours')}</h2>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+        {MUTED_SWATCHES.map(({ bg, name }) => (
+          <div
+            key={bg}
+            style={{
+              background: `var(--color-${bg})`,
+              color: 'var(--color-text-muted)',
+              padding: '8px 12px',
+              borderRadius: 'var(--radius-control)',
+            }}
+          >
+            {t('dev.mutedText')} {name}
+          </div>
+        ))}
+        <div
+          style={{
+            background: 'var(--color-white)',
+            border: '1px solid var(--color-field-border)',
+            padding: '8px 12px',
+            borderRadius: 'var(--radius-control)',
+          }}
+        >
+          {t('dev.fieldBorder')}
+        </div>
+        {LEVELS.map((l) => (
+          <span
+            key={l}
+            style={{
+              background: `var(--level-${l.toLowerCase()}-tint)`,
+              color: `var(--level-${l.toLowerCase()}-text)`,
+              padding: '8px 12px',
+              borderRadius: 'var(--radius-badge)',
+              fontWeight: 'var(--weight-bold)',
+            }}
+          >
+            {t(`levels.${l}`)}
+          </span>
+        ))}
+      </div>
 
       <h2>{t('dev.buttons')}</h2>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -214,9 +261,6 @@ export default function ComponentsPage() {
             label={t(`levels.${l}`)}
             count={l === 'H' ? 11 : undefined}
           />
-        ))}
-        {LEVELS.map((l) => (
-          <LevelBadge key={`s-${l}`} level={l} variant="solid" label={t(`levels.${l}`)} />
         ))}
       </p>
       <DataTable
