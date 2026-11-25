@@ -35,7 +35,7 @@ var (
 // EC-HS-2 is H, EC-MG-1 is L.
 type fake struct{}
 
-func (fake) Get(_ context.Context, p, v, o uuid.UUID, locale string) (svc.Results, error) {
+func (fake) Get(_ context.Context, p, v, o uuid.UUID) (svc.Results, error) {
 	if p != project || o != owner || (v != latest && v != old) {
 		return svc.Results{}, svc.ErrNotFound
 	}
@@ -47,7 +47,7 @@ func (fake) Get(_ context.Context, p, v, o uuid.UUID, locale string) (svc.Result
 			{Code: "EC-MG-1", X: 2, Y1Pct: 1.5, Y2Pct: 3, RL: 2, RIC: 2, RIT: 2, RIE: 2, RIMax: 2, RM: 2, Level: "L"},
 			{
 				Code: "EC-HS-2", X: 5, Y1Pct: 12, Y2Pct: 10, RL: 3, RIC: 4, RIT: 4, RIE: 3, RIMax: 4, RM: 3.5, Level: "H",
-				Advice:   []svc.Advice{{List: "RL", Items: []string{locale + " one", "two", "three", "four", "five"}}},
+				Advice:   []svc.Advice{{List: "RL", Items: []string{"th one", "two", "three", "four", "five"}}},
 				Strategy: &strategy, StrategyUpdatedAt: &at,
 			},
 		},
@@ -178,7 +178,7 @@ func TestNotHighRiskCodeAndLatestFlag(t *testing.T) {
 		t.Fatalf("body = %s", body)
 	}
 	_, body = call(t, owner.String(), http.MethodGet, base+old.String()+"/results?locale=en", "")
-	if !strings.Contains(body, `"editable":false`) || !strings.Contains(body, "en one") || !strings.Contains(body, `"VH":0`) {
+	if !strings.Contains(body, `"editable":false`) || !strings.Contains(body, "th one") || !strings.Contains(body, `"VH":0`) {
 		t.Fatalf("body = %s", body)
 	}
 }
