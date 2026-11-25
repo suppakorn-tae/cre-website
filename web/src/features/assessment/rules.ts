@@ -78,12 +78,14 @@ export function sharedUnit(codes: string[], drafts: Drafts, field: UnitField): s
  * unit (e.g. above 100 for %) keeps its unit and value, so a unit switch never turns
  * a stored value into an invalid one. `changed` lists rows with an amount that
  * moved to the new unit (the only ones that need saving); `skipped` lists the kept rows.
+ * With `onlyEmpty`, rows that already have an amount are left alone (and not listed).
  */
 export function switchSharedUnit(
   codes: string[],
   drafts: Drafts,
   field: UnitField,
   unit: string,
+  onlyEmpty = false,
 ): { drafts: Drafts; changed: string[]; skipped: string[] } {
   const next = { ...drafts };
   const changed: string[] = [];
@@ -93,6 +95,7 @@ export function switchSharedUnit(
     const d = next[code] ?? emptyDraft();
     if (d[field].unit === unit) continue;
     const typed = d[field].amount.trim() !== '';
+    if (typed && onlyEmpty) continue;
     if (typed && parseAmount(d[field].amount, max) === null) {
       skipped.push(code);
       continue;
