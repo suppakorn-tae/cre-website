@@ -74,13 +74,21 @@ func CSRF(trusted []netip.Prefix, extraOrigins ...string) func(http.Handler) htt
 }
 
 // normOrigin returns "scheme://host[:port]" in lower case, or false when o is
-// not an http(s) origin (for example the opaque origin "null").
+// not an http(s) origin (for example the opaque origin "null"). Default
+// ports (80 for http, 443 for https) are dropped.
 func normOrigin(o string) (string, bool) {
 	u, err := url.Parse(strings.TrimRight(o, "/"))
 	if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
 		return "", false
 	}
-	return strings.ToLower(u.Scheme + "://" + u.Host), true
+	host, port := strings.ToLower(u.Hostname()), u.Port()
+	if strings.Contains(host, ":") { // IPv6 literal
+		host = "[" + host + "]"
+	}
+	if port == "" || (u.Scheme == "http" && port == "80") || (u.Scheme == "https" && port == "443") {
+		return strings.ToLower(u.Scheme) + "://" + host, true
+	}
+	return strings.ToLower(u.Scheme) + "://" + host + ":" + port, true
 }
 
 // ownOrigin is the origin the request itself was made to. Behind a
@@ -94,5 +102,6 @@ func ownOrigin(r *http.Request, trusted []netip.Prefix) string {
 	case TrustedPeer(r, trusted) && r.Header.Get("X-Forwarded-Proto") == "https":
 		scheme = "https"
 	}
-	return strings.ToLower(scheme + "://" + r.Host)
+	n, _ := normOrigin(scheme + "://" + r.Host)
+	return n
 }
