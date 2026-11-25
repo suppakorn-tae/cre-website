@@ -47,6 +47,15 @@ func SendOTP(ctx context.Context, m Mailer, to, code string, validMinutes int) e
 	return m.Send(ctx, Message{To: to, Subject: subject, Body: body})
 }
 
+// SendContinueWithGoogle sends the Thai "continue with Google" e-mail.
+func SendContinueWithGoogle(ctx context.Context, m Mailer, to string) error {
+	subject, body, err := tmail.RenderContinueWithGoogle()
+	if err != nil {
+		return err
+	}
+	return m.Send(ctx, Message{To: to, Subject: subject, Body: body})
+}
+
 // Config configures the SMTP mailer. It mirrors the SMTP_* environment
 // variables: Host=SMTP_HOST, Port=SMTP_PORT, User=SMTP_USER,
 // Password=SMTP_PASSWORD, From=SMTP_FROM.
