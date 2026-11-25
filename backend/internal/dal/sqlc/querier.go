@@ -118,6 +118,10 @@ type Querier interface {
 	GetAuditEntry(ctx context.Context, id int64) (GetAuditEntryRow, error)
 	// Any admin may fetch any export; the handler sits behind RequireAdmin.
 	GetExportJob(ctx context.Context, jobID uuid.UUID) (GetExportJobRow, error)
+	// Research read path (IO-71). Used only by the export worker. It selects no
+	// e-mail, password hash or Google id, and it may read soft-deleted rows when
+	// the export asks for them.
+	GetExportJobOptions(ctx context.Context, jobID uuid.UUID) (GetExportJobOptionsRow, error)
 	GetJob(ctx context.Context, id uuid.UUID) (Job, error)
 	// The owner check lives in the query: another account's job looks absent.
 	GetJobForRequester(ctx context.Context, arg GetJobForRequesterParams) (Job, error)
@@ -174,6 +178,16 @@ type Querier interface {
 	// @q is a LIKE pattern already escaped by the caller, or empty for all.
 	// latest_version_no is 0 when the project has no live version.
 	ListProjects(ctx context.Context, arg ListProjectsParams) ([]ListProjectsRow, error)
+	// All accounts, or only those chosen for the job. A deleted account stays: its
+	// pseudonym still ties its projects together.
+	ListResearchAccounts(ctx context.Context, arg ListResearchAccountsParams) ([]ListResearchAccountsRow, error)
+	ListResearchImpactThresholds(ctx context.Context, arg ListResearchImpactThresholdsParams) ([]VersionImpactThreshold, error)
+	// One row per answered indicator of every version of the project. The result
+	// and strategy columns are NULL while a version has no result yet.
+	ListResearchIndicatorRows(ctx context.Context, arg ListResearchIndicatorRowsParams) ([]ListResearchIndicatorRowsRow, error)
+	ListResearchProjects(ctx context.Context, arg ListResearchProjectsParams) ([]ListResearchProjectsRow, error)
+	ListResearchRlThresholds(ctx context.Context, arg ListResearchRlThresholdsParams) ([]VersionRlThreshold, error)
+	ListResearchVersions(ctx context.Context, arg ListResearchVersionsParams) ([]ListResearchVersionsRow, error)
 	// Current advice text of the lists stored at submission, in admin-defined
 	// order. The text is read now, not copied at submission. A missing locale
 	// falls back to th, which every item has.
