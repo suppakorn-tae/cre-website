@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NextIntlClientProvider } from 'next-intl';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { projectKey } from '@/features/versions/api';
 import { mockProject, mockProjectId, mockVersions } from '@/features/versions/mocks';
@@ -16,6 +16,12 @@ import ui from '../../../../messages/th/ui.json';
 
 import { mockResults } from './mocks';
 import { ResultsPage } from './ResultsPage';
+
+vi.mock('next/navigation', () => ({
+  useRouter: () => ({ replace: vi.fn() }),
+  usePathname: () => '/projects/p/versions/v/results',
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 const css = readFileSync(join(__dirname, 'results.module.css'), 'utf8');
 

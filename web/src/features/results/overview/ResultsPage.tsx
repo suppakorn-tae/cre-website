@@ -2,8 +2,8 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
 
 import { Button, EmptyState, KpiCard, LEVELS, LevelBadge, Skeleton, Tabs } from '@/components/ui';
 import { ProjectSteps } from '@/features/shell/ProjectSteps';
@@ -18,7 +18,7 @@ import { ResultsTable } from '../table/ResultsTable';
 import { useIndicatorNames, useResults, useVersion } from './api';
 import { OverviewTab } from './OverviewTab';
 import styles from './results.module.css';
-import { highCount, TAB_IDS, type TabId } from './rules';
+import { highCount, parseTab, TAB_IDS, TAB_PARAM, type TabId } from './rules';
 import { subscript } from './format';
 
 const ID_PREFIX = 'results';
@@ -31,7 +31,21 @@ const ID_PREFIX = 'results';
 export function ResultsPage({ projectId, versionId }: { projectId: string; versionId: string }) {
   const t = useTranslations('results');
   const tUi = useTranslations('ui');
-  const [tab, setTab] = useState<TabId>('overview');
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const tab = parseTab(searchParams?.get(TAB_PARAM));
+  /** The URL is the state, so a link can open any tab; replace keeps history clean. */
+  function setTab(id: TabId) {
+    const next = new URLSearchParams(searchParams?.toString());
+    if (id === 'overview') {
+      next.delete(TAB_PARAM);
+    } else {
+      next.set(TAB_PARAM, id);
+    }
+    const query = next.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }
   const project = useQuery({
     queryKey: projectKey(projectId),
     queryFn: () => fetchProject(projectId),

@@ -105,7 +105,7 @@ function LatestVersionCard({
           <p className={styles.muted}>
             {t('latest.submittedAt', { at: formatDateTime(latest.submitted_at) })}
           </p>
-          <LevelSummary version={latest} indicatorTotal={indicatorTotal} />
+          <LevelSummary projectId={projectId} version={latest} indicatorTotal={indicatorTotal} />
           <dl className={styles.stats}>
             <div>
               <dt>{tList('columns.averageRm')}</dt>
@@ -159,9 +159,11 @@ function LatestVersionCard({
 
 /** Level chips VL to VH, the stacked bar and "scored/total indicators" from the stored counts. */
 function LevelSummary({
+  projectId,
   version,
   indicatorTotal,
 }: {
+  projectId: string;
   version: VersionSummary;
   indicatorTotal?: number;
 }) {
@@ -175,14 +177,29 @@ function LevelSummary({
   return (
     <div className={styles.levelSummary}>
       <div className={styles.levelRow}>
-        {parts.map((p) => (
-          <LevelBadge
-            key={p.level}
-            level={p.level}
-            count={p.count}
-            label={tUi(`levels.${p.level}`)}
-          />
-        ))}
+        {parts.map((p) => {
+          const badge = (
+            <LevelBadge
+              key={p.level}
+              level={p.level}
+              count={p.count}
+              label={tUi(`levels.${p.level}`)}
+            />
+          );
+          // H and VH open the advice tab of the results page.
+          return p.level === 'H' || p.level === 'VH' ? (
+            <Link
+              key={p.level}
+              className={styles.levelLink}
+              href={`${projectPaths.results(projectId, version.id)}?tab=hvh`}
+              aria-label={t('adviceLink', { level: tUi(`levels.${p.level}`), count: p.count })}
+            >
+              {badge}
+            </Link>
+          ) : (
+            badge
+          );
+        })}
       </div>
       <div role="img" aria-label={t('barLabel')} className={styles.levelBar}>
         {parts
