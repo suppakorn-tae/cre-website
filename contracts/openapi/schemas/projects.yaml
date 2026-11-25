@@ -78,8 +78,7 @@ ProjectFields:
 ProjectCreate:
   allOf:
     - $ref: '#/ProjectFields'
-    - type: object
-      description: On create, `progress_pct` defaults to 0 and may be omitted.
+    - description: On create, `progress_pct` defaults to 0 and may be omitted.
       required: [name, nickname, island_code, type_code, start_date, end_date, value_baht]
 ProjectUpdate:
   type: object

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -26,22 +27,32 @@ func me(svc *session.Service) http.HandlerFunc {
 			middleware.WriteError(w, r, http.StatusUnauthorized, "unauthenticated", "session is not valid")
 			return
 		}
-		id, perr := uuid.Parse(pr.ID)
-		if err != nil || perr != nil {
+		if err != nil {
 			middleware.WriteError(w, r, http.StatusInternalServerError, "internal", "profile load failed")
 			return
 		}
-		terms := pr.TermsAcceptedAt
-		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("Cache-Control", "no-store")
-		_ = json.NewEncoder(w).Encode(api.AuthSession{
-			User: api.Account{
-				Id: id, Email: pr.Email, Role: api.UserRole(pr.Role), Organisation: pr.Organisation,
-				SignInMethods:   api.SignInMethods{Password: pr.HasPassword, Google: pr.HasGoogle},
-				TermsAcceptedAt: &terms, CreatedAt: pr.CreatedAt.UTC(),
-			},
-			ExpiresAt:    p.Expires.UTC(),
-			KeepLoggedIn: p.Remember,
-		})
+		id, perr := uuid.Parse(pr.ID)
+		if perr != nil {
+			middleware.WriteError(w, r, http.StatusInternalServerError, "internal", "profile load failed")
+			return
+		}
+		loginWriteSession(w, http.StatusOK, pr, id, p.Expires, p.Remember)
 	}
+}
+
+// loginWriteSession writes AuthSession for an account profile.
+func loginWriteSession(w http.ResponseWriter, status int, pr session.Profile, id uuid.UUID, expires time.Time, remember bool) {
+	terms := pr.TermsAcceptedAt
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(api.AuthSession{
+		User: api.Account{
+			Id: id, Email: pr.Email, Role: api.UserRole(pr.Role), Organisation: pr.Organisation,
+			SignInMethods:   api.SignInMethods{Password: pr.HasPassword, Google: pr.HasGoogle},
+			TermsAcceptedAt: &terms, CreatedAt: pr.CreatedAt.UTC(),
+		},
+		ExpiresAt:    expires.UTC(),
+		KeepLoggedIn: remember,
+	})
 }

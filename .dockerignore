@@ -1,0 +1,22 @@
+# Build context for web/Dockerfile is the repo root (deploy/compose/compose.yaml).
+# backend/ is mostly excluded; the indicator seed stays because web mocks
+# import backend/seed/cre-indicators.json (IO-89).
+.git
+.github
+**/node_modules
+**/.next
+**/out
+**/coverage
+**/.env
+**/.env.*
+!**/.env.example
+**/*.test.ts
+**/*.test.tsx
+docs
+e2e
+deploy
+contracts
+backend/*
+!backend/seed
+backend/seed/*
+!backend/seed/cre-indicators.json

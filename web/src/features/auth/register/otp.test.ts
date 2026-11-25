@@ -15,8 +15,8 @@ describe('classifyOtpFailure', () => {
     expect(classifyOtpFailure(otp('otp_invalid'), 2)).toEqual({ kind: 'wrong', remaining: 3 });
   });
 
-  it('locks on the fifth wrong try', () => {
-    expect(classifyOtpFailure(otp('otp_invalid'), 5)).toEqual({ kind: 'locked' });
+  it('does not lock on the fifth wrong try, only on api otp_locked', () => {
+    expect(classifyOtpFailure(otp('otp_invalid'), 5)).toEqual({ kind: 'wrong', remaining: 0 });
   });
 
   it('maps expired, locked, missing sign-up, rate limit and taken e-mail', () => {

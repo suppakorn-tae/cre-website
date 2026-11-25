@@ -6,6 +6,7 @@ package sqlc
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
@@ -15,12 +16,33 @@ type Querier interface {
 	// Sign-up start and verify: is the e-mail taken? Deleted accounts have no
 	// e-mail, so they never match.
 	AccountEmailExists(ctx context.Context, email pgtype.Text) (bool, error)
+	// The signed-in user's own account (UC-04 1). Never takes an id from the
+	// request: the handler passes the session's account id.
+	AccountGetOwn(ctx context.Context, id uuid.UUID) (AccountGetOwnRow, error)
+	// Locks the row for the rest of the transaction and returns the hash for
+	// re-authentication.
+	AccountLockOwn(ctx context.Context, id uuid.UUID) (AccountLockOwnRow, error)
+	AccountSetOrganisation(ctx context.Context, arg AccountSetOrganisationParams) error
+	AccountSetOwnPassword(ctx context.Context, arg AccountSetOwnPasswordParams) error
+	AdminAdviceIndicatorExists(ctx context.Context, code string) (bool, error)
+	// Serialises concurrent replaces of one indicator's advice (released at commit).
+	AdminAdviceLock(ctx context.Context, key string) error
 	// Anonymising delete (UC-04 1b, BR-13): e-mail, password hash and Google id
 	// removed, status deleted. Pseudonym, organisation and projects stay.
 	// IO-39 (user self-delete) should reuse this query.
 	AdminAnonymiseAccount(ctx context.Context, id uuid.UUID) error
 	AdminCountUsers(ctx context.Context, arg AdminCountUsersParams) (int32, error)
+	// Texts go with the items (ON DELETE CASCADE).
+	AdminDeleteAdviceList(ctx context.Context, arg AdminDeleteAdviceListParams) error
+	AdminGetRlThreshold(ctx context.Context, code string) (AdminGetRlThresholdRow, error)
 	AdminGetUser(ctx context.Context, id uuid.UUID) (AdminGetUserRow, error)
+	AdminInsertAdviceItem(ctx context.Context, arg AdminInsertAdviceItemParams) (time.Time, error)
+	AdminInsertAdviceText(ctx context.Context, arg AdminInsertAdviceTextParams) error
+	// Every advice item of one indicator with one row per locale of text, in list order.
+	AdminListAdvice(ctx context.Context, indicatorCode string) ([]AdminListAdviceRow, error)
+	// Thresholds of every indicator with the display unit in Thai, in catalogue
+	// order.
+	AdminListRlThresholds(ctx context.Context) ([]AdminListRlThresholdsRow, error)
 	// Users with project and version counts only (BR-21): never any project or
 	// version content. Soft-deleted projects and versions are not counted.
 	AdminListUsers(ctx context.Context, arg AdminListUsersParams) ([]AdminListUsersRow, error)
@@ -29,27 +51,56 @@ type Querier interface {
 	// Locks every active admin row so two concurrent demotions cannot both pass
 	// the last-admin check.
 	AdminLockActiveAdmins(ctx context.Context) ([]uuid.UUID, error)
+	// Locks the indicator row for the edit and returns its current thresholds.
+	AdminLockRlThreshold(ctx context.Context, code string) (AdminLockRlThresholdRow, error)
 	AdminSetRole(ctx context.Context, arg AdminSetRoleParams) error
 	// Deactivate or reactivate. Deleted accounts are never touched here.
 	AdminSetStatus(ctx context.Context, arg AdminSetStatusParams) error
+	// Writes the catalogue row only. Version snapshots (version_rl_threshold)
+	// are separate tables and are never touched.
+	AdminUpdateRlThreshold(ctx context.Context, arg AdminUpdateRlThresholdParams) error
 	// Ends every session of the account (password reset, deactivate, delete).
 	BumpSessionVersion(ctx context.Context, id uuid.UUID) (int32, error)
+	CountAuditLog(ctx context.Context, arg CountAuditLogParams) (int64, error)
+	// Every query takes the owner id and hides soft-deleted rows. A project of
+	// another user and a deleted project look the same: no row.
+	CreateProject(ctx context.Context, arg CreateProjectParams) (uuid.UUID, error)
 	// Created only after the OTP was verified. Role and status take their
 	// defaults (user, active); the e-mail counts as verified.
 	CreateRegisteredAccount(ctx context.Context, arg CreateRegisteredAccountParams) (CreateRegisteredAccountRow, error)
+	// The live job for a submission; a failed job does not count, so the user
+	// may ask again.
+	FindReportJob(ctx context.Context, arg FindReportJobParams) (uuid.UUID, error)
+	// Looks an account up by e-mail for log in and password reset. A deleted
+	// account has no e-mail, so it never matches.
+	GetAccountForLogin(ctx context.Context, email pgtype.Text) (GetAccountForLoginRow, error)
 	// What GET /auth/me returns about the signed-in account.
 	GetAccountProfile(ctx context.Context, id uuid.UUID) (GetAccountProfileRow, error)
 	// The record the session middleware checks on every request. Role, status
 	// and session version come from here, never from the token.
 	GetAccountSession(ctx context.Context, id uuid.UUID) (GetAccountSessionRow, error)
+	GetAuditEntry(ctx context.Context, id int64) (GetAuditEntryRow, error)
 	GetJob(ctx context.Context, id uuid.UUID) (Job, error)
 	// The owner check lives in the query: another account's job looks absent.
 	GetJobForRequester(ctx context.Context, arg GetJobForRequesterParams) (Job, error)
+	GetProject(ctx context.Context, arg GetProjectParams) (GetProjectRow, error)
+	// Owner check in SQL (admins get no access); absent when the version or its
+	// project is deleted.
+	GetReportForDownload(ctx context.Context, arg GetReportForDownloadParams) (GetReportForDownloadRow, error)
+	// Owner and deletion checks live in the query: a version of another
+	// account, or a deleted version or project, looks absent.
+	GetVersionForReport(ctx context.Context, arg GetVersionForReportParams) (GetVersionForReportRow, error)
 	// Append-only: the application role has INSERT and SELECT on audit_log only.
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
+	InsertReportJob(ctx context.Context, arg InsertReportJobParams) error
 	// The number counts deleted versions too, so it is never reused.
 	InsertVersion(ctx context.Context, arg InsertVersionParams) (uuid.UUID, error)
+	// Newest first. Each filter is optional. The sort matches audit_log_time_ix,
+	// the admin and target filters match audit_log_admin_ix and
+	// audit_log_target_ix. The admin e-mail is '' (mapped to null by the service) once the account is
+	// anonymised.
+	ListAuditLog(ctx context.Context, arg ListAuditLogParams) ([]ListAuditLogRow, error)
 	// Advice items with one row per locale of text, in list order.
 	ListCatalogueAdvice(ctx context.Context) ([]ListCatalogueAdviceRow, error)
 	// Dimensions with one row per locale of text, in display order.
@@ -62,6 +113,9 @@ type Querier interface {
 	ListCatalogueIslands(ctx context.Context) ([]string, error)
 	ListCatalogueProjectTypes(ctx context.Context) ([]string, error)
 	ListCatalogueRiEOptions(ctx context.Context) ([]ListCatalogueRiEOptionsRow, error)
+	// @q is a LIKE pattern already escaped by the caller, or empty for all.
+	// latest_version_no is 0 when the project has no live version.
+	ListProjects(ctx context.Context, arg ListProjectsParams) ([]ListProjectsRow, error)
 	ListUnfinishedJobs(ctx context.Context) ([]Job, error)
 	// Non-deleted versions of an owned project, newest first; version_id narrows
 	// it to one. editable is true only for the highest number ever created,
@@ -70,6 +124,9 @@ type Querier interface {
 	// Owner check and the lock that serialises version creation per project.
 	// Another account's project, or a deleted one, looks absent.
 	LockOwnedProject(ctx context.Context, arg LockOwnedProjectParams) (uuid.UUID, error)
+	// Serialises report requests for one version, so that two requests for the
+	// same submission cannot both insert a job.
+	LockReportRequest(ctx context.Context, versionID string) error
 	MarkJobDone(ctx context.Context, arg MarkJobDoneParams) (int64, error)
 	MarkJobExpired(ctx context.Context, id uuid.UUID) (int64, error)
 	MarkJobFailed(ctx context.Context, arg MarkJobFailedParams) (int64, error)
@@ -81,9 +138,15 @@ type Querier interface {
 	ReportDataHead(ctx context.Context, jobID uuid.UUID) (ReportDataHeadRow, error)
 	// Stored results with the chosen strategy, in factor order.
 	ReportDataResults(ctx context.Context, arg ReportDataResultsParams) ([]ReportDataResultsRow, error)
+	// Stores the new password hash after a reset. Only an active account changes.
+	SetAccountPasswordHash(ctx context.Context, arg SetAccountPasswordHashParams) (int64, error)
 	SnapshotImpactThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
 	SnapshotRLThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
+	// One statement, so the project and its versions are hidden together.
+	// No row means not found (missing, not owned or already deleted).
+	SoftDeleteProject(ctx context.Context, arg SoftDeleteProjectParams) (uuid.UUID, error)
 	SoftDeleteVersion(ctx context.Context, arg SoftDeleteVersionParams) (int64, error)
+	UpdateProject(ctx context.Context, arg UpdateProjectParams) (int64, error)
 }
 
 var _ Querier = (*Queries)(nil)
