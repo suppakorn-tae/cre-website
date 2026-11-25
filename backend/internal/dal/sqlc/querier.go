@@ -112,6 +112,8 @@ type Querier interface {
 	GetAccountByGoogleSub(ctx context.Context, googleSub pgtype.Text) (GetAccountByGoogleSubRow, error)
 	// Google sign-in with a verified e-mail that is not linked yet (BR-16).
 	GetAccountForGoogleByEmail(ctx context.Context, email pgtype.Text) (GetAccountForGoogleByEmailRow, error)
+	// Link, unlink and re-authentication of the signed-in account.
+	GetAccountForGoogleByID(ctx context.Context, id uuid.UUID) (GetAccountForGoogleByIDRow, error)
 	// Looks an account up by e-mail for log in and password reset. A deleted
 	// account has no e-mail, so it never matches.
 	GetAccountForLogin(ctx context.Context, email pgtype.Text) (GetAccountForLoginRow, error)
@@ -254,6 +256,8 @@ type Querier interface {
 	// All non-deleted versions of an owned project, ascending by number, with the
 	// level counts of each one.
 	TrendPoints(ctx context.Context, arg TrendPointsParams) ([]TrendPointsRow, error)
+	// Removes the Google id, only while a password remains to sign in with.
+	UnlinkGoogleSub(ctx context.Context, id uuid.UUID) (int64, error)
 	UpdateProject(ctx context.Context, arg UpdateProjectParams) (int64, error)
 	// Replaces the stored answer of one indicator; NULL columns are cleared.
 	UpsertAnswer(ctx context.Context, arg UpsertAnswerParams) error

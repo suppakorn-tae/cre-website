@@ -66,6 +66,10 @@ type GoogleAccount struct {
 type GoogleStore interface {
 	BySub(ctx context.Context, sub string) (GoogleAccount, error)
 	ByEmail(ctx context.Context, email string) (GoogleAccount, error)
+	ByID(ctx context.Context, id string) (GoogleAccount, error)
+	// UnlinkSub reports false unless an active account had a Google id and a
+	// password.
+	UnlinkSub(ctx context.Context, id string) (bool, error)
 	// LinkSub reports false when the account is not active or already has a
 	// Google id; ErrGoogleAlreadyLinked when another account has sub.
 	LinkSub(ctx context.Context, id, sub string) (bool, error)
@@ -74,7 +78,7 @@ type GoogleStore interface {
 	CreateGoogleAccount(ctx context.Context, a NewAccount, sub string) (Account, error)
 }
 
-// Google runs Google sign-in and sign-up.
+// Google runs Google sign-in, sign-up, linking and re-authentication.
 type Google struct {
 	idp      GoogleIDP
 	store    GoogleStore
@@ -92,6 +96,7 @@ type googleState struct {
 	Intent   string `json:"intent"`
 	Nonce    string `json:"nonce"`
 	Verifier string `json:"verifier"`
+	Account  string `json:"account,omitempty"` // link and reauth only
 }
 
 type googlePending struct {
@@ -113,7 +118,11 @@ func (g *Google) Start(ctx context.Context, intent string) (authURL, state strin
 	if intent != IntentLogin && intent != IntentSignup {
 		return "", "", ErrGoogleIntent
 	}
-	st := googleState{Intent: intent, Nonce: rand.Text(), Verifier: rand.Text() + rand.Text()}
+	return g.begin(ctx, intent, "")
+}
+
+func (g *Google) begin(ctx context.Context, intent, accountID string) (authURL, state string, err error) {
+	st := googleState{Intent: intent, Nonce: rand.Text(), Verifier: rand.Text() + rand.Text(), Account: accountID}
 	state = rand.Text()
 	b, _ := json.Marshal(st)
 	if err := g.cache.Set(ctx, stateKey(state), b, GoogleStateTTL); err != nil {
@@ -123,8 +132,9 @@ func (g *Google) Start(ctx context.Context, intent string) (authURL, state strin
 	return authURL, state, err
 }
 
-// CallbackInput is what the Google redirect brings back.
-type CallbackInput struct{ State, Code, Error string }
+// CallbackInput is what the Google redirect brings back. SessionAccount is
+// the account of the browser's session cookie ("" without one).
+type CallbackInput struct{ State, Code, Error, SessionAccount string }
 
 // CallbackOutcome is the result to redirect with. Session is set when the
 // user is signed in; PendingToken when a new Google user must accept the
@@ -174,12 +184,23 @@ func (g *Google) Callback(ctx context.Context, in CallbackInput) (CallbackOutcom
 		out.Result = ResultCancelled
 		return out, nil
 	}
+	if st.Account != in.SessionAccount && st.Account != "" {
+		return out, nil // link or reauth finished in another session
+	}
 	c, err := g.idp.Exchange(ctx, in.Code, st.Verifier, st.Nonce)
 	email := NormaliseEmail(c.Email)
 	if err != nil || !c.EmailVerified || c.Subject == "" || !validEmail(email) {
 		return out, nil
 	}
-	if err := g.signIn(ctx, st.Intent, c.Subject, email, &out); err != nil {
+	switch st.Intent {
+	case IntentLink:
+		out.Result, err = g.link(ctx, st.Account, c.Subject)
+	case IntentReauth:
+		out.Result, err = g.reauth(ctx, st.Account, c.Subject)
+	default:
+		err = g.signIn(ctx, st.Intent, c.Subject, email, &out)
+	}
+	if err != nil {
 		return CallbackOutcome{Intent: st.Intent, Result: ResultFailed}, err
 	}
 	return out, nil
