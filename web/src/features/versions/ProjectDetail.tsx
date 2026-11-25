@@ -17,7 +17,9 @@ import {
   versionsKey,
   type VersionSummary,
 } from './api';
+import { OverviewPanel } from './OverviewPanel';
 import { ProjectHeader } from './ProjectHeader';
+import { PROJECT_TAB_PREFIX, ProjectTabs, type ProjectTab } from './ProjectTabs';
 import { latestVersion } from './rules';
 import { VersionList } from './VersionList';
 import styles from './versions.module.css';
@@ -34,6 +36,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     queryKey: versionsKey(projectId),
     queryFn: () => fetchVersions(projectId),
   });
+  const [tab, setTab] = useState<ProjectTab>('overview');
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<VersionSummary | null>(null);
   const [failure, setFailure] = useState<'create' | 'delete' | null>(null);
@@ -119,12 +122,34 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
           }
         />
       ) : versions.data ? (
-        <VersionList
-          projectId={projectId}
-          versions={versions.data}
-          onCreate={() => setCreating(true)}
-          onDelete={setDeleting}
-        />
+        <>
+          <ProjectTabs value={tab} count={versions.data.length} onChange={setTab} />
+          <div
+            role="tabpanel"
+            id={`${PROJECT_TAB_PREFIX}-panel-${tab}`}
+            aria-labelledby={`${PROJECT_TAB_PREFIX}-tab-${tab}`}
+            tabIndex={0}
+            className={styles.panel}
+          >
+            {tab === 'overview' ? (
+              project.data && (
+                <OverviewPanel
+                  project={project.data}
+                  versions={versions.data}
+                  onCreate={() => setCreating(true)}
+                  onShowVersions={() => setTab('versions')}
+                />
+              )
+            ) : (
+              <VersionList
+                projectId={projectId}
+                versions={versions.data}
+                onCreate={() => setCreating(true)}
+                onDelete={setDeleting}
+              />
+            )}
+          </div>
+        </>
       ) : (
         <div aria-busy="true" className={styles.skeleton}>
           <Skeleton height="8rem" />
