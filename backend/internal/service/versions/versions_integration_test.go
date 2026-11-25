@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -259,6 +260,45 @@ func TestConcurrentDeletesLeaveOneVersion(t *testing.T) {
 		if ok != 1 || last != 1 {
 			t.Fatalf("round %d: ok = %d, last = %d, want 1 and 1", round, ok, last)
 		}
+	}
+}
+
+// The barrier test above cannot fail reliably (both deletes usually finish one
+// after the other), so this one pins the lock itself: while another
+// transaction holds the project row, Delete must wait for it.
+func TestDeleteWaitsForTheProjectLock(t *testing.T) {
+	ctx := context.Background()
+	db, svc, pid, owner := setup(t)
+	v1, _ := svc.Create(ctx, pid, owner)
+	_, _ = svc.Create(ctx, pid, owner)
+
+	holder, err := db.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = holder.Rollback(ctx) }()
+	if _, err := holder.Exec(ctx, `SELECT id FROM project WHERE id = $1 FOR UPDATE`, pid); err != nil {
+		t.Fatal(err)
+	}
+
+	done := make(chan error, 1)
+	go func() { done <- svc.Delete(ctx, pid, v1.ID, owner) }()
+	select {
+	case err := <-done:
+		t.Fatalf("Delete finished (err %v) while the project row was locked", err)
+	case <-time.After(500 * time.Millisecond):
+	}
+
+	if err := holder.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Delete after the lock was released: %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("Delete did not finish after the lock was released")
 	}
 }
 
