@@ -93,6 +93,7 @@ func main() {
 			l.Error("invalid S3 settings, exiting", "error", err.Error())
 			os.Exit(1)
 		}
+		store.EnsureBucketLogged(context.Background(), l)
 		enq, err := queue.NewClient(valkeyURL(cfg.ValkeyAddr))
 		if err != nil {
 			l.Error("cannot create the queue client, exiting", "error", err.Error())

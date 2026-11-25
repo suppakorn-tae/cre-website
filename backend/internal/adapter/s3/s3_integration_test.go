@@ -6,6 +6,8 @@ import (
 	"crypto/rand"
 	"errors"
 	"io"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -23,6 +25,13 @@ const (
 // startStore runs RustFS, not MinIO: the minio/minio and quay.io/minio/minio
 // images can no longer be pulled. RustFS is also the store we deploy.
 func startStore(t *testing.T) *s3.Store {
+	t.Helper()
+	st, _ := startStoreAt(t)
+	return st
+}
+
+// startStoreAt also returns the endpoint, for tests that need a second bucket.
+func startStoreAt(t *testing.T) (*s3.Store, string) {
 	t.Helper()
 	if testing.Short() {
 		t.Skip("integration test needs Docker")
@@ -56,10 +65,10 @@ func startStore(t *testing.T) *s3.Store {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := st.EnsureBucket(ctx); err != nil {
+	if _, err := st.EnsureBucket(ctx); err != nil {
 		t.Fatal(err)
 	}
-	return st
+	return st, endpoint
 }
 
 func TestStoreRoundTrip(t *testing.T) {
@@ -126,5 +135,58 @@ func TestStorePutUnknownSize(t *testing.T) {
 	got, _ := io.ReadAll(rc)
 	if !bytes.Equal(got, body) {
 		t.Errorf("got %q", got)
+	}
+}
+
+func TestEnsureBucket(t *testing.T) {
+	st := startStore(t) // startStore already created the bucket once
+
+	created, err := st.EnsureBucket(context.Background())
+	if err != nil || created {
+		t.Fatalf("existing bucket: created=%v err=%v, want false, nil", created, err)
+	}
+}
+
+func TestEnsureBucketCreatesAndRaces(t *testing.T) {
+	_, endpoint := startStoreAt(t)
+	ctx := context.Background()
+	fresh, err := s3.New(s3.Config{
+		Endpoint: endpoint, Region: "us-east-1", Bucket: "fresh",
+		AccessKey: accessKey, SecretKey: secretKey,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	const n = 4
+	var wg sync.WaitGroup
+	var made atomic.Int32
+	errs := make(chan error, n)
+	for range n {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			created, err := fresh.EnsureBucket(ctx)
+			if err != nil {
+				errs <- err
+			}
+			if created {
+				made.Add(1)
+			}
+		}()
+	}
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		t.Errorf("concurrent EnsureBucket: %v", err)
+	}
+	// Some servers answer a repeated create with success, so more than one
+	// caller may report "created"; at least one must.
+	if made.Load() < 1 {
+		t.Errorf("no caller reported creating the bucket")
+	}
+	key := s3.PrefixReports + "p/x.pdf"
+	if err := fresh.Put(ctx, key, bytes.NewReader([]byte("x")), 1, "application/pdf"); err != nil {
+		t.Fatalf("put into new bucket: %v", err)
 	}
 }
