@@ -159,6 +159,15 @@
   align-items: center;
   gap: var(--space-4);
 }
+.unitNotice {
+  flex: 1 0 100%;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  font-size: var(--text-small);
+}
 .allRows {
   font-size: var(--text-caption);
   color: var(--color-text-muted);

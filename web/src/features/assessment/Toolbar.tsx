@@ -52,6 +52,8 @@ type Props = {
   costUnits: readonly string[];
   timeUnits: readonly string[];
   disabled: boolean;
+  /** Rows the last unit switch left alone because their value is invalid in the new unit. */
+  unitSkipped?: number;
   onFilter: (value: string) => void;
   onCostUnit: (unit: string) => void;
   onTimeUnit: (unit: string) => void;
@@ -72,6 +74,7 @@ export function Toolbar({
   costUnits,
   timeUnits,
   disabled,
+  unitSkipped = 0,
   onFilter,
   onCostUnit,
   onTimeUnit,
@@ -136,6 +139,11 @@ export function Toolbar({
           />
           <span className={styles.allRows}>{t('toolbar.allRows')}</span>
         </div>
+        {unitSkipped > 0 && (
+          <p role="status" className={styles.unitNotice}>
+            {t('toolbar.unitSkipped', { count: unitSkipped })}
+          </p>
+        )}
       </div>
     </>
   );

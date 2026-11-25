@@ -16,10 +16,11 @@ import {
   COST_UNITS,
   TIME_UNITS,
   countGroup,
+  emptyDraft,
   fromAnswer,
   sharedUnit,
   toInput,
-  withSharedUnit,
+  switchSharedUnit,
   type Draft,
 } from './rules';
 import { SubmitBar } from './SubmitBar';
@@ -48,6 +49,7 @@ function Form({
   const [submitting, setSubmitting] = useState(false);
   const [failure, setFailure] = useState<SubmitFailure | null>(null);
   const [filter, setFilter] = useState('all');
+  const [unitSkipped, setUnitSkipped] = useState(0);
   const submitLock = useRef(false);
 
   const save = useCallback(
@@ -96,15 +98,11 @@ function Form({
   };
 
   const setUnit = (field: 'y1' | 'y2', unit: string) => {
-    const next = withSharedUnit(all, drafts, field, unit);
+    const { drafts: next, changed, skipped } = switchSharedUnit(all, drafts, field, unit);
     setDrafts(next);
     setFailure(null);
-    for (const code of all) {
-      const before = drafts[code];
-      if (before && before[field].amount.trim() !== '' && before[field].unit !== unit) {
-        queue(toInput(code, next[code] ?? before));
-      }
-    }
+    setUnitSkipped(skipped.length);
+    for (const code of changed) queue(toInput(code, next[code] ?? emptyDraft()));
   };
 
   const confirmSubmit = async () => {
@@ -164,6 +162,7 @@ function Form({
         costUnits={COST_UNITS}
         timeUnits={TIME_UNITS}
         disabled={!answers.editable}
+        unitSkipped={unitSkipped}
         onFilter={setFilter}
         onCostUnit={(unit) => setUnit('y1', unit)}
         onTimeUnit={(unit) => setUnit('y2', unit)}

@@ -195,6 +195,12 @@ describe('Toolbar', () => {
     const html = bar();
     expect(html.match(/aria-checked="true"/g)).toHaveLength(1);
   });
+  it('tells how many rows the unit switch left alone', () => {
+    expect(bar()).not.toContain('role="status"');
+    const html = bar({ unitSkipped: 2 });
+    expect(html).toContain('ไม่ได้เปลี่ยนหน่วย 2 แถว');
+    expect(html).toContain('แถวเหล่านี้ยังใช้หน่วยและค่าเดิม');
+  });
   it('disables the unit switches in read-only mode', () => {
     expect(bar({ disabled: true }).match(/role="radio"[^>]*disabled/g)).toHaveLength(4);
   });
