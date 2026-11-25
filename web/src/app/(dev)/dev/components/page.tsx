@@ -25,6 +25,8 @@ import {
 } from '@/components/ui';
 import '@/styles/tokens.css';
 
+import { RadixExamples } from './radix-examples';
+
 type Row = { id: string; name: string; value: string; progress: string };
 
 // Review page for the shared kit. Dev-only: the (dev) layout 404s in production.
@@ -233,6 +235,9 @@ export default function ComponentsPage() {
           {t('dev.dialogOpen')}
         </Button>
       </p>
+      <h2>{t('dev.primitives')}</h2>
+      <p>{t('dev.primitivesIntro')}</p>
+      <RadixExamples />
       <ConfirmDialog
         open={dialog}
         destructive
