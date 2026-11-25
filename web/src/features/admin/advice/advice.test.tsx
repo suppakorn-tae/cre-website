@@ -62,7 +62,7 @@ describe('AdviceListEditor', () => {
   it('disables add at 5 items', () => {
     const html = editor(5);
     expect(html).toContain('ครบ 5 ข้อแล้ว');
-    expect(html).toMatch(/<button[^>]*disabled[^>]*>ครบ 5 ข้อแล้ว/);
+    expect(html).toMatch(/<button[^>]*disabled=""[^>]*title="ครบ 5 ข้อแล้ว"/);
     expect(editor(4)).not.toContain('ครบ 5 ข้อแล้ว');
   });
 
@@ -109,19 +109,21 @@ describe('last edited label', () => {
 });
 
 describe('IndicatorPicker', () => {
-  it('offers dimension, factor, search and the indicator list from the catalogue', () => {
+  it('is one searchable combobox with the chosen indicator in it', () => {
     const html = wrap(
       <IndicatorPicker
-        catalogue={mockCatalogue}
         indicators={flattenCatalogue(mockCatalogue)}
         value="EC-TC-2"
         onChange={() => {}}
       />,
     );
-    for (const text of ['มิติ', 'ปัจจัย', 'ค้นหาตัวชี้วัด', 'เลือกตัวชี้วัด', 'พบ 55 ตัวชี้วัด']) {
-      expect(html).toContain(text);
-    }
-    expect(html).toMatch(/<option value="EC-TC-2" selected/);
+    expect(html).toContain('role="combobox"');
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).toContain('EC-TC-2 · ');
+    expect(html).toContain('แสดงรายการตัวชี้วัด');
+    // The three selects of the old picker are gone.
+    expect(html).not.toContain('<select');
+    expect(html).not.toContain('มิติ');
   });
 });
 
