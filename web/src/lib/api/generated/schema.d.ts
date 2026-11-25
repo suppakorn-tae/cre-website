@@ -1025,7 +1025,12 @@ export interface paths {
          */
         get: operations["listProjects"];
         put?: never;
-        /** Create a project */
+        /**
+         * Create a project with its first version
+         * @description Stores the project and version 1 in one transaction. The version is a
+         *     blank draft with the same snapshot as any new version, so the response
+         *     has version_count 1, latest_version_no 1 and latest_version_id set.
+         */
         post: operations["createProject"];
         delete?: never;
         options?: never;
@@ -1968,6 +1973,13 @@ export interface components {
             version_count: number;
             /** @description Number of the latest non-deleted version, null when there is none. */
             latest_version_no: number | null;
+            /**
+             * Format: uuid
+             * @description Id of the latest non-deleted version, null when there is none
+             *     (a project made before versions were created with it, or whose
+             *     versions were deleted). A new project always has version 1.
+             */
+            latest_version_id: string | null;
             created_at: components["schemas"]["Timestamp"];
             updated_at: components["schemas"]["Timestamp"];
         };

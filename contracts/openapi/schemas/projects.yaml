@@ -119,6 +119,7 @@ Project:
         - expected_progress_pct
         - version_count
         - latest_version_no
+        - latest_version_id
         - created_at
         - updated_at
       properties:
@@ -139,6 +140,13 @@ Project:
           type: [integer, 'null']
           minimum: 1
           description: Number of the latest non-deleted version, null when there is none.
+        latest_version_id:
+          type: [string, 'null']
+          format: uuid
+          description: |
+            Id of the latest non-deleted version, null when there is none
+            (a project made before versions were created with it, or whose
+            versions were deleted). A new project always has version 1.
         created_at:
           $ref: common.yaml#/schemas/Timestamp
         updated_at:
