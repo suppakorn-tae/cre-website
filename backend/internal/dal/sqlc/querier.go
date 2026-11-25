@@ -66,6 +66,17 @@ type Querier interface {
 	AdminUpdateRlThreshold(ctx context.Context, arg AdminUpdateRlThresholdParams) error
 	// Ends every session of the account (password reset, deactivate, delete).
 	BumpSessionVersion(ctx context.Context, id uuid.UUID) (int32, error)
+	// Indicators scored in both versions whose level differs.
+	CompareLevelChanges(ctx context.Context, arg CompareLevelChangesParams) ([]CompareLevelChangesRow, error)
+	// The submitted, non-deleted version just before version_no.
+	ComparePreviousSubmitted(ctx context.Context, arg ComparePreviousSubmittedParams) (uuid.UUID, error)
+	// Version compare, trend and per-indicator RM (UC-21, FR-45, FR-46). Every
+	// query is scoped by owner_id and hides deleted projects and versions. They
+	// read stored risk_result rows; nothing is recalculated.
+	CompareProjectOwned(ctx context.Context, arg CompareProjectOwnedParams) (uuid.UUID, error)
+	// One non-deleted version of an owned project with its figures. Drafts come
+	// back too (status tells them apart); their figures are ignored.
+	CompareVersionMetrics(ctx context.Context, arg CompareVersionMetricsParams) (CompareVersionMetricsRow, error)
 	CountAuditLog(ctx context.Context, arg CountAuditLogParams) (int64, error)
 	// Every query takes the owner id and hides soft-deleted rows. A project of
 	// another user and a deleted project look the same: no row.
@@ -122,6 +133,9 @@ type Querier interface {
 	// Owner and deletion checks live in the query: a version of another
 	// account, or a deleted version or project, looks absent.
 	GetVersionForReport(ctx context.Context, arg GetVersionForReportParams) (GetVersionForReportRow, error)
+	// RM of every indicator in the submitted, non-deleted versions of an owned
+	// project, narrowed by factor and indicator codes (empty arrays keep all).
+	IndicatorRmValues(ctx context.Context, arg IndicatorRmValuesParams) ([]IndicatorRmValuesRow, error)
 	InsertAnswerY3(ctx context.Context, arg InsertAnswerY3Params) error
 	// Append-only: the application role has INSERT and SELECT on audit_log only.
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
@@ -199,6 +213,9 @@ type Querier interface {
 	// No row means not found (missing, not owned or already deleted).
 	SoftDeleteProject(ctx context.Context, arg SoftDeleteProjectParams) (uuid.UUID, error)
 	SoftDeleteVersion(ctx context.Context, arg SoftDeleteVersionParams) (int64, error)
+	// All non-deleted versions of an owned project, ascending by number, with the
+	// level counts of each one.
+	TrendPoints(ctx context.Context, arg TrendPointsParams) ([]TrendPointsRow, error)
 	UpdateProject(ctx context.Context, arg UpdateProjectParams) (int64, error)
 	// Replaces the stored answer of one indicator; NULL columns are cleared.
 	UpsertAnswer(ctx context.Context, arg UpsertAnswerParams) error
