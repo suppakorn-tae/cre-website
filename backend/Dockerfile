@@ -20,7 +20,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 
 # Shared runtime base: alpine (not distroless) because the healthchecks use
 # busybox wget and the binaries have no healthcheck subcommand.
-FROM alpine:3.23.3 AS runtime
+FROM alpine:3.24.4 AS runtime
 RUN apk add --no-cache ca-certificates tzdata \
  && addgroup -S -g 10001 app \
  && adduser -S -u 10001 -G app -H -s /sbin/nologin app
