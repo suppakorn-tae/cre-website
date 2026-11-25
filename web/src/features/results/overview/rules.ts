@@ -28,3 +28,21 @@ export function highCount(summary: ResultsResponse['summary']): number {
 /** Tab ids in display order. IO-56 fills `heatmap` and `hvh`. */
 export const TAB_IDS = ['overview', 'table', 'heatmap', 'hvh'] as const;
 export type TabId = (typeof TAB_IDS)[number];
+
+/** Scale of the factor chart (the RM score runs 1 to 5). */
+export const CHART_MIN = 1;
+export const CHART_MAX = 5;
+/**
+ * Where the H line is drawn: the hi-fi default for level H. The api does not return
+ * the level cut-offs with the results, so bars are coloured by this line only.
+ */
+export const H_LINE_RM = 3.5;
+
+/** Bar height as a share of the plot, 0 to 100. */
+export function chartPct(rm: number): number {
+  const clamped = Math.min(CHART_MAX, Math.max(CHART_MIN, rm));
+  return ((clamped - CHART_MIN) / (CHART_MAX - CHART_MIN)) * 100;
+}
+
+/** A bar counts as high when its stored average reaches the H line. */
+export const reachesH = (rm: number): boolean => rm >= H_LINE_RM;

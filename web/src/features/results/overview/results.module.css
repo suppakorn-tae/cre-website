@@ -275,3 +275,112 @@
     content: attr(data-label);
   }
 }
+
+/* Average RM per factor (hi-fi 3.3a). */
+.factorChart {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-white);
+}
+.factorAxis {
+  position: relative;
+  flex: none;
+  width: 1.25rem;
+  height: 14rem;
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+.factorAxis span {
+  position: absolute;
+  right: 0;
+  transform: translateY(50%);
+}
+.factorPlot {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  height: 14rem;
+  margin-bottom: 1.5rem;
+}
+.factorGrid {
+  position: absolute;
+  inset-inline: 0;
+  height: 1px;
+  background: var(--color-border);
+}
+.factorLine {
+  position: absolute;
+  inset-inline: 0;
+  z-index: 1;
+  height: 0;
+  border-top: 2px dashed var(--level-h);
+}
+.factorLineLabel {
+  position: absolute;
+  inset-inline-start: 0;
+  bottom: 2px;
+  color: var(--level-h-text);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+}
+.factorBars {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.factorCol {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+.factorBar {
+  width: 60%;
+  min-width: 6px;
+  max-width: 2.5rem;
+  border-radius: 3px 3px 0 0;
+  background: var(--color-blue-400);
+}
+.factorBar[data-high='true'] {
+  background: var(--level-h);
+}
+.factorValue {
+  position: absolute;
+  transform: translateY(-2px);
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+}
+.factorCode {
+  position: absolute;
+  top: 100%;
+  padding-top: var(--space-1);
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+  white-space: nowrap;
+}
+@media (max-width: 640px) {
+  .factorChart {
+    padding: var(--space-3);
+  }
+  .factorValue {
+    display: none;
+  }
+  .factorCode {
+    font-size: 0.625rem;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+  .factorPlot {
+    margin-bottom: 3.5rem;
+  }
+}
