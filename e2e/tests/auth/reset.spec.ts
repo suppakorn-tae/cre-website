@@ -33,6 +33,9 @@ test.describe('forgot password (UC-03)', () => {
 
     // The old session is gone: API answers 401, the other device is signed out.
     expect((await other.request.get('/api/v1/auth/me')).status()).toBe(401);
+    // Revisiting a signed-in page on that device redirects to log in.
+    await otherPage.goto('/projects');
+    await expect(otherPage).toHaveURL(/\/login/);
     await other.close();
 
     // The old password no longer works; the new one does.
