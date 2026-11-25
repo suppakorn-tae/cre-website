@@ -35,7 +35,7 @@
 }
 .breadcrumb a:focus-visible,
 .rowLink:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 
@@ -292,7 +292,7 @@ h2.cardTitle {
   accent-color: var(--color-blue-600);
 }
 .radio input:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 .hint {

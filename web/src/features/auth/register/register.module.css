@@ -151,7 +151,7 @@
   text-decoration: underline;
 }
 .link:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   border-radius: 2px;
   box-shadow: var(--focus-ring);
 }
@@ -217,7 +217,7 @@
   border-color: var(--color-text-muted);
 }
 .control:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   border-color: var(--color-blue-600);
   box-shadow: var(--focus-ring);
 }
@@ -243,7 +243,7 @@
   color: var(--color-text);
 }
 .toggle:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   border-radius: var(--radius-control);
   box-shadow: var(--focus-ring);
 }
@@ -326,7 +326,7 @@
   padding-block: var(--space-2);
 }
 .consent input:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 
@@ -351,7 +351,7 @@
   text-align: center;
 }
 .otpBox:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   border-color: var(--color-blue-600);
   box-shadow: var(--focus-ring);
 }
@@ -430,6 +430,6 @@
   background: var(--color-subtle);
 }
 .cancel:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }

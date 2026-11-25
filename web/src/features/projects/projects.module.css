@@ -60,7 +60,7 @@
 .rowDelete:focus-visible,
 .projectLink:focus-visible,
 .cancelLink:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 
@@ -238,7 +238,7 @@
   color: var(--color-placeholder);
 }
 .textarea:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 .actions {

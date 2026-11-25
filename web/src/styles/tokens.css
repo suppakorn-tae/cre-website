@@ -118,7 +118,7 @@
   --control-lg: 48px;
   --field-height: 44px;
   --hit-area: 40px;
-  --focus-ring: 0 0 0 3px var(--color-blue-200);
+  --focus-ring: 0 0 0 3px var(--color-blue-600);
 
   /* Layout */
   --container-max: 1200px;

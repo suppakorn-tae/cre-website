@@ -102,7 +102,7 @@
   color: var(--color-blue-700);
 }
 .tab:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
   border-radius: var(--radius-badge);
 }
@@ -206,7 +206,7 @@
   color: var(--color-placeholder);
 }
 .textarea:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   border-color: var(--color-blue-600);
   box-shadow: var(--focus-ring);
 }

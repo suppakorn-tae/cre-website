@@ -78,7 +78,7 @@
 .navLink:focus-visible,
 .accountButton:focus-visible,
 .menuItem:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 .account {
@@ -226,7 +226,7 @@
   cursor: pointer;
 }
 .sideToggle:focus-visible {
-  outline: none;
+  outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
 .sideNav {
