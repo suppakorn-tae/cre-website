@@ -12,7 +12,7 @@ export function barPercent(value: number, max: number): number {
   return Math.max(2, Math.round((value / max) * 100));
 }
 
-/** Horizontal bars, one per level, in a single blue hue that darkens from VL to VH. */
+/** Horizontal bars, one per level, each in its level colour. */
 export function LevelChart({ counts }: { counts: DashboardSummary['level_distribution'] }) {
   const t = useTranslations('dashboard.levelChart');
   const tLevels = useTranslations('ui.levels');
