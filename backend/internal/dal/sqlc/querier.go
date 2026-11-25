@@ -16,6 +16,14 @@ type Querier interface {
 	// Sign-up start and verify: is the e-mail taken? Deleted accounts have no
 	// e-mail, so they never match.
 	AccountEmailExists(ctx context.Context, email pgtype.Text) (bool, error)
+	// The signed-in user's own account (UC-04 1). Never takes an id from the
+	// request: the handler passes the session's account id.
+	AccountGetOwn(ctx context.Context, id uuid.UUID) (AccountGetOwnRow, error)
+	// Locks the row for the rest of the transaction and returns the hash for
+	// re-authentication.
+	AccountLockOwn(ctx context.Context, id uuid.UUID) (AccountLockOwnRow, error)
+	AccountSetOrganisation(ctx context.Context, arg AccountSetOrganisationParams) error
+	AccountSetOwnPassword(ctx context.Context, arg AccountSetOwnPasswordParams) error
 	AdminAdviceIndicatorExists(ctx context.Context, code string) (bool, error)
 	// Serialises concurrent replaces of one indicator's advice (released at commit).
 	AdminAdviceLock(ctx context.Context, key string) error
@@ -54,6 +62,9 @@ type Querier interface {
 	// Ends every session of the account (password reset, deactivate, delete).
 	BumpSessionVersion(ctx context.Context, id uuid.UUID) (int32, error)
 	CountAuditLog(ctx context.Context, arg CountAuditLogParams) (int64, error)
+	// Every query takes the owner id and hides soft-deleted rows. A project of
+	// another user and a deleted project look the same: no row.
+	CreateProject(ctx context.Context, arg CreateProjectParams) (uuid.UUID, error)
 	// Created only after the OTP was verified. Role and status take their
 	// defaults (user, active); the e-mail counts as verified.
 	CreateRegisteredAccount(ctx context.Context, arg CreateRegisteredAccountParams) (CreateRegisteredAccountRow, error)
@@ -61,6 +72,9 @@ type Querier interface {
 	// The live job for a submission; a failed job does not count, so the user
 	// may ask again.
 	FindReportJob(ctx context.Context, arg FindReportJobParams) (uuid.UUID, error)
+	// Looks an account up by e-mail for log in and password reset. A deleted
+	// account has no e-mail, so it never matches.
+	GetAccountForLogin(ctx context.Context, email pgtype.Text) (GetAccountForLoginRow, error)
 	// What GET /auth/me returns about the signed-in account.
 	GetAccountProfile(ctx context.Context, id uuid.UUID) (GetAccountProfileRow, error)
 	// The record the session middleware checks on every request. Role, status
@@ -76,6 +90,7 @@ type Querier interface {
 	GetJob(ctx context.Context, id uuid.UUID) (Job, error)
 	// The owner check lives in the query: another account's job looks absent.
 	GetJobForRequester(ctx context.Context, arg GetJobForRequesterParams) (Job, error)
+	GetProject(ctx context.Context, arg GetProjectParams) (GetProjectRow, error)
 	// Owner check in SQL (admins get no access); absent when the version or its
 	// project is deleted.
 	GetReportForDownload(ctx context.Context, arg GetReportForDownloadParams) (GetReportForDownloadRow, error)
@@ -109,6 +124,9 @@ type Querier interface {
 	ListCatalogueProjectTypes(ctx context.Context) ([]string, error)
 	ListCatalogueRiEOptions(ctx context.Context) ([]ListCatalogueRiEOptionsRow, error)
 	ListExistingIndicatorCodes(ctx context.Context, codes []string) ([]string, error)
+	// @q is a LIKE pattern already escaped by the caller, or empty for all.
+	// latest_version_no is 0 when the project has no live version.
+	ListProjects(ctx context.Context, arg ListProjectsParams) ([]ListProjectsRow, error)
 	ListUnfinishedJobs(ctx context.Context) ([]Job, error)
 	// Non-deleted versions of an owned project, newest first; version_id narrows
 	// it to one. editable is true only for the highest number ever created,
@@ -125,9 +143,15 @@ type Querier interface {
 	MarkJobFailed(ctx context.Context, arg MarkJobFailedParams) (int64, error)
 	// A job left running by a crashed worker may be claimed again.
 	MarkJobRunning(ctx context.Context, id uuid.UUID) (Job, error)
+	// Stores the new password hash after a reset. Only an active account changes.
+	SetAccountPasswordHash(ctx context.Context, arg SetAccountPasswordHashParams) (int64, error)
 	SnapshotImpactThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
 	SnapshotRLThresholds(ctx context.Context, versionID uuid.UUID) (int64, error)
+	// One statement, so the project and its versions are hidden together.
+	// No row means not found (missing, not owned or already deleted).
+	SoftDeleteProject(ctx context.Context, arg SoftDeleteProjectParams) (uuid.UUID, error)
 	SoftDeleteVersion(ctx context.Context, arg SoftDeleteVersionParams) (int64, error)
+	UpdateProject(ctx context.Context, arg UpdateProjectParams) (int64, error)
 	// Replaces the stored answer of one indicator; NULL columns are cleared.
 	UpsertAnswer(ctx context.Context, arg UpsertAnswerParams) error
 }
