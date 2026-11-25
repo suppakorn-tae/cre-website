@@ -77,6 +77,13 @@ Area jobs behind `ci-ok`:
 
 Toolchain versions come from the repo: `backend/go.mod`, `.nvmrc` and `packageManager` in `package.json`.
 
+## Dependabot PRs
+
+- Dependabot opens at most one PR per ecosystem (Go, npm, GitHub Actions, Docker images) every Monday, 06:00 Asia/Bangkok. Only minor and patch updates are proposed; majors are ignored because the stack is fixed. Next.js is pinned, so only its patch updates are proposed.
+- Titles look like `chore(web): bump the npm group with 4 updates`. The `pr-title` check accepts them without `(IO-n)`; type, scope and lowercase are still checked. Human PRs always need `(IO-n)`.
+- Review: a reviewer agent or a human reads the changelogs of risky bumps (runtime, framework, auth, database driver, base images) and checks that CI is green. If a group is risky, close it and let Dependabot reopen only what is safe, or pin the dependency in `.github/dependabot.yml` in a separate issue.
+- Merge: squash merge when CI is green. Changes to `.github/dependabot.yml` or `.github/workflows/` are hotspots and need a human.
+
 ## Merge rules
 
 - CI green and PR title check passing.

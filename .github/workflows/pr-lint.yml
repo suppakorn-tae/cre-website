@@ -19,8 +19,16 @@ jobs:
       - name: Check PR title
         env:
           TITLE: ${{ github.event.pull_request.title }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
         run: |
-          re='^(feat|fix|refactor|perf|test|docs|build|ci|chore|revert)\([a-z0-9-]+\)!?: [a-z].{3,68} \(IO-[0-9]+\)$'
+          base='^(feat|fix|refactor|perf|test|docs|build|ci|chore|revert)\([a-z0-9-]+\)!?: [a-z].{3,68}'
+          if [ "$AUTHOR" = "dependabot[bot]" ]; then
+            # Dependabot cannot add the (IO-n) suffix; type, scope and
+            # lowercase are still enforced.
+            re="${base}\$"
+          else
+            re="${base} \(IO-[0-9]+\)\$"
+          fi
           if ! printf '%s' "$TITLE" | grep -Eq "$re"; then
             echo "PR title does not match: $re"
             echo "Got: $TITLE"
