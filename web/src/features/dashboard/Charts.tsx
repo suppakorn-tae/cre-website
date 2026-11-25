@@ -1,16 +1,11 @@
 import { useTranslations } from 'next-intl';
+import type { CSSProperties } from 'react';
 
-import { LEVELS, LevelBadge, type Level } from '@/components/ui';
+import { LEVELS, type Level } from '@/components/ui';
 import { formatNumber } from '@/lib/format/locale';
 
 import type { DashboardSummary } from './api';
 import styles from './dashboard.module.css';
-
-/** Width of a bar as a share of the largest value; a non-zero value keeps a visible sliver. */
-export function barPercent(value: number, max: number): number {
-  if (max <= 0 || value <= 0) return 0;
-  return Math.max(2, Math.round((value / max) * 100));
-}
 
 /** Whole-percent share of a level; display only, the counts stay the source. */
 export function levelPercent(count: number, total: number): number {
@@ -36,6 +31,15 @@ export function donutSegments(counts: DashboardSummary['level_distribution']): D
 
 const RING_RADIUS = 15.9155; // circumference 100
 
+/** One decimal, e.g. "15.5%": the hi-fi legend shows shares like 2.1% and 38.0%. */
+function formatShare(count: number, total: number): string {
+  const share = total <= 0 ? 0 : (count / total) * 100;
+  return `${formatNumber(share, undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+}
+
+/** Legend order of the hi-fi: highest risk first. */
+const LEGEND_ORDER = [...LEVELS].reverse();
+
 /** Donut of the level distribution with a legend of counts and percentages. */
 export function LevelChart({ counts }: { counts: DashboardSummary['level_distribution'] }) {
   const t = useTranslations('dashboard.levelChart');
@@ -47,10 +51,12 @@ export function LevelChart({ counts }: { counts: DashboardSummary['level_distrib
   });
   return (
     <section className={styles.chart} aria-labelledby="level-chart-title">
-      <h2 id="level-chart-title" className={styles.chartTitle}>
-        {t('title')}
-      </h2>
-      <p className={styles.chartCaption}>{t('caption')}</p>
+      <div>
+        <h2 id="level-chart-title" className={styles.chartTitle}>
+          {t('title')}
+        </h2>
+        <p className={styles.chartCaption}>{t('caption')}</p>
+      </div>
       {total === 0 ? (
         <p className={styles.chartNone}>{t('none')}</p>
       ) : (
@@ -78,12 +84,18 @@ export function LevelChart({ counts }: { counts: DashboardSummary['level_distrib
             </span>
           </div>
           <ul className={styles.donutLegend}>
-            {LEVELS.map((level) => (
-              <li key={level} className={styles.donutRow}>
-                <LevelBadge level={level} variant="solid" label={tLevels(level)} />
+            {LEGEND_ORDER.map((level) => (
+              <li key={level} className={styles.donutRow} data-level={level}>
+                <span className={styles.dot} aria-hidden="true" />
                 <span className={styles.barName}>{tLevels(level)}</span>
                 <span className={styles.barValue}>{formatNumber(counts[level])}</span>
-                <span className={styles.donutPct}>{levelPercent(counts[level], total)}%</span>
+                <span className={styles.donutPct}>{formatShare(counts[level], total)}</span>
+                <span className={styles.donutBar} aria-hidden="true">
+                  <span
+                    className={styles.donutBarFill}
+                    style={{ width: `${levelPercent(counts[level], total)}%` }}
+                  />
+                </span>
               </li>
             ))}
           </ul>
@@ -93,20 +105,26 @@ export function LevelChart({ counts }: { counts: DashboardSummary['level_distrib
   );
 }
 
+/** Axis of the H/VH chart: the next multiple of 5 above the largest bar, at least 5. */
+export function axisMax(largest: number): number {
+  return Math.max(5, Math.ceil(largest / 5) * 5);
+}
+
 /** Stacked H and VH bar per project (latest submitted version). */
 export function ProjectRiskChart({ risks }: { risks: DashboardSummary['project_risks'] }) {
   const t = useTranslations('dashboard.riskChart');
-  const max = Math.max(0, ...risks.map((r) => r.h_count + r.vh_count));
+  const max = axisMax(Math.max(0, ...risks.map((r) => r.h_count + r.vh_count)));
+  const ticks = Array.from({ length: max / 5 + 1 }, (_, i) => i * 5);
   return (
     <section className={styles.chart} aria-labelledby="risk-chart-title">
-      <h2 id="risk-chart-title" className={styles.chartTitle}>
-        {t('title')}
-      </h2>
-      <p className={styles.chartCaption}>{t('caption')}</p>
-      {risks.length === 0 ? (
-        <p className={styles.chartNone}>{t('none')}</p>
-      ) : (
-        <>
+      <div className={styles.chartHead}>
+        <div>
+          <h2 id="risk-chart-title" className={styles.chartTitle}>
+            {t('title')}
+          </h2>
+          <p className={styles.chartCaption}>{t('caption')}</p>
+        </div>
+        {risks.length > 0 && (
           <p className={styles.legend}>
             <span className={styles.legendItem} data-level="H">
               {t('high')}
@@ -115,30 +133,47 @@ export function ProjectRiskChart({ risks }: { risks: DashboardSummary['project_r
               {t('veryHigh')}
             </span>
           </p>
-          <ul className={styles.bars}>
+        )}
+      </div>
+      {risks.length === 0 ? (
+        <p className={styles.chartNone}>{t('none')}</p>
+      ) : (
+        <>
+          <ul className={styles.bars} style={{ '--axis-steps': max / 5 } as CSSProperties}>
             {risks.map((r) => (
               <li key={r.project_id} className={styles.barRow}>
                 <span className={styles.barLabel}>
-                  <span className={styles.barName} title={r.name}>
-                    {r.nickname}
-                  </span>
-                  <span className={styles.barSub}>{t('version', { n: r.version_no })}</span>
+                  <span className={styles.nicknameChip}>{r.nickname}</span>
+                  <span className={styles.barProject}>{r.name}</span>
                 </span>
                 <span className={styles.track} aria-hidden="true">
                   <span
                     className={styles.stack}
-                    style={{ width: `${barPercent(r.h_count + r.vh_count, max)}%` }}
+                    style={{ width: `${(100 * (r.h_count + r.vh_count)) / max}%` }}
                   >
                     <span className={styles.fill} data-level="H" style={{ flex: r.h_count }} />
                     <span className={styles.fill} data-level="VH" style={{ flex: r.vh_count }} />
                   </span>
                 </span>
                 <span className={styles.barValue}>
-                  {t('high')} {formatNumber(r.h_count)} · {t('veryHigh')} {formatNumber(r.vh_count)}
+                  <span aria-hidden="true">{formatNumber(r.h_count + r.vh_count)}</span>
+                  <span className={styles.srOnly}>
+                    {t('high')} {formatNumber(r.h_count)} · {t('veryHigh')}{' '}
+                    {formatNumber(r.vh_count)}
+                  </span>
                 </span>
               </li>
             ))}
           </ul>
+          <div className={styles.axis} aria-hidden="true">
+            <span className={styles.axisTicks}>
+              {ticks.map((tick) => (
+                <span key={tick} style={{ left: `${(100 * tick) / max}%` }}>
+                  {tick}
+                </span>
+              ))}
+            </span>
+          </div>
         </>
       )}
     </section>
