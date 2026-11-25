@@ -16,11 +16,25 @@ const http = createOpenApiHttp<paths>({ baseUrl: '*/api/v1' });
 const SEEDED_AT = '2026-11-01T09:00:00Z';
 const nullable = (n: number | null | undefined) => n ?? null;
 
+/**
+ * Direction of an indicator from its seeded thresholds, as the backend derives
+ * it (backend/internal/seed/catalogue.go): ascending is `normal`, descending is
+ * `inverse`. Unset slots are skipped; the seed has no other shape.
+ */
+export function directionOf(thresholds: (number | null | undefined)[]): RlThreshold['direction'] {
+  const values = thresholds.filter((v): v is number => v !== null && v !== undefined);
+  if (values.length < 3) throw new Error('fewer than three thresholds');
+  const pairs = values.slice(1).map((v, k) => [values[k], v]);
+  if (pairs.every(([prev, next]) => prev < next)) return 'normal';
+  if (pairs.every(([prev, next]) => prev > next)) return 'inverse';
+  throw new Error('thresholds are not strictly monotonic');
+}
+
 const seedRl = (): RlThreshold[] =>
   seed.indicators.map((i) => ({
     indicator_code: i.group_id,
     unit: i.unit_th,
-    direction: 'normal',
+    direction: directionOf([i.a, i.b, i.c, i.d, i.e]),
     thresholds: {
       a: nullable(i.a),
       b: nullable(i.b),

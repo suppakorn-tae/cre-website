@@ -91,7 +91,15 @@ No backend needed. The browser answers every API call from `web/src/mocks`:
 NEXT_PUBLIC_API_MOCKS=1 corepack pnpm --dir web dev
 ```
 
-Then open <http://localhost:3000>.
+Then open <http://localhost:3000>. You are signed in as a sample user; the server uses the mock session too, so no api container is needed.
+
+To open the admin area, start with the admin role (an admin can open every other page as well):
+
+```sh
+NEXT_PUBLIC_API_MOCKS=1 CRE_MOCK_ROLE=admin corepack pnpm --dir web dev
+```
+
+Then open <http://localhost:3000/admin/users>. Mock mode skips the sign-in check, so a production build or server refuses to start with `NEXT_PUBLIC_API_MOCKS=1`. To check every page in mock mode, run `corepack pnpm --dir e2e test:mock`.
 
 </details>
 

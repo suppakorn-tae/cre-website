@@ -4,6 +4,7 @@ import { connection } from 'next/server';
 import { ApiError } from '@/lib/api/errors';
 import type { components } from '@/lib/api/generated/schema';
 import { serverApi } from '@/lib/api/server';
+import { assertNoMocksInProduction, isMockMode, mockRole } from '@/lib/mocks/mock-mode';
 
 import { LOGIN_PATH } from './login-path';
 
@@ -41,11 +42,21 @@ export function enforceGuard(result: GuardResult): AuthSession {
   return result.session;
 }
 
+/** The session of mock mode: the sample user, or the admin with `CRE_MOCK_ROLE=admin`. */
+export async function mockSession(): Promise<AuthSession> {
+  const { mockAdminSession, mockAuthSession } = await import('@/mocks/auth');
+  return mockRole() === 'admin' ? mockAdminSession : mockAuthSession;
+}
+
 /** Server-side guard for the `(app)` and `(admin)` layouts. */
 export async function requireSession(options: { requireAdmin: boolean }): Promise<AuthSession> {
   // The session is per request: opt out of prerendering before fetching,
   // otherwise Next flags the fetch's random values during prerender.
   await connection();
+  // Mock mode has no api for the server to ask (MSW runs in the browser only),
+  // so the mock session stands in. A production server refuses it.
+  assertNoMocksInProduction();
+  if (isMockMode()) return enforceGuard(await evaluateGuard(mockSession, options));
   const api = await serverApi();
   const result = await evaluateGuard(async () => {
     const { data } = await api.GET('/auth/me');
