@@ -107,14 +107,16 @@ describe('MethodsSection', () => {
 
   it('disables unlink with the reason for a Google-only account', () => {
     const html = render({ password: false, google: true });
-    expect(html).toMatch(/<button[^>]*disabled=""[^>]*>ยกเลิกการเชื่อมต่อ<\/button>/);
+    expect(html).toMatch(
+      /<button[^>]*disabled=""[^>]*>(?:<svg.*?<\/svg>)?ยกเลิกการเชื่อมต่อ<\/button>/,
+    );
     expect(html).toContain('ยกเลิกการเชื่อมต่อไม่ได้เพราะเป็นวิธีเข้าสู่ระบบเดียว');
     expect(html).not.toContain('<strong>อีเมลและรหัสผ่าน</strong>');
   });
 
   it('enables unlink when a password exists and offers link otherwise', () => {
     expect(render({ password: true, google: true })).not.toMatch(
-      /<button[^>]*disabled=""[^>]*>ยกเลิกการเชื่อมต่อ<\/button>/,
+      /<button[^>]*disabled=""[^>]*>(?:<svg.*?<\/svg>)?ยกเลิกการเชื่อมต่อ<\/button>/,
     );
     expect(render({ password: true, google: false })).toContain('เชื่อมต่อบัญชี Google');
   });

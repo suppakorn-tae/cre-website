@@ -1,11 +1,12 @@
 'use client';
 
+import { IconArrowLeft, IconBuilding, IconMail } from '@tabler/icons-react';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useState, type FormEvent, type ReactNode } from 'react';
 
-import { Button, Input } from '@/components/ui';
+import { Alert, Button, Icon, Input } from '@/components/ui';
 
 import { AuthApiError, startRegistration, type OtpChallenge } from './api';
 import { ConsentCheckboxes } from './ConsentCheckboxes';
@@ -140,23 +141,26 @@ export function SignupForm({ onBack, onSent, initialEmail = '' }: Props) {
 
   return (
     <>
-      <Button variant="ghost" size="sm" className={styles.back} onClick={onBack}>
+      <Button
+        variant="ghost"
+        size="sm"
+        className={styles.back}
+        icon={<Icon icon={IconArrowLeft} size={16} />}
+        onClick={onBack}
+      >
         {t('form.back')}
       </Button>
       <h1 className={styles.title}>{t('form.title')}</h1>
       <p className={styles.subtitle}>{t('form.subtitle')}</p>
       <form className={styles.form} onSubmit={submit} noValidate>
-        {errors.form && (
-          <p className={styles.alert} role="alert">
-            {errors.form}
-          </p>
-        )}
+        {errors.form && <Alert tone="error">{errors.form}</Alert>}
         <Input
           label={t('form.email')}
           type="email"
           inputMode="email"
           autoComplete="email"
           placeholder={t('form.emailPlaceholder')}
+          icon={IconMail}
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
@@ -170,6 +174,7 @@ export function SignupForm({ onBack, onSent, initialEmail = '' }: Props) {
           optionalLabel={tUi('optional')}
           autoComplete="organization"
           placeholder={t('form.organisationPlaceholder')}
+          icon={IconBuilding}
           value={organisation}
           onChange={(e) => {
             setOrganisation(e.target.value);

@@ -1,12 +1,13 @@
 'use client';
 
+import { IconArrowRight, IconMail } from '@tabler/icons-react';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState, type FormEvent } from 'react';
 
-import { Button, Input } from '@/components/ui';
+import { Alert, Button, GoogleMark, Icon, Input } from '@/components/ui';
 import { AuthShell } from '@/features/auth/register/AuthShell';
 import styles from '@/features/auth/register/register.module.css';
 
@@ -73,13 +74,22 @@ export function LoginForm() {
     submitLogin.mutate();
   }
 
-  function banner() {
+  function banner(): {
+    tone: 'error' | 'info';
+    title?: string;
+    text?: string;
+    noAccount?: boolean;
+  } | null {
     if (failure) {
       switch (failure.kind) {
         case 'invalid':
-          return { title: t('errors.invalidTitle'), text: t('errors.invalidText') };
+          return { tone: 'error', title: t('errors.invalidTitle'), text: t('errors.invalidText') };
         case 'unavailable':
-          return { title: t('errors.unavailableTitle'), text: t('errors.unavailableText') };
+          return {
+            tone: 'error',
+            title: t('errors.unavailableTitle'),
+            text: t('errors.unavailableText'),
+          };
         case 'rate_limited': {
           const text = failure.retryAfter
             ? (() => {
@@ -87,18 +97,20 @@ export function LoginForm() {
                 return t(`errors.waitIn.${w.unit}`, { value: w.value });
               })()
             : t('errors.tooManyText');
-          return { title: t('errors.tooManyTitle'), text };
+          return { tone: 'error', title: t('errors.tooManyTitle'), text };
         }
         case 'network':
-          return { text: tCommon('network') };
+          return { tone: 'error', text: tCommon('network') };
         default:
-          return { text: tCommon('unknown') };
+          return { tone: 'error', text: tCommon('unknown') };
       }
     }
-    if (google.isError) return { text: t('errors.googleFailed') };
+    if (google.isError) return { tone: 'error', text: t('errors.googleFailed') };
     if (view.kind === 'message') {
-      if (view.key === 'noAccount') return { title: t('result.noAccountTitle'), noAccount: true };
-      return { text: t(`result.${view.key}`) };
+      if (view.key === 'noAccount') {
+        return { tone: 'info', title: t('result.noAccountTitle'), noAccount: true };
+      }
+      return { tone: view.key === 'cancelled' ? 'info' : 'error', text: t(`result.${view.key}`) };
     }
     return null;
   }
@@ -109,30 +121,27 @@ export function LoginForm() {
   return (
     <AuthShell>
       {loggedOut && !alert && (
-        <p className={styles.success} role="status">
-          {t('loggedOut')}
-        </p>
+        <Alert tone="success" title={t('loggedOutTitle')}>
+          {t('loggedOutText')}
+        </Alert>
       )}
-      {resetDone && !alert && (
-        <p className={styles.success} role="status">
-          {t('resetDone')}
-        </p>
-      )}
+      {resetDone && !alert && <Alert tone="success">{t('resetDone')}</Alert>}
       <h1 className={styles.title}>{t('title')}</h1>
       <p className={styles.subtitle}>{t('subtitle')}</p>
       {alert && (
-        <div className={styles.alert} role="alert">
-          {'title' in alert && alert.title && <strong>{alert.title}</strong>}
-          {'text' in alert && alert.text && <p className={extra.alertText}>{alert.text}</p>}
-          {'noAccount' in alert && (
-            <p className={extra.alertText}>
-              {t('result.noAccountText')}{' '}
+        <Alert
+          tone={alert.tone}
+          title={alert.title}
+          action={
+            alert.noAccount ? (
               <Link href={REGISTER_PATH} className={styles.link}>
                 {t('register')}
               </Link>
-            </p>
-          )}
-        </div>
+            ) : undefined
+          }
+        >
+          {alert.noAccount ? t('result.noAccountText') : alert.text}
+        </Alert>
       )}
       <form className={styles.form} onSubmit={submit} noValidate>
         <Input
@@ -141,6 +150,7 @@ export function LoginForm() {
           inputMode="email"
           autoComplete="email"
           placeholder={t('emailPlaceholder')}
+          icon={IconMail}
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
@@ -159,7 +169,13 @@ export function LoginForm() {
             {t('forgot')}
           </Link>
         </div>
-        <Button type="submit" size="lg" fullWidth disabled={submitLogin.isPending}>
+        <Button
+          type="submit"
+          size="lg"
+          fullWidth
+          disabled={submitLogin.isPending}
+          trailingIcon={<Icon icon={IconArrowRight} size={20} />}
+        >
           {submitLogin.isPending ? t('submitting') : t('submit')}
         </Button>
       </form>
@@ -169,6 +185,7 @@ export function LoginForm() {
         size="lg"
         fullWidth
         disabled={googleBusy}
+        icon={<GoogleMark size={20} />}
         onClick={() => google.mutate()}
       >
         {googleBusy ? t('googleLoading') : t('google')}

@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 
-import { Button, Skeleton } from '@/components/ui';
+import { Alert, Button, Skeleton } from '@/components/ui';
 import '@/styles/tokens.css';
 
 import { ACCOUNT_PATH, resultNotice } from './account';
@@ -37,12 +37,9 @@ export function AccountPage() {
         <p className={styles.subtitle}>{t('subtitle')}</p>
       </header>
       {notice && (
-        <p
-          className={notice.tone === 'success' ? styles.success : styles.alert}
-          role={notice.tone === 'success' ? 'status' : 'alert'}
-        >
+        <Alert tone={notice.tone === 'success' ? 'success' : 'error'}>
           {t(`result.${notice.key}`)}
-        </p>
+        </Alert>
       )}
       {account.isPending && (
         <div className={styles.loading} role="status" aria-label={t('loading')}>
@@ -51,12 +48,16 @@ export function AccountPage() {
         </div>
       )}
       {account.isError && (
-        <div className={styles.alert} role="alert">
-          <p>{t('loadFailed')}</p>
-          <Button variant="secondary" size="sm" onClick={() => account.refetch()}>
-            {t('retry')}
-          </Button>
-        </div>
+        <Alert
+          tone="error"
+          action={
+            <Button variant="secondary" size="sm" onClick={() => account.refetch()}>
+              {t('retry')}
+            </Button>
+          }
+        >
+          {t('loadFailed')}
+        </Alert>
       )}
       {account.data && (
         <>
