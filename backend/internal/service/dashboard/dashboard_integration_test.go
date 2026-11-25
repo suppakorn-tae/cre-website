@@ -2,7 +2,6 @@ package dashboard_test
 
 import (
 	"context"
-	"fmt"
 	"sort"
 	"strings"
 	"testing"
