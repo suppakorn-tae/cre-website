@@ -405,6 +405,27 @@
   background: var(--color-warning-bg);
 }
 
+/* Tablet: the table is still a table but must fit; let the columns shrink instead of scrolling */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .table {
+    padding: 0 var(--space-2);
+  }
+  .table .cell {
+    min-width: 5rem;
+  }
+  .table .nameCell {
+    min-width: 8rem;
+  }
+  .table .row > *,
+  .table thead th {
+    padding-inline: var(--space-1);
+  }
+  .table .input,
+  .table .pickerHead {
+    padding-inline: var(--space-2);
+  }
+}
+
 @media (max-width: 767px) {
   .legend {
     grid-template-columns: 1fr 1fr;
