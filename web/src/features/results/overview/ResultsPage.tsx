@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { Button, EmptyState, KpiCard, LEVELS, Skeleton, Tabs } from '@/components/ui';
+import { ProjectSteps } from '@/features/shell/ProjectSteps';
 import { fetchProject, projectKey } from '@/features/versions/api';
 import { projectPaths } from '@/features/versions/rules';
 import { ApiError } from '@/lib/api/errors';
@@ -126,6 +127,7 @@ export function ResultsPage({ projectId, versionId }: { projectId: string; versi
 
   return (
     <div className={styles.page}>
+      <ProjectSteps current="results" />
       <header className={styles.head}>
         <nav aria-label={t('page.breadcrumbLabel')} className={styles.crumbs}>
           <Link href="/dashboard">{t('page.breadcrumbRoot')}</Link>

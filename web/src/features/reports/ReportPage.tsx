@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { Button, EmptyState, Skeleton, Toast } from '@/components/ui';
+import { ProjectSteps } from '@/features/shell/ProjectSteps';
 import { ApiError } from '@/lib/api/errors';
 
 import {
@@ -84,6 +85,7 @@ export function ReportPage({ projectId, versionId }: Props) {
 
   return (
     <div className={styles.page}>
+      <ProjectSteps current="report" />
       <header className={styles.header}>
         <nav aria-label={t('breadcrumbLabel')} className={styles.crumbs}>
           <Link href="/dashboard">{t('breadcrumbRoot')}</Link>
