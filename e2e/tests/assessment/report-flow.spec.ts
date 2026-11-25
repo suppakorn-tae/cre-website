@@ -352,9 +352,7 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     await go(page, `/projects/${projectId}`);
     await expect(page.getByText(msg('versions', 'detail.notFound'))).toBeVisible();
   });
-  // BUG (app, not fixed here): GET /projects/{id}/versions of a deleted project
-  // answers 200 {"items":[]}; the contract says 404 for a deleted project.
-  test.fixme('the version list of a deleted project is 404 (app bug)', async () => {
+  test('the version list of a deleted project is 404', async () => {
     expect((await api.get(`/projects/${projectId}/versions`)).status()).toBe(404);
   });
 });
