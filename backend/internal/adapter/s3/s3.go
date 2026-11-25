@@ -7,8 +7,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -67,19 +69,40 @@ func New(cfg Config) (*Store, error) {
 	return &Store{client: client, bucket: cfg.Bucket, region: cfg.Region}, nil
 }
 
-// EnsureBucket creates the bucket when it does not exist yet.
-func (s *Store) EnsureBucket(ctx context.Context) error {
+// EnsureBucket creates the bucket when it does not exist yet and reports
+// whether it did. It is a no-op for an existing bucket and safe when the api
+// and the worker call it at the same time: losing the creation race counts as
+// "already exists".
+func (s *Store) EnsureBucket(ctx context.Context) (created bool, err error) {
 	ok, err := s.client.BucketExists(ctx, s.bucket)
 	if err != nil {
-		return fmt.Errorf("s3: check bucket: %w", err)
+		return false, fmt.Errorf("s3: check bucket: %w", err)
 	}
 	if ok {
-		return nil
+		return false, nil
 	}
 	if err := s.client.MakeBucket(ctx, s.bucket, minio.MakeBucketOptions{Region: s.region}); err != nil {
-		return fmt.Errorf("s3: create bucket: %w", err)
+		switch minio.ToErrorResponse(err).Code {
+		case "BucketAlreadyOwnedByYou", "BucketAlreadyExists":
+			return false, nil
+		}
+		return false, fmt.Errorf("s3: create bucket: %w", err)
 	}
-	return nil
+	return true, nil
+}
+
+// EnsureBucketLogged runs EnsureBucket with a timeout and logs the result. A
+// failure is logged, not fatal: the store may still be starting, and jobs then
+// fail visibly instead of the process refusing to boot.
+func (s *Store) EnsureBucketLogged(ctx context.Context, l *slog.Logger) {
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	created, err := s.EnsureBucket(ctx)
+	if err != nil {
+		l.Error("cannot ensure the S3 bucket", "bucket", s.bucket, "error", err.Error())
+		return
+	}
+	l.Info("S3 bucket ready", "bucket", s.bucket, "created", created)
 }
 
 // Put streams r into key. size is the exact length, or -1 when unknown (the

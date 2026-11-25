@@ -97,6 +97,8 @@ func run() int {
 		return fail("invalid S3 settings, exiting", err)
 	}
 
+	store.EnsureBucketLogged(ctx, l)
+
 	// One runner per job kind.
 	rt := runtime.New(jobs.New(pool, enq), srv, l)
 	rt.Register(jobs.KindReport, report.NewRunner(report.NewStore(pool), pdf.New(gotenbergURL), store))
