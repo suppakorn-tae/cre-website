@@ -1,8 +1,10 @@
+import { IconChevronDown, IconSearch, type Icon as TablerIcon } from '@tabler/icons-react';
 import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
 
 import { cx } from './cx';
 import { FieldMessage, LabelText, messageIds } from './Field';
 import styles from './forms.module.css';
+import { Icon } from './Icon';
 
 type FieldProps = {
   label: ReactNode;
@@ -12,13 +14,18 @@ type FieldProps = {
   optionalLabel?: string;
 };
 
-export type InputProps = FieldProps & Omit<InputHTMLAttributes<HTMLInputElement>, 'size'>;
+export type InputProps = FieldProps &
+  Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
+    /** Leading icon (18px), e.g. IconMail. Decorative: the label names the field. */
+    icon?: TablerIcon;
+  };
 
 export function Input({
   label,
   helper,
   error,
   optionalLabel,
+  icon,
   id,
   className,
   required,
@@ -34,17 +41,29 @@ export function Input({
           {label}
         </LabelText>
       </label>
-      <input
-        id={inputId}
-        className={styles.control}
-        required={required}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-        {...rest}
-      />
+      <div className={styles.controlWrap}>
+        <input
+          id={inputId}
+          className={cx(styles.control, icon && styles.hasLead)}
+          required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          {...rest}
+        />
+        {icon && (
+          <span className={styles.lead}>
+            <Icon icon={icon} size={18} />
+          </span>
+        )}
+      </div>
       <FieldMessage id={inputId} helper={helper} error={error} />
     </div>
   );
+}
+
+/** Text input with a leading search icon. */
+export function SearchInput(props: Omit<InputProps, 'icon' | 'type'>) {
+  return <Input {...props} type="search" icon={IconSearch} />;
 }
 
 export type NumberInputProps = Omit<InputProps, 'type' | 'value' | 'onChange'> & {
@@ -129,21 +148,26 @@ export function Select({
           {label}
         </LabelText>
       </label>
-      <select
-        id={selectId}
-        className={styles.control}
-        required={required}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-        {...rest}
-      >
-        {placeholder !== undefined && <option value="">{placeholder}</option>}
-        {options.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <div className={styles.controlWrap}>
+        <select
+          id={selectId}
+          className={cx(styles.control, styles.hasTrail)}
+          required={required}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          {...rest}
+        >
+          {placeholder !== undefined && <option value="">{placeholder}</option>}
+          {options.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <span className={styles.trail}>
+          <Icon icon={IconChevronDown} size={18} />
+        </span>
+      </div>
       <FieldMessage id={selectId} helper={helper} error={error} />
     </div>
   );

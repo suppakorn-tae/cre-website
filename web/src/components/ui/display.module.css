@@ -532,6 +532,10 @@ button.kpiSelected:hover {
   list-style: none;
 }
 .pageBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
   min-width: var(--hit-area);
   min-height: var(--hit-area);
   padding: 0 var(--space-3);

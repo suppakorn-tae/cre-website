@@ -1,4 +1,7 @@
+import { IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
+
 import styles from './display.module.css';
+import { Icon } from './Icon';
 
 /** Page numbers to show: first, last, and two around the current, with gaps as null. */
 export function pageWindow(page: number, pageCount: number): (number | null)[] {
@@ -38,6 +41,7 @@ export function Pagination({ page, pageCount, onChange, labels }: Props) {
             disabled={page <= 1}
             onClick={() => onChange(page - 1)}
           >
+            <Icon icon={IconChevronLeft} size={16} />
             {labels.previous}
           </button>
         </li>
@@ -68,6 +72,7 @@ export function Pagination({ page, pageCount, onChange, labels }: Props) {
             onClick={() => onChange(page + 1)}
           >
             {labels.next}
+            <Icon icon={IconChevronRight} size={16} />
           </button>
         </li>
       </ul>
