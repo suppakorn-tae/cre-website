@@ -109,6 +109,10 @@ AdminAdviceLists:
           $ref: '#/AdminAdviceItemList'
     updated_at:
       $ref: common.yaml#/schemas/Timestamp
+    updated_by:
+      type: [string, 'null']
+      format: email
+      description: E-mail of the admin who made the latest edit. Null when never edited (seed data).
 AdminAdviceListResponse:
   type: object
   required: [indicator_code, list, items, updated_at]
@@ -121,6 +125,10 @@ AdminAdviceListResponse:
       $ref: '#/AdminAdviceItemList'
     updated_at:
       $ref: common.yaml#/schemas/Timestamp
+    updated_by:
+      type: [string, 'null']
+      format: email
+      description: E-mail of the admin who made the latest edit. Null when never edited (seed data).
 AdminReplaceAdviceRequest:
   type: object
   required: [items]

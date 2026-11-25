@@ -96,3 +96,34 @@ func TestReplaceRejectsAndRollsBack(t *testing.T) {
 		t.Fatalf("list changed or invalidated: %d -> %d, inv=%d", len(before.Lists["RL"]), len(after.Lists["RL"]), inv.n)
 	}
 }
+
+func TestUpdatedByNeverEditedThenEditor(t *testing.T) {
+	ctx, pool, s, _, admin, code := adviceSetup(t)
+
+	set, err := s.Get(ctx, code)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if set.UpdatedBy != nil {
+		t.Fatalf("never edited: UpdatedBy = %q, want nil", *set.UpdatedBy)
+	}
+
+	var email string
+	if err := pool.QueryRow(ctx, `SELECT email FROM account WHERE id = $1`, admin).Scan(&email); err != nil {
+		t.Fatal(err)
+	}
+	res, err := s.Replace(ctx, admin, code, "RL", adviceItems("ก"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if res.UpdatedBy == nil || *res.UpdatedBy != email {
+		t.Fatalf("Replace UpdatedBy = %v, want %q", res.UpdatedBy, email)
+	}
+	set, err = s.Get(ctx, code)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if set.UpdatedBy == nil || *set.UpdatedBy != email {
+		t.Fatalf("Get UpdatedBy = %v, want %q", set.UpdatedBy, email)
+	}
+}

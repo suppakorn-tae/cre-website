@@ -24,6 +24,8 @@ type Querier interface {
 	AccountLockOwn(ctx context.Context, id uuid.UUID) (AccountLockOwnRow, error)
 	AccountSetOrganisation(ctx context.Context, arg AccountSetOrganisationParams) error
 	AccountSetOwnPassword(ctx context.Context, arg AccountSetOwnPasswordParams) error
+	// The e-mail of the signed-in admin, '' when the account has none.
+	AdminAdviceAccountEmail(ctx context.Context, id uuid.UUID) (string, error)
 	AdminAdviceIndicatorExists(ctx context.Context, code string) (bool, error)
 	// Serialises concurrent replaces of one indicator's advice (released at commit).
 	AdminAdviceLock(ctx context.Context, key string) error
@@ -40,6 +42,7 @@ type Querier interface {
 	AdminInsertAdviceItem(ctx context.Context, arg AdminInsertAdviceItemParams) (time.Time, error)
 	AdminInsertAdviceText(ctx context.Context, arg AdminInsertAdviceTextParams) error
 	// Every advice item of one indicator with one row per locale of text, in list order.
+	// updated_by_email is '' for seed items, which have no editor.
 	AdminListAdvice(ctx context.Context, indicatorCode string) ([]AdminListAdviceRow, error)
 	// Thresholds of every indicator with the display unit in Thai, in catalogue
 	// order.

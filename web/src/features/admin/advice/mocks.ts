@@ -34,13 +34,16 @@ const seedLists: Record<AdviceList, string[]> = {
   ],
 };
 
+/** The signed-in admin of the mock session. */
+const MOCK_EDITOR = 'admin@example.com';
+
 const store = new Map<string, AdminAdvice>();
 
 function seed(code: string): AdminAdvice {
   const lists = Object.fromEntries(
     LISTS.map((l) => [l, seedLists[l].map(item)]),
   ) as AdminAdvice['lists'];
-  return { indicator_code: code, lists, updated_at: '2026-11-12T03:00:00Z' };
+  return { indicator_code: code, lists, updated_at: '2026-11-12T03:00:00Z', updated_by: null };
 }
 
 export function resetAdviceStore(): void {
@@ -92,6 +95,7 @@ export const adviceHandlers: HttpHandler[] = [
       ...advice,
       lists: { ...advice.lists, [list]: body.items },
       updated_at: new Date().toISOString(),
+      updated_by: MOCK_EDITOR,
     };
     store.set(advice.indicator_code, updated);
     return response(200).json({
@@ -99,6 +103,7 @@ export const adviceHandlers: HttpHandler[] = [
       list,
       items: body.items,
       updated_at: updated.updated_at,
+      updated_by: MOCK_EDITOR,
     });
   }),
 ];

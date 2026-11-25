@@ -39,6 +39,9 @@ type AdviceSet struct {
 	IndicatorCode string
 	Lists         map[string][]AdviceItem
 	UpdatedAt     time.Time
+	// UpdatedBy is the e-mail of the admin who made the latest edit; nil when
+	// the latest item has no editor (seed data).
+	UpdatedBy *string
 }
 
 // AdviceList is one stored list.
@@ -47,6 +50,7 @@ type AdviceList struct {
 	List          string
 	Items         []AdviceItem
 	UpdatedAt     time.Time
+	UpdatedBy     *string
 }
 
 // AdviceService edits advice lists (UC-15).
@@ -94,6 +98,7 @@ func loadAdvice(ctx context.Context, q *sqlc.Queries, code string) (AdviceSet, e
 		items[len(items)-1].Text[r.Locale] = r.Text
 		if r.UpdatedAt.After(set.UpdatedAt) {
 			set.UpdatedAt = r.UpdatedAt
+			set.UpdatedBy = emailPtr(r.UpdatedByEmail)
 		}
 	}
 	return set, nil
@@ -170,7 +175,11 @@ func (s *AdviceService) Replace(ctx context.Context, actor uuid.UUID, code, list
 				}
 			}
 		}
-		out = AdviceList{IndicatorCode: code, List: list, Items: items, UpdatedAt: at}
+		email, err := q.AdminAdviceAccountEmail(ctx, actor)
+		if err != nil {
+			return fmt.Errorf("admin: advice actor email: %w", err)
+		}
+		out = AdviceList{IndicatorCode: code, List: list, Items: items, UpdatedAt: at, UpdatedBy: emailPtr(email)}
 		return s.audit.Record(ctx, tx, audit.Entry{
 			Action: audit.AdviceEdit, TargetType: "indicator", TargetID: code,
 			Old: map[string]any{"list": list, "items": before.Lists[list]},
@@ -185,4 +194,12 @@ func (s *AdviceService) Replace(ctx context.Context, actor uuid.UUID, code, list
 		slog.WarnContext(ctx, "catalogue invalidation after advice edit failed", "error", err)
 	}
 	return out, nil
+}
+
+// emailPtr maps the empty string (no editor, or an account without e-mail) to nil.
+func emailPtr(s string) *string {
+	if s == "" {
+		return nil
+	}
+	return &s
 }

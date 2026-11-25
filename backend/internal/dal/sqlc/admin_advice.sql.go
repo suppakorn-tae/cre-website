@@ -12,6 +12,18 @@ import (
 	"github.com/google/uuid"
 )
 
+const adminAdviceAccountEmail = `-- name: AdminAdviceAccountEmail :one
+SELECT COALESCE(email::text, '')::text FROM account WHERE id = $1
+`
+
+// The e-mail of the signed-in admin, ” when the account has none.
+func (q *Queries) AdminAdviceAccountEmail(ctx context.Context, id uuid.UUID) (string, error) {
+	row := q.db.QueryRow(ctx, adminAdviceAccountEmail, id)
+	var column_1 string
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const adminAdviceIndicatorExists = `-- name: AdminAdviceIndicatorExists :one
 SELECT EXISTS (SELECT 1 FROM indicator WHERE code = $1)
 `
@@ -93,22 +105,25 @@ func (q *Queries) AdminInsertAdviceText(ctx context.Context, arg AdminInsertAdvi
 }
 
 const adminListAdvice = `-- name: AdminListAdvice :many
-SELECT i.list, i.position, i.updated_at, t.locale, t.text
+SELECT i.list, i.position, i.updated_at, COALESCE(a.email::text, '')::text AS updated_by_email, t.locale, t.text
 FROM advice_item i
 JOIN advice_item_text t ON t.item_id = i.id
+LEFT JOIN account a ON a.id = i.updated_by
 WHERE i.indicator_code = $1
 ORDER BY i.list, i.position, t.locale
 `
 
 type AdminListAdviceRow struct {
-	List      AdviceList
-	Position  int16
-	UpdatedAt time.Time
-	Locale    string
-	Text      string
+	List           AdviceList
+	Position       int16
+	UpdatedAt      time.Time
+	UpdatedByEmail string
+	Locale         string
+	Text           string
 }
 
 // Every advice item of one indicator with one row per locale of text, in list order.
+// updated_by_email is ” for seed items, which have no editor.
 func (q *Queries) AdminListAdvice(ctx context.Context, indicatorCode string) ([]AdminListAdviceRow, error) {
 	rows, err := q.db.Query(ctx, adminListAdvice, indicatorCode)
 	if err != nil {
@@ -122,6 +137,7 @@ func (q *Queries) AdminListAdvice(ctx context.Context, indicatorCode string) ([]
 			&i.List,
 			&i.Position,
 			&i.UpdatedAt,
+			&i.UpdatedByEmail,
 			&i.Locale,
 			&i.Text,
 		); err != nil {

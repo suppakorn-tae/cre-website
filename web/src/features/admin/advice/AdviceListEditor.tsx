@@ -33,6 +33,8 @@ type Props = {
   list: AdviceList;
   saved: AdviceItems;
   updatedAt: string;
+  /** E-mail of the last editor; null when the list was never edited. */
+  updatedBy?: string | null;
   /** Unsaved edits kept by the page, so they survive switching tab or indicator. */
   draft: Draft | undefined;
   onDraft: (draft: Draft | undefined) => void;
@@ -41,7 +43,15 @@ type Props = {
 type Focus = { id: number; dir: 'up' | 'down' };
 
 /** One advice list: add, edit, remove, reorder (buttons or drag), save and cancel. */
-export function AdviceListEditor({ code, list, saved, updatedAt, draft, onDraft }: Props) {
+export function AdviceListEditor({
+  code,
+  list,
+  saved,
+  updatedAt,
+  updatedBy,
+  draft,
+  onDraft,
+}: Props) {
   const t = useTranslations('admin-advice.list');
   const tRoot = useTranslations();
   const replace = useReplaceList(code);
@@ -250,7 +260,11 @@ export function AdviceListEditor({ code, list, saved, updatedAt, draft, onDraft 
       )}
 
       <div className={styles.footer}>
-        <p className={styles.updated}>{t('updatedAt', { date: formatDate(updatedAt) })}</p>
+        <p className={styles.updated}>
+          {updatedBy
+            ? t('updatedBy', { email: updatedBy, date: formatDate(updatedAt) })
+            : t('updatedAt', { date: formatDate(updatedAt) })}
+        </p>
         <div className={styles.actions}>
           <Button variant="secondary" disabled={!dirty || replace.isPending} onClick={reset}>
             {t('cancel')}
