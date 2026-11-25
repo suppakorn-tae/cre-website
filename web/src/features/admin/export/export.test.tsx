@@ -13,6 +13,7 @@ import ui from '../../../../messages/th/ui.json';
 import { buildRequest, isFinal, pollInterval, type Job } from './api';
 import { ExportPage } from './ExportPage';
 import { ExportRow } from './ExportRow';
+import { ZipTree, ZIP_TREE } from './ZipTree';
 import { exportHandlers, jobAt, resetExportMocks } from './mocks';
 
 const wrap = (node: ReactNode) =>
@@ -52,6 +53,28 @@ describe('ExportPage', () => {
     );
     expect(html).toContain('เลือก 2 ผู้ใช้');
     expect(html).toContain('ใช่');
+  });
+});
+
+describe('ZipTree', () => {
+  it('lists the zip, user, project and version entries in order with nesting', () => {
+    expect(ZIP_TREE.map((e) => [e.key, e.depth])).toEqual([
+      ['zip', 0],
+      ['user', 1],
+      ['userFile', 2],
+      ['project', 2],
+      ['projectFile', 3],
+      ['version', 3],
+    ]);
+    const html = wrap(<ZipTree />);
+    let at = -1;
+    for (const name of ['cre-export.zip', 'user.json', 'project.json', 'v1-v3.csv']) {
+      const next = html.indexOf(name);
+      expect(next).toBeGreaterThan(at);
+      at = next;
+    }
+    expect(html).toContain('data-depth="3"');
+    expect(html).toContain('1 แถวต่อตัวชี้วัด');
   });
 });
 

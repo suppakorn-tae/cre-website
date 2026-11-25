@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { useRequestExport, type ExportRequest } from './api';
 import { ExportForm } from './ExportForm';
 import { ExportRow, type ExportEntry } from './ExportRow';
+import { ZipTree } from './ZipTree';
 import styles from './export.module.css';
 
 /** Research export: request form, what the file contains, and recent requests. */
@@ -42,11 +43,7 @@ export function ExportPage() {
             <li>{t('note.expiry')}</li>
           </ul>
           <h3 className={styles.legend}>{t('note.structureHeading')}</h3>
-          <ul className={styles.notes}>
-            <li>{t('note.user')}</li>
-            <li>{t('note.project')}</li>
-            <li>{t('note.version')}</li>
-          </ul>
+          <ZipTree />
         </section>
       </div>
 
