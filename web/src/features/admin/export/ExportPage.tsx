@@ -47,12 +47,12 @@ export function ExportPage() {
         </section>
       </div>
 
-      <section className={styles.card}>
-        <h2 className={styles.cardTitle}>{t('history.heading')}</h2>
+      <section className={styles.history}>
+        <h2 className={styles.sectionTitle}>{t('history.heading')}</h2>
         {entries.length === 0 ? (
           <p className={styles.muted}>{t('history.empty')}</p>
         ) : (
-          <ul className={styles.rows}>
+          <ul className={`${styles.rows} ${styles.rowsCard}`}>
             {entries.map((entry) => (
               <ExportRow key={entry.id} entry={entry} onAgain={submit} />
             ))}

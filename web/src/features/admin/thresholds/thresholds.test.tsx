@@ -123,6 +123,7 @@ describe('RlRow', () => {
             name="x"
             editing={false}
             busy={false}
+            onFormError={noop}
             onEdit={noop}
             onCancel={noop}
             onSave={noop}
@@ -131,7 +132,7 @@ describe('RlRow', () => {
       </table>,
     );
     expect(html).toContain('ปกติ ↑');
-    expect(html).toContain('แก้ไข');
+    expect(html).toContain('แก้ไขเกณฑ์ของ EC-HS-2');
     expect(html.match(/<td[^>]*hidden/g)).toHaveLength(2);
   });
 
@@ -144,7 +145,7 @@ describe('RlRow', () => {
             name="x"
             editing
             busy={false}
-            serverError="ข้อความจากเซิร์ฟเวอร์"
+            onFormError={noop}
             onEdit={noop}
             onCancel={noop}
             onSave={noop}
@@ -154,7 +155,7 @@ describe('RlRow', () => {
     );
     expect(html).toContain('ผกผัน ↓');
     expect(html).toContain('เกณฑ์ a ของ EC-HS-2');
-    expect(html).toContain('ข้อความจากเซิร์ฟเวอร์');
+    expect(html).toContain('กำลังแก้ไข EC-HS-2');
     expect(html).toContain('ยกเลิก');
   });
 });
