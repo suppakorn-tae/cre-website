@@ -1207,7 +1207,10 @@ export interface paths {
         post?: never;
         /**
          * Delete a version (soft)
-         * @description Hides the version and its reports. There is no restore and its number is not reused.
+         * @description Hides the version and its reports. There is no restore and its number
+         *     is not reused. A project always keeps at least one version: deleting
+         *     the last live one is refused with 409 and code `last_version`. Delete
+         *     the project instead.
          */
         delete: operations["deleteVersion"];
         options?: never;
@@ -4065,6 +4068,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
         };
     };
 }

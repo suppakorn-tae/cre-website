@@ -13,6 +13,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const countLiveVersions = `-- name: CountLiveVersions :one
+SELECT count(*)::int FROM assessment_version
+WHERE project_id = $1 AND deleted_at IS NULL
+`
+
+// Live versions of a project, read inside the delete transaction after the
+// project row is locked.
+func (q *Queries) CountLiveVersions(ctx context.Context, projectID uuid.UUID) (int32, error) {
+	row := q.db.QueryRow(ctx, countLiveVersions, projectID)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
 const insertVersion = `-- name: InsertVersion :one
 INSERT INTO assessment_version (id, project_id, version_no, snap_value_baht,
     snap_start_date, snap_end_date, snap_score_decimals, snap_rm_decimals)

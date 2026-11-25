@@ -81,6 +81,9 @@ type Querier interface {
 	// back too (status tells them apart); their figures are ignored.
 	CompareVersionMetrics(ctx context.Context, arg CompareVersionMetricsParams) (CompareVersionMetricsRow, error)
 	CountAuditLog(ctx context.Context, arg CountAuditLogParams) (int64, error)
+	// Live versions of a project, read inside the delete transaction after the
+	// project row is locked.
+	CountLiveVersions(ctx context.Context, projectID uuid.UUID) (int32, error)
 	// Created when a new Google user accepts the retention notice and terms. No
 	// password; Google has verified the e-mail.
 	CreateGoogleAccount(ctx context.Context, arg CreateGoogleAccountParams) (CreateGoogleAccountRow, error)
@@ -99,7 +102,10 @@ type Querier interface {
 	DashboardKpis(ctx context.Context, ownerID uuid.UUID) (DashboardKpisRow, error)
 	DashboardLevelCounts(ctx context.Context, ownerID uuid.UUID) ([]DashboardLevelCountsRow, error)
 	DashboardProjectRisks(ctx context.Context, ownerID uuid.UUID) ([]DashboardProjectRisksRow, error)
-	// @q is a LIKE pattern already escaped by the caller, or empty for all.
+	// @q is a LIKE pattern already escaped by the caller, or empty for all. It
+	// matches name, nickname, the island code (read with spaces, "koh samui"),
+	// the free-text island, and the islands in @island_codes, which the caller
+	// picked by Thai name (the island table holds codes only).
 	// Columns of the submitted version are zero values when submitted is false
 	// (sqlc cannot mark lateral join columns nullable); avg_rm is '' when no
 	// indicator is scored. Projects without a live version are not listed: the

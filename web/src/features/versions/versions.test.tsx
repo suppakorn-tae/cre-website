@@ -114,6 +114,16 @@ describe('versions api against mocks', () => {
     expect(list.map((v) => v.version_no)).toEqual([3, 1]);
   });
 
+  it('refuses to delete the last version with the last_version code', async () => {
+    const [keep, ...rest] = mockVersions();
+    for (const v of rest) await deleteVersion(mockProjectId, v.id);
+    await expect(deleteVersion(mockProjectId, keep.id)).rejects.toMatchObject({
+      status: 409,
+      code: 'last_version',
+    });
+    expect(await fetchVersions(mockProjectId)).toHaveLength(1);
+  });
+
   it('raises ApiError for an unknown project', async () => {
     await expect(fetchProject('nope')).rejects.toMatchObject({ status: 404, code: 'not_found' });
   });

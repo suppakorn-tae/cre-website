@@ -66,6 +66,12 @@ WHERE v.project_id = @project_id AND p.owner_id = @owner_id
     AND (sqlc.narg('version_id')::uuid IS NULL OR v.id = sqlc.narg('version_id'))
 ORDER BY v.version_no DESC;
 
+-- name: CountLiveVersions :one
+-- Live versions of a project, read inside the delete transaction after the
+-- project row is locked.
+SELECT count(*)::int FROM assessment_version
+WHERE project_id = @project_id AND deleted_at IS NULL;
+
 -- name: SoftDeleteVersion :execrows
 UPDATE assessment_version v SET deleted_at = now()
 FROM project p

@@ -2,6 +2,7 @@ package versions_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -28,6 +29,7 @@ var (
 	project = uuid.MustParse("33333333-3333-4333-8333-333333333333")
 	oldID   = uuid.MustParse("44444444-4444-4444-8444-444444444444")
 	newID   = uuid.MustParse("55555555-5555-4555-8555-555555555555")
+	lastID  = uuid.MustParse("66666666-6666-4666-8666-666666666666")
 	at      = time.Date(2026, 11, 24, 8, 0, 0, 0, time.UTC)
 )
 
@@ -76,6 +78,9 @@ func (f fake) Get(_ context.Context, p, id, o uuid.UUID) (svc.Version, error) {
 }
 
 func (f fake) Delete(ctx context.Context, p, id, o uuid.UUID) error {
+	if id == lastID && p == project && o == owner {
+		return svc.ErrLastVersion
+	}
 	_, err := f.Get(ctx, p, id, o)
 	return err
 }
@@ -167,6 +172,7 @@ func TestVersionEndpointsMatchContract(t *testing.T) {
 		{"unknown version", http.MethodGet, base + "/" + uuid.NewString(), http.StatusNotFound},
 		{"unknown project", http.MethodGet, "/api/v1/projects/" + uuid.NewString() + "/versions", http.StatusNotFound},
 		{"delete unknown", http.MethodDelete, base + "/" + uuid.NewString(), http.StatusNotFound},
+		{"delete last version", http.MethodDelete, base + "/" + lastID.String(), http.StatusConflict},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -190,5 +196,21 @@ func TestWithoutSession401(t *testing.T) {
 	got := call(t, "", http.MethodGet, "/api/v1/projects/"+project.String()+"/versions").StatusCode
 	if got != http.StatusUnauthorized {
 		t.Fatalf("status = %d, want 401", got)
+	}
+}
+
+func TestDeleteLastVersionIsA409WithItsOwnCode(t *testing.T) {
+	path := "/api/v1/projects/" + project.String() + "/versions/" + lastID.String()
+	resp := call(t, owner.String(), http.MethodDelete, path)
+	if resp.StatusCode != http.StatusConflict {
+		t.Fatalf("status = %d, want 409", resp.StatusCode)
+	}
+	var body struct {
+		Error struct {
+			Code string `json:"code"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil || body.Error.Code != "last_version" {
+		t.Fatalf("body code = %q, err %v, want last_version", body.Error.Code, err)
 	}
 }

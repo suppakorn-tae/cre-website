@@ -46,7 +46,9 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const [tab, setTab] = useState<ProjectTab>('overview');
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<VersionSummary | null>(null);
-  const [failure, setFailure] = useState<'create' | 'delete' | null>(null);
+  const [failure, setFailure] = useState<'create.failed' | 'delete.failed' | 'delete.lastVersion' | null>(
+    null,
+  );
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: versionsKey(projectId) });
@@ -61,7 +63,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
     },
     onError: () => {
       setCreating(false);
-      setFailure('create');
+      setFailure('create.failed');
     },
   });
   const remove = useMutation({
@@ -70,9 +72,13 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       setDeleting(null);
       refresh();
     },
-    onError: () => {
+    onError: (error) => {
       setDeleting(null);
-      setFailure('delete');
+      setFailure(
+        error instanceof ApiError && error.code === 'last_version'
+          ? 'delete.lastVersion'
+          : 'delete.failed',
+      );
     },
   });
 
@@ -113,7 +119,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       {failure && (
         <Toast
           tone="error"
-          title={t(`${failure}.failed`)}
+          title={t(failure)}
           closeLabel={t('create.cancel')}
           onClose={() => setFailure(null)}
         />
