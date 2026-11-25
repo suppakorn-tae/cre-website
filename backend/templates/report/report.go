@@ -96,7 +96,7 @@ type levelCount struct {
 }
 
 type adviceView struct {
-	Label string
+	Label template.HTML
 	Items []string
 }
 
@@ -132,6 +132,13 @@ func Render(d Data) (html []byte, assets map[string][]byte, err error) {
 			s, e := msg(k)
 			terr = errors.Join(terr, e)
 			return s
+		},
+		// tr is for catalogue entries that carry markup (subscripts). The
+		// catalogue is embedded and trusted, never user input.
+		"tr": func(k string) template.HTML {
+			s, e := msg(k)
+			terr = errors.Join(terr, e)
+			return template.HTML(s) //nolint:gosec // embedded catalogue
 		},
 	}).Parse(pageTmpl)
 	if err != nil {
@@ -188,7 +195,7 @@ func buildView(d Data) (view, error) {
 		for _, l := range adviceOrder {
 			for _, a := range i.Advice {
 				if a.List == l && len(a.Items) > 0 {
-					iv.Advice = append(iv.Advice, adviceView{Label: m("advice." + l), Items: a.Items})
+					iv.Advice = append(iv.Advice, adviceView{Label: template.HTML(m("advice." + l)), Items: a.Items})
 				}
 			}
 		}
