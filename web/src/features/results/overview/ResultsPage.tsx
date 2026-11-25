@@ -150,12 +150,13 @@ export function ResultsPage({ projectId, versionId }: { projectId: string; versi
 
       <div className={styles.counts} role="group" aria-label={t('page.countsLabel')}>
         {[...LEVELS].reverse().map((level) => (
-          <KpiCard
-            key={level}
-            label={`${level} · ${tUi(`levels.${level}`)}`}
-            value={formatNumber(summary.level_counts[level])}
-            unit={t('page.indicatorUnit')}
-          />
+          <div key={level} className={styles.count} data-level={level}>
+            <KpiCard
+              label={`${level} · ${tUi(`levels.${level}`)}`}
+              value={formatNumber(summary.level_counts[level])}
+              unit={t('page.indicatorUnit')}
+            />
+          </div>
         ))}
       </div>
 
