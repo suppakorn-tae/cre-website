@@ -183,7 +183,7 @@ describe('DashboardPage', () => {
   it('shows four KPI cards, both charts and marks the projects card as shown', () => {
     const html = render(<DashboardPage />, seedSummary);
     for (const text of [
-      'แดชบอร์ด',
+      'Dashboard',
       'ภาพรวมโครงการก่อสร้างบนพื้นที่เกาะ',
       'โครงการทั้งหมด',
       'ความเสี่ยงสูง',
