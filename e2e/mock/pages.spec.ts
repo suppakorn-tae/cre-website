@@ -103,6 +103,6 @@ test('the results level counts match the versions tab', async ({ page }) => {
     ['L', 14],
     ['VL', 8],
   ] as const) {
-    await expect(cards).toContainText(new RegExp(`${level} · [^\\d]*\\s*${count}\\s*ตัวชี้วัด`));
+    await expect(cards).toContainText(new RegExp(`${level}\\s*${count}\\s*ตัวชี้วัด`));
   }
 });

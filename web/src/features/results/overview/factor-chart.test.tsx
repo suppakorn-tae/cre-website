@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 
 import results from '../../../../messages/th/results.json';
+import ui from '../../../../messages/th/ui.json';
 
 import { FactorChart } from './FactorChart';
 import { mockResults } from './mocks';
@@ -11,6 +12,7 @@ import {
   FALLBACK_H_LINE_RM,
   hLineRm,
   LABEL_PCT,
+  levelOfMean,
   reachesH,
   valuePlacement,
 } from './rules';
@@ -20,7 +22,7 @@ function render(
   cutoffs?: ReturnType<typeof mockResults>['level_cutoffs'],
 ) {
   return renderToStaticMarkup(
-    <NextIntlClientProvider locale="th" messages={{ results }}>
+    <NextIntlClientProvider locale="th" messages={{ results, ui }}>
       <FactorChart averages={averages} names={new Map()} cutoffs={cutoffs} />
     </NextIntlClientProvider>,
   );
@@ -49,7 +51,7 @@ describe('factor chart', () => {
   it('marks only bars that reach the H line', () => {
     const html = render(averages);
     expect(html.match(/data-high="true"/g)).toHaveLength(4); // li + bar for two factors
-    expect(html).toContain('ระดับสูง ≥ 3.5');
+    expect(html).toContain('H ≥ 3.5');
     expect(html).toContain('data-testid="h-line"');
   });
 
@@ -66,7 +68,7 @@ describe('factor chart', () => {
     const cutoffs = { l: 1.5, m: 2.5, h: 4, vh: 4.5 };
     expect(hLineRm(cutoffs)).toBe(4);
     const html = render(averages, cutoffs);
-    expect(html).toContain('ระดับสูง ≥ 4');
+    expect(html).toContain('H ≥ 4');
     expect(html).toContain('bottom:75%'); // (4 - 1) / 4
     expect(html.match(/data-high="true"/g)).toHaveLength(2); // only 4.2 reaches 4
   });
@@ -114,5 +116,26 @@ describe('factor chart', () => {
     const html = render([{ factor_code: 'EC-TC', scored_count: 4, average_rm: 3.4 }]);
     expect(html).toContain('data-placement="inside"');
     expect(html).toContain('bottom:50%');
+  });
+
+  it('colours each bar by the level its mean falls in, with the level in text', () => {
+    const html = render(averages);
+    expect(html).toMatch(/data-level="M"/); // 2.78
+    expect(html).toMatch(/data-level="H"/); // 3.5
+    expect(html).toMatch(/data-level="H"/); // 4.2
+    // text alternative: factor, value and level (code and name), not colour alone
+    expect(html).toContain('aria-label="EC-MG: RM เฉลี่ย 2.78 ระดับ M (ความเสี่ยงปานกลาง)"');
+    expect(html).toContain('ชื่อด้านแสดงเมื่อชี้ที่แท่ง');
+  });
+
+  it('maps a mean to a level with the api cut-offs', () => {
+    const cutoffs = { l: 1.5, m: 2.5, h: 3.5, vh: 4.5 };
+    expect(levelOfMean(1.2, cutoffs)).toBe('VL');
+    expect(levelOfMean(1.5, cutoffs)).toBe('L');
+    expect(levelOfMean(2.5, cutoffs)).toBe('M');
+    expect(levelOfMean(3.5, cutoffs)).toBe('H');
+    expect(levelOfMean(4.5, cutoffs)).toBe('VH');
+    expect(levelOfMean(3.4, { ...cutoffs, h: 3 })).toBe('H');
+    expect(levelOfMean(3.4)).toBe('M'); // no cut-offs: defaults
   });
 });
