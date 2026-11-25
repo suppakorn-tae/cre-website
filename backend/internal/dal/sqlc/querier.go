@@ -105,6 +105,13 @@ type Querier interface {
 	// Owner check in SQL (admins get no access); absent when the version or its
 	// project is deleted.
 	GetReportForDownload(ctx context.Context, arg GetReportForDownloadParams) (GetReportForDownloadRow, error)
+	// Level and editability of one stored result of an owned, submitted version.
+	GetResultLevel(ctx context.Context, arg GetResultLevelParams) (GetResultLevelRow, error)
+	// A submitted, non-deleted version of an owned project. Another account's
+	// version, a draft and a deleted one look absent. editable is true only for
+	// the highest number ever created, deleted rows included (BR-11). The average
+	// uses the rounding frozen in the version.
+	GetResultsVersion(ctx context.Context, arg GetResultsVersionParams) (GetResultsVersionRow, error)
 	// Owner and deletion checks live in the query: a version of another
 	// account, or a deleted version or project, looks absent.
 	GetVersionForReport(ctx context.Context, arg GetVersionForReportParams) (GetVersionForReportRow, error)
@@ -141,9 +148,15 @@ type Querier interface {
 	// @q is a LIKE pattern already escaped by the caller, or empty for all.
 	// latest_version_no is 0 when the project has no live version.
 	ListProjects(ctx context.Context, arg ListProjectsParams) ([]ListProjectsRow, error)
+	// Current advice text of the lists stored at submission, in admin-defined
+	// order. The text is read now, not copied at submission. A missing locale
+	// falls back to th, which every item has.
+	ListResultAdvice(ctx context.Context, arg ListResultAdviceParams) ([]ListResultAdviceRow, error)
 	ListSnapshotImpact(ctx context.Context, versionID uuid.UUID) ([]ListSnapshotImpactRow, error)
 	// Raw numerics: a missing threshold stays NULL.
 	ListSnapshotRL(ctx context.Context, versionID uuid.UUID) ([]ListSnapshotRLRow, error)
+	// Stored scores of a version with the chosen strategy, in catalogue order.
+	ListStoredResults(ctx context.Context, versionID uuid.UUID) ([]ListStoredResultsRow, error)
 	ListUnfinishedJobs(ctx context.Context) ([]Job, error)
 	// Non-deleted versions of an owned project, newest first; version_id narrows
 	// it to one. editable is true only for the highest number ever created,
@@ -184,6 +197,10 @@ type Querier interface {
 	UpsertAnswer(ctx context.Context, arg UpsertAnswerParams) error
 	// Upserted, not replaced, so a chosen strategy survives a resubmission.
 	UpsertRiskResult(ctx context.Context, arg UpsertRiskResultParams) error
+	// Saves the choice only while the version is still the latest and the result
+	// is H or VH, so a concurrent new version cannot slip past the earlier
+	// check. No row back means the version stopped being the latest.
+	UpsertStrategy(ctx context.Context, arg UpsertStrategyParams) (UpsertStrategyRow, error)
 }
 
 var _ Querier = (*Queries)(nil)
