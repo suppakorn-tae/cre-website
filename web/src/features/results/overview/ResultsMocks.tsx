@@ -6,12 +6,13 @@ import { MOCKS_ENABLED } from '@/lib/mocks/mock-gate';
 
 /** Adds the project, version and results handlers to the running worker. */
 export async function registerResultMocks(): Promise<void> {
-  const [{ worker }, { projectHandlers }, { resultHandlers }] = await Promise.all([
+  const [{ worker }, { projectHandlers }, { resultHandlers }, { hvhHandlers }] = await Promise.all([
     import('@/mocks/browser'),
     import('@/features/projects/mocks'),
     import('./mocks'),
+    import('../hvh/mocks'),
   ]);
-  worker.use(...projectHandlers, ...resultHandlers);
+  worker.use(...hvhHandlers, ...projectHandlers, ...resultHandlers);
 }
 
 /**

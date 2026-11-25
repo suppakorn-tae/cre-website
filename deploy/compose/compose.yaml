@@ -34,7 +34,7 @@ services:
       dockerfile: web/Dockerfile
     restart: unless-stopped
     environment:
-      API_INTERNAL_URL: http://api:4000
+      API_INTERNAL_URL: http://api:4000/api/v1
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
     networks: [private-net]
 
