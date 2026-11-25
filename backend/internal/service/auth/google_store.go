@@ -42,6 +42,26 @@ func (p GooglePGStore) ByEmail(ctx context.Context, email string) (GoogleAccount
 	return googleRow(r.ID, r.Status, r.SessionVersion, r.HasPassword, r.HasGoogle, err)
 }
 
+// ByID implements GoogleStore.
+func (p GooglePGStore) ByID(ctx context.Context, id string) (GoogleAccount, error) {
+	u, err := uuid.Parse(id)
+	if err != nil {
+		return GoogleAccount{}, ErrLoginNoAccount
+	}
+	r, err := sqlc.New(p.DB).GetAccountForGoogleByID(ctx, u)
+	return googleRow(r.ID, r.Status, r.SessionVersion, r.HasPassword, r.HasGoogle, err)
+}
+
+// UnlinkSub implements GoogleStore.
+func (p GooglePGStore) UnlinkSub(ctx context.Context, id string) (bool, error) {
+	u, err := uuid.Parse(id)
+	if err != nil {
+		return false, nil
+	}
+	n, err := sqlc.New(p.DB).UnlinkGoogleSub(ctx, u)
+	return n == 1, err
+}
+
 // uniqueErr maps a unique violation to the service error for its constraint.
 func uniqueErr(err error) error {
 	var pgErr *pgconn.PgError

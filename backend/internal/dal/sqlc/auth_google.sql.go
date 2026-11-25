@@ -119,6 +119,35 @@ func (q *Queries) GetAccountForGoogleByEmail(ctx context.Context, email pgtype.T
 	return i, err
 }
 
+const getAccountForGoogleByID = `-- name: GetAccountForGoogleByID :one
+SELECT id, status, session_version, (password_hash IS NOT NULL)::boolean AS has_password,
+       (google_sub IS NOT NULL)::boolean AS has_google
+FROM account
+WHERE id = $1
+`
+
+type GetAccountForGoogleByIDRow struct {
+	ID             uuid.UUID
+	Status         AccountStatus
+	SessionVersion int32
+	HasPassword    bool
+	HasGoogle      bool
+}
+
+// Link, unlink and re-authentication of the signed-in account.
+func (q *Queries) GetAccountForGoogleByID(ctx context.Context, id uuid.UUID) (GetAccountForGoogleByIDRow, error) {
+	row := q.db.QueryRow(ctx, getAccountForGoogleByID, id)
+	var i GetAccountForGoogleByIDRow
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.SessionVersion,
+		&i.HasPassword,
+		&i.HasGoogle,
+	)
+	return i, err
+}
+
 const linkGoogleSub = `-- name: LinkGoogleSub :execrows
 UPDATE account
 SET google_sub = $2, updated_at = now()
@@ -134,6 +163,21 @@ type LinkGoogleSubParams struct {
 // used by another account fails on account_google_sub_uq.
 func (q *Queries) LinkGoogleSub(ctx context.Context, arg LinkGoogleSubParams) (int64, error) {
 	result, err := q.db.Exec(ctx, linkGoogleSub, arg.ID, arg.GoogleSub)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
+}
+
+const unlinkGoogleSub = `-- name: UnlinkGoogleSub :execrows
+UPDATE account
+SET google_sub = NULL, updated_at = now()
+WHERE id = $1 AND status = 'active' AND google_sub IS NOT NULL AND password_hash IS NOT NULL
+`
+
+// Removes the Google id, only while a password remains to sign in with.
+func (q *Queries) UnlinkGoogleSub(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, unlinkGoogleSub, id)
 	if err != nil {
 		return 0, err
 	}

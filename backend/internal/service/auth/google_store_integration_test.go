@@ -64,3 +64,32 @@ func TestGooglePGStore(t *testing.T) {
 		t.Fatalf("duplicate e-mail: %v", err)
 	}
 }
+
+func TestGooglePGStoreUnlink(t *testing.T) {
+	if testing.Short() {
+		t.Skip("integration test needs Docker")
+	}
+	db := testutil.NewDB(t)
+	ctx := context.Background()
+	s := auth.GooglePGStore{DB: db}
+	a := testutil.NewAccount(t, db)
+	if ok, err := s.LinkSub(ctx, a.ID, "g-1"); !ok || err != nil {
+		t.Fatalf("link: %v %v", ok, err)
+	}
+	only, err := s.CreateGoogleAccount(ctx, auth.NewAccount{
+		ID: uuid.New(), Email: "only@example.test", Pseudonym: "user-google1", TermsAcceptedAt: time.Now(),
+	}, "g-2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Unlink needs a password: the Google-only account keeps its id.
+	if ok, err := s.UnlinkSub(ctx, only.ID.String()); ok || err != nil {
+		t.Fatalf("unlink google-only: %v %v", ok, err)
+	}
+	if ok, err := s.UnlinkSub(ctx, a.ID); !ok || err != nil {
+		t.Fatalf("unlink: %v %v", ok, err)
+	}
+	if got, err := s.ByID(ctx, a.ID); err != nil || got.HasGoogle || !got.HasPassword {
+		t.Fatalf("after unlink: %+v %v", got, err)
+	}
+}
