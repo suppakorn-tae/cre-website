@@ -90,15 +90,28 @@ func KeyEmail(r *http.Request) string {
 }
 
 // LimitFromEnv reads <prefix>_LIMIT (requests) and <prefix>_WINDOW (a Go
-// duration such as "15m") from the environment, using the defaults when a
+// duration such as "15m", or whole days such as "1d") from the environment, using the defaults when a
 // variable is unset or invalid.
 func LimitFromEnv(prefix string, defLimit int, defWindow time.Duration) (int, time.Duration) {
 	limit, window := defLimit, defWindow
 	if n, err := strconv.Atoi(os.Getenv(prefix + "_LIMIT")); err == nil && n > 0 {
 		limit = n
 	}
-	if d, err := time.ParseDuration(os.Getenv(prefix + "_WINDOW")); err == nil && d > 0 {
+	if d, err := parseWindow(os.Getenv(prefix + "_WINDOW")); err == nil && d > 0 {
 		window = d
 	}
 	return limit, window
+}
+
+// parseWindow is time.ParseDuration plus a whole-day suffix ("1d"), the form
+// used by REMEMBER_TTL.
+func parseWindow(v string) (time.Duration, error) {
+	if n, ok := strings.CutSuffix(v, "d"); ok {
+		days, err := strconv.Atoi(n)
+		if err != nil {
+			return 0, err
+		}
+		return time.Duration(days) * 24 * time.Hour, nil
+	}
+	return time.ParseDuration(v)
 }

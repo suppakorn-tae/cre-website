@@ -1,0 +1,66 @@
+name: ci-e2e
+
+# Not a required check: nightly, on demand, and on pull requests that touch
+# the harness itself.
+on:
+  pull_request:
+    paths:
+      - "e2e/**"
+      - "deploy/compose/compose.test.yaml"
+      - ".github/workflows/ci-e2e.yml"
+  schedule:
+    - cron: "0 20 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Start the compose stack
+        working-directory: e2e
+        run: pnpm run stack:up
+      - name: Playwright
+        working-directory: e2e
+        env:
+          CI: "true"
+        run: pnpm test
+      - name: Compose logs
+        if: failure()
+        working-directory: e2e
+        run: |
+          docker compose --env-file compose.env \
+            -f ../deploy/compose/compose.yaml -f ../deploy/compose/compose.test.yaml \
+            --profile test logs --no-color --tail 200
+      - name: Upload report, traces and videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Stop the stack
+        if: always()
+        working-directory: e2e
+        run: pnpm run stack:down
