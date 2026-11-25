@@ -6,6 +6,7 @@
   margin: 0;
   padding: 0;
   list-style: none;
+  margin-bottom: var(--space-4);
   color: var(--color-text-secondary);
   font-size: var(--text-small);
 }
@@ -70,7 +71,9 @@
   padding: var(--space-2);
   border-radius: var(--radius-control);
   font-size: var(--text-small);
+  font-variant-numeric: tabular-nums;
   text-align: center;
+  white-space: nowrap;
 }
 .cell span {
   display: block;
@@ -83,4 +86,33 @@
   color: var(--color-text-secondary);
   font-size: var(--text-small);
   white-space: nowrap;
+}
+
+/* Narrow screens: one block per factor, cells wrap in rows of three, nothing scrolls sideways. */
+@media (max-width: 767px) {
+  .grid,
+  .grid tbody {
+    display: block;
+    width: 100%;
+  }
+  .grid tr {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-1);
+    margin-bottom: var(--space-4);
+  }
+  .grid th,
+  .grid td.sum {
+    grid-column: 1 / -1;
+  }
+  .factor {
+    min-width: 0;
+    padding: 0 0 var(--space-1);
+  }
+  .cell {
+    min-width: 0;
+  }
+  .sum {
+    padding: var(--space-1) 0 0;
+  }
 }
