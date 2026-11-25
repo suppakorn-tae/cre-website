@@ -1,9 +1,10 @@
 'use client';
 
+import { IconDownload, IconRefresh } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
-import { Button } from '@/components/ui';
+import { Button, Icon } from '@/components/ui';
 import { ApiError } from '@/lib/api/errors';
 import { formatDateTime } from '@/lib/format/locale';
 
@@ -45,20 +46,37 @@ export function ExportRow({ entry, onAgain }: Props) {
       <span data-label={t('requestedAt')}>{formatDateTime(entry.requestedAt)}</span>
       <span data-label={t('scope')}>{scope}</span>
       <span data-label={t('includeDeleted')}>{request.include_deleted ? t('yes') : t('no')}</span>
-      <span data-label={t('status')} className={styles.status} data-status={status}>
-        {job.isError && status === 'loading' ? t('loadFailed') : null}
-        {status === 'loading' ? null : t(status)}
+      <span data-label={t('status')} className={styles.statusCell}>
+        <span className={styles.status} data-status={status}>
+          {job.isError && status === 'loading' ? t('loadFailed') : null}
+          {status === 'loading' ? null : t(status)}
+        </span>
         {status === 'expired' && <span className={styles.muted}>{t('expiredHelp')}</span>}
-        {phase === 'failed' && <span role="alert">{t('downloadFailed')}</span>}
+        {phase === 'failed' && (
+          <span role="alert" className={styles.statusError}>
+            {t('downloadFailed')}
+          </span>
+        )}
       </span>
       <span className={styles.actions}>
         {status === 'done' && (
-          <Button size="sm" onClick={download} disabled={phase === 'downloading'}>
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<Icon icon={IconDownload} size={18} />}
+            onClick={download}
+            disabled={phase === 'downloading'}
+          >
             {phase === 'downloading' ? t('downloading') : t('download')}
           </Button>
         )}
         {(status === 'expired' || status === 'failed') && (
-          <Button size="sm" variant="secondary" onClick={() => onAgain(request)}>
+          <Button
+            size="sm"
+            variant="secondary"
+            icon={<Icon icon={IconRefresh} size={18} />}
+            onClick={() => onAgain(request)}
+          >
             {t('again')}
           </Button>
         )}
