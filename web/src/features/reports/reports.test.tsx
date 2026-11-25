@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import { NextIntlClientProvider } from 'next-intl';
 import { setupServer } from 'msw/node';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -111,6 +113,14 @@ describe('ReportStatus layout', () => {
     expect(done).toContain('src="/api/v1/reports/j1/download?disposition=inline"');
     expect(done).toContain('href="/api/v1/reports/j1/download" download');
     expect(done).not.toContain('href="/api/v1/reports/j1/download?disposition=inline"');
+  });
+
+  it('caps the frame height and keeps it A4 on wide screens', () => {
+    const css = readFileSync(new URL('./reports.module.css', import.meta.url), 'utf8');
+    const rule = /\.previewFrame\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(rule).toContain('aspect-ratio: 210 / 297');
+    expect(rule).toContain('max-height: 80vh');
+    expect(rule).toContain('max-width: calc(80vh * 210 / 297)');
   });
 
   it('waits without a frame until the report is ready', () => {
