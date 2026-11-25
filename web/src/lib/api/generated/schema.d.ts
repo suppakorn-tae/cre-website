@@ -1097,6 +1097,9 @@ export interface paths {
         /**
          * Download a finished report
          * @description Streams the PDF through the api after the session and ownership check.
+         *     `disposition=attachment` (the default) makes the browser save the
+         *     file. `disposition=inline` lets the browser show it in a frame, for the
+         *     preview on the report page. Both use the same checks.
          *     404 when the job is not the caller's, is not a report, or its version
          *     is deleted. 409 when the job is not `done` or the file is missing in
          *     storage (the user may request the report again).
@@ -3849,7 +3852,10 @@ export interface operations {
     };
     downloadReport: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description How the browser treats the file. */
+                disposition?: "attachment" | "inline";
+            };
             header?: never;
             path: {
                 job_id: components["schemas"]["Uuid"];
@@ -3858,7 +3864,10 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description The PDF file. */
+            /**
+             * @description The PDF file. `Content-Disposition` is `attachment` or `inline`
+             *     as asked.
+             */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -3867,6 +3876,7 @@ export interface operations {
                     "application/pdf": string;
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];

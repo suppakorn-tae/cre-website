@@ -46,17 +46,33 @@
     summary: Download a finished report
     description: |
       Streams the PDF through the api after the session and ownership check.
+      `disposition=attachment` (the default) makes the browser save the
+      file. `disposition=inline` lets the browser show it in a frame, for the
+      preview on the report page. Both use the same checks.
       404 when the job is not the caller's, is not a report, or its version
       is deleted. 409 when the job is not `done` or the file is missing in
       storage (the user may request the report again).
+    parameters:
+      - name: disposition
+        in: query
+        required: false
+        description: How the browser treats the file.
+        schema:
+          type: string
+          enum: [attachment, inline]
+          default: attachment
     responses:
       '200':
-        description: The PDF file.
+        description: |
+          The PDF file. `Content-Disposition` is `attachment` or `inline`
+          as asked.
         content:
           application/pdf:
             schema:
               type: string
               format: binary
+      '400':
+        $ref: ../schemas/common.yaml#/responses/BadRequest
       '401':
         $ref: ../schemas/common.yaml#/responses/Unauthorized
       '404':

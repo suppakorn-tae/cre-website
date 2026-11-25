@@ -202,6 +202,37 @@ func TestDownloadStreamsPDF(t *testing.T) {
 	}
 }
 
+func TestDownloadDispositionInline(t *testing.T) {
+	resp, body := call(t, owner.String(), http.MethodGet, "/api/v1/reports/"+doneJob.String()+"/download?disposition=inline")
+	if resp.StatusCode != http.StatusOK || body != "%PDF-1.7 test" {
+		t.Fatalf("status = %d body = %q", resp.StatusCode, body)
+	}
+	if got := resp.Header.Get("Content-Disposition"); got != "inline; filename=report-TST1-v1.pdf" {
+		t.Fatalf("Content-Disposition = %q", got)
+	}
+}
+
+func TestDownloadDispositionAttachmentExplicit(t *testing.T) {
+	resp, _ := call(t, owner.String(), http.MethodGet, "/api/v1/reports/"+doneJob.String()+"/download?disposition=attachment")
+	if got := resp.Header.Get("Content-Disposition"); !strings.HasPrefix(got, "attachment;") {
+		t.Fatalf("Content-Disposition = %q", got)
+	}
+}
+
+func TestDownloadInvalidDisposition400(t *testing.T) {
+	resp, _ := call(t, owner.String(), http.MethodGet, "/api/v1/reports/"+doneJob.String()+"/download?disposition=bogus")
+	if resp.StatusCode != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", resp.StatusCode)
+	}
+}
+
+func TestDownloadInlineOtherAccount404(t *testing.T) {
+	resp, _ := call(t, uuid.NewString(), http.MethodGet, "/api/v1/reports/"+doneJob.String()+"/download?disposition=inline")
+	if resp.StatusCode != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", resp.StatusCode)
+	}
+}
+
 func TestDownloadConflicts(t *testing.T) {
 	for _, id := range []uuid.UUID{queueJob, lostJob} {
 		resp, _ := call(t, owner.String(), http.MethodGet, "/api/v1/reports/"+id.String()+"/download")
