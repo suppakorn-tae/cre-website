@@ -142,6 +142,10 @@ func toAPI(res svc.Results) api.ResultsResponse {
 			ScoredCount: len(res.Items), AverageRm: &avg,
 			LevelCounts: api.LevelCounts{VL: lc["VL"], L: lc["L"], M: lc["M"], H: lc["H"], VH: lc["VH"]},
 		},
+		LevelCutoffs: &api.LevelCutoffs{
+			L: float32(res.LevelCutoffs.L), M: float32(res.LevelCutoffs.M),
+			H: float32(res.LevelCutoffs.H), Vh: float32(res.LevelCutoffs.VH),
+		},
 		FactorAverages: make([]api.FactorAverage, len(res.FactorAverages)),
 		Items:          make([]api.IndicatorResult, len(res.Items)),
 	}

@@ -1463,6 +1463,21 @@ export interface components {
             scored_count: number;
             average_rm: number;
         };
+        /**
+         * @description Lower bound of each RM level: an RM at or above `h` and below `vh` is
+         *     level H, and an RM exactly on a border takes the higher level. These are
+         *     the fixed borders of the risk engine (risk-engine v1.1, Risk level), not
+         *     a per-version snapshot, and nothing is recalculated on read. Optional so
+         *     older clients and responses stay valid.
+         */
+        LevelCutoffs: {
+            /** @description RM from which the level is L (below it, VL). */
+            l: number;
+            m: number;
+            /** @description RM from which the level is H; where the H line is drawn. */
+            h: number;
+            vh: number;
+        };
         ResultsResponse: {
             version_id: components["schemas"]["Uuid"];
             submitted_at: components["schemas"]["Timestamp"];
@@ -1474,6 +1489,7 @@ export interface components {
              *     catalogue order (overview chart, FR-47).
              */
             factor_averages: components["schemas"]["FactorAverage"][];
+            level_cutoffs?: components["schemas"]["LevelCutoffs"];
             items: components["schemas"]["IndicatorResult"][];
         };
         SubmitResponse: {

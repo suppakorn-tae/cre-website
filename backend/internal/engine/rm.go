@@ -43,6 +43,15 @@ const (
 	borderHtoVH = 4.5
 )
 
+// LevelCutoffs are the lower bounds of the levels L, M, H and VH on RM.
+type LevelCutoffs struct{ L, M, H, VH float64 }
+
+// Cutoffs returns the fixed level borders the classification uses, so a
+// reader can draw them without recalculating anything.
+func Cutoffs() LevelCutoffs {
+	return LevelCutoffs{L: borderVLtoL, M: borderLtoM, H: borderMtoH, VH: borderHtoVH}
+}
+
 // RMResult holds the rounded scores, RI_max, the rounded RM and its level.
 type RMResult struct {
 	RL    float64

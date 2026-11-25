@@ -16,6 +16,7 @@ import (
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/dal"
 	"github.com/suppakorn-tae/cre-website/backend/internal/dal/sqlc"
+	"github.com/suppakorn-tae/cre-website/backend/internal/engine"
 )
 
 // DefaultLocale is the only locale v1 serves. Add a locale to the contract
@@ -71,7 +72,10 @@ type Results struct {
 	LevelCounts map[string]int
 	// FactorAverages are read from the stored results, in catalogue order.
 	FactorAverages []FactorAverage
-	Items          []Indicator
+	// LevelCutoffs are the engine's fixed level borders; the spec has no
+	// per-version snapshot of them, and nothing is recalculated.
+	LevelCutoffs engine.LevelCutoffs
+	Items        []Indicator
 }
 
 // Choice is a saved strategy.
@@ -116,8 +120,9 @@ func (s *Service) Get(ctx context.Context, projectID, versionID, owner uuid.UUID
 
 	out := Results{
 		VersionID: v.ID, SubmittedAt: *v.SubmittedAt, Editable: v.Editable, AverageRM: v.AverageRm,
-		LevelCounts: map[string]int{"VL": 0, "L": 0, "M": 0, "H": 0, "VH": 0},
-		Items:       make([]Indicator, len(rows)),
+		LevelCounts:  map[string]int{"VL": 0, "L": 0, "M": 0, "H": 0, "VH": 0},
+		Items:        make([]Indicator, len(rows)),
+		LevelCutoffs: engine.Cutoffs(),
 	}
 	out.FactorAverages = make([]FactorAverage, len(factors))
 	for i, f := range factors {
