@@ -1,0 +1,27 @@
+# e2e overlay on compose.yaml (IO-73). Use it with the `test` profile:
+#   docker compose --env-file e2e/compose.env \
+#     -f deploy/compose/compose.yaml -f deploy/compose/compose.test.yaml \
+#     --profile test up -d --build --wait
+services:
+  mailpit:
+    # Replace the dev-only profile: the e2e stack always needs captured mail.
+    profiles: !override [test]
+    # Publish the Mailpit API on the host loopback for the OTP helper.
+    ports:
+      - "127.0.0.1:8025:8025"
+    # private-net is internal, so published ports need a non-internal network.
+    networks: [public-net]
+
+  api:
+    environment:
+      # Many tests share one IP and a few e-mails: lift the auth rate limits.
+      RL_SIGNUP_IP_LIMIT: "1000"
+      RL_SIGNUP_EMAIL_LIMIT: "1000"
+      RL_OTP_IP_LIMIT: "1000"
+      RL_OTP_EMAIL_LIMIT: "1000"
+      RL_OTP_RESEND_IP_LIMIT: "1000"
+      RL_OTP_RESEND_MAIL_LIMIT: "1000"
+      RL_LOGIN_IP_LIMIT: "1000"
+      RL_LOGIN_EMAIL_LIMIT: "1000"
+    depends_on:
+      mailpit: { condition: service_healthy }
