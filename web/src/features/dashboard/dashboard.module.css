@@ -128,10 +128,8 @@
   gap: 2px;
 }
 .barName {
-  overflow: hidden;
   color: var(--color-text);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 .barSub {
   color: var(--color-text-muted);
