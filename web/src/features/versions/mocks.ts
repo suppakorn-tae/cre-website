@@ -24,6 +24,7 @@ export const mockProject: Project = {
   expected_progress_pct: 48,
   version_count: 3,
   latest_version_no: 3,
+  latest_version_id: '0193a5c2-0000-7000-8000-000000000103',
   created_at: '2026-10-28T03:00:00Z',
   updated_at: '2026-11-10T03:00:00Z',
 };

@@ -17,13 +17,19 @@ SELECT p.id, p.name, p.nickname, p.island_code, p.island_other, p.type_code,
        (SELECT count(*) FROM assessment_version v
          WHERE v.project_id = p.id AND v.deleted_at IS NULL)::int AS version_count,
        (SELECT COALESCE(max(v.version_no), 0) FROM assessment_version v
-         WHERE v.project_id = p.id AND v.deleted_at IS NULL)::int AS latest_version_no
+         WHERE v.project_id = p.id AND v.deleted_at IS NULL)::int AS latest_version_no,
+       lv.id AS latest_version_id
 FROM project p
+LEFT JOIN assessment_version lv ON lv.id = (
+    SELECT v.id FROM assessment_version v
+    WHERE v.project_id = p.id AND v.deleted_at IS NULL
+    ORDER BY v.version_no DESC LIMIT 1)
 WHERE p.id = @id AND p.owner_id = @owner_id AND p.deleted_at IS NULL;
 
 -- name: ListProjects :many
 -- @q is a LIKE pattern already escaped by the caller, or empty for all.
--- latest_version_no is 0 when the project has no live version.
+-- latest_version_no is 0 and latest_version_id NULL when the project has no
+-- live version.
 SELECT p.id, p.name, p.nickname, p.island_code, p.island_other, p.type_code,
        p.type_other, p.start_date, p.end_date, p.value_baht::text AS value_baht,
        p.progress_pct, p.description, p.created_at, p.updated_at,
@@ -31,8 +37,13 @@ SELECT p.id, p.name, p.nickname, p.island_code, p.island_other, p.type_code,
          WHERE v.project_id = p.id AND v.deleted_at IS NULL)::int AS version_count,
        (SELECT COALESCE(max(v.version_no), 0) FROM assessment_version v
          WHERE v.project_id = p.id AND v.deleted_at IS NULL)::int AS latest_version_no,
+       lv.id AS latest_version_id,
        count(*) OVER ()::int AS total
 FROM project p
+LEFT JOIN assessment_version lv ON lv.id = (
+    SELECT v.id FROM assessment_version v
+    WHERE v.project_id = p.id AND v.deleted_at IS NULL
+    ORDER BY v.version_no DESC LIMIT 1)
 WHERE p.owner_id = @owner_id AND p.deleted_at IS NULL
   AND (@q::text = ''
        OR p.name ILIKE @q::text

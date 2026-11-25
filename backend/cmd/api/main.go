@@ -84,6 +84,7 @@ func main() {
 		ScoreDecimals: decimals("SCORE_DECIMALS", 2, l),
 		RMDecimals:    decimals("RM_DECIMALS", 3, l),
 	}
+	deps.Deps.Rounding = deps.Rounding // the handlers built from app.Deps read this copy
 	if ep := os.Getenv("S3_ENDPOINT"); ep != "" {
 		store, err := s3.New(s3.Config{
 			Endpoint: ep, Region: os.Getenv("S3_REGION"), Bucket: os.Getenv("S3_BUCKET"),

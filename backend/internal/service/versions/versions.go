@@ -79,21 +79,7 @@ func New(db dal.DBTX, tx dal.Beginner, rounding Rounding) *Service {
 func (s *Service) Create(ctx context.Context, projectID, owner uuid.UUID) (Version, error) {
 	id := uuid.New()
 	err := dal.WithTx(ctx, s.tx, func(tx pgx.Tx) error {
-		q := sqlc.New(tx)
-		if _, err := q.LockOwnedProject(ctx, sqlc.LockOwnedProjectParams{ID: projectID, OwnerID: owner}); err != nil {
-			return err
-		}
-		if _, err := q.InsertVersion(ctx, sqlc.InsertVersionParams{
-			ID: id, ProjectID: projectID,
-			ScoreDecimals: s.rounding.ScoreDecimals, RmDecimals: s.rounding.RMDecimals,
-		}); err != nil {
-			return err
-		}
-		if _, err := q.SnapshotRLThresholds(ctx, id); err != nil {
-			return err
-		}
-		_, err := q.SnapshotImpactThresholds(ctx, id)
-		return err
+		return CreateInTx(ctx, tx, projectID, owner, id, s.rounding)
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Version{}, ErrNotFound
@@ -102,6 +88,30 @@ func (s *Service) Create(ctx context.Context, projectID, owner uuid.UUID) (Versi
 		return Version{}, fmt.Errorf("versions: create: %w", err)
 	}
 	return s.Get(ctx, projectID, id, owner)
+}
+
+// CreateInTx stores the next blank version of an owned project inside the
+// caller's transaction: it locks the project row, inserts the version with
+// the project value, dates and rounding, and snapshots the RL and impact
+// thresholds (BR-10). It returns pgx.ErrNoRows when the project is missing,
+// deleted or not owned. Service.Create and the project service's create both
+// go through it, so the first version is exactly what Create would store.
+func CreateInTx(ctx context.Context, tx dal.DBTX, projectID, owner, id uuid.UUID, rounding Rounding) error {
+	q := sqlc.New(tx)
+	if _, err := q.LockOwnedProject(ctx, sqlc.LockOwnedProjectParams{ID: projectID, OwnerID: owner}); err != nil {
+		return err
+	}
+	if _, err := q.InsertVersion(ctx, sqlc.InsertVersionParams{
+		ID: id, ProjectID: projectID,
+		ScoreDecimals: rounding.ScoreDecimals, RmDecimals: rounding.RMDecimals,
+	}); err != nil {
+		return err
+	}
+	if _, err := q.SnapshotRLThresholds(ctx, id); err != nil {
+		return err
+	}
+	_, err := q.SnapshotImpactThresholds(ctx, id)
+	return err
 }
 
 // List returns the non-deleted versions of an owned project, newest first.

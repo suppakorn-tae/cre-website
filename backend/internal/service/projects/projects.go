@@ -19,6 +19,7 @@ import (
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/dal"
 	"github.com/suppakorn-tae/cre-website/backend/internal/dal/sqlc"
+	"github.com/suppakorn-tae/cre-website/backend/internal/service/versions"
 )
 
 // ErrNotFound is returned for a project that does not exist, is deleted or
@@ -66,6 +67,7 @@ type Project struct {
 	ExpectedProgressPct int
 	VersionCount        int
 	LatestVersionNo     *int
+	LatestVersionID     *uuid.UUID
 	CreatedAt           time.Time
 	UpdatedAt           time.Time
 }
@@ -107,16 +109,20 @@ type Page struct {
 
 // Service holds the project use cases.
 type Service struct {
-	q   *sqlc.Queries
-	now func() time.Time
+	q        *sqlc.Queries
+	tx       dal.Beginner
+	rounding versions.Rounding
+	now      func() time.Time
 }
 
-// New builds the service. now is the clock, time.Now in production.
-func New(db dal.DBTX, now func() time.Time) *Service {
+// New builds the service. db reads, tx runs the create transaction (a pool
+// satisfies both) and rounding is the configured SCORE_DECIMALS/RM_DECIMALS
+// frozen into the first version. now is the clock, time.Now in production.
+func New(db dal.DBTX, tx dal.Beginner, rounding versions.Rounding, now func() time.Time) *Service {
 	if now == nil {
 		now = time.Now
 	}
-	return &Service{q: sqlc.New(db), now: now}
+	return &Service{q: sqlc.New(db), tx: tx, rounding: rounding, now: now}
 }
 
 const dateLayout = "2006-01-02"
@@ -135,7 +141,9 @@ func set(v ...string) map[string]bool {
 	return m
 }
 
-// Create validates and stores a project for owner.
+// Create validates and stores a project for owner together with its first
+// version, in one transaction: either both exist afterwards or neither does.
+// The version is made by versions.CreateInTx, the code behind a new version.
 func (s *Service) Create(ctx context.Context, owner uuid.UUID, in Fields) (Project, error) {
 	in, err := validate(in)
 	if err != nil {
@@ -145,14 +153,27 @@ func (s *Service) Create(ctx context.Context, owner uuid.UUID, in Fields) (Proje
 	if err != nil {
 		return Project{}, fmt.Errorf("projects: new id: %w", err)
 	}
-	if _, err := s.q.CreateProject(ctx, sqlc.CreateProjectParams{
-		ID: id, OwnerID: owner, Name: in.Name, Nickname: in.Nickname,
-		IslandCode: in.IslandCode, IslandOther: text(in.IslandOther),
-		TypeCode: in.TypeCode, TypeOther: text(in.TypeOther),
-		StartDate: date(in.StartDate), EndDate: date(in.EndDate),
-		ValueBaht: in.ValueBaht, ProgressPct: int16(in.ProgressPct), //nolint:gosec // validated 0-100
-		Description: text(in.Description),
-	}); err != nil {
+	if s.tx == nil {
+		return Project{}, errors.New("projects: create: no transaction source")
+	}
+	versionID, err := uuid.NewV7()
+	if err != nil {
+		return Project{}, fmt.Errorf("projects: new version id: %w", err)
+	}
+	err = dal.WithTx(ctx, s.tx, func(tx pgx.Tx) error {
+		if _, err := sqlc.New(tx).CreateProject(ctx, sqlc.CreateProjectParams{
+			ID: id, OwnerID: owner, Name: in.Name, Nickname: in.Nickname,
+			IslandCode: in.IslandCode, IslandOther: text(in.IslandOther),
+			TypeCode: in.TypeCode, TypeOther: text(in.TypeOther),
+			StartDate: date(in.StartDate), EndDate: date(in.EndDate),
+			ValueBaht: in.ValueBaht, ProgressPct: int16(in.ProgressPct), //nolint:gosec // validated 0-100
+			Description: text(in.Description),
+		}); err != nil {
+			return err
+		}
+		return versions.CreateInTx(ctx, tx, id, owner, versionID, s.rounding)
+	})
+	if err != nil {
 		return Project{}, fmt.Errorf("projects: create: %w", err)
 	}
 	return s.Get(ctx, owner, id)
@@ -169,7 +190,7 @@ func (s *Service) Get(ctx context.Context, owner, id uuid.UUID) (Project, error)
 	}
 	return s.build(r.ID, r.Name, r.Nickname, r.IslandCode, r.IslandOther, r.TypeCode, r.TypeOther,
 		r.StartDate, r.EndDate, r.ValueBaht, r.ProgressPct, r.Description, r.CreatedAt, r.UpdatedAt,
-		r.VersionCount, r.LatestVersionNo), nil
+		r.VersionCount, r.LatestVersionNo, r.LatestVersionID), nil
 }
 
 // List returns one page of owner's projects, newest first, filtered by Q over
@@ -187,7 +208,7 @@ func (s *Service) List(ctx context.Context, owner uuid.UUID, p ListParams) (Page
 		out.Total = int(r.Total)
 		out.Items = append(out.Items, s.build(r.ID, r.Name, r.Nickname, r.IslandCode, r.IslandOther, r.TypeCode,
 			r.TypeOther, r.StartDate, r.EndDate, r.ValueBaht, r.ProgressPct, r.Description, r.CreatedAt,
-			r.UpdatedAt, r.VersionCount, r.LatestVersionNo))
+			r.UpdatedAt, r.VersionCount, r.LatestVersionNo, r.LatestVersionID))
 	}
 	if len(rows) == 0 && p.Page > 1 {
 		// A page past the end carries no total; ask for it on page one.
@@ -287,7 +308,7 @@ func (s *Service) Delete(ctx context.Context, owner, id uuid.UUID) error {
 
 func (s *Service) build(id uuid.UUID, name, nick, island string, islandOther pgtype.Text, typ string,
 	typeOther pgtype.Text, start, end pgtype.Date, value string, progress int16, desc pgtype.Text,
-	created, updated time.Time, versions, latest int32,
+	created, updated time.Time, versionCount, latest int32, latestID uuid.NullUUID,
 ) Project {
 	p := Project{
 		ID: id,
@@ -298,12 +319,15 @@ func (s *Service) build(id uuid.UUID, name, nick, island string, islandOther pgt
 			ValueBaht: value, ProgressPct: int(progress), Description: ptr(desc),
 		},
 		ExpectedProgressPct: ExpectedProgress(start.Time, end.Time, s.now()),
-		VersionCount:        int(versions),
+		VersionCount:        int(versionCount),
 		CreatedAt:           created, UpdatedAt: updated,
 	}
 	if latest > 0 {
 		n := int(latest)
 		p.LatestVersionNo = &n
+	}
+	if latestID.Valid {
+		p.LatestVersionID = &latestID.UUID
 	}
 	return p
 }

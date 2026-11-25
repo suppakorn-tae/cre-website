@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/projects"
+	"github.com/suppakorn-tae/cre-website/backend/internal/service/versions"
 	"github.com/suppakorn-tae/cre-website/backend/internal/testutil"
 )
 
@@ -27,11 +28,13 @@ func newEnv(t *testing.T) env {
 	db := testutil.NewDB(t)
 	now := func() time.Time { return time.Date(2027, 7, 1, 12, 0, 0, 0, time.UTC) }
 	return env{
-		db: db, svc: projects.New(db, now),
+		db: db, svc: projects.New(db, db, testRounding, now),
 		a: uuid.MustParse(testutil.NewAccount(t, db).ID),
 		b: uuid.MustParse(testutil.NewAccount(t, db).ID),
 	}
 }
+
+var testRounding = versions.Rounding{ScoreDecimals: 2, RMDecimals: 3}
 
 func fields(name string) projects.Fields {
 	return projects.Fields{
@@ -49,7 +52,9 @@ func TestCreateAndGet(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if p.ValueBaht != "100000000.00" || p.ProgressPct != 5 || p.VersionCount != 0 || p.LatestVersionNo != nil {
+	// Creating a project also creates version 1.
+	if p.ValueBaht != "100000000.00" || p.ProgressPct != 5 || p.VersionCount != 1 ||
+		p.LatestVersionNo == nil || *p.LatestVersionNo != 1 || p.LatestVersionID == nil {
 		t.Fatalf("created: %+v", p)
 	}
 	// 1 Jul is day 181 of 364: 49.7 -> 50 (BR-24).
@@ -60,6 +65,27 @@ func TestCreateAndGet(t *testing.T) {
 	if err != nil || got.Name != "Hotel" || got.StartDate != "2027-01-01" {
 		t.Fatalf("get: %+v %v", got, err)
 	}
+	if got.LatestVersionID == nil || *got.LatestVersionID != *p.LatestVersionID {
+		t.Fatalf("get latest version id %v, created %v", got.LatestVersionID, p.LatestVersionID)
+	}
+	pg, err := e.svc.List(ctx, e.a, projects.ListParams{Page: 1, PageSize: 20})
+	if err != nil || len(pg.Items) != 1 || pg.Items[0].LatestVersionID == nil ||
+		*pg.Items[0].LatestVersionID != *p.LatestVersionID {
+		t.Fatalf("list: %+v %v", pg, err)
+	}
+	var no, score, rm int
+	var status string
+	err = e.db.QueryRow(ctx, `SELECT version_no, status, snap_score_decimals, snap_rm_decimals
+		FROM assessment_version WHERE id = $1 AND project_id = $2`, *p.LatestVersionID, p.ID).Scan(&no, &status, &score, &rm)
+	if err != nil || no != 1 || status != "draft" || score != 2 || rm != 3 {
+		t.Fatalf("version row: %d %s %d %d %v", no, status, score, rm, err)
+	}
+	if n := countRows(t, e.db, `SELECT count(*) FROM version_rl_threshold WHERE version_id = $1`, *p.LatestVersionID); n != 55 {
+		t.Fatalf("rl rows = %d, want 55", n)
+	}
+	if n := countRows(t, e.db, `SELECT count(*) FROM version_impact_threshold WHERE version_id = $1`, *p.LatestVersionID); n != 2 {
+		t.Fatalf("impact rows = %d, want 2", n)
+	}
 	// Create with invalid data stores nothing.
 	bad := fields("x")
 	bad.EndDate = bad.StartDate
@@ -69,6 +95,82 @@ func TestCreateAndGet(t *testing.T) {
 	}
 	if pg, _ := e.svc.List(ctx, e.a, projects.ListParams{Page: 1, PageSize: 20}); pg.Total != 1 {
 		t.Fatalf("total %d", pg.Total)
+	}
+}
+
+func countRows(t *testing.T, db *pgxpool.Pool, q string, args ...any) int {
+	t.Helper()
+	var n int
+	if err := db.QueryRow(context.Background(), q, args...).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	return n
+}
+
+// A failing version insert (or snapshot) rolls the project back with it.
+func TestCreateStoresNothingWhenVersionStepFails(t *testing.T) {
+	for _, table := range []string{"assessment_version", "version_rl_threshold", "version_impact_threshold"} {
+		t.Run(table, func(t *testing.T) {
+			e := newEnv(t)
+			ctx := context.Background()
+			if _, err := e.db.Exec(ctx, `CREATE FUNCTION force_failure() RETURNS trigger LANGUAGE plpgsql
+				AS $$ BEGIN RAISE EXCEPTION 'forced failure'; END $$`); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := e.db.Exec(ctx, `CREATE TRIGGER force_failure BEFORE INSERT ON `+table+`
+				FOR EACH ROW EXECUTE FUNCTION force_failure()`); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := e.svc.Create(ctx, e.a, fields("Doomed")); err == nil {
+				t.Fatal("create succeeded, want the forced failure")
+			}
+			for _, tbl := range []string{"project", "assessment_version", "version_rl_threshold", "version_impact_threshold"} {
+				if n := countRows(t, e.db, `SELECT count(*) FROM `+tbl); n != 0 {
+					t.Fatalf("%s has %d rows after a failed create, want 0", tbl, n)
+				}
+			}
+		})
+	}
+}
+
+// Version 1 made with the project holds what versions.Create would store.
+func TestFirstVersionMatchesCreateVersion(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	p, err := e.svc.Create(ctx, e.a, fields("Twin"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	next, err := versions.New(e.db, e.db, testRounding).Create(ctx, p.ID, e.a)
+	if err != nil || next.No != 2 {
+		t.Fatalf("second version: %+v %v", next, err)
+	}
+	v1 := *p.LatestVersionID
+	const snap = `SELECT count(*) FROM (
+		SELECT snap_value_baht, snap_start_date, snap_end_date, snap_score_decimals, snap_rm_decimals,
+			status, submission_no FROM assessment_version WHERE id = $1
+		EXCEPT
+		SELECT snap_value_baht, snap_start_date, snap_end_date, snap_score_decimals, snap_rm_decimals,
+			status, submission_no FROM assessment_version WHERE id = $2) d`
+	if n := countRows(t, e.db, snap, v1, next.ID); n != 0 {
+		t.Fatalf("version row differs from createVersion's")
+	}
+	for _, q := range []string{
+		`SELECT count(*) FROM (
+			SELECT indicator_code, a, b, c, d, e FROM version_rl_threshold WHERE version_id = $1
+			EXCEPT
+			SELECT indicator_code, a, b, c, d, e FROM version_rl_threshold WHERE version_id = $2) d`,
+		`SELECT count(*) FROM (
+			SELECT impact_code, a, b, c, d, e FROM version_impact_threshold WHERE version_id = $1
+			EXCEPT
+			SELECT impact_code, a, b, c, d, e FROM version_impact_threshold WHERE version_id = $2) d`,
+	} {
+		if n := countRows(t, e.db, q, v1, next.ID); n != 0 {
+			t.Fatalf("snapshot differs from createVersion's (%d rows)", n)
+		}
+	}
+	if n := countRows(t, e.db, `SELECT count(*) FROM version_rl_threshold WHERE version_id = $1`, v1); n != 55 {
+		t.Fatalf("rl rows = %d", n)
 	}
 }
 

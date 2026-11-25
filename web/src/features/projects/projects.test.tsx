@@ -1,8 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
+import { setupServer } from 'msw/node';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import common from '../../../messages/th/common.json';
 import projects from '../../../messages/th/projects.json';
@@ -12,7 +13,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 import { PAGE_SIZE } from './api';
 import { ProjectForm } from './ProjectForm';
-import { getProjectStore, resetProjectStore, searchProjects } from './mocks';
+import { getProjectStore, projectHandlers, resetProjectStore, searchProjects } from './mocks';
 import { fromProject } from './validation';
 
 const wrap = (node: ReactNode) =>
@@ -66,5 +67,45 @@ describe('mock projects api', () => {
     expect(searchProjects(all, 'เกาะสมุย').every((p) => p.island_code === 'koh_samui')).toBe(true);
     expect(searchProjects(all, 'เกาะหมาก')).toHaveLength(1);
     expect(searchProjects(all, 'ไม่มีโครงการนี้')).toHaveLength(0);
+  });
+});
+
+describe('mock create project', () => {
+  const server = setupServer(...projectHandlers);
+  beforeAll(() => server.listen({ onUnhandledFrame: 'error' }));
+  afterEach(() => server.resetHandlers());
+  afterAll(() => server.close());
+  beforeEach(() => resetProjectStore());
+
+  it('returns version 1 with the new project, and keeps it on get and list', async () => {
+    const body = {
+      name: 'ทดสอบ',
+      nickname: 'TST',
+      island_code: 'koh_tao',
+      type_code: 'building',
+      start_date: '2027-01-01',
+      end_date: '2027-12-31',
+      value_baht: 1_000_000,
+      progress_pct: 0,
+    };
+    const res = await fetch('http://localhost/api/v1/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    expect(res.status).toBe(201);
+    const created = await res.json();
+    expect(created).toMatchObject({ version_count: 1, latest_version_no: 1 });
+    expect(created.latest_version_id).toEqual(expect.any(String));
+
+    const got = await (await fetch(`http://localhost/api/v1/projects/${created.id}`)).json();
+    expect(got.latest_version_id).toBe(created.latest_version_id);
+    const list = await (await fetch('http://localhost/api/v1/projects?q=TST')).json();
+    expect(list.items[0].latest_version_id).toBe(created.latest_version_id);
+  });
+
+  it('has no latest version id for a seeded project without versions', () => {
+    const none = getProjectStore().find((p) => p.version_count === 0);
+    expect(none?.latest_version_id).toBeNull();
   });
 });

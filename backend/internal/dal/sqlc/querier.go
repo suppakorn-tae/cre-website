@@ -208,7 +208,8 @@ type Querier interface {
 	// the version, in catalogue order. Only factors with a stored result appear.
 	ListFactorAverages(ctx context.Context, versionID uuid.UUID) ([]ListFactorAveragesRow, error)
 	// @q is a LIKE pattern already escaped by the caller, or empty for all.
-	// latest_version_no is 0 when the project has no live version.
+	// latest_version_no is 0 and latest_version_id NULL when the project has no
+	// live version.
 	ListProjects(ctx context.Context, arg ListProjectsParams) ([]ListProjectsRow, error)
 	// All accounts, or only those chosen for the job. A deleted account stays: its
 	// pseudonym still ties its projects together.

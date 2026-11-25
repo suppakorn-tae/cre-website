@@ -22,6 +22,7 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/dal"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/middleware"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/session"
+	"github.com/suppakorn-tae/cre-website/backend/internal/service/versions"
 )
 
 // Middleware wraps a handler.
@@ -37,6 +38,11 @@ type Deps struct {
 	// nil in tests that do not need them.
 	DB     dal.DBTX
 	Valkey valkey.StateStore
+
+	// Rounding is SCORE_DECIMALS and RM_DECIMALS, frozen into every new
+	// version, including the first one that creating a project makes. Zero
+	// means 2 and 3.
+	Rounding versions.Rounding
 
 	// Mailer sends OTP e-mail. Nil when SMTP_HOST is not set (development);
 	// handlers that need it answer 503 then.

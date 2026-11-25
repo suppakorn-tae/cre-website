@@ -25,7 +25,11 @@
         $ref: ../schemas/common.yaml#/responses/Unauthorized
   post:
     operationId: createProject
-    summary: Create a project
+    summary: Create a project with its first version
+    description: |
+      Stores the project and version 1 in one transaction. The version is a
+      blank draft with the same snapshot as any new version, so the response
+      has version_count 1, latest_version_no 1 and latest_version_id set.
     requestBody:
       required: true
       content:
