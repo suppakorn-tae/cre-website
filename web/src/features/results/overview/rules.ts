@@ -1,6 +1,6 @@
 import { LEVELS } from '@/components/ui';
 
-import type { IndicatorResult, Level, ResultsResponse } from './api';
+import type { IndicatorName, IndicatorResult, Level, ResultsResponse } from './api';
 
 export const TOP_COUNT = 10;
 
@@ -103,3 +103,49 @@ export function levelOfMean(rm: number, cutoffs: Cutoffs = FALLBACK_CUTOFFS): Le
 
 /** Rows the Top 10 card shows before "show all". */
 export const TOP_COLLAPSED = 5;
+
+/** One factor of the chart: the stored RM mean plus RL and RI_max means over the same indicators. */
+export type FactorSeries = {
+  factorCode: string;
+  scoredCount: number;
+  /** Stored by the api (FR-47); never recomputed here. */
+  averageRm: number;
+  /** Browser mean of the stored per-indicator values; absent when no row of the factor is loaded. */
+  averageRl?: number;
+  averageRiMax?: number;
+};
+
+/** Factor code of an indicator: the catalogue's, else the indicator code minus its number. */
+export function factorOf(code: string, names: Map<string, Pick<IndicatorName, 'factorCode'>>) {
+  return names.get(code)?.factorCode ?? code.split('-').slice(0, 2).join('-');
+}
+
+/**
+ * Chart series in the api's factor order. RM comes from the stored `factor_averages`;
+ * RL and RI_max are the means of the stored per-indicator rows already loaded for the
+ * page (the api returns no per-factor means for them). Nothing is sent to the engine.
+ */
+export function factorSeries(
+  averages: ResultsResponse['factor_averages'],
+  items: IndicatorResult[],
+  names: Map<string, Pick<IndicatorName, 'factorCode'>>,
+): FactorSeries[] {
+  const sums = new Map<string, { n: number; rl: number; ri: number }>();
+  for (const item of items) {
+    const key = factorOf(item.indicator_code, names);
+    const s = sums.get(key) ?? { n: 0, rl: 0, ri: 0 };
+    s.n += 1;
+    s.rl += item.rl;
+    s.ri += item.ri_max;
+    sums.set(key, s);
+  }
+  return averages.map((a) => {
+    const s = sums.get(a.factor_code);
+    return {
+      factorCode: a.factor_code,
+      scoredCount: a.scored_count,
+      averageRm: a.average_rm,
+      ...(s && { averageRl: s.rl / s.n, averageRiMax: s.ri / s.n }),
+    };
+  });
+}

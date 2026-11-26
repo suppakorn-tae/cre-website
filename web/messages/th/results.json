@@ -16,7 +16,8 @@
     "backToProject": "กลับไปหน้าโครงการ",
     "countsLabel": "จำนวนตัวชี้วัดแต่ละระดับ",
     "indicatorUnit": "ตัวชี้วัด",
-    "adviceAction": "คำแนะนำ & กลยุทธ์"
+    "adviceAction": "คำแนะนำ & กลยุทธ์",
+    "back": "ย้อนกลับ"
   },
   "draft": {
     "title": "ยังไม่มีผลการประเมิน",
@@ -58,11 +59,15 @@
     "distributionTitle": "การกระจายระดับความเสี่ยง",
     "legendItem": "{count} · {pct}%",
     "factorChart": {
-      "title": "ค่าเฉลี่ย RM รายด้าน (คะแนน 1–5)",
-      "label": "ค่าเฉลี่ย RM ของแต่ละปัจจัย คะแนน {min} ถึง {max}",
+      "title": "ค่าเฉลี่ย RL, RI<sub>max</sub> และ RM รายด้าน (คะแนน 1–5)",
+      "label": "ค่าเฉลี่ย RL, RI สูงสุด และ RM ของแต่ละปัจจัย คะแนน {min} ถึง {max}",
       "threshold": "H ≥ {rm}",
-      "note": "สีแท่งตามระดับของค่าเฉลี่ย · ชื่อด้านแสดงเมื่อชี้ที่แท่ง",
-      "summary": "{name}: RM เฉลี่ย {rm} ระดับ {level} ({levelName})"
+      "note": "สีแท่ง RM ตามระดับของค่าเฉลี่ย · ชี้ที่แท่งเพื่อดูค่า RL, RI สูงสุด และ RM",
+      "summary": "{name}: RL {rl} · RI สูงสุด {ri} · RM {rm} ระดับ {level} ({levelName})",
+      "chipRl": "RL",
+      "chipRi": "RI<sub>max</sub>",
+      "chipRm": "RM (แท่งกว้าง)",
+      "summaryRm": "{name}: RM เฉลี่ย {rm} ระดับ {level} ({levelName})"
     },
     "topTitle": "{count} อันดับความเสี่ยงสูงสุด (เรียงตาม RM)",
     "topCaption": "ตัวชี้วัดที่มีค่า RM สูงสุด",

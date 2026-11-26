@@ -1,14 +1,17 @@
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { useTranslations } from 'next-intl';
+import type { CSSProperties } from 'react';
 
 import { formatNumber } from '@/lib/format/locale';
 
 import type { IndicatorName, ResultsResponse } from './api';
+import { subscript } from './format';
 import styles from './results.module.css';
 import {
   CHART_MAX,
   CHART_MIN,
   chartPct,
+  factorSeries,
   FALLBACK_CUTOFFS,
   hLineRm,
   levelOfMean,
@@ -18,6 +21,8 @@ import {
 
 type Props = {
   averages: ResultsResponse['factor_averages'];
+  /** Stored per-indicator rows of the page; RL and RI_max means are taken from them. */
+  items: ResultsResponse['items'];
   names: Map<string, IndicatorName>;
   /** `level_cutoffs` of the results response; the H line falls back to 3.5 when absent. */
   cutoffs?: ResultsResponse['level_cutoffs'];
@@ -28,103 +33,151 @@ const fmt = (value: number) =>
   formatNumber(value, undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 /**
- * Average RM per factor (FR-47), drawn from the stored averages without recalculating.
- * Bars take the colour of the level their mean falls in, like every other chart; the
- * level code is always in text too (the tooltip and the hidden summary).
+ * RL, RI_max and RM per factor (FR-47, hi-fi 3.3a): two narrow grey bars and a wide RM bar
+ * coloured by the level of its mean. RM is the stored average; RL and RI_max are browser means
+ * of the stored per-indicator rows. Nothing is recalculated by the engine. The bars grow in
+ * from the axis (CSS, off with reduced motion).
  */
-export function FactorChart({ averages, names, cutoffs }: Props) {
+export function FactorChart({ averages, items, names, cutoffs }: Props) {
   const hLine = hLineRm(cutoffs);
   const t = useTranslations('results.overview.factorChart');
   const tUi = useTranslations('ui');
   const factorNames = new Map<string, string>();
   for (const { factorCode, factorName } of names.values()) factorNames.set(factorCode, factorName);
+  const series = factorSeries(averages, items, names);
 
   return (
     <section aria-labelledby="results-factor-title" className={styles.card}>
-      <h2 id="results-factor-title" className={styles.cardTitle}>
-        {t('title')}
-      </h2>
-      <Tooltip.Provider delayDuration={100}>
-        <div className={styles.factorChart}>
-          <div className={styles.factorAxis} aria-hidden="true">
-            {TICKS.map((tick) => (
-              <span key={tick} style={{ bottom: `${chartPct(tick)}%` }}>
-                {tick}
-              </span>
-            ))}
-          </div>
-          <div className={styles.factorPlot}>
-            {TICKS.map((tick) => (
+      <div className={styles.factorHead}>
+        <h2 id="results-factor-title" className={`${styles.cardTitle} ${styles.factorTitle}`}>
+          {t.rich('title', subscript)}
+        </h2>
+        <ul className={styles.factorChips} aria-hidden="true">
+          <li className={styles.factorChip} data-chip="rl">
+            {t('chipRl')}
+          </li>
+          <li className={styles.factorChip} data-chip="ri">
+            {t.rich('chipRi', subscript)}
+          </li>
+          <li className={styles.factorChip} data-chip="rm">
+            {t('chipRm')}
+          </li>
+        </ul>
+      </div>
+      <div className={styles.factorScroll}>
+        <Tooltip.Provider delayDuration={100}>
+          <div className={styles.factorChart}>
+            <div className={styles.factorAxis} aria-hidden="true">
+              {TICKS.map((tick) => (
+                <span key={tick} style={{ bottom: `${chartPct(tick)}%` }}>
+                  {tick}
+                </span>
+              ))}
+            </div>
+            <div className={styles.factorPlot}>
+              {TICKS.map((tick) => (
+                <span
+                  key={tick}
+                  aria-hidden="true"
+                  className={styles.factorGrid}
+                  style={{ bottom: `${chartPct(tick)}%` }}
+                />
+              ))}
               <span
-                key={tick}
-                aria-hidden="true"
-                className={styles.factorGrid}
-                style={{ bottom: `${chartPct(tick)}%` }}
-              />
-            ))}
-            <span
-              className={styles.factorLine}
-              style={{ bottom: `${chartPct(hLine)}%` }}
-              data-testid="h-line"
-            >
-              <span className={styles.factorLineLabel}>{t('threshold', { rm: hLine })}</span>
-            </span>
-            <ol
-              className={styles.factorBars}
-              aria-label={t('label', { min: CHART_MIN, max: CHART_MAX })}
-            >
-              {averages.map((a) => {
-                const place = valuePlacement(a.average_rm, hLine);
-                const level = levelOfMean(a.average_rm, cutoffs ?? FALLBACK_CUTOFFS);
-                const name = factorNames.get(a.factor_code);
-                const summary = t('summary', {
-                  name: name ?? a.factor_code,
-                  rm: fmt(a.average_rm),
-                  level,
-                  levelName: tUi(`levels.${level}`),
-                });
-                return (
-                  <li
-                    key={a.factor_code}
-                    className={styles.factorCol}
-                    data-high={reachesH(a.average_rm, hLine)}
-                    data-level={level}
-                  >
-                    <Tooltip.Root>
-                      <Tooltip.Trigger asChild>
-                        <button type="button" className={styles.factorHit} aria-label={summary}>
-                          <span
-                            className={styles.factorValue}
-                            style={{ bottom: `${place.bottomPct}%` }}
-                            data-placement={place.mode}
-                            aria-hidden="true"
-                          >
-                            {fmt(a.average_rm)}
-                          </span>
-                          <span
-                            className={styles.factorBar}
-                            style={{ height: `${chartPct(a.average_rm)}%` }}
-                            data-high={reachesH(a.average_rm, hLine)}
-                            aria-hidden="true"
-                          />
-                          <span className={styles.factorCode} aria-hidden="true">
-                            {a.factor_code}
-                          </span>
-                        </button>
-                      </Tooltip.Trigger>
-                      <Tooltip.Portal>
-                        <Tooltip.Content sideOffset={6} className={styles.tip}>
-                          {summary}
-                        </Tooltip.Content>
-                      </Tooltip.Portal>
-                    </Tooltip.Root>
-                  </li>
-                );
-              })}
-            </ol>
+                className={styles.factorLine}
+                style={{ bottom: `${chartPct(hLine)}%` }}
+                data-testid="h-line"
+              >
+                <span className={styles.factorLineLabel}>{t('threshold', { rm: hLine })}</span>
+              </span>
+              <ol
+                className={styles.factorBars}
+                aria-label={t('label', { min: CHART_MIN, max: CHART_MAX })}
+              >
+                {series.map((a, index) => {
+                  const rm = a.averageRm;
+                  const place = valuePlacement(rm, hLine);
+                  const level = levelOfMean(rm, cutoffs ?? FALLBACK_CUTOFFS);
+                  const name = factorNames.get(a.factorCode);
+                  const hasInputs = a.averageRl !== undefined && a.averageRiMax !== undefined;
+                  const values = {
+                    name: name ?? a.factorCode,
+                    rl: hasInputs ? fmt(a.averageRl!) : '',
+                    ri: hasInputs ? fmt(a.averageRiMax!) : '',
+                    rm: fmt(rm),
+                    level,
+                    levelName: tUi(`levels.${level}`),
+                  };
+                  const summary = hasInputs ? t('summary', values) : t('summaryRm', values);
+                  return (
+                    <li
+                      key={a.factorCode}
+                      className={styles.factorCol}
+                      data-high={reachesH(rm, hLine)}
+                      data-level={level}
+                      style={{ '--i': index } as CSSProperties}
+                    >
+                      <Tooltip.Root>
+                        <Tooltip.Trigger asChild>
+                          <button type="button" className={styles.factorHit} aria-label={summary}>
+                            {hasInputs && (
+                              <>
+                                <span className={styles.factorSlot} data-series="rl">
+                                  <span
+                                    className={styles.factorBarFill}
+                                    style={{ height: `${chartPct(a.averageRl!)}%` }}
+                                  />
+                                </span>
+                                <span className={styles.factorSlot} data-series="ri">
+                                  <span
+                                    className={styles.factorBarFill}
+                                    style={{ height: `${chartPct(a.averageRiMax!)}%` }}
+                                  />
+                                </span>
+                              </>
+                            )}
+                            <span className={styles.factorSlot} data-series="rm">
+                              <span
+                                className={styles.factorValue}
+                                style={{ bottom: `${place.bottomPct}%` }}
+                                data-placement={place.mode}
+                                aria-hidden="true"
+                              >
+                                {fmt(rm)}
+                              </span>
+                              <span
+                                className={styles.factorBarFill}
+                                style={{ height: `${chartPct(rm)}%` }}
+                                data-high={reachesH(rm, hLine)}
+                                aria-hidden="true"
+                              />
+                            </span>
+                            <span className={styles.factorCode} aria-hidden="true">
+                              {a.factorCode}
+                            </span>
+                          </button>
+                        </Tooltip.Trigger>
+                        <Tooltip.Portal>
+                          <Tooltip.Content sideOffset={6} className={styles.tip}>
+                            {summary}
+                          </Tooltip.Content>
+                        </Tooltip.Portal>
+                      </Tooltip.Root>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
           </div>
-        </div>
-      </Tooltip.Provider>
+        </Tooltip.Provider>
+      </div>
+      <ul className={styles.factorNames}>
+        {series.map((a) => (
+          <li key={a.factorCode}>
+            <strong>{a.factorCode}</strong> {factorNames.get(a.factorCode)}
+          </li>
+        ))}
+      </ul>
       <p className={styles.muted}>{t('note')}</p>
     </section>
   );

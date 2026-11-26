@@ -125,6 +125,7 @@ export function OverviewTab({ results, names }: Props) {
 
         <FactorChart
           averages={results.factor_averages}
+          items={results.items}
           names={names}
           cutoffs={results.level_cutoffs}
         />

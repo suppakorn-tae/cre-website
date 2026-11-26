@@ -100,6 +100,21 @@
   border-radius: var(--radius-card);
   background: var(--color-surface);
 }
+.countName {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  color: var(--color-navy-900);
+  font-size: var(--text-small);
+  font-weight: var(--weight-bold, 700);
+}
+.pageFoot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-4);
+}
 .countValue {
   display: flex;
   align-items: baseline;
@@ -394,6 +409,8 @@
 
 /* Average RM per factor (hi-fi 3.3a). */
 .factorChart {
+  --factor-rl: #d9dde3;
+  --factor-ri: #9aa3af;
   display: flex;
   gap: var(--space-2);
 }
@@ -481,9 +498,9 @@
   position: absolute;
   inset: 0;
   display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: center;
+  justify-content: center;
+  align-items: flex-end;
+  gap: 2px;
   padding: 0;
   border: 0;
   background: none;
@@ -496,20 +513,60 @@
   box-shadow: var(--focus-ring);
   border-radius: var(--radius-badge);
 }
-.factorBar {
-  width: 60%;
-  min-width: 6px;
-  max-width: 2.5rem;
-  border-radius: 3px 3px 0 0;
+/* One slot per series: RL and RI_max are narrow, RM is wide (hi-fi 3.3a). */
+.factorSlot {
+  position: relative;
+  flex: none;
+  width: 0.5rem;
+  height: 100%;
+}
+.factorSlot[data-series='rm'] {
+  width: 1.5rem;
+}
+.factorBarFill {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  border-radius: 2px 2px 0 0;
+  transform-origin: bottom;
+  animation: factor-grow 700ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+.factorSlot[data-series='rl'] .factorBarFill {
+  background: var(--factor-rl);
+}
+.factorSlot[data-series='ri'] .factorBarFill {
+  background: var(--factor-ri);
+}
+.factorSlot[data-series='rm'] .factorBarFill {
   background: var(--bar);
+}
+@keyframes factor-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes factor-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .factorValue {
   position: absolute;
+  inset-inline-start: 50%;
+  translate: -50% 0;
   transform: translateY(-2px);
   color: var(--color-text-secondary);
   font-size: var(--text-caption);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+  animation: factor-fade 300ms ease-out 700ms both;
 }
 .factorValue[data-placement='inside'] {
   transform: none;
@@ -528,21 +585,76 @@
 .factorCode {
   position: absolute;
   top: 100%;
+  inset-inline: 0;
   padding-top: var(--space-1);
   color: var(--color-text-secondary);
   font-size: var(--text-caption);
+  text-align: center;
   white-space: nowrap;
 }
-@media (max-width: 640px) {
+.factorHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+.factorTitle {
+  margin-bottom: var(--space-2);
+}
+.factorChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.factorChip {
+  padding: 2px var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  color: var(--color-navy-900);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-semibold);
+}
+.factorChip[data-chip='rl'] {
+  background: var(--factor-rl);
+}
+.factorChip[data-chip='ri'] {
+  background: var(--factor-ri);
+}
+.factorChip[data-chip='rm'] {
+  border-color: var(--color-navy-900);
+  background: var(--color-navy-900);
+  color: var(--color-white);
+}
+/* The chart scrolls inside its card on narrow screens; the page never does. */
+.factorScroll {
+  overflow-x: auto;
+  padding-top: var(--space-2);
+}
+.factorScroll .factorChart {
+  min-width: 36rem;
+}
+.factorNames {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-1) var(--space-4);
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) 0 0;
+  border-top: 1px solid var(--color-border);
+  list-style: none;
+  font-size: var(--text-small);
+}
+@media (min-width: 768px) {
+  .factorNames {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .factorBarFill,
   .factorValue {
-    display: none;
-  }
-  .factorCode {
-    font-size: 0.625rem;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
-  }
-  .factorPlot {
-    margin-bottom: 3.5rem;
+    animation: none;
   }
 }

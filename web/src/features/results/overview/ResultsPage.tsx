@@ -50,6 +50,14 @@ export function ResultsPage({ projectId, versionId }: { projectId: string; versi
     const query = next.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
   }
+  /** Back to the previous page; a page opened directly has no history, so go to the project. */
+  function goBack() {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push(`/projects/${projectId}`);
+    }
+  }
   const project = useQuery({
     queryKey: projectKey(projectId),
     queryFn: () => fetchProject(projectId),
@@ -186,7 +194,10 @@ export function ResultsPage({ projectId, versionId }: { projectId: string; versi
       <div className={styles.counts} role="group" aria-label={t('page.countsLabel')}>
         {[...LEVELS].reverse().map((level) => (
           <div key={level} className={styles.count} data-level={level}>
-            <LevelBadge level={level} label={tUi(`levels.${level}`)} />
+            <p className={styles.countName}>
+              <LevelBadge level={level} label={tUi(`levels.${level}`)} />
+              <span aria-hidden="true"> – {tUi(`levels.${level}`)}</span>
+            </p>
             <p className={styles.countValue}>
               <span className={styles.countNumber}>
                 {formatNumber(summary.level_counts[level])}
@@ -211,6 +222,11 @@ export function ResultsPage({ projectId, versionId }: { projectId: string; versi
         tabIndex={0}
       >
         {renderPanel(tab)}
+      </div>
+      <div className={styles.pageFoot}>
+        <Button variant="secondary" onClick={goBack}>
+          {t('page.back')}
+        </Button>
       </div>
     </div>
   );

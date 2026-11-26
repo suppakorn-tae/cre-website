@@ -17,7 +17,7 @@ import { mockResults } from './mocks';
 import { ResultsPage } from './ResultsPage';
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: vi.fn() }),
+  useRouter: () => ({ replace: vi.fn(), back: vi.fn(), push: vi.fn() }),
   usePathname: () => '/projects/p/versions/v/results',
   useSearchParams: () => new URLSearchParams(),
 }));
