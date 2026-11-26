@@ -2,9 +2,9 @@ import { HttpResponse, http as mswHttp, type HttpHandler } from 'msw';
 
 import { mockProjectId, mockVersions } from '@/features/versions/mocks';
 
-import type { IndicatorResult, ResultsResponse } from '../overview/api';
-import { mockResults } from '../overview/mocks';
-import type { Strategy } from '../strategy/api';
+import type { IndicatorResult, ResultsResponse } from '@/features/results/overview/api';
+import { mockResults } from '@/features/results/overview/mocks';
+import type { Strategy } from './api';
 
 type Advice = NonNullable<IndicatorResult['advice']>;
 
@@ -51,7 +51,7 @@ const err = (status: number, code: string) =>
 /**
  * Results with advice (the latest version is editable, older ones are not)
  * and the strategy save: 409 on an older version, 422 on a row below H.
- * Not yet registered by ResultsMocks (IO-55); add `hvhHandlers` there.
+ * Registered by ResultsMocks, which the results and plan pages both use.
  */
 export const hvhHandlers: HttpHandler[] = [
   mswHttp.get('*/api/v1/projects/:projectId/versions/:versionId/results', ({ params }) => {

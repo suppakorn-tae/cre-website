@@ -50,9 +50,10 @@ describe('results header actions', () => {
     expect(html).not.toContain('/report');
   });
 
-  it('offers the advice and strategy action', () => {
-    const { html } = renderPage();
+  it('links the advice and strategy action to the plan page', () => {
+    const { html, versionId } = renderPage();
     expect(html).toContain(results.page.adviceAction.replace('&', '&amp;'));
+    expect(html).toContain(`href="/projects/${mockProjectId}/versions/${versionId}/plan"`);
   });
 });
 

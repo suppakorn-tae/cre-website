@@ -10,7 +10,7 @@ export async function registerResultMocks(): Promise<void> {
     import('@/mocks/browser'),
     import('@/features/projects/mocks'),
     import('./mocks'),
-    import('../hvh/mocks'),
+    import('@/features/plan/mocks'),
   ]);
   worker.use(...hvhHandlers, ...projectHandlers, ...resultHandlers);
 }
