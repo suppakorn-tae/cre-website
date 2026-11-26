@@ -21,12 +21,13 @@ import {
   toInput,
   type Draft,
 } from './rules';
-import { SubmitBar } from './SubmitBar';
+import { SubmitBar, SubmitNotes } from './SubmitBar';
 import { UnitSwitchDialog } from './UnitSwitchDialog';
 import { commitUnitSwitch, requestUnitSwitch, type PendingSwitch } from './unitSwitch';
 import { Toolbar } from './Toolbar';
 import { classifySubmitFailure, resultsPath, submitVersion, type SubmitFailure } from './submit';
 import { useAutosave } from './useAutosave';
+import { useNarrow } from './useNarrow';
 
 type Ids = { projectId: string; versionId: string };
 
@@ -44,6 +45,7 @@ function Form({
     Object.fromEntries(answers.items.map((a) => [a.indicator_code, fromAnswer(a)])),
   );
   const router = useRouter();
+  const narrow = useNarrow();
   const [serverErrors, setServerErrors] = useState<ServerErrors>({});
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -193,6 +195,12 @@ function Form({
         serverErrors={serverErrors}
         onChange={change}
       />
+      {narrow && (
+        // On a phone the bar is fixed, so its notes sit above it in the page, never under it.
+        <div className={styles.submitNotes}>
+          <SubmitNotes complete={complete} editable={answers.editable} failure={failure} />
+        </div>
+      )}
       <footer className={styles.footer}>
         <span className={styles.showing}>
           {filter === 'all'
@@ -203,7 +211,12 @@ function Form({
           <Link href={`/projects/${projectId}`} className={styles.projectLink}>
             {t('footer.project')}
           </Link>
-          <Button variant="secondary" disabled={!answers.editable} onClick={() => void flush()}>
+          <Button
+            variant="secondary"
+            size={narrow ? 'lg' : 'md'}
+            disabled={!answers.editable}
+            onClick={() => void flush()}
+          >
             {t('footer.save')}
           </Button>
           <SubmitBar
@@ -216,6 +229,8 @@ function Form({
             onOpen={() => setConfirming(true)}
             onCancel={() => setConfirming(false)}
             onConfirm={() => void confirmSubmit()}
+            showNotes={!narrow}
+            large={narrow}
           />
         </div>
       </footer>

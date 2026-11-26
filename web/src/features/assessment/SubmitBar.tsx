@@ -18,7 +18,26 @@ type Props = {
   onOpen: () => void;
   onCancel: () => void;
   onConfirm: () => void;
+  /** False when the page shows the notes itself, above the bar (a phone). */
+  showNotes?: boolean;
+  /** A taller button for a touch screen. */
+  large?: boolean;
 };
+
+/** Why the submit button is off, or why the last submit failed. */
+export function SubmitNotes({
+  complete,
+  editable,
+  failure,
+}: Pick<Props, 'complete' | 'editable' | 'failure'>) {
+  const t = useTranslations('assessment.submit');
+  return (
+    <>
+      {editable && complete === 0 && failure === null && <p role="note">{t('needOne')}</p>}
+      {failure !== null && <p role="alert">{t(`errors.${failure}`)}</p>}
+    </>
+  );
+}
 
 /** Submit button, its reason when disabled, the confirm dialog and the failure message. */
 export function SubmitBar({
@@ -31,16 +50,17 @@ export function SubmitBar({
   onOpen,
   onCancel,
   onConfirm,
+  showNotes = true,
+  large,
 }: Props) {
   const t = useTranslations('assessment.submit');
   const blocked = complete === 0;
   return (
     <div className={styles.submit}>
-      <Button disabled={!editable || blocked || busy} onClick={onOpen}>
+      <Button size={large ? 'lg' : 'md'} disabled={!editable || blocked || busy} onClick={onOpen}>
         {t('button')}
       </Button>
-      {editable && blocked && failure === null && <p role="note">{t('needOne')}</p>}
-      {failure !== null && <p role="alert">{t(`errors.${failure}`)}</p>}
+      {showNotes && <SubmitNotes complete={complete} editable={editable} failure={failure} />}
       <ConfirmDialog
         open={open}
         title={t('dialogTitle')}

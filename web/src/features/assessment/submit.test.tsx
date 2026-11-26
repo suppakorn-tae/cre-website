@@ -21,7 +21,7 @@ import { fieldErrorsOf, fieldMessageKey, mapFieldErrors } from './fieldErrors';
 import { IndicatorRow } from './IndicatorRow';
 import { createAnswerHandlers } from './mocks';
 import { emptyDraft } from './rules';
-import { SubmitBar } from './SubmitBar';
+import { SubmitBar, SubmitNotes } from './SubmitBar';
 import { classifySubmitFailure, resultsPath, submitVersion } from './submit';
 
 const server = setupServer(...createAnswerHandlers(['v-old']));
@@ -65,6 +65,16 @@ describe('SubmitBar and confirm dialog', () => {
     const html = bar({ complete: 0 });
     expect(html).toMatch(/<button[^>]*disabled[^>]*>ส่งผลการประเมิน/);
     expect(html).toContain('ต้องมีอย่างน้อย 1 ตัวชี้วัดที่ตอบครบทั้ง 4 ข้อ');
+  });
+  it('leaves the notes to the page when it shows them above a fixed bar', () => {
+    const html = bar({ complete: 0, failure: null, showNotes: false });
+    expect(html).not.toContain('role="note"');
+    expect(html).not.toContain('role="alert"');
+    expect(wrap(<SubmitNotes complete={0} editable failure={null} />)).toContain('role="note"');
+    expect(wrap(<SubmitNotes complete={3} editable failure="conflict" />)).toContain(
+      'role="alert"',
+    );
+    expect(wrap(<SubmitNotes complete={0} editable={false} failure={null} />)).toBe('');
   });
   it('disables the button in read-only mode and while submitting', () => {
     expect(bar({ editable: false })).toMatch(/<button[^>]*disabled/);

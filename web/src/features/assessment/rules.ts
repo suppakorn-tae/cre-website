@@ -50,6 +50,12 @@ export function isAnswered(d: Draft): boolean {
   return [d.x, d.y1.amount, d.y2.amount].some((t) => t.trim() !== '') || d.y3.length > 0;
 }
 
+/** How many of the four fields (X, y1, y2, y3) have an answer. */
+export function answeredFields(d: Draft): number {
+  const typed = [d.x, d.y1.amount, d.y2.amount].filter((t) => t.trim() !== '').length;
+  return typed + (d.y3.length > 0 ? 1 : 0);
+}
+
 /** Body of one answer; blank or invalid fields (also a y3 with A and another option) are left out, which clears them. */
 export function toInput(code: string, d: Draft): AnswerInput {
   const x = parseAmount(d.x);

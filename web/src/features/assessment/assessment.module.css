@@ -196,6 +196,8 @@
   font-weight: var(--weight-semibold);
 }
 .segment:focus-visible,
+.cardTrigger:focus-visible,
+.legendFoldTrigger:focus-visible,
 .select:focus-visible,
 .input:focus-visible,
 .pickerHead:focus-visible {
@@ -207,7 +209,7 @@
   cursor: not-allowed;
 }
 
-/* The table: narrow screens show each row as a card */
+/* The table (tablet and desktop); a phone shows cards instead, see below */
 .table {
   --row-height: 64px;
   --head-height: 44px;
@@ -325,6 +327,10 @@
 }
 /* The box that holds a field and its focus hint; the hint text is read from here. */
 .fieldBox {
+  position: relative;
+}
+/* An input and the unit written inside it; the unit is placed against this box. */
+.inputWrap {
   position: relative;
 }
 .input {
@@ -496,94 +502,6 @@
   }
 }
 
-@media (max-width: 767px) {
-  .legend {
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-2);
-  }
-  .legendItem {
-    align-items: center;
-    padding: var(--space-2);
-  }
-  .legendText > span {
-    display: none;
-  }
-  .showing {
-    display: none;
-  }
-  .footer {
-    justify-content: stretch;
-  }
-  .footerActions {
-    flex: 1;
-    gap: var(--space-2);
-  }
-  .projectLink {
-    display: none;
-  }
-  .footerActions > button,
-  .footerActions > :last-child > button {
-    flex: 1;
-  }
-  .footerActions .submit {
-    display: contents;
-  }
-  .footerActions .submit p {
-    order: 3;
-    flex: 1 0 100%;
-  }
-  .table,
-  .table tbody,
-  .table tr,
-  .table th,
-  .table td {
-    display: block;
-  }
-  .table {
-    padding: var(--space-2);
-  }
-  .table thead {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-  }
-  .row {
-    height: auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    margin-bottom: var(--space-3);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-card);
-    background: var(--color-white);
-  }
-  .row > * {
-    border: 0;
-    border-radius: 0;
-  }
-  .row > :first-child,
-  .row > :last-child {
-    border: 0;
-  }
-  .row > .codeCell,
-  .row > .nameCell,
-  .row > .statusCell {
-    grid-column: 1 / -1;
-  }
-  .row > .codeCell {
-    padding-bottom: 0;
-  }
-  .cell::before {
-    display: block;
-    margin-bottom: var(--space-1);
-    font-size: var(--text-caption);
-    font-weight: var(--weight-semibold);
-    color: var(--color-text-secondary);
-    content: attr(data-label);
-  }
-}
-
 /* Sticky footer */
 .footer {
   position: sticky;
@@ -623,13 +541,15 @@
   gap: var(--space-2);
   max-width: 100%;
 }
-.submit p {
+.submit p,
+.submitNotes p {
   margin: 0;
   font-size: var(--text-small);
   line-height: var(--leading-small);
   color: var(--color-text-muted);
 }
-.submit p[role='alert'] {
+.submit p[role='alert'],
+.submitNotes p[role='alert'] {
   color: var(--color-error);
 }
 .statusCell {
@@ -639,4 +559,307 @@
 .dialogExtra {
   display: flex;
   margin-top: var(--space-3, 12px);
+}
+
+/* Phone: the list of cards */
+.cards {
+  display: flex;
+  flex-direction: column;
+}
+.dimension {
+  display: flex;
+  flex-direction: column;
+}
+.dimensionHead,
+.factorHead {
+  position: sticky;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  column-gap: var(--space-2);
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-control);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+/* Both stay under the app header; the dimension has a fixed height so the factor can sit below. */
+.dimensionHead {
+  top: var(--nav-height);
+  z-index: 3;
+  flex-wrap: nowrap;
+  align-items: center;
+  height: 40px;
+  background: var(--color-blue-100);
+}
+.dimensionHead .progress {
+  white-space: nowrap;
+}
+.factorHead {
+  top: calc(var(--nav-height) + 40px);
+  z-index: 2;
+  min-height: 32px;
+  margin-top: var(--space-2);
+  background: var(--color-info-bg);
+}
+.card {
+  margin-top: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-inline-start: 4px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-white);
+}
+.card[data-answer='complete'] {
+  border-inline-start-color: var(--color-success);
+}
+.card[data-answer='partial'] {
+  border-inline-start-color: var(--color-warning);
+}
+.cardHeading {
+  margin: 0;
+  font: inherit;
+}
+.cardTrigger {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: 'top chevron' 'name name';
+  align-items: center;
+  column-gap: var(--space-2);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 52px;
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-card);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.cardTop {
+  grid-area: top;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--space-2);
+  min-width: 0;
+}
+.cardCode {
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+}
+.cardName {
+  grid-area: name;
+  font-size: var(--text-body);
+  line-height: var(--leading-small);
+  overflow-wrap: anywhere;
+}
+.cardCount {
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  white-space: nowrap;
+  color: var(--color-text-muted);
+}
+.cardChevron {
+  grid-area: chevron;
+  flex: none;
+  color: var(--color-text-muted);
+  transition: rotate 150ms;
+}
+.cardTrigger[data-state='open'] .cardChevron,
+.legendFoldTrigger[data-state='open'] .cardChevron {
+  rotate: 180deg;
+}
+.cardBody[hidden],
+.legendFoldBody[hidden] {
+  display: none;
+}
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-1) var(--space-3) var(--space-4);
+}
+.stackField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.fieldLabel {
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  font-weight: var(--weight-semibold);
+  color: var(--color-text-secondary);
+}
+/* Touch targets: at least 44px, and 16px text so a phone does not zoom in on focus. */
+.stackField .input,
+.stackField .pickerHead {
+  min-height: 44px;
+  font-size: var(--text-h3);
+  /* A focused field scrolls clear of the sticky headers and the fixed bar. */
+  scroll-margin-block: 160px calc(var(--bar-height) + var(--space-4));
+}
+/* The question of the focused field, in the page above it (no floating bubble on a phone). */
+.inlineHint {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-info-bg);
+  color: var(--color-info);
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+}
+.inlineHint strong {
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+}
+
+/* y3 as a bottom sheet (a native dialog) */
+.sheet {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  max-height: 80vh;
+  max-height: 80dvh;
+  margin: auto 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-dialog) var(--radius-dialog) 0 0;
+  background: var(--color-white);
+  box-shadow: var(--shadow-floating);
+  color: var(--color-text);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.sheet::backdrop {
+  background: rgba(15, 42, 74, 0.45);
+}
+.sheetBody {
+  padding: var(--space-4) var(--space-4) 0;
+}
+/* The buttons stay at the bottom edge of the sheet while the choices scroll. */
+.sheetFooter {
+  position: sticky;
+  bottom: 0;
+  padding-bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  background: var(--color-white);
+}
+
+/* The four field legends, folded into one row */
+.legendFold {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-white);
+}
+.legendFoldHeading {
+  margin: 0;
+  font: inherit;
+}
+.legendFoldTrigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-card);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+.legendFoldBody {
+  padding: 0 var(--space-3) var(--space-3);
+}
+.legendFoldBody .legend {
+  grid-template-columns: 1fr;
+}
+.submitNotes:empty {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .page {
+    gap: var(--space-3);
+    /* The fixed bar: a large button, padding above and below, a border and the home indicator. */
+    --bar-height: calc(
+      var(--control-lg) + 2 * var(--space-3) + 1px + env(safe-area-inset-bottom, 0px)
+    );
+    /* So the last card and the notes above the bar are reachable. */
+    padding-bottom: var(--bar-height);
+  }
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+  .overallBlock {
+    flex: none;
+  }
+  .filter {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .select {
+    min-height: 44px;
+    font-size: var(--text-h3);
+  }
+  /* Both unit switches in one row, each segment at least 44px tall. */
+  .unitGroup {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+  }
+  .unitSwitch {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-1);
+  }
+  .segmented {
+    display: flex;
+  }
+  .segment {
+    flex: 1;
+    min-height: 44px;
+  }
+  .allRows {
+    grid-column: 1 / -1;
+  }
+  .showing,
+  .projectLink {
+    display: none;
+  }
+  .footer {
+    position: fixed;
+    inset-inline: 0;
+    bottom: 0;
+    z-index: 20;
+    box-sizing: border-box;
+    flex-wrap: nowrap;
+    margin: 0;
+    padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  }
+  .footerActions {
+    flex: 1;
+    flex-wrap: nowrap;
+    gap: var(--space-2);
+  }
+  .footerActions > button,
+  .footerActions > .submit {
+    flex: 1;
+  }
+  .submit {
+    align-items: stretch;
+  }
 }
