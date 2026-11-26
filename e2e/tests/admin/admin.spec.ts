@@ -121,9 +121,9 @@ test('an advice edit shows in the results without resubmitting (UC-16)', async (
 
     // Same version, no resubmit: the results already carry the new list in order.
     expect(await adviceOf()).toEqual(edited);
-    await go(page, `/projects/${projectId}/versions/${versionId}/results`);
-    await page.getByRole('tab', { name: /VH/ }).first().click();
-    await expect(page.getByRole('tabpanel')).toContainText(edited[edited.length - 1]!);
+    // The advice lists are on the plan page; its single H / VH item is open.
+    await go(page, `/projects/${projectId}/versions/${versionId}/plan`);
+    await expect(page.getByRole('main')).toContainText(edited[edited.length - 1]!);
 
     // Six items are refused.
     const six = await send(admin, 'put', `/admin/advice/${code}/${list}`, {
