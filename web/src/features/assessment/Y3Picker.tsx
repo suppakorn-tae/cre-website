@@ -202,10 +202,21 @@ function Y3Sheet({
   const name = `${t('fields.y3')} ${code}`;
   const [open, setOpen] = useState(false);
   const sheet = useRef<HTMLDialogElement>(null);
+  // True when the current press started on the dimmed area, so a drag that ends there
+  // (for example from a choice row) does not close the sheet.
+  const pressOnBackdrop = useRef(false);
 
   useEffect(() => {
     const dialog = sheet.current;
-    if (open && dialog && !dialog.open) dialog.showModal();
+    if (!open || !dialog) return;
+    if (!dialog.open) dialog.showModal();
+    // A modal dialog makes the page inert but does not stop it scrolling behind the sheet.
+    const root = document.documentElement;
+    const before = root.style.overflow;
+    root.style.overflow = 'hidden';
+    return () => {
+      root.style.overflow = before;
+    };
   }, [open]);
 
   // The browser hands focus back to the button as the sheet closes; keep the hint closed.
@@ -240,7 +251,10 @@ function Y3Sheet({
             aria-label={name}
             onCancel={quiet}
             onClose={() => setOpen(false)}
-            onClick={(e) => e.target === e.currentTarget && close()}
+            onPointerDown={(e) => (pressOnBackdrop.current = e.target === e.currentTarget)}
+            onClick={(e) => {
+              if (e.target === e.currentTarget && pressOnBackdrop.current) close();
+            }}
           >
             <div className={styles.sheetBody}>
               <Panel

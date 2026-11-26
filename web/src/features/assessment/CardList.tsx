@@ -132,6 +132,7 @@ export function CardList({
       value={open}
       onValueChange={setOpen}
       className={styles.cards}
+      role="region"
       aria-label={t('table.label')}
     >
       {dimensions.map((dimension) => (
