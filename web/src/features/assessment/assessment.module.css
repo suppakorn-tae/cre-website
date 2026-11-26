@@ -132,28 +132,18 @@
   height: 100%;
   background: var(--color-blue-600);
 }
-.filter,
 .unitSwitch {
   display: flex;
   align-items: center;
   gap: var(--space-2);
 }
+.filter {
+  min-width: 16rem;
+}
 .unitLabel {
   font-size: var(--text-small);
   font-weight: var(--weight-semibold);
   color: var(--color-text-secondary);
-}
-.select {
-  min-height: var(--control-md);
-  padding: 0 var(--space-3);
-  border: 1px solid var(--color-field-border);
-  border-radius: var(--radius-control);
-  background: var(--color-white);
-  color: var(--color-text);
-  font: inherit;
-  font-size: var(--text-body);
-  min-width: 0;
-  max-width: 100%;
 }
 .unitGroup {
   display: flex;
@@ -185,7 +175,7 @@
   min-height: calc(var(--control-md) - 6px);
   padding: 0 var(--space-3);
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--radius-input);
   background: transparent;
   color: var(--color-text-secondary);
   font: inherit;
@@ -200,7 +190,6 @@
 .segment:focus-visible,
 .cardTrigger:focus-visible,
 .legendFoldTrigger:focus-visible,
-.select:focus-visible,
 .input:focus-visible,
 .pickerHead:focus-visible {
   outline: 2px solid transparent;
@@ -260,8 +249,14 @@
   vertical-align: middle;
   font-size: var(--text-caption);
   line-height: var(--leading-caption);
-  font-weight: var(--weight-semibold);
+  font-weight: var(--weight-bold);
   color: var(--color-text-secondary);
+}
+/* X, y1, y2 and y3 are what the user fills in: larger and stronger than the other headers. */
+.table thead th.keyHead {
+  font-size: var(--text-body);
+  line-height: var(--leading-small);
+  color: var(--color-text);
 }
 /* The first body cell has a 4px state bar as its border; keep the header text over the code. */
 .table thead th:first-child {
@@ -281,10 +276,41 @@
   text-align: start;
 }
 .dimensionRow th {
-  background: var(--color-blue-100);
+  border-inline-start: 4px solid var(--dim, var(--color-blue-600));
+  background: var(--color-white);
+  color: var(--dim, var(--color-text));
 }
 .factorRow th {
-  background: var(--color-info-bg);
+  background: var(--dim-tint, var(--color-info-bg));
+}
+/* Name of a dimension or factor: a button that folds its rows. */
+.groupToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--hit-area);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-input);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.groupToggle .groupName {
+  color: inherit;
+}
+.groupToggle:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--focus-ring);
+}
+.groupChevron {
+  flex: none;
+  transition: rotate 150ms;
+}
+.groupToggle[aria-expanded='false'] .groupChevron {
+  rotate: -90deg;
 }
 .row {
   height: var(--row-height);
@@ -341,7 +367,7 @@
   min-height: var(--control-sm);
   padding: 0 var(--space-3);
   border: 1px solid var(--color-field-border);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-input);
   background: var(--color-white);
   color: var(--color-text);
   font: inherit;
@@ -405,6 +431,30 @@
   line-height: var(--leading-small);
   pointer-events: none;
 }
+/* Fade and a 4 px slide in 150 ms, in and out (Radix keeps the layer until the exit ends). */
+.hint[data-state='open'] {
+  animation: hint-in 150ms ease-out;
+}
+.hint[data-state='closed'] {
+  animation: hint-out 150ms ease-in forwards;
+}
+@keyframes hint-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@keyframes hint-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hint[data-state] {
+    animation: none;
+  }
+}
 .hint strong {
   font-size: var(--text-caption);
   line-height: var(--leading-caption);
@@ -425,7 +475,7 @@
   min-height: var(--control-sm);
   padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
   border: 1px solid var(--color-field-border);
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-input);
   background: var(--color-white);
   color: var(--color-text-secondary);
   font: inherit;
@@ -530,11 +580,6 @@
   justify-content: flex-end;
   gap: var(--space-3);
 }
-.projectLink {
-  color: var(--color-blue-600);
-  font-weight: var(--weight-medium);
-  text-decoration: none;
-}
 
 .submit {
   display: flex;
@@ -556,11 +601,6 @@
 }
 .statusCell {
   white-space: nowrap;
-}
-
-.dialogExtra {
-  display: flex;
-  margin-top: var(--space-3, 12px);
 }
 
 /* Phone: the list of cards */
@@ -593,14 +633,16 @@
   z-index: 3;
   align-items: center;
   min-height: 40px;
-  background: var(--color-blue-100);
+  border-inline-start: 4px solid var(--dim, var(--color-blue-600));
+  background: var(--color-white);
+  color: var(--dim, var(--color-text));
 }
 .factorHead {
   top: calc(var(--nav-height) + var(--dimension-height, 40px));
   z-index: 2;
   min-height: 32px;
   margin-top: var(--space-2);
-  background: var(--color-info-bg);
+  background: var(--dim-tint, var(--color-info-bg));
 }
 .card {
   margin-top: var(--space-2);
@@ -809,14 +851,8 @@
     min-width: 0;
   }
   .filter {
-    flex-direction: column;
-    align-items: stretch;
     min-width: 0;
     max-width: 100%;
-  }
-  .select {
-    min-height: 44px;
-    font-size: var(--text-h3);
   }
   /* Both unit switches in one row (one per row when two do not fit), each segment at least 44px
      tall. */
@@ -843,8 +879,7 @@
   .allRows {
     flex-basis: 100%;
   }
-  .showing,
-  .projectLink {
+  .showing {
     display: none;
   }
   .footer {

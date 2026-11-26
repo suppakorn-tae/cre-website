@@ -1,15 +1,17 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useMemo } from 'react';
+import { useMemo, type CSSProperties } from 'react';
 
 import type { CheckboxOption } from '@/components/ui';
+import { dimensionOf, dimensionStyle } from '@/lib/dimensions';
 
 import type { Catalogue } from './api';
 import styles from './assessment.module.css';
 import type { ServerErrors } from './fieldErrors';
 import { CardList } from './CardList';
-import { codesOf, Progress } from './GroupProgress';
+import { isDimensionOpen, isFactorOpen, type CollapseState } from './collapse';
+import { codesOf, GroupToggle, Progress } from './GroupProgress';
 import { IndicatorRow } from './IndicatorRow';
 import { emptyDraft, sharedUnit, type Draft } from './rules';
 import { useNarrow } from './useNarrow';
@@ -18,8 +20,9 @@ type Props = {
   catalogue: Catalogue;
   drafts: Record<string, Draft | undefined>;
   disabled: boolean;
-  /** Factor code to show alone; all factors when unset. */
-  factor?: string;
+  /** Factor codes to show; all factors when unset. */
+  factors?: string[];
+  collapse: CollapseState;
   serverErrors?: ServerErrors;
   onChange: (code: string, draft: Draft) => void;
 };
@@ -28,7 +31,15 @@ type Props = {
  * All indicators: a table on tablet and desktop (dimension and factor group rows, then one row
  * per indicator), a list of collapsible cards on a phone.
  */
-export function GroupList({ catalogue, drafts, disabled, factor, serverErrors, onChange }: Props) {
+export function GroupList({
+  catalogue,
+  drafts,
+  disabled,
+  factors: shown,
+  collapse,
+  serverErrors,
+  onChange,
+}: Props) {
   const t = useTranslations('assessment');
   const tUnits = useTranslations('assessment.units');
   const y3Options = useMemo<CheckboxOption[]>(
@@ -57,7 +68,8 @@ export function GroupList({ catalogue, drafts, disabled, factor, serverErrors, o
         drafts={drafts}
         y3Options={y3Options}
         disabled={disabled}
-        factor={factor}
+        factors={shown}
+        collapse={collapse}
         serverErrors={serverErrors}
         onChange={onChange}
       />
@@ -80,37 +92,63 @@ export function GroupList({ catalogue, drafts, disabled, factor, serverErrors, o
         <tr>
           <th scope="col">{t('table.code')}</th>
           <th scope="col">{t('table.indicator')}</th>
-          <th scope="col">{t('table.withUnit', { name: t('table.x'), unit: t('table.xUnit') })}</th>
-          <th scope="col">{header('y1')}</th>
-          <th scope="col">{header('y2')}</th>
-          <th scope="col">{t('table.y3')}</th>
+          <th scope="col" className={styles.keyHead}>
+            {t('table.withUnit', { name: t('table.x'), unit: t('table.xUnit') })}
+          </th>
+          <th scope="col" className={styles.keyHead}>
+            {header('y1')}
+          </th>
+          <th scope="col" className={styles.keyHead}>
+            {header('y2')}
+          </th>
+          <th scope="col" className={styles.keyHead}>
+            {t('table.y3')}
+          </th>
           <th scope="col">{t('table.status')}</th>
         </tr>
       </thead>
       {catalogue.dimensions.map((dimension) => {
-        const factors = dimension.factors.filter((f) => factor === undefined || f.code === factor);
+        const factors = dimension.factors.filter(
+          (f) => shown === undefined || shown.includes(f.code),
+        );
         if (factors.length === 0) return null;
+        const dimensionOpen = isDimensionOpen(collapse.collapsed, dimension.code);
+        const code = dimensionOf(dimension.code);
+        const colours = code && dimensionStyle(code);
         return (
-          <tbody key={dimension.code}>
+          <tbody
+            key={dimension.code}
+            style={
+              colours && ({ '--dim': colours.color, '--dim-tint': colours.tint } as CSSProperties)
+            }
+          >
             <tr className={styles.dimensionRow}>
               <th scope="colgroup" colSpan={7}>
                 <div className={styles.groupInner}>
-                  <span className={styles.groupName}>{dimension.name}</span>
+                  <GroupToggle
+                    open={dimensionOpen}
+                    onToggle={() => collapse.toggleDimension(dimension.code)}
+                  >
+                    {dimension.name}
+                  </GroupToggle>
                   <Progress codes={codesOf(factors)} drafts={drafts} />
                 </div>
               </th>
             </tr>
-            {factors.map((f) => (
-              <GroupRows
-                key={f.code}
-                factor={f}
-                drafts={drafts}
-                y3Options={y3Options}
-                disabled={disabled}
-                serverErrors={serverErrors}
-                onChange={onChange}
-              />
-            ))}
+            {dimensionOpen &&
+              factors.map((f) => (
+                <GroupRows
+                  key={f.code}
+                  factor={f}
+                  open={isFactorOpen(collapse.collapsed, dimension.code, f.code)}
+                  onToggle={() => collapse.toggleFactor(f.code)}
+                  drafts={drafts}
+                  y3Options={y3Options}
+                  disabled={disabled}
+                  serverErrors={serverErrors}
+                  onChange={onChange}
+                />
+              ))}
           </tbody>
         );
       })}
@@ -120,6 +158,8 @@ export function GroupList({ catalogue, drafts, disabled, factor, serverErrors, o
 
 function GroupRows({
   factor,
+  open,
+  onToggle,
   drafts,
   y3Options,
   disabled,
@@ -127,6 +167,8 @@ function GroupRows({
   onChange,
 }: Pick<Props, 'drafts' | 'disabled' | 'serverErrors' | 'onChange'> & {
   factor: Catalogue['dimensions'][number]['factors'][number];
+  open: boolean;
+  onToggle: () => void;
   y3Options: CheckboxOption[];
 }) {
   return (
@@ -134,24 +176,25 @@ function GroupRows({
       <tr className={styles.factorRow}>
         <th scope="colgroup" colSpan={7}>
           <div className={styles.groupInner}>
-            <span className={styles.groupName}>
+            <GroupToggle open={open} onToggle={onToggle}>
               {factor.code} {factor.name}
-            </span>
+            </GroupToggle>
             <Progress codes={codesOf([factor])} drafts={drafts} />
           </div>
         </th>
       </tr>
-      {factor.indicators.map((indicator) => (
-        <IndicatorRow
-          key={indicator.code}
-          indicator={indicator}
-          draft={drafts[indicator.code] ?? emptyDraft()}
-          y3Options={y3Options}
-          disabled={disabled}
-          serverErrors={serverErrors?.[indicator.code]}
-          onChange={(draft) => onChange(indicator.code, draft)}
-        />
-      ))}
+      {open &&
+        factor.indicators.map((indicator) => (
+          <IndicatorRow
+            key={indicator.code}
+            indicator={indicator}
+            draft={drafts[indicator.code] ?? emptyDraft()}
+            y3Options={y3Options}
+            disabled={disabled}
+            serverErrors={serverErrors?.[indicator.code]}
+            onChange={(draft) => onChange(indicator.code, draft)}
+          />
+        ))}
     </>
   );
 }

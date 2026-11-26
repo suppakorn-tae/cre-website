@@ -21,6 +21,7 @@ import { CardList } from './CardList';
 import { GroupList } from './GroupList';
 import { LetterChoiceList } from './LetterChoiceList';
 import { Toolbar } from './Toolbar';
+import { NONE_COLLAPSED, type Collapsed } from './collapse';
 import { createAnswerHandlers } from './mocks';
 import { emptyDraft } from './rules';
 
@@ -69,13 +70,20 @@ beforeAll(() => server.listen());
 afterEach(() => server.resetHandlers(...createAnswerHandlers(['v-old'])));
 afterAll(() => server.close());
 
-const render = (disabled: boolean, complete = false, factor?: string) =>
+const collapseOf = (collapsed: Collapsed = NONE_COLLAPSED) => ({
+  collapsed,
+  toggleDimension: vi.fn(),
+  toggleFactor: vi.fn(),
+});
+
+const render = (disabled: boolean, complete = false, factors?: string[], collapsed?: Collapsed) =>
   renderToStaticMarkup(
     <NextIntlClientProvider locale="th" messages={{ assessment }}>
       <GroupList
         catalogue={catalogue}
         disabled={disabled}
-        factor={factor}
+        factors={factors}
+        collapse={collapseOf(collapsed)}
         onChange={vi.fn()}
         drafts={
           complete
@@ -130,7 +138,7 @@ describe('assessment table', () => {
   });
   it('keeps the question of each field in the page and points the field at it', () => {
     const html = render(false);
-    expect(html).toContain('คำถาม · EC-MG-1 · X ความถี่ของเหตุการณ์');
+    expect(html).toContain('X ความถี่ของเหตุการณ์. เกิดบ่อยแค่ไหน');
     const input = /<input[^>]*aria-label="X ความถี่ของเหตุการณ์ EC-MG-1"[^>]*>/.exec(html)?.[0];
     const id = /aria-describedby="([^"]+)"/.exec(input ?? '')?.[1];
     expect(id).toBeTruthy();
@@ -151,8 +159,26 @@ describe('assessment table', () => {
     expect(html).toContain('aria-haspopup="dialog"');
   });
   it('shows only the chosen factor', () => {
-    expect(render(false, false, 'EC-MG')).toContain('EC-MG-2');
-    expect(render(false, false, 'SO-CL')).not.toContain('EC-MG-2');
+    expect(render(false, false, ['EC-MG'])).toContain('EC-MG-2');
+    expect(render(false, false, ['SO-CL'])).not.toContain('EC-MG-2');
+  });
+  it('folds a dimension, and its factors with it', () => {
+    const html = render(false, false, undefined, { dimensions: ['EC'], factors: [] });
+    expect(html).toContain('ด้านเศรษฐกิจ');
+    expect(html).not.toContain('EC-MG การจัดการ');
+    expect(html).not.toContain('EC-MG-2');
+    expect(html).toContain('aria-expanded="false"');
+  });
+  it('folds one factor and keeps its header', () => {
+    const html = render(false, false, undefined, { dimensions: [], factors: ['EC-MG'] });
+    expect(html).toContain('EC-MG การจัดการ');
+    expect(html).not.toContain('EC-MG-2');
+    expect(html).toContain('aria-expanded="true"');
+  });
+  it('colours each dimension from its tokens', () => {
+    const html = render(false);
+    expect(html).toContain('--dim:var(--dim-ec)');
+    expect(html).toContain('--dim-tint:var(--dim-ec-tint)');
   });
   it('names the unit as mixed when rows differ', () => {
     const html = renderToStaticMarkup(
@@ -160,6 +186,7 @@ describe('assessment table', () => {
         <GroupList
           catalogue={catalogue}
           disabled={false}
+          collapse={collapseOf()}
           onChange={vi.fn()}
           drafts={{ 'EC-MG-1': { ...emptyDraft(), y1: { amount: '5', unit: 'percent' } } }}
         />
@@ -170,7 +197,7 @@ describe('assessment table', () => {
 });
 
 describe('CardList (phone)', () => {
-  const cards = (drafts = {}, factor?: string) =>
+  const cards = (drafts = {}, factors?: string[], collapsed?: Collapsed) =>
     renderToStaticMarkup(
       <NextIntlClientProvider locale="th" messages={{ assessment }}>
         <CardList
@@ -178,7 +205,8 @@ describe('CardList (phone)', () => {
           drafts={drafts}
           y3Options={[{ value: 'A', label: 'A' }]}
           disabled={false}
-          factor={factor}
+          factors={factors}
+          collapse={collapseOf(collapsed)}
           onChange={vi.fn()}
         />
       </NextIntlClientProvider>,
@@ -216,8 +244,14 @@ describe('CardList (phone)', () => {
     expect(html.match(/<h4/g)).toHaveLength(2);
   });
   it('shows only the chosen factor', () => {
-    expect(cards({}, 'EC-MG')).toContain('EC-MG-2');
-    expect(cards({}, 'SO-CL')).not.toContain('EC-MG-2');
+    expect(cards({}, ['EC-MG'])).toContain('EC-MG-2');
+    expect(cards({}, ['SO-CL'])).not.toContain('EC-MG-2');
+  });
+  it('folds a dimension with its factors and cards', () => {
+    const html = cards({}, undefined, { dimensions: ['EC'], factors: [] });
+    expect(html).toContain('ด้านเศรษฐกิจ');
+    expect(html).not.toContain('<h3');
+    expect(html).not.toContain('<h4');
   });
 });
 
@@ -268,17 +302,14 @@ describe('Toolbar', () => {
           lastOption="I"
           complete={6}
           total={55}
-          filter="all"
-          filterOptions={[
-            { value: 'all', label: 'ทั้งหมด (11)' },
-            { value: 'EC-MG', label: 'EC-MG การจัดการ' },
-          ]}
+          selected={['EC-MG']}
+          factorOptions={[{ value: 'EC-MG', label: 'EC-MG การจัดการ', group: 'ด้านเศรษฐกิจ' }]}
           costUnit="baht"
           timeUnit={null}
           costUnits={['baht', 'percent']}
           timeUnits={['day', 'percent']}
           disabled={false}
-          onFilter={vi.fn()}
+          onSelect={vi.fn()}
           onCostUnit={vi.fn()}
           onTimeUnit={vi.fn()}
           {...over}
@@ -289,16 +320,25 @@ describe('Toolbar', () => {
     const html = bar();
     for (const text of ['ความถี่ของเหตุการณ์', 'ผลกระทบด้านต้นทุน', 'ผลกระทบด้านเวลา'])
       expect(html).toContain(text);
-    expect(html).toContain('เลือก A–I ได้หลายข้อ · A ใช้เดี่ยวเท่านั้น');
+    expect(html).toContain('เลือกได้หลายข้อ · A เลือกเดี่ยวเท่านั้น');
   });
   it('shows progress, the filter and both unit switches', () => {
     const html = bar();
     expect(html).toContain('ตอบครบ 6 จาก 55 ตัวชี้วัด');
     expect(html).toContain('aria-valuenow="6"');
-    expect(html).toContain('ทั้งหมด (11)');
+    expect(html).toContain('EC-MG การจัดการ');
+    expect(html).not.toContain('<select');
     expect(html).toContain('หน่วยต้นทุน');
     expect(html).toContain('หน่วยเวลา');
     expect(html).toContain('(ใช้กับทุกแถว)');
+  });
+  it('names only the chosen unit on the y1 and y2 cards', () => {
+    const html = bar({ costUnit: 'percent', timeUnit: 'day' });
+    expect(html).toContain('% ของมูลค่าโครงการ (0–100)');
+    expect(html).not.toContain('เป็นบาท หรือ %');
+    expect(html).toContain('จำนวนวัน');
+    expect(html).not.toContain('% ของระยะเวลาโครงการ');
+    expect(bar({ costUnit: null })).toContain('เป็นบาท หรือ % ของมูลค่าโครงการ');
   });
   it('turns on the shared unit only, and none when rows differ', () => {
     const html = bar();

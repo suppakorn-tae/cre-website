@@ -1,6 +1,10 @@
 'use client';
 
+import { IconChevronDown } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
+
+import { Icon } from '@/components/ui';
 
 import styles from './assessment.module.css';
 import { countGroup, type Draft } from './rules';
@@ -23,5 +27,23 @@ export function Progress({
     <span className={styles.progress}>
       {t('group', { complete, total })} · {t('answered', { answered })}
     </span>
+  );
+}
+
+/** Name of a dimension or factor as the button that folds and opens its rows. */
+export function GroupToggle({
+  open,
+  onToggle,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button type="button" className={styles.groupToggle} aria-expanded={open} onClick={onToggle}>
+      <Icon icon={IconChevronDown} size={18} className={styles.groupChevron} />
+      <span className={styles.groupName}>{children}</span>
+    </button>
   );
 }

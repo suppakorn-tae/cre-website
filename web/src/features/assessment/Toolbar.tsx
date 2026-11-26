@@ -4,7 +4,7 @@ import * as Accordion from '@radix-ui/react-accordion';
 import { IconChevronDown } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 
-import { Icon, type SelectOption } from '@/components/ui';
+import { Icon, MultiSelect, type SelectOption } from '@/components/ui';
 
 import styles from './assessment.module.css';
 import { useNarrow } from './useNarrow';
@@ -48,8 +48,10 @@ type Props = {
   lastOption: string;
   complete: number;
   total: number;
-  filter: string;
-  filterOptions: SelectOption[];
+  /** One option per factor, grouped by dimension. */
+  factorOptions: SelectOption[];
+  /** Codes of the factors shown. */
+  selected: string[];
   costUnit: string | null;
   timeUnit: string | null;
   costUnits: readonly string[];
@@ -57,7 +59,7 @@ type Props = {
   disabled: boolean;
   /** Rows the last unit switch left alone because their value is invalid in the new unit. */
   unitSkipped?: number;
-  onFilter: (value: string) => void;
+  onSelect: (value: string[]) => void;
   onCostUnit: (unit: string) => void;
   onTimeUnit: (unit: string) => void;
 };
@@ -70,20 +72,28 @@ export function Toolbar({
   lastOption,
   complete,
   total,
-  filter,
-  filterOptions,
+  factorOptions,
+  selected,
   costUnit,
   timeUnit,
   costUnits,
   timeUnits,
   disabled,
   unitSkipped = 0,
-  onFilter,
+  onSelect,
   onCostUnit,
   onTimeUnit,
 }: Props) {
   const t = useTranslations('assessment');
   const narrow = useNarrow();
+  // The hint of y1 and y2 names only the unit that is on; both when the rows differ.
+  const hintOf = (key: (typeof LEGEND)[number]) => {
+    if (key === 'y1' || key === 'y2') {
+      const unit = key === 'y1' ? costUnit : timeUnit;
+      return t(`legend.${key}.hint.${unit ?? 'mixed'}`);
+    }
+    return t(`legend.${key}.hint`, { first: firstOption, last: lastOption });
+  };
   const percent = total === 0 ? 0 : Math.round((complete / total) * 100);
   const legend = (
     <ul className={styles.legend} aria-label={narrow ? undefined : t('legend.label')}>
@@ -92,7 +102,7 @@ export function Toolbar({
           <span className={styles.legendKey}>{key === 'x' ? 'X' : key}</span>
           <span className={styles.legendText}>
             <strong>{t(`legend.${key}.title`)}</strong>
-            <span>{t(`legend.${key}.hint`, { first: firstOption, last: lastOption })}</span>
+            <span>{hintOf(key)}</span>
           </span>
         </li>
       ))}
@@ -115,20 +125,16 @@ export function Toolbar({
             <span className={styles.barFill} style={{ width: `${percent}%` }} />
           </div>
         </div>
-        <label className={styles.filter}>
-          <span className={styles.unitLabel}>{t('toolbar.filterLabel')}</span>
-          <select
-            value={filter}
-            onChange={(e) => onFilter(e.target.value)}
-            className={styles.select}
-          >
-            {filterOptions.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <MultiSelect
+          className={styles.filter}
+          label={t('toolbar.filterLabel')}
+          options={factorOptions}
+          value={selected}
+          onChange={onSelect}
+          allLabel={t('toolbar.filterAll')}
+          countLabel={(count) => t('toolbar.filterCount', { count })}
+          placeholder={t('toolbar.filterNone')}
+        />
         <div className={styles.unitGroup}>
           <UnitSwitch
             label={t('toolbar.costUnit')}
