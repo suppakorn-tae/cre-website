@@ -140,6 +140,14 @@ func TestPanels(t *testing.T) {
 		al.HVhCount == nil || *al.HVhCount != 2 || al.AvgRM == nil || *al.AvgRM != "3.67" || al.VersionCount != 2 {
 		t.Fatalf("alpha = %+v", al)
 	}
+	// Counts are stored rows of the latest version: Alpha's draft v2 has no
+	// results yet, Beta's submitted v1 has three; the snapshot covers every indicator.
+	if al.LatestVersionScored != 0 || al.LatestVersionTotal != 55 {
+		t.Fatalf("alpha scored/total = %d/%d, want 0/55", al.LatestVersionScored, al.LatestVersionTotal)
+	}
+	if be := byName["Beta"]; be.LatestVersionScored != 3 || be.LatestVersionTotal != 55 {
+		t.Fatalf("beta scored/total = %d/%d, want 3/55", be.LatestVersionScored, be.LatestVersionTotal)
+	}
 	if g := byName["Gamma"]; g.LatestVersionID.String() != vc.ID || g.LatestSubmittedVersionID != nil || g.HVhCount != nil || g.AvgRM != nil {
 		t.Fatalf("gamma = %+v, want no submitted figures", g)
 	}

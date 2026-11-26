@@ -110,6 +110,8 @@ type ProjectItem struct {
 	LatestVersionID           uuid.UUID
 	LatestVersionNo           int
 	LatestVersionStatus       string
+	LatestVersionScored       int // stored results of the latest version
+	LatestVersionTotal        int // indicators in its threshold snapshot
 	LatestSubmittedVersionID  *uuid.UUID
 	HVhCount                  *int
 	AvgRM                     *string
@@ -146,6 +148,7 @@ func (s *Service) Projects(ctx context.Context, owner uuid.UUID, p ProjectsParam
 			TypeCode: r.TypeCode, ValueBaht: r.ValueBaht, ProgressPct: int(r.ProgressPct),
 			VersionCount: int(r.VersionCount), LatestVersionID: r.LatestVersionID,
 			LatestVersionNo: int(r.LatestVersionNo), LatestVersionStatus: string(r.LatestVersionStatus),
+			LatestVersionScored: int(r.LatestVersionScoredCount), LatestVersionTotal: int(r.LatestVersionIndicatorTotal),
 		}
 		if r.IslandOther.Valid {
 			it.IslandOther = &r.IslandOther.String
