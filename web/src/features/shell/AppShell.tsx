@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { Suspense, useEffect, useRef, useState, type ReactNode } from 'react';
 
+import { Logo } from '@/components/ui/Logo';
 import { browserApi } from '@/lib/api/client';
 import '@/styles/tokens.css';
 
@@ -44,9 +45,8 @@ export function AppShell({
         {t('skipToContent')}
       </a>
       <header className={styles.header}>
-        <Link href="/dashboard" className={styles.brand}>
-          <span className={styles.brandName}>{t('brand.name')}</span>
-          <span className={styles.tagline}>{t('brand.tagline')}</span>
+        <Link href="/dashboard" className={styles.brand} aria-label={t('brand.homeLabel')}>
+          <Logo variant="header" />
         </Link>
         {account}
       </header>

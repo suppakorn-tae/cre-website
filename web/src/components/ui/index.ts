@@ -7,6 +7,7 @@ export { EmptyState } from './EmptyState';
 export { Icon, ICON_STROKE, type IconSize } from './Icon';
 export { Input, NumberInput, Select, type SelectOption } from './Input';
 export { KpiCard } from './KpiCard';
+export { Logo } from './Logo';
 export { LEVELS, LevelBadge, type Level } from './LevelBadge';
 export { Pagination, pageWindow } from './Pagination';
 export { Skeleton } from './Skeleton';

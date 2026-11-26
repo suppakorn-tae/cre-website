@@ -46,6 +46,8 @@ describe('AppShell', () => {
       </AppShell>,
     );
     expect(html).toContain('href="/dashboard"');
+    expect(html).toContain('aria-label="Construction Risk Expert – ไปหน้าแดชบอร์ด"');
+    expect(html).toContain('%2Fbrand%2Fcre-logo-mark.png');
     expect(html).not.toContain('<nav');
     expect(html).toContain('somchai@example.co.th');
     expect(html).toContain('เนื้อหา');

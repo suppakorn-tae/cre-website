@@ -78,6 +78,15 @@
   font-size: var(--text-small);
 }
 
+.logo {
+  align-self: flex-start;
+}
+/* Above the form on narrow screens, where the brand panel is hidden. */
+.logoMobile {
+  display: none;
+  align-self: flex-start;
+}
+
 /* Right form panel */
 .panel {
   display: flex;
@@ -401,6 +410,10 @@
   }
   .brand {
     display: none;
+  }
+  .card .logoMobile {
+    display: block;
+    height: 56px;
   }
   .panel {
     align-items: flex-start;
