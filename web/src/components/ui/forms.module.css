@@ -217,9 +217,6 @@
 .control[data-valid='true'] {
   border-color: var(--color-success);
 }
-select.control {
-  appearance: none;
-}
 /* The password toggle is a real button, so it takes pointer events */
 .toggleSlot {
   position: absolute;
@@ -332,4 +329,145 @@ select.control {
 }
 .invalid .chip input:checked + .chipFace {
   border-color: var(--color-error);
+}
+
+/* Select and MultiSelect: a button that looks like an input, and a popover list */
+.trigger {
+  display: block;
+  overflow: hidden;
+  text-align: start;
+  cursor: pointer;
+}
+.trigger:disabled {
+  cursor: not-allowed;
+}
+.compact {
+  min-height: var(--control-md);
+  padding-block: 0;
+  font-weight: var(--weight-semibold);
+}
+.triggerText {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.placeholder {
+  color: var(--color-placeholder);
+}
+.trailOpen {
+  transform: translateY(-50%) rotate(180deg);
+}
+.popover {
+  z-index: 50;
+  box-sizing: border-box;
+  min-width: var(--radix-popover-trigger-width);
+  max-width: calc(100vw - 2 * var(--space-2));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-white);
+  box-shadow: var(--shadow-floating);
+  animation: pickerIn 150ms ease-out;
+}
+@keyframes pickerIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.popover[data-side='top'] {
+  animation-name: pickerInUp;
+}
+@keyframes pickerInUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .popover {
+    animation: none;
+  }
+  .trailOpen {
+    transition: none;
+  }
+}
+.list {
+  box-sizing: border-box;
+  max-height: min(20rem, var(--radix-popover-content-available-height));
+  overflow-y: auto;
+  padding: var(--space-1);
+  outline: none;
+}
+.groupLabel {
+  padding: var(--space-2) var(--space-3) var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+}
+.group + .group,
+.optionAll + .group {
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-1);
+}
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--control-md);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  cursor: pointer;
+}
+.option[data-active] {
+  background: var(--color-blue-50);
+}
+.option[aria-selected='true'] {
+  font-weight: var(--weight-semibold);
+}
+.option[aria-disabled='true'] {
+  color: var(--color-disabled);
+  cursor: not-allowed;
+}
+.optionAll {
+  border-bottom: 1px solid var(--color-border);
+  border-radius: var(--radius-control) var(--radius-control) 0 0;
+  margin-bottom: var(--space-1);
+  font-weight: var(--weight-semibold);
+}
+.optionText {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.tick {
+  display: inline-flex;
+  color: var(--color-blue-600);
+}
+.box {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  border: 1.5px solid var(--color-field-border);
+  border-radius: 4px;
+  background: var(--color-white);
+  color: var(--color-white);
+}
+.boxOn,
+.boxPartial {
+  border-color: var(--color-blue-600);
+  background: var(--color-blue-600);
+}
+.dash {
+  width: 10px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--color-white);
 }

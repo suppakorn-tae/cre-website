@@ -70,8 +70,8 @@ describe('VersionsTab', () => {
   it('starts on the latest submitted version, compared with the one before', async () => {
     mount();
     expect(card(3).getAttribute('aria-pressed')).toBe('true');
-    const base = (await screen.findByLabelText('v3 เทียบกับ')) as HTMLSelectElement;
-    await waitFor(() => expect(base.selectedOptions[0]?.textContent).toMatch(/^v2 · ส่ง/));
+    const base = await screen.findByLabelText('v3 เทียบกับ');
+    await waitFor(() => expect(base.textContent).toMatch(/^v2 · ส่ง/));
     // KPI cards with deltas: progress +5 from v2 (40 %), RM 2.71.
     expect(await screen.findByText('จาก v2 (40 %)')).toBeTruthy();
     expect(screen.getAllByText('2.71').length).toBeGreaterThan(0);
@@ -87,9 +87,12 @@ describe('VersionsTab', () => {
 
   it('changes who it compares against with the select', async () => {
     mount();
-    const base = (await screen.findByLabelText('v3 เทียบกับ')) as HTMLSelectElement;
-    await waitFor(() => expect(base.options.length).toBe(1));
-    expect(base.options[0].textContent).toMatch(/^v2/);
+    const base = await screen.findByLabelText('v3 เทียบกับ');
+    await waitFor(() => expect(base.textContent).toMatch(/^v2/));
+    fireEvent.click(base);
+    const options = await screen.findAllByRole('option');
+    expect(options).toHaveLength(1);
+    expect(options[0].textContent).toMatch(/^v2/);
   });
 
   it('explains a never-submitted version instead of comparing it (hi-fi 2.8)', async () => {
