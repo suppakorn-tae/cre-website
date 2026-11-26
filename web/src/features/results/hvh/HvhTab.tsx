@@ -1,17 +1,20 @@
 'use client';
 
+import { IconAlertCircle, IconArrowRight } from '@tabler/icons-react';
+import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import { useState } from 'react';
 
-import { EmptyState, LevelBadge } from '@/components/ui';
+import { EmptyState, Icon, LevelBadge } from '@/components/ui';
+import { planPath } from '@/features/plan/rules';
+import { StrategyChip } from '@/features/plan/StrategyChip';
+import { formatNumber } from '@/lib/format/locale';
 
-import { AdviceLists } from '../advice/AdviceLists';
-import type { IndicatorName, ResultsResponse } from '../overview/api';
+import type { IndicatorName, IndicatorResult, ResultsResponse } from '../overview/api';
 import { formatRm, formatScore, subscript } from '../overview/format';
 import overview from '../overview/results.module.css';
-import { useSetStrategy } from '../strategy/api';
-import { StrategyPicker } from '../strategy/StrategyPicker';
 import styles from './hvh.module.css';
-import { highRisks } from './rules';
+import { highRisks, HVH_VISIBLE } from './rules';
 
 type Props = {
   projectId: string;
@@ -20,75 +23,107 @@ type Props = {
   names: Map<string, IndicatorName>;
 };
 
+type Pill = {
+  key: 'x' | 'y1' | 'y2' | 'y3';
+  /** What was entered; the api sends no y3 answer, so that pill shows the score only. */
+  input?: string;
+  score: number;
+};
+
 /**
- * H / VH view (UC-10): each high-risk indicator with its advice lists and a
- * strategy picker. Strategies can change only while `editable` (latest version).
+ * H / VH summary (UC-10): the high-risk indicators as compact cards. Advice
+ * lists and the strategy choice live on the plan page (step 4).
  */
 export function HvhTab({ projectId, versionId, results, names }: Props) {
-  const t = useTranslations('advice.hvh');
+  const t = useTranslations('results.hvh');
+  const tTable = useTranslations('results.table');
   const tUi = useTranslations('ui');
-  const setStrategy = useSetStrategy(projectId, versionId);
+  const [showAll, setShowAll] = useState(false);
   const rows = highRisks(results.items);
   const { VH, H } = results.summary.level_counts;
 
   if (rows.length === 0) {
     return <EmptyState title={t('emptyTitle')} description={t('emptyText')} />;
   }
-  const scores = [
-    ['rl', 'rl'],
-    ['riC', 'ri_c'],
-    ['riT', 'ri_t'],
-    ['riE', 'ri_e'],
-  ] as const;
+  const visible = showAll ? rows : rows.slice(0, HVH_VISIBLE);
+  const hidden = rows.length - HVH_VISIBLE;
+
+  const pills = (row: IndicatorResult, meta?: IndicatorName): Pill[] => [
+    {
+      key: 'x',
+      input: t('inputValues.x', { value: formatNumber(row.x), unit: meta?.unit ?? '' }).trim(),
+      score: row.rl,
+    },
+    { key: 'y1', input: t('inputValues.y1', { value: formatNumber(row.y1_pct) }), score: row.ri_c },
+    { key: 'y2', input: t('inputValues.y2', { value: formatNumber(row.y2_pct) }), score: row.ri_t },
+    { key: 'y3', score: row.ri_e },
+  ];
 
   return (
-    <section aria-labelledby="hvh-title" className={overview.panelBody}>
-      <h2 id="hvh-title" className={overview.sectionTitle}>
-        {t('title')}
-      </h2>
-      <p role="status" className={overview.muted}>
-        {t('summary', { count: rows.length, vh: VH, h: H })}
-      </p>
-      <ol className={styles.cards}>
-        {rows.map((row) => {
+    <section className={overview.panelBody}>
+      <div role="status" className={styles.banner}>
+        <Icon icon={IconAlertCircle} size={20} className={styles.bannerIcon} />
+        <p className={styles.bannerText}>{t('banner', { count: rows.length, vh: VH, h: H })}</p>
+        <Link href={planPath(projectId, versionId)} className={styles.bannerAction}>
+          {t('toPlan')}
+          <Icon icon={IconArrowRight} size={18} />
+        </Link>
+      </div>
+      <ol aria-label={t('listLabel')} className={styles.cards}>
+        {visible.map((row) => {
           const meta = names.get(row.indicator_code);
           return (
-            <li key={row.indicator_code} className={styles.card}>
-              <header className={styles.head}>
-                <LevelBadge level={row.level} label={tUi(`levels.${row.level}`)} />
-                <div className={styles.name}>
-                  <h3 className={styles.heading}>
-                    {row.indicator_code} {meta?.name ?? ''}
-                  </h3>
-                  {meta && <p className={overview.muted}>{meta.factorName}</p>}
-                </div>
-                <p className={styles.rm}>
-                  {t('rm')} <strong>{formatRm(row.rm)}</strong>
-                </p>
-              </header>
-              <dl className={styles.scores}>
-                {scores.map(([key, field]) => (
-                  <div key={key}>
-                    <dt>{t.rich(`scores.${key}`, subscript)}</dt>
-                    <dd>{formatScore(row[field])}</dd>
+            <li key={row.indicator_code} className={styles.card} data-level={row.level}>
+              <div className={styles.main}>
+                <header className={styles.head}>
+                  <LevelBadge level={row.level} label={tUi(`levels.${row.level}`)} />
+                  <div className={styles.name}>
+                    <h3 className={styles.heading}>
+                      {row.indicator_code} {meta?.name ?? ''}
+                    </h3>
+                    {meta && (
+                      <p className={overview.muted}>
+                        {meta.factorCode} {meta.factorName}
+                      </p>
+                    )}
                   </div>
-                ))}
-              </dl>
-              <AdviceLists advice={row.advice} />
-              <StrategyPicker
-                code={row.indicator_code}
-                value={row.strategy}
-                updatedAt={row.strategy_updated_at}
-                editable={results.editable}
-                saving={setStrategy.isPending}
-                onChange={(strategy) =>
-                  setStrategy.mutateAsync({ code: row.indicator_code, strategy })
-                }
-              />
+                  <StrategyChip
+                    value={row.strategy}
+                    unsetLabel={t('strategyUnset')}
+                    prefix={t('strategyPrefix')}
+                  />
+                </header>
+                <dl className={styles.pills}>
+                  {pills(row, meta).map((pill) => (
+                    <div key={pill.key} className={styles.pill}>
+                      <dt>{t.rich(`inputs.${pill.key}`, subscript)}</dt>
+                      <dd>
+                        {pill.input && <span>{pill.input} → </span>}
+                        <strong>{formatScore(pill.score)}</strong>
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+              <p className={styles.rm} data-level={row.level}>
+                <span>{t('rm')}</span>
+                <strong>{formatRm(row.rm)}</strong>
+              </p>
             </li>
           );
         })}
       </ol>
+      {hidden > 0 && (
+        <button
+          type="button"
+          className={styles.more}
+          aria-expanded={showAll}
+          onClick={() => setShowAll((v) => !v)}
+        >
+          {showAll ? t('less', { count: HVH_VISIBLE }) : t('more', { count: hidden })}
+        </button>
+      )}
+      <p className={overview.muted}>{tTable.rich('legend', subscript)}</p>
     </section>
   );
 }

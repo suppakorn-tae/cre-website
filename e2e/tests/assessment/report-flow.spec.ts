@@ -178,19 +178,27 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     await expect(page.getByRole('tabpanel')).toContainText(GOLDEN_VH.code);
   });
 
-  test('choose a strategy for the VH indicator on the H / VH tab', async () => {
-    await go(page, `/projects/${projectId}/versions/${v1}/results`);
-    await page.getByRole('tab', { name: new RegExp(escapeRe(msg('results', 'tabs.hvh'))) }).click();
-    const panel = page.getByRole('tabpanel');
-    await expect(panel).toContainText(GOLDEN_VH.code);
-    await expect(panel).not.toContainText(GOLDEN_M.code);
+  test('choose a strategy for the VH indicator on the plan page', async () => {
+    await go(page, `/projects/${projectId}/versions/${v1}/plan`);
+    const main = page.getByRole('main');
+    await expect(main).toContainText(GOLDEN_VH.code);
+    await expect(main).not.toContainText(GOLDEN_M.code);
 
-    // The radio is controlled: it flips only once the save returns.
-    const reduce = panel.getByRole('radio', { name: msg('advice', 'strategy.options.REDUCE') });
+    // Only the first item starts open; open the golden one if it is not.
+    const trigger = main.getByRole('button', {
+      name: new RegExp(`\\b${escapeRe(GOLDEN_VH.code)}\\b`),
+    });
+    if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
+
+    // The choice shows at once and is saved on change; wait for the saved line below.
+    const group = main.getByRole('radiogroup', {
+      name: msg('plan', 'strategy.groupLabel', { code: GOLDEN_VH.code }),
+    });
+    const reduce = group.getByRole('radio', { name: msg('plan', 'strategy.options.REDUCE') });
     await reduce.click();
     await expect(reduce).toBeChecked();
     await expect(
-      panel.getByText(new RegExp(escapeRe(msg('advice', 'strategy.savedAt', { at: '' })))),
+      main.getByText(new RegExp(escapeRe(msg('plan', 'strategy.savedAt', { at: '' })))).first(),
     ).toBeVisible();
 
     const res = await json<{ items: Item[] }>(
@@ -285,9 +293,9 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
 
     await go(page, `/projects/${projectId}/versions/${v1}/assess`);
     await expect(page.getByText(msg('assessment', 'readOnly'))).toBeVisible();
-    await go(page, `/projects/${projectId}/versions/${v1}/results`);
-    await page.getByRole('tab', { name: new RegExp(escapeRe(msg('results', 'tabs.hvh'))) }).click();
-    await expect(page.getByText(msg('advice', 'strategy.readOnly'))).toBeVisible();
+    await go(page, `/projects/${projectId}/versions/${v1}/plan`);
+    await expect(page.getByText(msg('plan', 'readOnly.title'))).toBeVisible();
+    await expect(page.getByRole('radio')).toHaveCount(0);
 
     // v2: answer EC-MG-1 low and EC-MG-3, submit.
     const put = await send(

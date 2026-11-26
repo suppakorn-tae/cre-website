@@ -31,6 +31,29 @@
     "hvh": "H / VH เท่านั้น",
     "pending": "มุมมองนี้ยังไม่เปิดให้ใช้งาน"
   },
+  "hvh": {
+    "banner": "พบ {count} ตัวชี้วัดที่ต้องจัดการความเสี่ยง (VH {vh} · H {h}) · เรียงตาม RM",
+    "toPlan": "ไปยังแผนจัดการความเสี่ยง",
+    "emptyTitle": "ไม่พบตัวชี้วัดที่มีความเสี่ยงสูง",
+    "emptyText": "ไม่มีตัวชี้วัดระดับ H หรือ VH ในเวอร์ชันนี้",
+    "listLabel": "ตัวชี้วัดระดับ H / VH เรียงตาม RM",
+    "rm": "RM",
+    "more": "… และอีก {count} รายการ",
+    "less": "แสดงเฉพาะ {count} รายการแรก",
+    "inputs": {
+      "x": "X → RL",
+      "y1": "y1 → RI<sub>C</sub>",
+      "y2": "y2 → RI<sub>T</sub>",
+      "y3": "y3 → RI<sub>E</sub>"
+    },
+    "inputValues": {
+      "x": "{value} {unit}",
+      "y1": "{value}% ของมูลค่าโครงการ",
+      "y2": "{value}% ของระยะเวลาโครงการ"
+    },
+    "strategyPrefix": "กลยุทธ์:",
+    "strategyUnset": "ยังไม่เลือกกลยุทธ์"
+  },
   "overview": {
     "distributionTitle": "การกระจายระดับความเสี่ยง",
     "legendItem": "{count} · {pct}%",
