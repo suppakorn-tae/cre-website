@@ -57,13 +57,15 @@ export function Select({
     placeholder !== undefined ? [{ value: '', label: placeholder }, ...options] : options;
   return (
     <div className={cx(styles.field, className)}>
-      <label htmlFor={selectId} className={styles.label}>
+      <label id={`${selectId}-label`} htmlFor={selectId} className={styles.label}>
         <LabelText required={required} optionalLabel={optionalLabel}>
           {label}
         </LabelText>
       </label>
       <SelectListbox
         id={selectId}
+        labelId={`${selectId}-label`}
+        required={required}
         name={name}
         options={rows}
         value={value}

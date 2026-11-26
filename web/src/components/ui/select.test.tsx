@@ -224,6 +224,24 @@ describe('MultiSelect', () => {
 });
 
 describe('accessibility', () => {
+  it('names the listbox after the label when there is no placeholder, and marks required', async () => {
+    render(
+      <main>
+        <Select label="ระดับ" options={options} value="" required />
+      </main>,
+    );
+    expect(screen.getByRole('combobox', { name: /ระดับ/ }).getAttribute('aria-required')).toBe(
+      'true',
+    );
+    fireEvent.click(screen.getByRole('combobox', { name: /ระดับ/ }));
+    await screen.findByRole('listbox');
+    expect(screen.getByRole('listbox', { name: /ระดับ/ })).toBeTruthy();
+    const result = await axe.run(document.body, {
+      rules: { 'color-contrast': { enabled: false }, region: { enabled: false } },
+    });
+    expect(result.violations.map((v) => v.id)).toEqual([]);
+  });
+
   it('has no axe violations with both pickers, closed and open', async () => {
     render(
       <main>

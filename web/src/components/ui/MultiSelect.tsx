@@ -44,7 +44,7 @@ export function MultiSelect({
   const { describedBy } = messageIds(selectId, { helper, error });
   return (
     <div className={cx(styles.field, className)}>
-      <label htmlFor={selectId} className={styles.label}>
+      <label id={`${selectId}-label`} htmlFor={selectId} className={styles.label}>
         <LabelText required={required} optionalLabel={optionalLabel}>
           {label}
         </LabelText>
@@ -53,6 +53,8 @@ export function MultiSelect({
         {...rest}
         multiple
         id={selectId}
+        labelId={`${selectId}-label`}
+        required={required}
         invalid={Boolean(error)}
         describedBy={describedBy}
       />

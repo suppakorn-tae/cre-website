@@ -34,6 +34,9 @@ type Shared = {
   name?: string;
   disabled?: boolean;
   invalid?: boolean;
+  required?: boolean;
+  /** Id of the visible label element; names the listbox. Falls back to the trigger itself. */
+  labelId?: string;
   describedBy?: string;
   className?: string;
   /** Text of the trigger when nothing is selected. */
@@ -243,6 +246,7 @@ export function SelectListbox(props: ListboxProps) {
             aria-expanded={open}
             aria-controls={open ? listId : undefined}
             aria-invalid={invalid ? true : undefined}
+            aria-required={props.required ? true : undefined}
             aria-describedby={describedBy}
             aria-label={props['aria-label']}
             aria-labelledby={props['aria-labelledby']}
@@ -292,8 +296,10 @@ export function SelectListbox(props: ListboxProps) {
             role="listbox"
             tabIndex={-1}
             aria-multiselectable={multiple || undefined}
-            aria-labelledby={props['aria-labelledby']}
-            aria-label={props['aria-label'] ?? (props['aria-labelledby'] ? undefined : placeholder)}
+            aria-labelledby={
+              props['aria-label'] ? undefined : (props['aria-labelledby'] ?? props.labelId ?? id)
+            }
+            aria-label={props['aria-label']}
             aria-activedescendant={active >= 0 ? `${id}-opt-${active}` : undefined}
             className={styles.list}
             onKeyDown={onListKeyDown}
