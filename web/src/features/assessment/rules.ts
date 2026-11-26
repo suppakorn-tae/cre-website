@@ -30,9 +30,19 @@ export function parseAmount(text: string, max?: number): number | null {
 
 const impact = (v: UnitValue) => parseAmount(v.amount, v.unit === 'percent' ? 100 : undefined);
 
+/** The y3 option that cannot be combined with any other (A, "no impact"). */
+export const EXCLUSIVE_Y3 = 'A';
+
+/** True when the exclusive y3 option is chosen together with another one. */
+export const y3Conflict = (y3: string[]): boolean => y3.length > 1 && y3.includes(EXCLUSIVE_Y3);
+
 export function isComplete(d: Draft): boolean {
   return (
-    parseAmount(d.x) !== null && impact(d.y1) !== null && impact(d.y2) !== null && d.y3.length > 0
+    parseAmount(d.x) !== null &&
+    impact(d.y1) !== null &&
+    impact(d.y2) !== null &&
+    d.y3.length > 0 &&
+    !y3Conflict(d.y3)
   );
 }
 
@@ -40,7 +50,7 @@ export function isAnswered(d: Draft): boolean {
   return [d.x, d.y1.amount, d.y2.amount].some((t) => t.trim() !== '') || d.y3.length > 0;
 }
 
-/** Body of one answer; blank or invalid fields are left out, which clears them. */
+/** Body of one answer; blank or invalid fields (also a y3 with A and another option) are left out, which clears them. */
 export function toInput(code: string, d: Draft): AnswerInput {
   const x = parseAmount(d.x);
   const y1 = impact(d.y1);
@@ -50,7 +60,7 @@ export function toInput(code: string, d: Draft): AnswerInput {
     ...(x !== null && { x }),
     ...(y1 !== null && { y1: { value: y1, unit: d.y1.unit as 'baht' | 'percent' } }),
     ...(y2 !== null && { y2: { value: y2, unit: d.y2.unit as 'day' | 'percent' } }),
-    ...(d.y3.length > 0 && { y3: d.y3 as AnswerInput['y3'] }),
+    ...(d.y3.length > 0 && !y3Conflict(d.y3) && { y3: d.y3 as AnswerInput['y3'] }),
   };
 }
 

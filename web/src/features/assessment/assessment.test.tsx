@@ -18,6 +18,7 @@ import { browserApi } from '@/lib/api/client';
 
 import { saveAnswers } from './api';
 import { GroupList } from './GroupList';
+import { LetterChoiceList } from './LetterChoiceList';
 import { Toolbar } from './Toolbar';
 import { createAnswerHandlers } from './mocks';
 import { emptyDraft } from './rules';
@@ -107,7 +108,6 @@ describe('GroupList', () => {
     expect(html).toContain('หน่วย: ครั้ง/เดือน');
     expect(html).toContain('บาท');
     expect(html).toContain('วัน');
-    expect(html).toContain('A ไม่มีผลกระทบ');
   });
   it('disables every control in read-only mode', () => {
     const html = render(true);
@@ -126,10 +126,27 @@ describe('assessment table', () => {
     expect(html.match(/<tr class="[^"]*row/g)).toHaveLength(2);
     expect(html).toContain('colSpan');
   });
-  it('shows a hover hint card with the question of each field', () => {
+  it('keeps the question of each field in the page and points the field at it', () => {
     const html = render(false);
-    expect(html).toContain('role="tooltip"');
     expect(html).toContain('คำถาม · EC-MG-1 · X ความถี่ของเหตุการณ์');
+    const input = /<input[^>]*aria-label="X ความถี่ของเหตุการณ์ EC-MG-1"[^>]*>/.exec(html)?.[0];
+    const id = /aria-describedby="([^"]+)"/.exec(input ?? '')?.[1];
+    expect(id).toBeTruthy();
+    const hint = new RegExp(`<span id="${id}"[^>]*>([^<]*)</span>`).exec(html)?.[1];
+    expect(hint).toContain('เกิดบ่อยแค่ไหน');
+    expect(hint).toContain('หน่วย: ครั้ง/เดือน');
+  });
+  it('has no hover-driven hint markup', () => {
+    expect(render(false)).not.toContain('role="tooltip"');
+  });
+  it('has one table with a header, a column group, the X unit as text and a y3 button', () => {
+    const html = render(false);
+    expect(html.match(/<thead>/g)).toHaveLength(1);
+    expect(html.match(/<col[ /]/g)).toHaveLength(7);
+    expect(html).toContain('X ความถี่ (หน่วยตามตัวชี้วัด)');
+    expect(html).toMatch(/<span class="[^"]*unitText[^"]*">ครั้ง\/เดือน<\/span>/);
+    expect(html).not.toContain('placeholder=');
+    expect(html).toContain('aria-haspopup="dialog"');
   });
   it('shows only the chosen factor', () => {
     expect(render(false, false, 'EC-MG')).toContain('EC-MG-2');
@@ -147,6 +164,44 @@ describe('assessment table', () => {
       </NextIntlClientProvider>,
     );
     expect(html).toContain('y1 ต้นทุน (หน่วยต่างกัน)');
+  });
+});
+
+describe('LetterChoiceList', () => {
+  const options = 'ABCDEFGHI'.split('').map((v) => ({ value: v, label: `ตัวเลือก ${v}` }));
+  const list = (over: Partial<React.ComponentProps<typeof LetterChoiceList>> = {}) =>
+    renderToStaticMarkup(
+      <LetterChoiceList
+        legend="y3 ผลกระทบด้านสิ่งแวดล้อม EC-MG-1"
+        options={options}
+        value={['B']}
+        onChange={vi.fn()}
+        {...over}
+      />,
+    );
+  it('shows nine checkbox lines with a letter badge in a fieldset with a legend', () => {
+    const html = list();
+    expect(html).toContain('<fieldset');
+    expect(html).toContain('<legend');
+    expect(html.match(/type="checkbox"/g)).toHaveLength(9);
+    expect(html).toContain('ตัวเลือก I');
+    expect(html.match(/data-checked/g)).toHaveLength(1);
+  });
+  it('shows no error while the choices are fine', () => {
+    const html = list();
+    expect(html).not.toContain('aria-invalid');
+    expect(html).toContain('aria-live="polite"');
+  });
+  it('links the error to the group, marks the line and announces it', () => {
+    const html = list({
+      value: ['A', 'B'],
+      invalid: ['A'],
+      error: 'เลือก A ร่วมกับตัวเลือกอื่นไม่ได้',
+    });
+    expect(html).toContain('aria-invalid="true"');
+    expect(html.match(/data-invalid/g)).toHaveLength(1);
+    const id = /<fieldset[^>]*aria-describedby="([^"]+)"/.exec(html)?.[1];
+    expect(html).toMatch(new RegExp(`<p id="${id}"[^>]*aria-live="polite"[^>]*>.*เลือก A ร่วมกับ`));
   });
 });
 

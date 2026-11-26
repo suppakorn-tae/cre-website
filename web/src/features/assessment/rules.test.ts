@@ -11,6 +11,7 @@ import {
   parseAmount,
   sharedUnit,
   toInput,
+  y3Conflict,
   switchSharedUnit,
   type Draft,
 } from './rules';
@@ -87,6 +88,21 @@ describe('y3 with A exclusive', () => {
   });
   it('keeps several non-exclusive options', () => {
     expect(toggleOption(options, ['B'], 'C')).toEqual(['B', 'C']);
+  });
+});
+
+describe('y3 conflict (A with another option)', () => {
+  it('detects A chosen together with another option only', () => {
+    expect(y3Conflict(['A'])).toBe(false);
+    expect(y3Conflict(['B', 'C'])).toBe(false);
+    expect(y3Conflict(['A', 'B'])).toBe(true);
+    expect(y3Conflict([])).toBe(false);
+  });
+  it('is never complete and is not sent, so the server is not asked to refuse it', () => {
+    const d = { ...complete(), y3: ['A', 'B'] };
+    expect(isComplete(d)).toBe(false);
+    expect(toInput('EC-MG-1', d)).not.toHaveProperty('y3');
+    expect(toInput('EC-MG-1', { ...d, y3: ['B'] })).toMatchObject({ y3: ['B'] });
   });
 });
 
