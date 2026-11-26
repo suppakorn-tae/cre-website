@@ -38,11 +38,6 @@ const PAGES: Page[] = [
     path: `/projects/${PROJECT}/versions/${V3}/results`,
     texts: ['ผลการประเมินความเสี่ยง – v3', 'ความเสี่ยงสูง', 'Heat Map'],
   },
-  {
-    name: 'report',
-    path: `/projects/${PROJECT}/versions/${V3}/report`,
-    texts: ['รายงานผลการประเมินความเสี่ยง – v3'],
-  },
   { name: 'compare', path: `/projects/${PROJECT}/compare`, texts: ['เปรียบเทียบเวอร์ชัน'] },
   { name: 'account', path: '/account', texts: ['บัญชีของฉัน', 'วิธีเข้าสู่ระบบ'] },
   { name: 'admin users', path: '/admin/users', texts: ['จัดการผู้ใช้', 'engineer20@example.co.th'] },

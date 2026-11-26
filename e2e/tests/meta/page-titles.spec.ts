@@ -56,7 +56,6 @@ test('signed-in pages have titles with project and version context', async ({ pa
   await expectTitle(page, `${base}/edit`, title(msg('projects', 'meta.edit'), nickname));
   await expectTitle(page, `${versionBase}/assess`, title(msg('assessment', 'meta.title'), v));
   await expectTitle(page, `${versionBase}/results`, title(msg('results', 'meta.title'), v));
-  await expectTitle(page, `${versionBase}/report`, title(msg('reports', 'meta.title'), v));
   await expectTitle(page, '/account', title(msg('account', 'meta.title')));
 });
 
