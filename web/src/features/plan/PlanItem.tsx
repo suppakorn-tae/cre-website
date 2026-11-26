@@ -22,7 +22,7 @@ type Props = {
   onStrategy: (code: string, strategy: Strategy) => Promise<unknown>;
 };
 
-const CHIP = 'box-border rounded-control border border-border bg-surface px-3 py-1 text-small';
+const CHIP = 'box-border rounded-control border px-2 py-1 text-small font-semibold';
 
 /** One H / VH indicator: a collapsed row that opens into its advice and strategy. */
 export function PlanItem({ row, meta, editable, onStrategy }: Props) {
@@ -62,23 +62,21 @@ export function PlanItem({ row, meta, editable, onStrategy }: Props) {
               </h3>
               <ol
                 aria-label={t('item.pathLabel')}
-                className="m-0 flex list-none flex-wrap items-center gap-2 p-0"
+                className="m-0 flex list-none flex-wrap items-center gap-x-2 gap-y-2 p-0"
               >
                 {PATH_STEPS.map(([key, field], i) => (
-                  <li key={key} className="flex items-center gap-2">
+                  <li key={key} className="flex items-center gap-1">
                     {i === PATH_STEPS.length - 1 && (
                       <Icon icon={IconArrowRight} size={16} className="shrink-0 text-text-muted" />
                     )}
-                    <span className={cx(CHIP, 'font-semibold text-navy-900')}>
+                    <span className={cx(CHIP, 'border-border bg-surface text-navy-900')}>
                       {t.rich(`path.${key}`, { ...subscript, value: formatScore(row[field]) })}
                     </span>
                   </li>
                 ))}
-                <li className="flex items-center gap-2">
+                <li className="flex items-center gap-1">
                   <Icon icon={IconArrowRight} size={16} className="shrink-0 text-text-muted" />
-                  <span
-                    className={cx(CHIP, 'border-navy-900 bg-navy-900 font-semibold text-white')}
-                  >
+                  <span className={cx(CHIP, 'border-navy-900 bg-navy-900 text-white')}>
                     {t('item.rmChip', { rm: formatRm(row.rm), level: row.level })}
                   </span>
                 </li>
