@@ -9,7 +9,8 @@ test('the user menu opens, moves with the arrow keys and closes with Esc', async
   await page.goto('/account');
   const trigger = page.getByRole('button', { name: 'เมนูบัญชี' });
   await trigger.focus();
-  await page.keyboard.press('Enter');
+  // ArrowDown on the trigger opens the menu with the first item focused.
+  await page.keyboard.press('ArrowDown');
 
   const items = page.getByRole('menuitem');
   await expect(items).toHaveText(['บัญชีของฉัน', 'ผู้ดูแลระบบ', 'ออกจากระบบ']);
