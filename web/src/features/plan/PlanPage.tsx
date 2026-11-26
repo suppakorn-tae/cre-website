@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import { Alert, Button, EmptyState, Icon, Skeleton } from '@/components/ui';
+import { ReportButton } from '@/features/reports/ReportButton';
 import { useIndicatorNames, useResults, useVersion } from '@/features/results/overview/api';
 import { ProjectSteps } from '@/features/shell/ProjectSteps';
 import { fetchProject, projectKey } from '@/features/versions/api';
@@ -18,6 +19,9 @@ import { useSetStrategy } from './api';
 import { PlanItem } from './PlanItem';
 import { chosenCount, highRisks, PLAN_VISIBLE } from './rules';
 
+/** The report button is the primary action; a failed build turns it to a tint so the red text stays legible. */
+const REPORT_BUTTON =
+  'focus-ring min-h-10 rounded-control border border-primary bg-primary px-4 text-body font-medium text-white no-underline hover:bg-primary-hover data-[report=failed]:bg-error-bg';
 const LINK = 'text-blue-700 no-underline hover:underline';
 
 /**
@@ -122,6 +126,13 @@ export function PlanPage({ projectId, versionId }: { projectId: string; versionI
           <h1 className="m-0 text-h1 font-bold text-navy-900">
             {t('page.title', { no: version.data.version_no })}
           </h1>
+          <ReportButton
+            projectId={projectId}
+            versionId={versionId}
+            submitted
+            toast
+            className={REPORT_BUTTON}
+          />
         </div>
         <p className="m-0 text-small text-text-secondary">
           {t('page.summary', { count: rows.length, vh: VH, h: H, chosen: chosenCount(rows) })}

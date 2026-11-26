@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import common from '../../../messages/th/common.json';
 import plan from '../../../messages/th/plan.json';
+import reports from '../../../messages/th/reports.json';
 import results from '../../../messages/th/results.json';
 import shell from '../../../messages/th/shell.json';
 import ui from '../../../messages/th/ui.json';
@@ -28,7 +29,7 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-const messages = { plan, results, common, ui, shell };
+const messages = { plan, reports, results, common, ui, shell };
 const wrap = (node: ReactNode, client = new QueryClient()) =>
   renderToStaticMarkup(
     <QueryClientProvider client={client}>
@@ -112,6 +113,13 @@ describe('plan page', () => {
     );
     expect(html).toContain('v3 คำแนะนำจัดการความเสี่ยง');
     expect(html).toMatch(/aria-current="step"[^>]*>[^]*?แผนจัดการ/);
+  });
+
+  it('has the report button as its primary action, built in place', () => {
+    const html = renderPlan();
+    expect(html).toContain(reports.action.label);
+    expect(html).toMatch(/<button[^>]*data-report="idle"/);
+    expect(html).not.toContain('/report"');
   });
 
   it('shows at most six items, sorted by RM, and offers the rest', () => {

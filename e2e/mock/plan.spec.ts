@@ -9,6 +9,8 @@ const plan = (v: string) => `/projects/${PROJECT}/versions/${v}/plan`;
 test('the plan opens the first item and saves a strategy on change', async ({ page }) => {
   await page.goto(plan(V3));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('คำแนะนำจัดการความเสี่ยง – v3');
+  // The header action builds the report in place; there is no report page.
+  await expect(page.getByRole('button', { name: 'รายงาน PDF' })).toBeVisible();
   // Only the first item is open: one radio group.
   const group = page.getByRole('radiogroup');
   await expect(group).toHaveCount(1);
