@@ -1,9 +1,13 @@
 'use client';
 
+import { IconAlertTriangle, IconInfoCircle, IconX } from '@tabler/icons-react';
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 
 import { Button } from './Button';
+import { cx } from './cx';
 import styles from './feedback.module.css';
+import { Icon } from './Icon';
+import { IconButton } from './IconButton';
 
 type Props = {
   open: boolean;
@@ -16,6 +20,12 @@ type Props = {
   onCancel: () => void;
   /** Red confirm button for deletes. Focus starts on cancel. */
   destructive?: boolean;
+  /** Content of the 40px tile before the title. Default: a warning triangle (destructive) or info. */
+  icon?: ReactNode;
+  /** Icon before the confirm label, e.g. a trash can. */
+  confirmIcon?: ReactNode;
+  /** Shows a close (X) button at the top right, with this accessible name. */
+  closeLabel?: string;
 };
 
 /**
@@ -31,6 +41,9 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
   destructive,
+  icon,
+  confirmIcon,
+  closeLabel,
 }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
@@ -55,17 +68,42 @@ export function ConfirmDialog({
         onCancel();
       }}
     >
-      <h2 id={titleId} className={styles.title}>
-        {title}
-      </h2>
-      <div id={bodyId} className={styles.body}>
-        {children}
+      <div className={styles.head}>
+        <span
+          className={cx(
+            'flex size-10 shrink-0 items-center justify-center rounded-pill',
+            destructive ? 'bg-error-bg text-error' : 'bg-info-bg text-info',
+          )}
+        >
+          {icon ?? <Icon icon={destructive ? IconAlertTriangle : IconInfoCircle} size={20} />}
+        </span>
+        <div className={cx(styles.headText, closeLabel && 'pe-8')}>
+          <h2 id={titleId} className={styles.title}>
+            {title}
+          </h2>
+          <div id={bodyId} className={styles.body}>
+            {children}
+          </div>
+        </div>
       </div>
+      {closeLabel && (
+        <IconButton
+          icon={IconX}
+          label={closeLabel}
+          onClick={onCancel}
+          className="absolute end-3 top-3"
+        />
+      )}
       <div className={styles.actions}>
-        <Button variant="secondary" onClick={onCancel} autoFocus={destructive}>
+        {/* Cancel always takes first focus: the close X has a tooltip that would swallow Esc. */}
+        <Button variant="secondary" onClick={onCancel} autoFocus>
           {cancelLabel}
         </Button>
-        <Button variant={destructive ? 'destructive' : 'primary'} onClick={onConfirm}>
+        <Button
+          variant={destructive ? 'destructive' : 'primary'}
+          icon={confirmIcon}
+          onClick={onConfirm}
+        >
           {confirmLabel}
         </Button>
       </div>

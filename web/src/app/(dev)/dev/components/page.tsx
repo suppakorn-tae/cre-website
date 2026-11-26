@@ -1,20 +1,29 @@
 'use client';
 
+import { IconBuilding, IconMail, IconPlus, IconTrash, IconX } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
 import {
+  Alert,
   Button,
   CheckboxGroup,
   ConfirmDialog,
   DataTable,
   EmptyState,
+  FieldError,
+  FieldOk,
+  GoogleMark,
+  Icon,
+  IconButton,
   Input,
   KpiCard,
   LEVELS,
   LevelBadge,
   NumberInput,
   Pagination,
+  PasswordInput,
+  SearchInput,
   Select,
   Skeleton,
   Stepper,
@@ -40,6 +49,8 @@ export default function ComponentsPage() {
   const [measured, setMeasured] = useState('8.5');
   const [selectedKpi, setSelectedKpi] = useState('risk');
   const [dialog, setDialog] = useState(false);
+  const [neutralDialog, setNeutralDialog] = useState(false);
+  const [password, setPassword] = useState('');
 
   const rows: Row[] = [
     { id: '1', name: t('dev.project1'), value: '48.5M', progress: '45%' },
@@ -80,7 +91,24 @@ export default function ComponentsPage() {
 
       <h2>{t('dev.fields')}</h2>
       <div style={{ display: 'grid', gap: 16, maxWidth: 480 }}>
-        <Input label={t('dev.emailLabel')} helper={t('dev.emailHelper')} required type="email" />
+        <Input
+          label={t('dev.emailLabel')}
+          helper={t('dev.emailHelper')}
+          required
+          type="email"
+          icon={IconMail}
+        />
+        <div style={{ display: 'grid', gap: 4 }}>
+          <label htmlFor="dev-password">{t('dev.passwordLabel')}</label>
+          <PasswordInput
+            id="dev-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            labels={{ show: t('password.show'), hide: t('password.hide') }}
+          />
+        </div>
+        <SearchInput label={t('dev.searchLabel')} placeholder={t('dev.searchPlaceholder')} />
+        <Input label={t('dev.islandLabel')} icon={IconBuilding} defaultValue={t('dev.project1')} />
         <Input
           label={t('dev.emailLabel')}
           error={t('dev.emailError')}
@@ -207,21 +235,47 @@ export default function ComponentsPage() {
         ]}
       />
       <EmptyState
+        icon={<Icon icon={IconBuilding} size={24} />}
         title={t('dev.emptyTitle')}
         description={t('dev.emptyText')}
-        action={<Button>{t('dev.addProject')}</Button>}
+        action={<Button icon={<Icon icon={IconPlus} size={18} />}>{t('dev.addProject')}</Button>}
       />
       <div aria-busy="true" style={{ display: 'grid', gap: 8, maxWidth: 360 }}>
         <Skeleton height={20} />
         <Skeleton width="60%" height={20} />
       </div>
 
+      <h2>{t('dev.alerts')}</h2>
+      <div style={{ display: 'grid', gap: 12, maxWidth: 640 }}>
+        {(['info', 'success', 'warning', 'error'] as const).map((tone) => (
+          <Alert
+            key={tone}
+            tone={tone}
+            title={t(`dev.alert${tone[0].toUpperCase()}${tone.slice(1)}Title`)}
+            onClose={tone === 'info' || tone === 'success' ? () => {} : undefined}
+            closeLabel={t('toastClose')}
+          >
+            {t(`dev.alert${tone[0].toUpperCase()}${tone.slice(1)}Text`)}
+          </Alert>
+        ))}
+      </div>
+      <h2>{t('dev.fieldMessages')}</h2>
+      <div style={{ display: 'grid', gap: 8 }}>
+        <FieldError>{t('dev.emailError')}</FieldError>
+        <FieldOk>{t('dev.fieldOk')}</FieldOk>
+      </div>
+      <h2>{t('dev.iconButtons')}</h2>
+      <p style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <IconButton icon={IconX} label={t('dev.iconButtonLabel')} />
+        <GoogleMark size={20} />
+      </p>
+
       <h2>{t('dev.feedback')}</h2>
       <div style={{ display: 'grid', gap: 12 }}>
         <Toast
           title={t('dev.toastTitle')}
           description={t('dev.toastText')}
-          closeLabel={t('close')}
+          closeLabel={t('toastClose')}
           onClose={() => {}}
         />
         <Toast
@@ -230,17 +284,34 @@ export default function ComponentsPage() {
           description={t('dev.toastErrorText')}
         />
       </div>
-      <p>
+      <p style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <Button variant="secondary" onClick={() => setDialog(true)}>
           {t('dev.dialogOpen')}
+        </Button>
+        <Button variant="secondary" onClick={() => setNeutralDialog(true)}>
+          {t('dev.dialogNeutralOpen')}
         </Button>
       </p>
       <h2>{t('dev.primitives')}</h2>
       <p>{t('dev.primitivesIntro')}</p>
       <RadixExamples />
       <ConfirmDialog
+        open={neutralDialog}
+        title={t('dev.dialogNeutralTitle')}
+        confirmLabel={t('dev.dialogNeutralConfirm')}
+        cancelLabel={t('cancel')}
+        closeLabel={t('close')}
+        onConfirm={() => setNeutralDialog(false)}
+        onCancel={() => setNeutralDialog(false)}
+      >
+        <p>{t('dev.dialogNeutralBody')}</p>
+      </ConfirmDialog>
+      <ConfirmDialog
         open={dialog}
         destructive
+        icon={<Icon icon={IconTrash} size={20} />}
+        confirmIcon={<Icon icon={IconTrash} size={18} />}
+        closeLabel={t('close')}
         title={t('dev.dialogTitle')}
         confirmLabel={t('dev.deleteProject')}
         cancelLabel={t('cancel')}

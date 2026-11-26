@@ -4,11 +4,10 @@ import { useMutation } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useState, type FormEvent } from 'react';
 
-import { Button } from '@/components/ui';
+import { Alert, Button, FieldError } from '@/components/ui';
 import { LoginPasswordField } from '@/features/auth/login/LoginPasswordField';
 import { confirmationState } from '@/features/auth/register/password';
 import { PasswordField } from '@/features/auth/register/PasswordField';
-import registerStyles from '@/features/auth/register/register.module.css';
 
 import { classifyPasswordFailure, validatePasswordChange, type PasswordErrors } from './account';
 import styles from './account.module.css';
@@ -72,16 +71,8 @@ export function PasswordSection() {
       <h2 id="account-password" className={styles.cardTitle}>
         {t('title')}
       </h2>
-      {banner && (
-        <p className={styles.alert} role="alert">
-          {banner}
-        </p>
-      )}
-      {done && (
-        <p className={styles.success} role="status">
-          {t('done')}
-        </p>
-      )}
+      {banner && <Alert tone="error">{banner}</Alert>}
+      {done && <Alert tone="success">{t('done')}</Alert>}
       <form className={styles.stack} onSubmit={submit} noValidate>
         <LoginPasswordField
           label={t('current')}
@@ -90,13 +81,7 @@ export function PasswordSection() {
             setCurrent(v);
             clear('current');
           }}
-          aside={
-            message('current') && (
-              <p className={registerStyles.errorText} role="alert">
-                {message('current')}
-              </p>
-            )
-          }
+          aside={message('current') && <FieldError>{message('current')}</FieldError>}
         />
         <div className={styles.pair}>
           <PasswordField

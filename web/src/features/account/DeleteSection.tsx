@@ -1,13 +1,13 @@
 'use client';
 
+import { IconTrash } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
-import { Button, ConfirmDialog } from '@/components/ui';
+import { Alert, Button, ConfirmDialog, FieldError, GoogleMark, Icon } from '@/components/ui';
 import { LoginPasswordField } from '@/features/auth/login/LoginPasswordField';
-import registerStyles from '@/features/auth/register/register.module.css';
 
 import { AFTER_DELETE_PATH, classifyDeleteFailure } from './account';
 import styles from './account.module.css';
@@ -23,6 +23,7 @@ type Props = {
 /** Delete the account with a re-authentication (UC-04 1a, 1b; BR-13). */
 export function DeleteSection({ account, reauthenticated }: Props) {
   const t = useTranslations('account.delete');
+  const tUi = useTranslations('ui');
   const failureText = useFailureText();
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -84,13 +85,20 @@ export function DeleteSection({ account, reauthenticated }: Props) {
       </h2>
       <p className={styles.muted}>{t('text')}</p>
       <div className={styles.actions}>
-        <Button variant="destructive" onClick={() => setOpen(true)}>
+        <Button
+          variant="destructive"
+          icon={<Icon icon={IconTrash} size={18} />}
+          onClick={() => setOpen(true)}
+        >
           {t('open')}
         </Button>
       </div>
       <ConfirmDialog
         open={open}
         destructive
+        icon={<Icon icon={IconTrash} size={20} />}
+        confirmIcon={<Icon icon={IconTrash} size={18} />}
+        closeLabel={tUi('close')}
         title={t('dialogTitle')}
         confirmLabel={t('confirm')}
         cancelLabel={t('cancel')}
@@ -114,25 +122,20 @@ export function DeleteSection({ account, reauthenticated }: Props) {
               }}
             />
           ) : verified ? (
-            <p className={registerStyles.success} role="status">
-              {t('googleVerified')}
-            </p>
+            <Alert tone="success">{t('googleVerified')}</Alert>
           ) : (
             <Button
               variant="secondary"
               fullWidth
               disabled={reauthBusy}
+              icon={<GoogleMark size={20} />}
               onClick={() => reauth.mutate()}
             >
               {reauthBusy ? t('googleReauthing') : t('googleReauth')}
             </Button>
           )}
         </div>
-        {error && (
-          <p className={registerStyles.errorText} role="alert">
-            {error}
-          </p>
-        )}
+        {error && <FieldError>{error}</FieldError>}
       </ConfirmDialog>
     </section>
   );

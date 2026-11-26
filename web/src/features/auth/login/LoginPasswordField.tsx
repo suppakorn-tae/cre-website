@@ -1,8 +1,9 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useId, useState } from 'react';
+import { useId } from 'react';
 
+import { PasswordInput } from '@/components/ui';
 import styles from '@/features/auth/register/register.module.css';
 
 type Props = {
@@ -13,36 +14,23 @@ type Props = {
   aside?: React.ReactNode;
 };
 
-/** Password control for log in: show/hide toggle, no rules or strength. */
+/** Password control for log in: lock icon, show/hide toggle, no rules or strength. */
 export function LoginPasswordField({ label, value, onChange, aside }: Props) {
   const t = useTranslations('auth.login');
   const id = useId();
-  const [visible, setVisible] = useState(false);
   return (
     <div className={styles.field}>
       <label htmlFor={id} className={styles.label}>
         {label}
       </label>
-      <div className={styles.controlWrap}>
-        <input
-          id={id}
-          className={styles.control}
-          type={visible ? 'text' : 'password'}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          autoComplete="current-password"
-          required
-        />
-        <button
-          type="button"
-          className={styles.toggle}
-          aria-pressed={visible}
-          aria-label={visible ? t('hidePassword') : t('showPassword')}
-          onClick={() => setVisible((v) => !v)}
-        >
-          {visible ? t('hideShort') : t('showShort')}
-        </button>
-      </div>
+      <PasswordInput
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        autoComplete="current-password"
+        required
+        labels={{ show: t('showPassword'), hide: t('hidePassword') }}
+      />
       {aside}
     </div>
   );
