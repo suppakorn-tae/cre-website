@@ -310,6 +310,7 @@ test('at 320px with text at 200% the whole page fits, and the sticky headers do 
   expect(wide).toEqual([]);
 
   // Scrolling: the factor header sits right under the dimension header, never below or over it.
+  let measured = 0;
   for (const y of [800, 2000, 4000]) {
     await page.evaluate((top) => window.scrollTo(0, top), y);
     const gap = await page.evaluate(() => {
@@ -330,6 +331,11 @@ test('at 320px with text at 200% the whole page fits, and the sticky headers do 
         ? f.getBoundingClientRect().top - stuck.getBoundingClientRect().bottom
         : null;
     });
-    if (gap !== null) expect(gap).toBeGreaterThanOrEqual(0);
+    if (gap !== null) {
+      measured += 1;
+      expect(gap).toBeGreaterThanOrEqual(0);
+    }
   }
+  // At least one scroll position must find a stuck dimension header with a factor header under it.
+  expect(measured).toBeGreaterThan(0);
 });
