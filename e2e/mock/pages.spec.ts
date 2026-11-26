@@ -132,8 +132,8 @@ test('the results level counts match the versions tab', async ({ page }) => {
   await expect(v3Card).toContainText(/H\s*11/);
 
   await page.goto(`/projects/${PROJECT}/versions/${V3}/results`);
-  // Same numbers as the "VH 2 H 11" chips of the version card.
-  const cards = page.locator('main');
+  // Same numbers as the "VH 2 H 11" chips of the version card, read from the level tiles.
+  const counts = page.getByRole('group', { name: 'จำนวนตัวชี้วัดแต่ละระดับ' });
   for (const [level, count] of [
     ['VH', 2],
     ['H', 11],
@@ -141,6 +141,8 @@ test('the results level counts match the versions tab', async ({ page }) => {
     ['L', 14],
     ['VL', 8],
   ] as const) {
-    await expect(cards).toContainText(new RegExp(`${level}\\s*${count}\\s*ตัวชี้วัด`));
+    await expect(counts.locator(`[data-level="${level}"]`)).toContainText(
+      new RegExp(`(^|\\D)${count}\\s*ตัวชี้วัด`),
+    );
   }
 });
