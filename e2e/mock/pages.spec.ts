@@ -9,7 +9,11 @@ type Page = { name: string; path: string; texts: (string | RegExp)[] };
 
 /** Each page, with text that only shows once its mock data has loaded. */
 const PAGES: Page[] = [
-  { name: 'dashboard', path: '/dashboard', texts: ['Dashboard', 'TK2', 'การกระจายระดับความเสี่ยง', '55 / 55 ตัวชี้วัด'] },
+  {
+    name: 'dashboard',
+    path: '/dashboard',
+    texts: ['Dashboard', 'TK2', 'การกระจายระดับความเสี่ยง', '55 / 55 ตัวชี้วัด'],
+  },
   {
     name: 'projects',
     path: '/projects',
@@ -38,7 +42,16 @@ const PAGES: Page[] = [
     path: `/projects/${PROJECT}/versions/${V3}/results`,
     texts: ['ผลการประเมินความเสี่ยง – v3', 'ความเสี่ยงสูง', 'Heat Map'],
   },
-  { name: 'compare', path: `/projects/${PROJECT}/compare`, texts: ['เปรียบเทียบเวอร์ชัน'] },
+  {
+    name: 'project versions tab',
+    path: `/projects/${PROJECT}?tab=versions`,
+    texts: ['v3 เทียบกับ', 'แนวโน้มข้ามเวอร์ชัน', 'การกระจายระดับความเสี่ยงของแต่ละเวอร์ชัน (55 ตัวชี้วัด)'],
+  },
+  {
+    name: 'project versions tab, RM per indicator',
+    path: `/projects/${PROJECT}?tab=versions&view=rm`,
+    texts: ['RM รายตัวชี้วัด', 'เลือกแล้ว 4 จาก 10'],
+  },
   { name: 'account', path: '/account', texts: ['บัญชีของฉัน', 'วิธีเข้าสู่ระบบ'] },
   { name: 'admin users', path: '/admin/users', texts: ['จัดการผู้ใช้', 'engineer20@example.co.th'] },
   {
@@ -64,7 +77,7 @@ for (const { name, path, texts } of PAGES) {
       await expect(page.getByText(text).and(page.locator(':visible')).first()).toBeVisible();
     }
     // Not sent to the login page: the mock session is signed in.
-    expect(new URL(page.url()).pathname).toBe(path);
+    expect(new URL(page.url()).pathname).toBe(path.split('?')[0]);
 
     // The server guard used to call the api container and crash with ENOTFOUND.
     const body = await page.locator('body').innerText();
@@ -87,9 +100,39 @@ test('the RL thresholds show decreasing indicators as inverse', async ({ page })
   }
 });
 
+test('the old compare page redirects to the RM view of the versions tab', async ({ page }) => {
+  await page.goto(`/projects/${PROJECT}/compare`);
+  await expect(page).toHaveURL(new RegExp(`/projects/${PROJECT}\\?tab=versions&view=rm$`));
+  await expect(page.getByRole('radio', { name: 'RM รายตัวชี้วัด' })).toBeChecked();
+});
+
+test('the versions tab keeps its tab and view in the URL and selects a card without leaving', async ({
+  page,
+}) => {
+  await page.goto(`/projects/${PROJECT}`);
+  await page.getByRole('tab', { name: /เวอร์ชัน/ }).click();
+  await expect(page).toHaveURL(/\?tab=versions$/);
+  await page.getByText('RM รายตัวชี้วัด', { exact: true }).click();
+  await expect(page).toHaveURL(/\?tab=versions&view=rm$/);
+
+  // A click on a card picks the version to compare; it does not navigate.
+  await page.getByRole('button', { name: /^v2\s*สร้าง/ }).click();
+  await expect(page.getByLabel('v2 เทียบกับ')).toBeVisible();
+  await expect(page).toHaveURL(/\?tab=versions&view=rm$/);
+
+  // The never-submitted version explains itself instead of comparing.
+  await page.getByRole('button', { name: /^v1\s*สร้าง/ }).click();
+  await expect(page.getByText('ยังไม่มีผลการประเมิน')).toBeVisible();
+});
+
 test('the results level counts match the versions tab', async ({ page }) => {
+  await page.goto(`/projects/${PROJECT}?tab=versions`);
+  const v3Card = page.getByRole('button', { name: /^v3\s*สร้าง/ });
+  await expect(v3Card).toContainText(/VH\s*2/);
+  await expect(v3Card).toContainText(/H\s*11/);
+
   await page.goto(`/projects/${PROJECT}/versions/${V3}/results`);
-  // Same numbers as the "VL 8 L 14 M 20 H 11 VH 2" chips of the project page.
+  // Same numbers as the "VH 2 H 11" chips of the version card.
   const cards = page.locator('main');
   for (const [level, count] of [
     ['VH', 2],
