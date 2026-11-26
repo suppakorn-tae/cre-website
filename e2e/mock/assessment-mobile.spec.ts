@@ -220,8 +220,7 @@ for (const [label, width, rootSize] of [
       expect(box.y).toBeGreaterThanOrEqual(barBox.y);
       expect(box.y + box.height).toBeLessThanOrEqual(barBox.y + barBox.height + 1);
     }
-    // (Sideways scroll at 200% is outside this check: other parts of the page are not sized for it.)
-    if (rootSize === '100%') expect(await sideways(page)).toBe(0);
+    expect(await sideways(page)).toBe(0);
 
     // A focused last field scrolls to rest fully above the bar.
     const lastCard = cards(page).last();
@@ -293,3 +292,44 @@ for (const width of [320, 375, 768]) {
     }
   });
 }
+
+test('at 320px with text at 200% the whole page fits, and the sticky headers do not overlap', async ({
+  page,
+}) => {
+  await open(page, 320, V1, 640);
+  await page.addStyleTag({ content: 'html { font-size: 200% !important; }' });
+  await expect(page.getByRole('radio')).toHaveCount(4);
+  expect(await sideways(page)).toBe(0);
+  // Nothing in the page ends past the right edge, text included.
+  const wide = await page.evaluate(() =>
+    [...document.body.querySelectorAll('*')]
+      .filter((el) => el.getBoundingClientRect().right > document.documentElement.clientWidth + 1)
+      .filter((el) => getComputedStyle(el).position !== 'fixed')
+      .map((el) => el.className),
+  );
+  expect(wide).toEqual([]);
+
+  // Scrolling: the factor header sits right under the dimension header, never below or over it.
+  for (const y of [800, 2000, 4000]) {
+    await page.evaluate((top) => window.scrollTo(0, top), y);
+    const gap = await page.evaluate(() => {
+      const nav = parseFloat(
+        getComputedStyle(document.documentElement).getPropertyValue('--nav-height'),
+      );
+      const dims = [...document.querySelectorAll('h2')].filter((h) =>
+        /ด้าน/.test(h.textContent ?? ''),
+      );
+      const stuck = dims.find((h) => Math.abs(h.getBoundingClientRect().top - nav) < 1);
+      const factors = [...(stuck?.parentElement?.querySelectorAll('h3') ?? [])];
+      // The first factor header still on screen below the app header (stuck or about to be).
+      const f = factors.find((h) => {
+        const top = h.getBoundingClientRect().top;
+        return top > nav + 1 && top < nav + 400;
+      });
+      return stuck && f
+        ? f.getBoundingClientRect().top - stuck.getBoundingClientRect().bottom
+        : null;
+    });
+    if (gap !== null) expect(gap).toBeGreaterThanOrEqual(0);
+  }
+});
