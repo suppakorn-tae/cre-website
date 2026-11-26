@@ -22,8 +22,7 @@ import {
   type Draft,
 } from './rules';
 import { SubmitBar, SubmitNotes } from './SubmitBar';
-import { UnitSwitchDialog } from './UnitSwitchDialog';
-import { commitUnitSwitch, requestUnitSwitch, type PendingSwitch } from './unitSwitch';
+import { useUnitSwitch } from './unitSwitch';
 import { Toolbar } from './Toolbar';
 import { classifySubmitFailure, resultsPath, submitVersion, type SubmitFailure } from './submit';
 import { useAutosave } from './useAutosave';
@@ -56,7 +55,6 @@ function Form({
   const [failure, setFailure] = useState<SubmitFailure | null>(null);
   const [filter, setFilter] = useState('all');
   const [unitSkipped, setUnitSkipped] = useState(0);
-  const [pendingUnit, setPendingUnit] = useState<PendingSwitch | null>(null);
   const submitLock = useRef(false);
 
   const save = useCallback(
@@ -85,7 +83,8 @@ function Form({
       ),
     [],
   );
-  const { status, queue, flush } = useAutosave(save, undefined, rejected);
+  const { status, savedAt, queue, flush } = useAutosave(save, undefined, rejected);
+  const switchUnit = useUnitSwitch(projectId, versionId, queue);
   const all = catalogue.dimensions.flatMap((d) =>
     d.factors.flatMap((f) => f.indicators.map((i) => i.code)),
   );
@@ -104,23 +103,12 @@ function Form({
     queue(toInput(code, draft));
   };
 
-  const applyUnit = (field: 'y1' | 'y2', unit: string, onlyEmpty: boolean) => {
-    const { drafts: next, skipped } = commitUnitSwitch(all, drafts, field, unit, onlyEmpty, queue);
+  // Typed amounts are converted to the new unit and saved.
+  const setUnit = (field: 'y1' | 'y2', unit: string) => {
+    const { drafts: next, skipped } = switchUnit(all, drafts, field, unit);
     setDrafts(next);
     setFailure(null);
     setUnitSkipped(skipped.length);
-  };
-
-  // Saved amounts keep their number but change meaning, so the user confirms first.
-  const setUnit = (field: 'y1' | 'y2', unit: string) => {
-    const request = requestUnitSwitch(all, drafts, field, unit);
-    if (request.kind === 'confirm') setPendingUnit(request.pending);
-    else applyUnit(field, unit, false);
-  };
-
-  const resolveUnit = (onlyEmpty: boolean) => {
-    if (pendingUnit) applyUnit(pendingUnit.field, pendingUnit.unit, onlyEmpty);
-    setPendingUnit(null);
   };
 
   const confirmSubmit = async () => {
@@ -156,7 +144,12 @@ function Form({
           <p className={styles.subtitle}>{t('subtitle')}</p>
         </div>
         <div className={styles.status} role="status">
-          <span data-status={status}>{t(`save.${status}`)}</span>
+          <span data-status={status}>
+            {t(`save.${status}`, {
+              time:
+                savedAt?.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) ?? '',
+            })}
+          </span>
           {status === 'error' && (
             <Button variant="secondary" onClick={() => void flush()}>
               {t('save.retry')}
@@ -184,12 +177,6 @@ function Form({
         onFilter={setFilter}
         onCostUnit={(unit) => setUnit('y1', unit)}
         onTimeUnit={(unit) => setUnit('y2', unit)}
-      />
-      <UnitSwitchDialog
-        pending={pendingUnit}
-        onAll={() => resolveUnit(false)}
-        onEmptyOnly={() => resolveUnit(true)}
-        onCancel={() => setPendingUnit(null)}
       />
       <GroupList
         catalogue={catalogue}

@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { browserApi } from '@/lib/api/client';
 import type { components } from '@/lib/api/generated/schema';
 
+import { durationDays, type UnitBasis } from './rules';
+
 export type Catalogue = components['schemas']['Catalogue'];
 export type AnswerInput = components['schemas']['AnswerInput'];
 export type Answer = components['schemas']['Answer'];
@@ -36,6 +38,26 @@ export function useAnswers(projectId: string, versionId: string) {
       );
       return data as AnswerList;
     },
+  });
+}
+
+/**
+ * The project value and duration the version was created with: what y1 and y2 in % are a
+ * share of. Same key as the version detail elsewhere, so the cache is shared.
+ */
+export function useUnitBasis(projectId: string, versionId: string) {
+  return useQuery({
+    queryKey: ['projects', projectId, 'versions', versionId] as const,
+    queryFn: async () => {
+      const { data } = await browserApi().GET('/projects/{project_id}/versions/{version_id}', {
+        params: { path: { project_id: projectId, version_id: versionId } },
+      });
+      return data!;
+    },
+    select: (v): UnitBasis => ({
+      valueBaht: v.value_baht,
+      durationDays: durationDays(v.start_date, v.end_date),
+    }),
   });
 }
 

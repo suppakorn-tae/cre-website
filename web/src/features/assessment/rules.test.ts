@@ -19,15 +19,21 @@ import {
 
 describe('global units', () => {
   const codes = ['a', 'b'];
+  // 100,000 baht over 100 days: 1 % is 1,000 baht or 1 day.
+  const basis = { valueBaht: 100_000, durationDays: 100 };
   it('reads the shared unit, or null when rows differ', () => {
     expect(sharedUnit(codes, {}, 'y1')).toBe('baht');
     const mixed = { a: { ...emptyDraft(), y1: { amount: '5', unit: 'percent' } } };
     expect(sharedUnit(codes, mixed, 'y1')).toBeNull();
     expect(sharedUnit(['a'], mixed, 'y1')).toBe('percent');
   });
-  it('switches the unit of every row and keeps what was typed', () => {
+  it('switches the unit of every row and converts what was typed', () => {
     const drafts = { a: { ...emptyDraft(), y2: { amount: '7', unit: 'day' } } };
-    const { drafts: next, changed, skipped } = switchSharedUnit(codes, drafts, 'y2', 'percent');
+    const {
+      drafts: next,
+      changed,
+      skipped,
+    } = switchSharedUnit(codes, drafts, 'y2', 'percent', basis);
     expect(next.a?.y2).toEqual({ amount: '7', unit: 'percent' });
     expect(next.b?.y2).toEqual({ amount: '', unit: 'percent' });
     expect(next.a?.y1.unit).toBe('baht');
@@ -44,11 +50,11 @@ describe('global units', () => {
       drafts: next,
       changed,
       skipped,
-    } = switchSharedUnit(['a', 'b', 'c'], drafts, 'y1', 'percent');
+    } = switchSharedUnit(['a', 'b', 'c'], drafts, 'y1', 'percent', basis);
     expect(skipped).toEqual(['a', 'c']);
     expect(next.a?.y1).toEqual({ amount: '200,000', unit: 'baht' });
     expect(next.c?.y1).toEqual({ amount: 'abc', unit: 'baht' });
-    expect(next.b?.y1).toEqual({ amount: '50', unit: 'percent' });
+    expect(next.b?.y1).toEqual({ amount: '0.05', unit: 'percent' });
     expect(changed).toEqual(['b']);
   });
   it('never produces an answer that drops a stored value on a unit switch', () => {
@@ -56,11 +62,11 @@ describe('global units', () => {
       a: { ...complete(), y1: { amount: '200000', unit: 'baht' } },
       b: { ...complete(), y1: { amount: '40', unit: 'baht' } },
     };
-    const { drafts: next, changed } = switchSharedUnit(['a', 'b'], drafts, 'y1', 'percent');
+    const { drafts: next, changed } = switchSharedUnit(['a', 'b'], drafts, 'y1', 'percent', basis);
     // Everything that would be saved keeps its y1 (a PATCH never clears it) in the new unit.
     for (const code of changed) {
       const body = toInput(code, next[code]!);
-      expect(body.y1).toEqual({ value: 40, unit: 'percent' });
+      expect(body.y1).toEqual({ value: 0.04, unit: 'percent' });
     }
     expect(changed).toEqual(['b']);
     expect(toInput('a', next.a!).y1).toEqual({ value: 200000, unit: 'baht' });

@@ -89,35 +89,59 @@ export function sharedUnit(codes: string[], drafts: Drafts, field: UnitField): s
   return units.size === 1 ? ([...units][0] ?? null) : null;
 }
 
+/** What a percentage of y1 or y2 is a share of: the version's project value and duration. */
+export type UnitBasis = { valueBaht: number; durationDays: number };
+
+/** Project duration in days, end minus start, as the Assessments Service counts it. */
+export function durationDays(start: string, end: string): number {
+  return (Date.parse(end) - Date.parse(start)) / 86_400_000;
+}
+
+const round2 = (v: number) => Math.round((v + Number.EPSILON) * 100) / 100;
+
 /**
- * Sets `unit` on the listed rows. A row whose typed amount is not valid in the new
- * unit (e.g. above 100 for %) keeps its unit and value, so a unit switch never turns
- * a stored value into an invalid one. `changed` lists rows with an amount that
- * moved to the new unit (the only ones that need saving); `skipped` lists the kept rows.
- * With `onlyEmpty`, rows that already have an amount are left alone (and not listed).
+ * Converts an amount to `to` against `base` (project value for y1, duration for y2):
+ * baht and days become % with 2 decimals, % becomes whole baht or days. Null when
+ * `base` is not above 0, so nothing can be converted.
+ */
+export function convertAmount(amount: number, to: string, base: number): number | null {
+  if (!(base > 0)) return null;
+  return to === 'percent' ? round2((amount * 100) / base) : Math.round((amount * base) / 100);
+}
+
+/**
+ * Sets `unit` on the listed rows and converts their amounts with `basis`. A row whose
+ * amount cannot be converted (invalid text, no basis yet, or above 100 % once converted)
+ * keeps its unit and value, so a unit switch never turns a stored value into an invalid
+ * one. `changed` lists rows whose amount was converted (the only ones that need saving);
+ * `skipped` lists the kept rows.
  */
 export function switchSharedUnit(
   codes: string[],
   drafts: Drafts,
   field: UnitField,
   unit: string,
-  onlyEmpty = false,
+  basis?: UnitBasis,
 ): { drafts: Drafts; changed: string[]; skipped: string[] } {
   const next = { ...drafts };
   const changed: string[] = [];
   const skipped: string[] = [];
-  const max = unit === 'percent' ? 100 : undefined;
+  const base = field === 'y1' ? basis?.valueBaht : basis?.durationDays;
   for (const code of codes) {
     const d = next[code] ?? emptyDraft();
     if (d[field].unit === unit) continue;
-    const typed = d[field].amount.trim() !== '';
-    if (typed && onlyEmpty) continue;
-    if (typed && parseAmount(d[field].amount, max) === null) {
+    if (d[field].amount.trim() === '') {
+      next[code] = { ...d, [field]: { amount: '', unit } };
+      continue;
+    }
+    const from = impact(d[field]);
+    const to = from === null || base === undefined ? null : convertAmount(from, unit, base);
+    if (to === null || (unit === 'percent' && to > 100)) {
       skipped.push(code);
       continue;
     }
-    next[code] = { ...d, [field]: { ...d[field], unit } };
-    if (typed) changed.push(code);
+    next[code] = { ...d, [field]: { amount: String(to), unit } };
+    changed.push(code);
   }
   return { drafts: next, changed, skipped };
 }
