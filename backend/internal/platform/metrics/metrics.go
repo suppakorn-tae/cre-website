@@ -9,6 +9,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"github.com/suppakorn-tae/cre-website/backend/internal/service/auth"
 )
 
 // Metrics owns a private registry so tests do not share global state.
@@ -34,6 +36,7 @@ func New() *Metrics {
 		collectors.NewGoCollector(),
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 		m.requests, m.duration,
+		auth.MailFailures,
 	)
 	return m
 }
