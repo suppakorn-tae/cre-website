@@ -11,6 +11,7 @@ export type DashboardProjectItem = components['schemas']['DashboardProjectItem']
 const keys = {
   summary: ['dashboard', 'summary'] as const,
   projects: (q: string, page: number) => ['dashboard', 'projects', q, page] as const,
+  allProjects: ['dashboard', 'projects', 'all'] as const,
   top: ['dashboard', 'top-indicators'] as const,
   islands: ['dashboard', 'islands'] as const,
   islandNames: ['dashboard', 'islands', 'names'] as const,
@@ -37,6 +38,37 @@ export function useProjectsPanel(q: string, page: number, enabled: boolean) {
           params: { query: { q: q || undefined, page, page_size: PANEL_PAGE_SIZE } },
         })
       ).data!,
+  });
+}
+
+const ALL_PAGE_SIZE = 100; // the contract maximum
+
+/** Reads page after page until `total` items are in, so nothing is dropped past the first page. */
+export async function collectPages<T>(
+  fetchPage: (page: number) => Promise<{ items: T[]; page: { total: number } }>,
+): Promise<T[]> {
+  const all: T[] = [];
+  for (let page = 1; ; page++) {
+    const res = await fetchPage(page);
+    all.push(...res.items);
+    if (res.items.length === 0 || all.length >= res.page.total) return all;
+  }
+}
+
+/** Every project, for fields the island rows do not carry (value, version). */
+export function useAllProjects(enabled: boolean) {
+  return useQuery({
+    queryKey: keys.allProjects,
+    enabled,
+    queryFn: () =>
+      collectPages(
+        async (page) =>
+          (
+            await browserApi().GET('/dashboard/panels/projects', {
+              params: { query: { page, page_size: ALL_PAGE_SIZE } },
+            })
+          ).data!,
+      ),
   });
 }
 

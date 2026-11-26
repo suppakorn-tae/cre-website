@@ -126,9 +126,11 @@ export function DashboardPage() {
             <ProjectRiskChart risks={data.project_risks} />
           </div>
 
-          {panel === 'projects' && <ProjectsPanel />}
-          {panel === 'indicators' && <TopIndicatorsPanel />}
-          {panel === 'islands' && <IslandsPanel islandName={(code) => tIslands(code)} />}
+          <div key={panel} className={styles.panelFade}>
+            {panel === 'projects' && <ProjectsPanel />}
+            {panel === 'indicators' && <TopIndicatorsPanel />}
+            {panel === 'islands' && <IslandsPanel islandName={(code) => tIslands(code)} />}
+          </div>
         </>
       )}
     </section>

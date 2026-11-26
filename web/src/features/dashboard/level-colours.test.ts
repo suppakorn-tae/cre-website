@@ -16,7 +16,7 @@ function fillBackground(level: string): string | undefined {
 }
 
 describe('dashboard level bars', () => {
-  it.each(['VL', 'L', 'M', 'H', 'VH'])('colours %s with its level token', (level) => {
+  it.each(['H', 'VH'])('colours %s with its level token', (level) => {
     expect(fillBackground(level)).toBe(`var(--level-${level.toLowerCase()})`);
   });
 

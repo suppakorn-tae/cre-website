@@ -12,8 +12,10 @@ import ui from '../../../messages/th/ui.json';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
-import { axisMax, donutSegments, levelPercent, LevelChart, ProjectRiskChart } from './Charts';
+import { axisMax, levelPercent, LevelChart, ProjectRiskChart } from './Charts';
 import { DashboardPage } from './DashboardPage';
+import { collectPages } from './api';
+import { IslandsPanel, TopIndicatorsPanel } from './Panels';
 import { formatMillionBaht } from './format';
 import { ProjectsTable } from './ProjectsTable';
 import {
@@ -25,8 +27,14 @@ import {
   setDashboardEmpty,
 } from './mocks';
 
-function render(node: ReactNode, summary?: typeof seedSummary, islands?: unknown) {
+function render(
+  node: ReactNode,
+  summary?: typeof seedSummary,
+  islands?: unknown,
+  seed?: (client: QueryClient) => void,
+) {
   const client = new QueryClient();
+  seed?.(client);
   if (summary) client.setQueryData(['dashboard', 'summary'], summary);
   if (islands) client.setQueryData(['dashboard', 'islands', 'names'], islands);
   return renderToStaticMarkup(
@@ -63,12 +71,12 @@ describe('level donut', () => {
     expect(levelPercent(0, 0)).toBe(0);
   });
 
-  it('draws one arc per non-empty level, in level order, filling the ring', () => {
-    const segs = donutSegments({ VL: 1, L: 0, M: 1, H: 2, VH: 0 });
-    expect(segs.map((s) => s.level)).toEqual(['VL', 'M', 'H']);
-    expect(segs.map((s) => s.length)).toEqual([25, 25, 50]);
-    expect(segs.map((s) => s.offset)).toEqual([0, 25, 50]);
-    expect(donutSegments({ VL: 0, L: 0, M: 0, H: 0, VH: 0 })).toEqual([]);
+  it('draws the shared donut with gaps, highest risk first from the top', () => {
+    const html = render(<LevelChart counts={counts} />);
+    expect(html).toContain('<mask');
+    // VH is the first arc; the ring has 5 non-empty levels, so each arc is shorter than its share.
+    expect(html.indexOf('var(--level-vh)')).toBeLessThan(html.indexOf('var(--level-vl)'));
+    expect(html.match(/stroke-dasharray="[\d.]+ [\d.]+"/g)!.length).toBeGreaterThanOrEqual(5);
   });
 
   it('is an image with a Thai label and a legend of counts and percentages', () => {
@@ -80,6 +88,8 @@ describe('level donut', () => {
     expect(html.indexOf('>ความเสี่ยงสูงมาก<')).toBeLessThan(html.indexOf('>ความเสี่ยงต่ำมาก<'));
     expect(html).not.toContain('--level-vh-on');
     expect(html).toContain('stroke="var(--level-vh)"');
+    // The legend prints the level code as in the hi-fi, the Thai name is for screen readers.
+    expect(html).toContain('<span aria-hidden="true">VH</span>');
   });
 });
 
@@ -187,6 +197,97 @@ describe('charts', () => {
   });
 });
 
+describe('top 10 panel', () => {
+  const html = render(<TopIndicatorsPanel />, seedSummary, undefined, (client) => {
+    client.setQueryData(['dashboard', 'top-indicators'], seedTop);
+    client.setQueryData(['dashboard', 'indicator-names'], {
+      indicators: new Map([[seedTop[0].indicator_code, 'ชื่อตัวชี้วัด']]),
+      factors: new Map(),
+    });
+  });
+
+  it('is a table with the title, its caption and the four columns', () => {
+    expect(html).toContain('Top 10 ตัวชี้วัดที่เป็น H / VH บ่อยที่สุด');
+    expect(html).toContain('เรียงตามจำนวนโครงการ แล้วตาม VH');
+    for (const col of ['#', 'ตัวชี้วัด', 'พบใน (โครงการ)', 'VH / H']) {
+      expect(html).toContain(`>${col}</th>`);
+    }
+    expect(html.match(/<tbody>[\s\S]*<\/tbody>/)![0].match(/<tr/g)).toHaveLength(10);
+  });
+
+  it('shows the code in bold with the name, the found-in count of all projects and level chips', () => {
+    expect(html).toContain(`<b>${seedTop[0].indicator_code}</b> ชื่อตัวชี้วัด`);
+    // Found in 4 of the 4 projects that have a submitted version.
+    expect(html).toContain('4 / 4');
+    expect(html).toContain('aria-label="ความเสี่ยงสูงมาก 1"');
+    expect(html).toContain('aria-label="ความเสี่ยงสูง 3"');
+  });
+});
+
+describe('collectPages', () => {
+  it('reads every page of 230 projects, not just the first', async () => {
+    const total = 230;
+    const calls: number[] = [];
+    const all = await collectPages(async (page) => {
+      calls.push(page);
+      const from = (page - 1) * 100;
+      const items = Array.from(
+        { length: Math.max(0, Math.min(100, total - from)) },
+        (_, i) => from + i,
+      );
+      return { items, page: { total } };
+    });
+    expect(calls).toEqual([1, 2, 3]);
+    expect(all).toHaveLength(230);
+    expect(new Set(all).size).toBe(230);
+  });
+
+  it('stops after one page when the total fits', async () => {
+    let calls = 0;
+    await collectPages(async () => {
+      calls++;
+      return { items: [1, 2], page: { total: 2 } };
+    });
+    expect(calls).toBe(1);
+  });
+});
+
+describe('islands panel', () => {
+  const [tk2, tkr] = seedProjects;
+  const html = render(
+    <IslandsPanel islandName={(code) => (code === 'koh_tao' ? 'เกาะเต่า' : code)} />,
+    seedSummary,
+    undefined,
+    (client) => {
+      client.setQueryData(
+        ['dashboard', 'islands'],
+        [
+          {
+            island_code: 'koh_tao',
+            projects: [tk2, tkr].map((p) => ({ ...p, progress_pct: 0 })),
+          },
+        ],
+      );
+      client.setQueryData(['dashboard', 'projects', 'all'], seedProjects);
+    },
+  );
+
+  it('has a card per island with the project count and the value in million baht', () => {
+    expect(html).toContain('เกาะเต่า');
+    expect(html).toContain('2 โครงการ · มูลค่า 69.8M');
+  });
+
+  it('shows per project the nickname, name, version, status, level chips and an open link', () => {
+    for (const text of ['TK2', 'ท่าเรือเกาะเต่า ระยะที่ 2', 'v2', 'ส่งแล้ว']) {
+      expect(html).toContain(text);
+    }
+    expect(html).toContain('aria-label="ความเสี่ยงสูง 6"');
+    expect(html).toContain('aria-label="ความเสี่ยงสูงมาก 3"');
+    expect(html).toContain(`href="/projects/${tk2.project_id}"`);
+    expect(html).toContain('aria-label="เปิดโครงการ TK2"');
+  });
+});
+
 describe('DashboardPage', () => {
   it('shows a loading state before data arrives', () => {
     expect(render(<DashboardPage />)).toContain('กำลังโหลดภาพรวม');
@@ -202,7 +303,7 @@ describe('DashboardPage', () => {
       'เกาะที่ดำเนินการ',
       'มูลค่ารวม',
       'การกระจายระดับความเสี่ยง',
-      'จำนวนความเสี่ยงสูงและสูงมากรายโครงการ',
+      'จำนวนความเสี่ยง H / VH รายโครงการ',
       'กำลังแสดง',
       'เพิ่มโครงการ',
     ]) {

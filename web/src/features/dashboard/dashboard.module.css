@@ -223,36 +223,56 @@
   margin-top: var(--space-4);
 }
 
-/* H / VH chart: plain CSS bars on an axis of 5s. Every level keeps its own colour. */
+/* H / VH chart: plain CSS bars on an axis of 5s, H and VH in their own colours. */
 .legend {
   display: flex;
   gap: var(--space-4);
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: var(--text-caption);
+  font-size: var(--text-small);
 }
 .legendItem::before {
   content: '';
   display: inline-block;
-  width: 10px;
-  height: 10px;
+  width: 12px;
+  height: 12px;
   margin-inline-end: var(--space-1);
-  border-radius: 2px;
+  border-radius: 3px;
   background: var(--level-h);
 }
 .legendItem[data-level='VH']::before {
   background: var(--level-vh);
 }
+.plot {
+  --label-w: 200px;
+  --value-w: 2.5em;
+  position: relative;
+}
+/* One grid line per tick, behind every row */
+.grid {
+  position: absolute;
+  inset: 0 var(--value-w) 0 calc(var(--label-w) + var(--space-3));
+  border-inline-end: 1px solid var(--color-divider);
+  background: repeating-linear-gradient(
+    to right,
+    var(--color-divider) 0,
+    var(--color-divider) 1px,
+    transparent 1px,
+    transparent calc(100% / var(--axis-steps, 3))
+  );
+  pointer-events: none;
+}
 .bars {
+  position: relative;
   display: grid;
   gap: var(--space-2);
   margin: 0;
-  padding: 0;
+  padding: var(--space-2) 0;
   list-style: none;
 }
 .barRow {
   display: grid;
-  grid-template-columns: minmax(120px, 200px) minmax(0, 1fr) 2.5em;
+  grid-template-columns: var(--label-w) minmax(0, 1fr);
   align-items: center;
   gap: var(--space-3);
   min-height: 40px;
@@ -277,41 +297,32 @@
 .barValue {
   color: var(--color-text);
   font-size: var(--text-small);
+  font-weight: var(--weight-bold);
   font-variant-numeric: tabular-nums;
   text-align: end;
 }
-/* Light grid lines every 5 indicators, drawn behind the bars */
 .track {
-  display: flex;
-  height: 20px;
-  border-inline-end: 1px solid var(--color-border);
-  background: repeating-linear-gradient(
-    to right,
-    var(--color-border) 0,
-    var(--color-border) 1px,
-    transparent 1px,
-    transparent calc(100% / var(--axis-steps, 3))
-  );
+  position: relative;
+  height: 26px;
+  margin-inline-end: var(--value-w);
 }
+/* H and VH touch; the bar is rounded at both ends as in the hi-fi */
 .stack {
   display: flex;
+  height: 100%;
   min-width: 0;
-  gap: 2px;
-  border-radius: 0 var(--radius-badge) var(--radius-badge) 0;
+  border-radius: var(--radius-badge);
   overflow: hidden;
+}
+.total {
+  position: absolute;
+  top: 50%;
+  margin-inline-start: var(--space-2);
+  transform: translateY(-50%);
 }
 .fill {
   display: block;
   height: 100%;
-}
-.fill[data-level='VL'] {
-  background: var(--level-vl);
-}
-.fill[data-level='L'] {
-  background: var(--level-l);
-}
-.fill[data-level='M'] {
-  background: var(--level-m);
 }
 .fill[data-level='H'] {
   background: var(--level-h);
@@ -321,13 +332,14 @@
 }
 .axis {
   display: grid;
-  grid-template-columns: minmax(120px, 200px) minmax(0, 1fr) 2.5em;
+  grid-template-columns: var(--label-w) minmax(0, 1fr);
   gap: var(--space-3);
 }
 .axisTicks {
   position: relative;
   grid-column: 2;
   height: 18px;
+  margin-inline-end: var(--value-w);
   color: var(--color-text-muted);
   font-size: var(--text-caption);
 }
@@ -338,10 +350,16 @@
 }
 @media (max-width: 599px) {
   /* Phone: the nickname chip only; the project name stays for screen readers */
+  .plot {
+    --label-w: 52px;
+    --value-w: 2em;
+  }
   .barRow,
   .axis {
-    grid-template-columns: 52px minmax(0, 1fr) 2em;
     gap: var(--space-2);
+  }
+  .grid {
+    inset-inline-start: calc(var(--label-w) + var(--space-2));
   }
   .barProject {
     position: absolute;
@@ -350,6 +368,36 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+  }
+}
+
+/* Bars and legend fills grow from 0; the panel fades in. None of it under reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .stack,
+  .donutBarFill {
+    animation: grow var(--motion-chart, 700ms) ease-out both;
+  }
+  .total {
+    animation: fade-in var(--motion-chart, 700ms) ease-out both;
+  }
+  .panelFade {
+    animation: fade-in var(--motion-fast, 150ms) ease-out both;
+  }
+}
+@keyframes grow {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
@@ -406,36 +454,179 @@
   gap: var(--space-1);
 }
 
-/* Lists in the top-10 and island panels */
-.list {
+/* Top-10 table; cards below 600px */
+.topTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.topTable th {
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  text-align: start;
+  border-bottom: 1px solid var(--color-divider);
+}
+.topTable td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-divider);
+  vertical-align: middle;
+}
+.topTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+.topTable .chips {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+.rank {
+  width: 2.5em;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.topName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.foundIn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  white-space: nowrap;
+}
+.foundText {
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.foundTrack {
+  width: 96px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+  overflow: hidden;
+}
+.foundFill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-blue-700);
+}
+@media (max-width: 599px) {
+  .topTable thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .topTable,
+  .topTable tbody {
+    display: block;
+  }
+  .topTable tr {
+    display: grid;
+    grid-template-columns: 2em minmax(0, 1fr);
+    gap: var(--space-2) 0;
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-divider);
+  }
+  .topTable td {
+    padding: 0;
+    border: 0;
+  }
+  .topTable td:nth-child(n + 3) {
+    grid-column: 2;
+  }
+}
+
+/* Islands: one card per island, one row per project */
+.islands {
   display: grid;
-  gap: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+@media (max-width: 767px) {
+  .islands {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.island {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+.islandHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.islandIcon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-control);
+  background: var(--color-blue-50);
+  color: var(--color-blue-700);
+}
+.islandName {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+}
+.islandList {
+  display: grid;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.listItem,
-.rankItem {
+.islandProject {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--color-divider);
+  padding: var(--space-3);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-control);
+  background: var(--color-white);
 }
-.rankItem {
-  flex-wrap: nowrap;
-}
-.rank {
-  flex: none;
-  width: 2em;
-  color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
-}
-.rankName {
+.islandInfo {
+  display: grid;
   flex: 1;
+  gap: var(--space-1);
   min-width: 0;
+}
+.islandProject .nicknameChip {
+  margin-top: 2px;
+}
+.islandProject .actionOutline {
+  flex: none;
+  gap: var(--space-1);
+  align-self: center;
+}
+.versionNo {
+  align-self: center;
+  font-size: var(--text-small);
+}
+@media (max-width: 599px) {
+  .islandProject {
+    flex-wrap: wrap;
+  }
+  .islandInfo {
+    flex: 1 1 calc(100% - 80px);
+  }
+  .islandProject .actionOutline {
+    width: 100%;
+    min-height: 44px;
+  }
 }
 .itemTitle {
   margin: 0;
@@ -447,57 +638,18 @@
   color: var(--color-text-muted);
   font-size: var(--text-small);
 }
-.group {
-  display: grid;
-  gap: var(--space-2);
-}
-.groupTitle {
-  margin: var(--space-2) 0 0;
-  color: var(--color-text);
-  font-size: var(--text-body);
-}
 
-/* Donut */
+/* Donut: the ring is components/ui/DonutChart, the legend is ours */
+.donut {
+  flex: 0 0 auto;
+  width: 168px;
+}
 .donutWrap {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: center;
   gap: var(--space-5);
-}
-.donut {
-  position: relative;
-  flex: 0 0 auto;
-  width: 168px;
-  height: 168px;
-}
-.donutSvg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.donutTrack {
-  stroke: var(--color-border);
-  stroke-width: 6;
-}
-.donutCentre {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-.donutTotal {
-  color: var(--color-text);
-  font-size: var(--text-kpi);
-  font-weight: var(--weight-bold);
-  line-height: var(--leading-kpi);
-  font-variant-numeric: tabular-nums;
-}
-.donutUnit {
-  color: var(--color-text-muted);
-  font-size: var(--text-caption);
 }
 .donutLegend {
   display: grid;
@@ -516,6 +668,7 @@
   row-gap: 2px;
 }
 .donutRow .barName {
+  font-weight: var(--weight-bold);
   font-size: var(--text-small);
 }
 .dot {

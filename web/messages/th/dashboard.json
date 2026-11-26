@@ -36,9 +36,11 @@
     "unit": "ตัวชี้วัดที่ประเมิน"
   },
   "riskChart": {
-    "title": "จำนวนความเสี่ยงสูงและสูงมากรายโครงการ",
+    "title": "จำนวนความเสี่ยง H / VH รายโครงการ",
     "caption": "เวอร์ชันล่าสุด",
     "version": "เวอร์ชัน {n}",
+    "legendH": "H",
+    "legendVH": "VH",
     "high": "สูง",
     "veryHigh": "สูงมาก",
     "none": "ยังไม่มีโครงการที่ส่งผลการประเมิน",
@@ -46,7 +48,8 @@
   },
   "panel": {
     "projects": "โครงการทั้งหมด ({count})",
-    "indicators": "ตัวชี้วัดที่เสี่ยงสูงที่สุด 10 อันดับ",
+    "indicators": "Top 10 ตัวชี้วัดที่เป็น H / VH บ่อยที่สุด",
+    "indicatorsCaption": "ทุกโครงการ · เวอร์ชันล่าสุดที่ส่งแล้ว · เรียงตามจำนวนโครงการ แล้วตาม VH",
     "islands": "โครงการแยกตามเกาะ",
     "loadFailed": "โหลดข้อมูลไม่สำเร็จ",
     "noData": "ยังไม่มีข้อมูล"
@@ -90,8 +93,18 @@
     "islandAndType": "{island} · {type}",
     "noVersion": "ยังไม่มีเวอร์ชัน"
   },
+  "topPanel": {
+    "rank": "#",
+    "indicator": "ตัวชี้วัด",
+    "foundIn": "พบใน (โครงการ)",
+    "foundOf": "{found} / {total}",
+    "levels": "VH / H"
+  },
   "islandsPanel": {
-    "projectCount": "{count} โครงการ",
+    "summary": "{count} โครงการ · มูลค่า {value}M",
+    "versionNo": "v{no}",
+    "open": "เปิด",
+    "openLabel": "เปิดโครงการ {nickname}",
     "notSubmitted": "ยังไม่ส่งผลการประเมิน"
   }
 }
