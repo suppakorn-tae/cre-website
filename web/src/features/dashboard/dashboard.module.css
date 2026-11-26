@@ -614,6 +614,14 @@
 .versionNo {
   font-weight: var(--weight-medium);
 }
+.versionHead {
+  white-space: nowrap;
+}
+.versionCount {
+  color: var(--color-text-secondary);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-regular);
+}
 .actionsStack {
   display: flex;
   flex-direction: column;

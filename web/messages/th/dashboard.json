@@ -73,6 +73,7 @@
       "actions": "การทำงาน"
     },
     "versionNo": "v{no}",
+    "scoredCount": "{scored} / {total} ตัวชี้วัด",
     "status": {
       "draft": "ฉบับร่าง",
       "submitted": "ส่งแล้ว"

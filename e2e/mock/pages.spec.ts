@@ -9,7 +9,7 @@ type Page = { name: string; path: string; texts: (string | RegExp)[] };
 
 /** Each page, with text that only shows once its mock data has loaded. */
 const PAGES: Page[] = [
-  { name: 'dashboard', path: '/dashboard', texts: ['Dashboard', 'TK2', 'การกระจายระดับความเสี่ยง'] },
+  { name: 'dashboard', path: '/dashboard', texts: ['Dashboard', 'TK2', 'การกระจายระดับความเสี่ยง', '55 / 55 ตัวชี้วัด'] },
   {
     name: 'projects',
     path: '/projects',

@@ -114,6 +114,18 @@ describe('projects table', () => {
     expect(html).toContain('เกาะเต่า · ท่าเรือ');
   });
 
+  it('shows the scored count of the latest version in the table cell and in the card', () => {
+    const html = render(<ProjectsTable items={seedProjects.slice(0, 1)} />);
+    // Table: "v2 · 55 / 55 ตัวชี้วัด" in one cell; card: the count on its own line.
+    expect(html.match(/55 \/ 55 ตัวชี้วัด/g)).toHaveLength(2);
+    expect(html).toContain('v2');
+  });
+
+  it('shows 0 of the total for a draft that has no stored results', () => {
+    const html = render(<ProjectsTable items={seedProjects.slice(4)} />);
+    expect(html).toContain('0 / 55 ตัวชี้วัด');
+  });
+
   it('splits H and VH into two chips when the counts are known, else shows the total', () => {
     const split = render(<ProjectsTable items={seedProjects.slice(0, 1)} risks={risks} />);
     expect(split).toContain('aria-label="ความเสี่ยงสูง 6"');
