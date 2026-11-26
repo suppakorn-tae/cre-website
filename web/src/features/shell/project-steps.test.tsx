@@ -8,7 +8,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 
 import reports from '../../../messages/th/reports.json';
 import shell from '../../../messages/th/shell.json';
-import ui from '../../../messages/th/ui.json';
+import uiMessages from '../../../messages/th/ui.json';
 
 vi.mock('@/lib/api/client', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/lib/api/client')>();
@@ -92,7 +92,7 @@ function open(
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <NextIntlClientProvider locale="th" messages={{ shell, reports, ui }}>
+      <NextIntlClientProvider locale="th" messages={{ shell, reports, ui: uiMessages }}>
         <ProjectSteps current={current} {...ids} />
       </NextIntlClientProvider>
     </QueryClientProvider>,
@@ -214,6 +214,38 @@ describe('ProjectSteps done state', () => {
 });
 
 describe('ProjectSteps step 5', () => {
+  it('turns green once the PDF is downloaded and goes back for another report', async () => {
+    answer('submitted');
+    server.use(...createJobHandlers());
+    const ui = (versionId: string, client: QueryClient) => (
+      <QueryClientProvider client={client}>
+        <NextIntlClientProvider locale="th" messages={{ shell, reports, ui: uiMessages }}>
+          <ProjectSteps current="results" projectId={P} versionId={versionId} />
+        </NextIntlClientProvider>
+      </QueryClientProvider>
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(ui(V, client));
+    await waitFor(() =>
+      expect(within(step('รายงาน')).getByRole('button').getAttribute('aria-disabled')).toBeNull(),
+    );
+    const button = within(step('รายงาน')).getByRole('button');
+    // Before the download: today's style.
+    expect(button.getAttribute('data-success')).toBeNull();
+    fireEvent.click(button);
+    await waitFor(() => expect(button.textContent).toContain('กำลังสร้าง…'));
+    expect(button.getAttribute('data-success')).toBeNull();
+    await waitFor(() => expect(button.getAttribute('data-success')).toBe('true'), {
+      timeout: 3000,
+    });
+    expect(button.textContent).toContain('ดาวน์โหลดแล้ว');
+
+    // Another version has its own report: not downloaded yet.
+    view.rerender(ui('v9', client));
+    await waitFor(() => expect(within(step('รายงาน')).getByRole('button')).toBeTruthy());
+    expect(within(step('รายงาน')).getByRole('button').getAttribute('data-success')).toBeNull();
+  });
+
   it('builds the report in place: the label changes and the PDF downloads', async () => {
     answer('submitted');
     server.use(...createJobHandlers());

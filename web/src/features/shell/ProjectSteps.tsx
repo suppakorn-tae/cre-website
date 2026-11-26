@@ -98,6 +98,8 @@ export function ProjectSteps({ current, projectId, versionId }: Props) {
       icon: canReport ? reportIcon : undefined,
       busy: report.state === 'building',
       failed: report.state === 'failed',
+      // The PDF of this version's current report is saved; a new report starts again from idle.
+      success: canReport && report.state === 'ready',
       done: false,
     },
   ];
