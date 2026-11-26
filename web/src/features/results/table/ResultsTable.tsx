@@ -3,12 +3,12 @@
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
-import { EmptyState, Input, LEVELS, LevelBadge, Select } from '@/components/ui';
+import { EmptyState, Input, LEVELS, LevelBadge, MultiSelect } from '@/components/ui';
 
-import type { IndicatorName, IndicatorResult } from '../overview/api';
+import type { IndicatorName, IndicatorResult, Level } from '../overview/api';
 import { formatRm, formatScore, subscript } from '../overview/format';
 import styles from '../overview/results.module.css';
-import { filterRows, type LevelFilter } from './filter';
+import { filterRows } from './filter';
 
 type Props = { items: IndicatorResult[]; names: Map<string, IndicatorName> };
 
@@ -17,8 +17,8 @@ export function ResultsTable({ items, names }: Props) {
   const t = useTranslations('results.table');
   const tUi = useTranslations('ui');
   const [text, setText] = useState('');
-  const [level, setLevel] = useState<LevelFilter>('all');
-  const rows = filterRows(items, names, text, level);
+  const [levels, setLevels] = useState<Level[]>([...LEVELS]);
+  const rows = filterRows(items, names, text, levels);
 
   const scores = [
     ['rl', 'rl'],
@@ -42,14 +42,14 @@ export function ResultsTable({ items, names }: Props) {
           onChange={(e) => setText(e.target.value)}
           autoComplete="off"
         />
-        <Select
+        <MultiSelect
           label={t('levelLabel')}
-          value={level}
-          onChange={(e) => setLevel(e.target.value as LevelFilter)}
-          options={[
-            { value: 'all', label: t('allLevels') },
-            ...LEVELS.map((l) => ({ value: l, label: `${l} · ${tUi(`levels.${l}`)}` })),
-          ]}
+          value={levels}
+          onChange={(next) => setLevels(next as Level[])}
+          allLabel={t('allLevels')}
+          countLabel={(count) => t('levelCount', { count })}
+          placeholder={t('allLevels')}
+          options={LEVELS.map((l) => ({ value: l, label: `${l} · ${tUi(`levels.${l}`)}` }))}
         />
       </div>
       <p role="status" className={styles.muted}>

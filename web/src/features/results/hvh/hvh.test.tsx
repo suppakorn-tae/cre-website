@@ -18,7 +18,8 @@ import type { IndicatorName } from '../overview/api';
 import { mockResultItems } from '../overview/mocks';
 import { HvhTab } from './HvhTab';
 import { mockResultsWithAdvice } from '@/features/plan/mocks';
-import { highRisks, HVH_VISIBLE } from './rules';
+import { highRisks, HVH_VISIBLE, spokenUnit } from './rules';
+import { formatNumber } from '@/lib/format/locale';
 
 const wrap = (node: ReactNode) =>
   renderToStaticMarkup(
@@ -82,28 +83,47 @@ describe('H / VH summary', () => {
     expect(html).toContain(`… และอีก ${rows.length - HVH_VISIBLE} รายการ`);
   });
 
-  it('prints the four input to score pills and the RM box of a card', () => {
+  it('writes each input as a sentence with both names and the score', () => {
     const html = render();
     const [top] = rows;
-    expect(html).toContain('ครั้ง/ช่วงเวลา');
-    expect(html).toContain('ของมูลค่าโครงการ');
-    expect(html).toContain('ของระยะเวลาโครงการ');
+    const text = html.replace(/<\/?(strong|sub)>/g, '');
+    expect(text).toContain(
+      `เกิดขึ้น ${formatNumber(top.x)} ครั้งต่อช่วงเวลา → โอกาสเกิด (RL) ${top.rl.toFixed(2)}`,
+    );
+    expect(text).toContain(
+      `ต้นทุนเพิ่ม ${formatNumber(top.y1_pct)}% ของมูลค่าโครงการ → ผลกระทบด้านต้นทุน (RIC) ${top.ri_c.toFixed(2)}`,
+    );
+    expect(text).toContain(
+      `เวลาเพิ่ม ${formatNumber(top.y2_pct)}% ของระยะเวลาโครงการ → ผลกระทบด้านเวลา (RIT) ${top.ri_t.toFixed(2)}`,
+    );
+    expect(text).toContain(`ผลกระทบด้านสิ่งแวดล้อม (RIE) ${top.ri_e.toFixed(2)}`);
+    expect(html).not.toContain('X → RL');
     expect(html).toContain(top.rm.toFixed(3));
-    for (const score of [top.rl, top.ri_c, top.ri_t, top.ri_e]) {
-      expect(html).toContain(score.toFixed(2));
-    }
   });
 
-  it('shows the strategy as a chip and no advice text or radios', () => {
+  it('shows a chosen strategy as a chip and nothing when none is chosen', () => {
     const html = render();
-    expect(html).not.toContain('type="radio"');
-    expect(html).not.toContain('คำแนะนำ RL ข้อที่');
-    expect(html).toContain('ยังไม่เลือกกลยุทธ์');
     expect(html).toMatch(/กลยุทธ์: (REDUCE|TRANSFER|ACCEPT)/);
+    expect(html).not.toContain('type="radio"');
+    const none = { ...data, items: data.items.map((i) => ({ ...i, strategy: undefined })) };
+    const bare = render(none);
+    expect(bare).not.toContain('ยังไม่เลือกกลยุทธ์');
+    expect(bare).not.toContain('กลยุทธ์:');
   });
 
   it('shows an empty state without H or VH rows', () => {
     const low = { ...data, items: data.items.filter((i) => i.level === 'L') };
     expect(render(low)).toContain('ไม่พบตัวชี้วัดที่มีความเสี่ยงสูง');
+  });
+});
+
+describe('spoken unit of X', () => {
+  it.each([
+    ['ครั้ง/เดือน', 'ครั้งต่อเดือน'],
+    ['ครั้ง / ช่วงเวลา', 'ครั้งต่อช่วงเวลา'],
+    ['ครั้ง', 'ครั้ง'],
+    ['  ', ''],
+  ])('reads %j as %j', (unit, spoken) => {
+    expect(spokenUnit(unit)).toBe(spoken);
   });
 });

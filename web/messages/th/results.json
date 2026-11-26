@@ -42,18 +42,12 @@
     "more": "… และอีก {count} รายการ",
     "less": "แสดงเฉพาะ {count} รายการแรก",
     "inputs": {
-      "x": "X → RL",
-      "y1": "y1 → RI<sub>C</sub>",
-      "y2": "y2 → RI<sub>T</sub>",
-      "y3": "y3 → RI<sub>E</sub>"
+      "x": "เกิดขึ้น {value} {unit} → โอกาสเกิด (RL) <b>{score}</b>",
+      "y1": "ต้นทุนเพิ่ม {value}% ของมูลค่าโครงการ → ผลกระทบด้านต้นทุน (RI<sub>C</sub>) <b>{score}</b>",
+      "y2": "เวลาเพิ่ม {value}% ของระยะเวลาโครงการ → ผลกระทบด้านเวลา (RI<sub>T</sub>) <b>{score}</b>",
+      "y3": "ผลกระทบด้านสิ่งแวดล้อม (RI<sub>E</sub>) <b>{score}</b>"
     },
-    "inputValues": {
-      "x": "{value} {unit}",
-      "y1": "{value}% ของมูลค่าโครงการ",
-      "y2": "{value}% ของระยะเวลาโครงการ"
-    },
-    "strategyPrefix": "กลยุทธ์:",
-    "strategyUnset": "ยังไม่เลือกกลยุทธ์"
+    "strategyPrefix": "กลยุทธ์:"
   },
   "overview": {
     "distributionTitle": "การกระจายระดับความเสี่ยง",
@@ -91,9 +85,10 @@
     "searchPlaceholder": "เช่น EC-HS-2 หรือชื่อตัวชี้วัด",
     "levelLabel": "ระดับ",
     "allLevels": "ทุกระดับ",
+    "levelCount": "{count} ระดับ",
     "count": "แสดง {shown} จาก {total} ตัวชี้วัด",
     "emptyTitle": "ไม่พบตัวชี้วัดที่ตรงกับเงื่อนไข",
-    "emptyText": "ลองเปลี่ยนคำค้นหาหรือเลือกทุกระดับ",
+    "emptyText": "ลองเปลี่ยนคำค้นหาหรือเลือกระดับเพิ่ม",
     "columns": {
       "code": "รหัส",
       "indicator": "ตัวชี้วัด",

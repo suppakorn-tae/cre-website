@@ -3,7 +3,7 @@
 import { IconAlertCircle, IconArrowRight } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { EmptyState, Icon, LevelBadge } from '@/components/ui';
 import { planPath } from '@/features/plan/rules';
@@ -14,20 +14,13 @@ import type { IndicatorName, IndicatorResult, ResultsResponse } from '../overvie
 import { formatRm, formatScore, subscript } from '../overview/format';
 import overview from '../overview/results.module.css';
 import styles from './hvh.module.css';
-import { highRisks, HVH_VISIBLE } from './rules';
+import { highRisks, HVH_VISIBLE, spokenUnit } from './rules';
 
 type Props = {
   projectId: string;
   versionId: string;
   results: ResultsResponse;
   names: Map<string, IndicatorName>;
-};
-
-type Pill = {
-  key: 'x' | 'y1' | 'y2' | 'y3';
-  /** What was entered; the api sends no y3 answer, so that pill shows the score only. */
-  input?: string;
-  score: number;
 };
 
 /**
@@ -48,16 +41,21 @@ export function HvhTab({ projectId, versionId, results, names }: Props) {
   const visible = showAll ? rows : rows.slice(0, HVH_VISIBLE);
   const hidden = rows.length - HVH_VISIBLE;
 
-  const pills = (row: IndicatorResult, meta?: IndicatorName): Pill[] => [
-    {
-      key: 'x',
-      input: t('inputValues.x', { value: formatNumber(row.x), unit: meta?.unit ?? '' }).trim(),
-      score: row.rl,
-    },
-    { key: 'y1', input: t('inputValues.y1', { value: formatNumber(row.y1_pct) }), score: row.ri_c },
-    { key: 'y2', input: t('inputValues.y2', { value: formatNumber(row.y2_pct) }), score: row.ri_t },
-    { key: 'y3', score: row.ri_e },
-  ];
+  const pills = (row: IndicatorResult, meta?: IndicatorName) => {
+    const bold = { b: (chunks: ReactNode) => <strong>{chunks}</strong> };
+    const rich = (key: 'x' | 'y1' | 'y2' | 'y3', values: Record<string, string>) =>
+      t.rich(`inputs.${key}`, { ...subscript, ...bold, ...values });
+    return [
+      rich('x', {
+        value: formatNumber(row.x),
+        unit: spokenUnit(meta?.unit ?? ''),
+        score: formatScore(row.rl),
+      }),
+      rich('y1', { value: formatNumber(row.y1_pct), score: formatScore(row.ri_c) }),
+      rich('y2', { value: formatNumber(row.y2_pct), score: formatScore(row.ri_t) }),
+      rich('y3', { score: formatScore(row.ri_e) }),
+    ];
+  };
 
   return (
     <section className={overview.panelBody}>
@@ -87,23 +85,17 @@ export function HvhTab({ projectId, versionId, results, names }: Props) {
                       </p>
                     )}
                   </div>
-                  <StrategyChip
-                    value={row.strategy}
-                    unsetLabel={t('strategyUnset')}
-                    prefix={t('strategyPrefix')}
-                  />
+                  {row.strategy && (
+                    <StrategyChip value={row.strategy} unsetLabel="" prefix={t('strategyPrefix')} />
+                  )}
                 </header>
-                <dl className={styles.pills}>
-                  {pills(row, meta).map((pill) => (
-                    <div key={pill.key} className={styles.pill}>
-                      <dt>{t.rich(`inputs.${pill.key}`, subscript)}</dt>
-                      <dd>
-                        {pill.input && <span>{pill.input} → </span>}
-                        <strong>{formatScore(pill.score)}</strong>
-                      </dd>
-                    </div>
+                <ul className={styles.pills}>
+                  {pills(row, meta).map((text, i) => (
+                    <li key={i} className={styles.pill}>
+                      {text}
+                    </li>
                   ))}
-                </dl>
+                </ul>
               </div>
               <p className={styles.rm} data-level={row.level}>
                 <span>{t('rm')}</span>
