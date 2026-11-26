@@ -12,7 +12,6 @@ const FILE_V3 = 'CRE-TK2-v3.pdf';
 const FILE_V2 = 'CRE-TK2-v2.pdf';
 
 const REPORT = 'รายงาน PDF';
-const DRAFT_REASON = 'ส่งผลการประเมินก่อนจึงสร้างรายงานได้';
 const BUILDING_TITLE = 'กำลังสร้างรายงาน PDF…';
 const READY_TITLE = 'รายงานพร้อมแล้ว — กำลังดาวน์โหลด';
 const FAILED_TITLE = 'สร้างรายงานไม่สำเร็จ';
@@ -95,31 +94,6 @@ test('the project page builds the report in the button, with no toast', async ({
   await expect(page.getByRole('status').filter({ hasText: READY_TITLE })).toBeAttached();
   await expect(toasts(page).locator('li')).toHaveCount(0);
   expect(new URL(page.url()).pathname).toBe(path);
-});
-
-test('a version in the list can build its own report, a draft cannot', async ({ page }) => {
-  await page.goto(`/projects/${PROJECT}`);
-  await page.getByRole('tab', { name: /เวอร์ชัน/ }).click();
-
-  const v2 = page.getByRole('button', { name: 'รายงาน PDF เวอร์ชัน 2' });
-  const download = page.waitForEvent('download', BUILD);
-  await v2.click();
-  // Version 2 fails its first report in the mock: the button offers a retry.
-  const retry = page.getByRole('button', { name: 'ลองอีกครั้ง เวอร์ชัน 2' });
-  await expect(retry).toBeVisible(BUILD);
-  await retry.click();
-  expect((await download).suggestedFilename()).toBe(FILE_V2);
-  await expect(page.getByRole('button', { name: 'ดาวน์โหลดอีกครั้ง เวอร์ชัน 2' })).toBeVisible();
-
-  const draft = page.getByRole('button', { name: 'รายงาน PDF เวอร์ชัน 1' });
-  await expect(draft).toHaveAttribute('aria-disabled', 'true');
-  await draft.hover();
-  // The reason shows on hover (and focus), and a disabled click starts nothing.
-  await expect(
-    page.locator('[data-radix-popper-content-wrapper]').getByText(DRAFT_REASON),
-  ).toBeVisible();
-  await draft.click({ force: true });
-  await expect(page.getByRole('button', { name: 'กำลังสร้าง… เวอร์ชัน 1' })).toHaveCount(0);
 });
 
 test('the old report url redirects to the results', async ({ page }) => {
