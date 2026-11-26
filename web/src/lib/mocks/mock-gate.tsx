@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
-import { startMocks } from './start-mocks';
+import { gateApiFetch, startMocks } from './start-mocks';
 
 export const MOCKS_ENABLED = process.env.NEXT_PUBLIC_API_MOCKS === '1';
 
@@ -17,23 +17,27 @@ function startWorkerOnce(): Promise<void> {
   return workerStart;
 }
 
+let fetchGated = false;
+
+/** Holds api requests until the worker is up; installed once, in the browser only. */
+function gateBrowserFetch() {
+  if (fetchGated || typeof window === 'undefined') return;
+  fetchGated = true;
+  window.fetch = gateApiFetch(window.fetch.bind(window), startWorkerOnce, window.location.origin);
+}
+
+if (MOCKS_ENABLED) gateBrowserFetch();
+
 /**
- * With NEXT_PUBLIC_API_MOCKS=1 starts the MSW service worker before children
- * render, so the first requests are already intercepted. Otherwise a no-op.
+ * With NEXT_PUBLIC_API_MOCKS=1 starts the MSW service worker. Children render
+ * straight away, also on the server, so Next can prerender the shell. Api
+ * requests wait for the worker instead, so the first ones are already
+ * intercepted. Otherwise a no-op.
  */
 export function MockGate({ children }: { children: ReactNode }) {
-  const [ready, setReady] = useState(!MOCKS_ENABLED);
-
   useEffect(() => {
-    if (!MOCKS_ENABLED) return;
-    let cancelled = false;
-    void startWorkerOnce().then(() => {
-      if (!cancelled) setReady(true);
-    });
-    return () => {
-      cancelled = true;
-    };
+    if (MOCKS_ENABLED) void startWorkerOnce();
   }, []);
 
-  return ready ? children : null;
+  return children;
 }
