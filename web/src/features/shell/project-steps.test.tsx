@@ -139,6 +139,9 @@ describe('ProjectSteps links', () => {
     expect(results.getAttribute('aria-disabled')).toBe('true');
     expect(results.getAttribute('href')).toBeNull();
     expect(results.tabIndex).toBe(0);
+    // The reason describes the step; it is not part of its name.
+    expect(results.textContent).not.toContain(NOT_SUBMITTED);
+    expect(screen.getByRole('link', { name: 'ผลการประเมิน' })).toBe(results);
     const described = document.getElementById(results.getAttribute('aria-describedby')!);
     expect(described?.textContent).toBe(NOT_SUBMITTED);
     const plan = within(step('แผนจัดการ')).getByRole('link');

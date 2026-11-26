@@ -157,36 +157,32 @@ function StepBody({ step, no, total, pos, done, doneLabel, position }: BodyProps
       'aria-describedby': step.reason ? reasonId : undefined,
       'data-disabled': true,
     };
-    const inner = (
-      <>
-        {content}
-        {step.reason && (
-          <span id={reasonId} className={styles.srOnly}>
-            {step.reason}
-          </span>
-        )}
-      </>
-    );
     const node = isAction ? (
       <button type="button" {...props} onClick={(event) => event.preventDefault()}>
-        {inner}
+        {content}
       </button>
     ) : (
       // A disabled link: focusable, so the reason reaches keyboard users too.
       <span role="link" tabIndex={0} {...props}>
-        {inner}
+        {content}
       </span>
     );
     if (!step.reason) return node;
     return (
-      <Tooltip.Root>
-        <Tooltip.Trigger asChild>{node}</Tooltip.Trigger>
-        <Tooltip.Portal>
-          <Tooltip.Content sideOffset={6} className={styles.tooltip}>
-            {step.reason}
-          </Tooltip.Content>
-        </Tooltip.Portal>
-      </Tooltip.Root>
+      <>
+        <Tooltip.Root>
+          <Tooltip.Trigger asChild>{node}</Tooltip.Trigger>
+          <Tooltip.Portal>
+            <Tooltip.Content sideOffset={6} className={styles.tooltip}>
+              {step.reason}
+            </Tooltip.Content>
+          </Tooltip.Portal>
+        </Tooltip.Root>
+        {/* Outside the control, so it describes it without becoming part of its name. */}
+        <span id={reasonId} className={styles.srOnly}>
+          {step.reason}
+        </span>
+      </>
     );
   }
   if (isAction) {
