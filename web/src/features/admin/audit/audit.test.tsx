@@ -9,7 +9,7 @@ import ui from '../../../../messages/th/ui.json';
 
 import { AuditFilters } from './AuditFilters';
 import { diffRows, formatValue } from './AuditDetail';
-import { AUDIT_ACTIONS, EMPTY_FILTERS, TARGET_TYPES } from './filters';
+import { EMPTY_FILTERS } from './filters';
 import { filterEntries, mockEntries, MOCK_ENTRY_COUNT } from './mocks';
 
 const render = (values = EMPTY_FILTERS) =>
@@ -28,12 +28,6 @@ describe('AuditFilters', () => {
       expect(html).toContain(text);
     }
     expect(html).not.toContain('ล้างตัวกรอง');
-  });
-
-  it('offers a Thai label for every action and target type', () => {
-    const html = render();
-    for (const action of AUDIT_ACTIONS) expect(html).toContain(adminAudit.actions[action]);
-    for (const type of TARGET_TYPES) expect(html).toContain(adminAudit.targets[type]);
   });
 
   it('shows the clear button and a date error once filters are set', () => {

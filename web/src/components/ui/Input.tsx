@@ -1,5 +1,5 @@
-import { IconChevronDown, IconSearch, type Icon as TablerIcon } from '@tabler/icons-react';
-import { useId, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from 'react';
+import { IconSearch, type Icon as TablerIcon } from '@tabler/icons-react';
+import { useId, type InputHTMLAttributes, type ReactNode } from 'react';
 
 import { cx } from './cx';
 import { FieldMessage, LabelText, messageIds } from './Field';
@@ -113,62 +113,6 @@ export function NumberInput({
         {suffix && <span className={styles.suffix}>{suffix}</span>}
       </div>
       <FieldMessage id={inputId} helper={helper} error={error} />
-    </div>
-  );
-}
-
-export type SelectOption = { value: string; label: string };
-
-export type SelectProps = FieldProps &
-  Omit<SelectHTMLAttributes<HTMLSelectElement>, 'children'> & {
-    options: SelectOption[];
-    /** Text of the empty first option. */
-    placeholder?: string;
-  };
-
-export function Select({
-  label,
-  helper,
-  error,
-  optionalLabel,
-  options,
-  placeholder,
-  id,
-  className,
-  required,
-  ...rest
-}: SelectProps) {
-  const generated = useId();
-  const selectId = id ?? generated;
-  const { describedBy } = messageIds(selectId, { helper, error });
-  return (
-    <div className={cx(styles.field, className)}>
-      <label htmlFor={selectId} className={styles.label}>
-        <LabelText required={required} optionalLabel={optionalLabel}>
-          {label}
-        </LabelText>
-      </label>
-      <div className={styles.controlWrap}>
-        <select
-          id={selectId}
-          className={cx(styles.control, styles.hasTrail)}
-          required={required}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={describedBy}
-          {...rest}
-        >
-          {placeholder !== undefined && <option value="">{placeholder}</option>}
-          {options.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <span className={styles.trail}>
-          <Icon icon={IconChevronDown} size={18} />
-        </span>
-      </div>
-      <FieldMessage id={selectId} helper={helper} error={error} />
     </div>
   );
 }
