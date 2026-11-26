@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { toggleOption } from '@/components/ui';
 
 import {
+  answeredFields,
   countGroup,
   emptyDraft,
   fromAnswer,
@@ -136,6 +137,12 @@ describe('completeness', () => {
     expect(isAnswered(emptyDraft())).toBe(false);
     expect(isAnswered({ ...emptyDraft(), y3: ['A'] })).toBe(true);
     expect(isAnswered({ ...emptyDraft(), x: '0' })).toBe(true);
+  });
+  it('counts how many of the four fields have an answer', () => {
+    expect(answeredFields(emptyDraft())).toBe(0);
+    expect(answeredFields({ ...emptyDraft(), x: ' ' })).toBe(0);
+    expect(answeredFields({ ...emptyDraft(), x: '0', y3: ['B'] })).toBe(2);
+    expect(answeredFields(complete())).toBe(4);
   });
   it('counts answered and complete per group', () => {
     const drafts = { a: complete(), b: { ...emptyDraft(), x: '1' }, c: emptyDraft() };

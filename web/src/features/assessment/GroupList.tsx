@@ -8,8 +8,11 @@ import type { CheckboxOption } from '@/components/ui';
 import type { Catalogue } from './api';
 import styles from './assessment.module.css';
 import type { ServerErrors } from './fieldErrors';
+import { CardList } from './CardList';
+import { codesOf, Progress } from './GroupProgress';
 import { IndicatorRow } from './IndicatorRow';
-import { countGroup, emptyDraft, sharedUnit, type Draft } from './rules';
+import { emptyDraft, sharedUnit, type Draft } from './rules';
+import { useNarrow } from './useNarrow';
 
 type Props = {
   catalogue: Catalogue;
@@ -21,20 +24,10 @@ type Props = {
   onChange: (code: string, draft: Draft) => void;
 };
 
-function Progress({ codes, drafts }: { codes: string[]; drafts: Props['drafts'] }) {
-  const t = useTranslations('assessment.progress');
-  const { total, answered, complete } = countGroup(codes, drafts);
-  return (
-    <span className={styles.progress}>
-      {t('group', { complete, total })} · {t('answered', { answered })}
-    </span>
-  );
-}
-
-const codesOf = (factors: { indicators: { code: string }[] }[]) =>
-  factors.flatMap((f) => f.indicators.map((i) => i.code));
-
-/** All indicators as one table: dimension and factor group rows, then one row per indicator. */
+/**
+ * All indicators: a table on tablet and desktop (dimension and factor group rows, then one row
+ * per indicator), a list of collapsible cards on a phone.
+ */
 export function GroupList({ catalogue, drafts, disabled, factor, serverErrors, onChange }: Props) {
   const t = useTranslations('assessment');
   const tUnits = useTranslations('assessment.units');
@@ -47,6 +40,7 @@ export function GroupList({ catalogue, drafts, disabled, factor, serverErrors, o
       })),
     [catalogue],
   );
+  const narrow = useNarrow();
   const all = codesOf(catalogue.dimensions.flatMap((d) => d.factors));
   const header = (field: 'y1' | 'y2') => {
     const unit = sharedUnit(all, drafts, field);
@@ -55,6 +49,20 @@ export function GroupList({ catalogue, drafts, disabled, factor, serverErrors, o
       unit: unit === null ? t('table.mixedUnit') : tUnits(unit),
     });
   };
+
+  if (narrow) {
+    return (
+      <CardList
+        catalogue={catalogue}
+        drafts={drafts}
+        y3Options={y3Options}
+        disabled={disabled}
+        factor={factor}
+        serverErrors={serverErrors}
+        onChange={onChange}
+      />
+    );
+  }
 
   return (
     <table className={styles.table}>

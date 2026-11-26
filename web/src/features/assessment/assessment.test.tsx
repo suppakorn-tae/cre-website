@@ -17,6 +17,7 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
 import { browserApi } from '@/lib/api/client';
 
 import { saveAnswers } from './api';
+import { CardList } from './CardList';
 import { GroupList } from './GroupList';
 import { LetterChoiceList } from './LetterChoiceList';
 import { Toolbar } from './Toolbar';
@@ -164,6 +165,58 @@ describe('assessment table', () => {
       </NextIntlClientProvider>,
     );
     expect(html).toContain('y1 ต้นทุน (หน่วยต่างกัน)');
+  });
+});
+
+describe('CardList (phone)', () => {
+  const cards = (drafts = {}, factor?: string) =>
+    renderToStaticMarkup(
+      <NextIntlClientProvider locale="th" messages={{ assessment }}>
+        <CardList
+          catalogue={catalogue}
+          drafts={drafts}
+          y3Options={[{ value: 'A', label: 'A' }]}
+          disabled={false}
+          factor={factor}
+          onChange={vi.fn()}
+        />
+      </NextIntlClientProvider>,
+    );
+  const answered = {
+    'EC-MG-1': {
+      x: '6',
+      y1: { amount: '100', unit: 'baht' },
+      y2: { amount: '5', unit: 'day' },
+      y3: ['B'],
+    },
+  };
+  it('is one collapsed card per indicator, with no table, input or question', () => {
+    const html = cards();
+    expect(html).not.toContain('<table');
+    expect(html.match(/data-answer=/g)).toHaveLength(2);
+    expect(html.match(/aria-expanded="false"/g)).toHaveLength(2);
+    expect(html).not.toContain('<input');
+    expect(html).not.toContain('เกิดบ่อยแค่ไหน');
+    expect(html).not.toContain('คำถาม ·');
+  });
+  it('shows the code, name, status and answered count in each header', () => {
+    const html = cards(answered);
+    expect(html).toContain('EC-MG-1');
+    expect(html).toContain('การประสานงานไม่ดี');
+    expect(html).toContain('ตอบครบ</span>');
+    expect(html).toContain('ตอบแล้ว 4/4');
+    expect(html).toContain('ยังไม่ตอบ');
+    expect(html).toContain('ตอบแล้ว 0/4');
+  });
+  it('has headings for the dimension, the factor and every card', () => {
+    const html = cards(answered);
+    expect(html).toMatch(/<h2[^>]*>.*ด้านเศรษฐกิจ.*ตอบครบ 1\/2/);
+    expect(html).toMatch(/<h3[^>]*>.*EC-MG การจัดการ/);
+    expect(html.match(/<h4/g)).toHaveLength(2);
+  });
+  it('shows only the chosen factor', () => {
+    expect(cards({}, 'EC-MG')).toContain('EC-MG-2');
+    expect(cards({}, 'SO-CL')).not.toContain('EC-MG-2');
   });
 });
 

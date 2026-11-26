@@ -60,6 +60,9 @@
     "picked": "เลือกแล้ว {count} ข้อ",
     "hintTitle": "คำถาม · {code} · {field}"
   },
+  "card": {
+    "answered": "ตอบแล้ว {count}/4"
+  },
   "y3": {
     "exclusiveError": "เลือก A ร่วมกับตัวเลือกอื่นไม่ได้",
     "clear": "ล้าง",
