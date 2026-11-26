@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
 import { Button, DataTable, EmptyState, LevelBadge, type DataTableColumn } from '@/components/ui';
+import { ReportButton } from '@/features/reports/ReportButton';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format/locale';
 
 import type { Project, VersionSummary } from './api';
@@ -144,11 +145,12 @@ function LatestVersionCard({
         <Link className={styles.secondaryLink} href={projectPaths.assessment(projectId, latest.id)}>
           {latest.editable ? t('latest.editAnswers') : tList('actions.viewAnswers')}
         </Link>
-        {submitted && (
-          <Link className={styles.secondaryLink} href={projectPaths.report(projectId, latest.id)}>
-            {t('latest.pdf')}
-          </Link>
-        )}
+        <ReportButton
+          projectId={projectId}
+          versionId={latest.id}
+          submitted={submitted}
+          className={styles.secondaryLink}
+        />
       </div>
       <Button variant="ghost" onClick={onCreate} className={styles.newVersion}>
         {tList('create')}

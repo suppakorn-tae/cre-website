@@ -21,11 +21,6 @@ const PAGES: [name: string, prop: Prop, load: () => Promise<PageModule>][] = [
     'params',
     () => import('./(app)/projects/[projectId]/versions/[versionId]/results/page'),
   ],
-  [
-    'report',
-    'params',
-    () => import('./(app)/projects/[projectId]/versions/[versionId]/report/page'),
-  ],
   ['admin user', 'params', () => import('./(admin)/admin/users/[userId]/page')],
   ['admin advice', 'searchParams', () => import('./(admin)/admin/advice/page')],
 ];

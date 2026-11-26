@@ -25,6 +25,16 @@ const nextConfig: NextConfig = {
   turbopack: {
     resolveAlias: { 'msw/browser': './node_modules/msw/lib/browser/index.js' },
   },
+  // The report page is gone (the PDF is built in place); old links open the results.
+  async redirects() {
+    return [
+      {
+        source: '/projects/:projectId/versions/:versionId/report',
+        destination: '/projects/:projectId/versions/:versionId/results',
+        permanent: false,
+      },
+    ];
+  },
   // messages/th/<feature>.json merged once when the config loads (build/dev).
   env: {
     CRE_MESSAGES_TH: JSON.stringify(loadCatalogue(path.join(__dirname, 'messages'), 'th')),

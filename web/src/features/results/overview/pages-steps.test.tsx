@@ -4,8 +4,6 @@ import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
-import { reportContextKey } from '@/features/reports/api';
-import { ReportPage } from '@/features/reports/ReportPage';
 import { projectKey } from '@/features/versions/api';
 import { mockProject, mockProjectId, mockVersions } from '@/features/versions/mocks';
 
@@ -42,7 +40,7 @@ function currentStep(html: string): string {
   return html.slice(start, end).replace(/<[^>]+>/g, ' ');
 }
 
-describe('step indicator on results and report', () => {
+describe('step indicator on the results page', () => {
   it('marks the results step on the results page', () => {
     const client = new QueryClient();
     const base = ['projects', mockProjectId, 'versions', version.id] as const;
@@ -54,16 +52,5 @@ describe('step indicator on results and report', () => {
     expect(html).toContain(shell.steps.label);
     expect(html).toContain(shell.steps.results);
     expect(currentStep(html)).toContain(shell.steps.results);
-  });
-
-  it('marks the report step on the report page', () => {
-    const client = new QueryClient();
-    client.setQueryData(reportContextKey(mockProjectId), {
-      project: mockProject,
-      versions: mockVersions(),
-    });
-    const html = wrap(client, <ReportPage projectId={mockProjectId} versionId={version.id} />);
-    expect(html).toContain(shell.steps.label);
-    expect(currentStep(html)).toContain(shell.steps.report);
   });
 });

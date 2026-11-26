@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 
 import { Button, DataTable, EmptyState, LevelBadge, type DataTableColumn } from '@/components/ui';
+import { ReportButton } from '@/features/reports/ReportButton';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format/locale';
 
 import type { VersionSummary } from './api';
@@ -109,6 +110,13 @@ export function VersionList({ projectId, versions, onCreate, onDelete }: Props) 
                 {t('actions.results')}
               </Link>
             )}
+            <ReportButton
+              projectId={projectId}
+              versionId={v.id}
+              versionNo={no}
+              submitted={v.status === 'submitted'}
+              className={styles.link}
+            />
             <button
               type="button"
               className={styles.dangerLink}

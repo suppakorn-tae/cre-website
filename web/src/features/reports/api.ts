@@ -2,23 +2,11 @@ import { browserApi } from '@/lib/api/client';
 import type { components } from '@/lib/api/generated/schema';
 
 export type Job = components['schemas']['Job'];
-export type Project = components['schemas']['Project'];
-export type VersionSummary = components['schemas']['VersionSummary'];
 
 export const jobKey = (jobId: string) => ['jobs', jobId] as const;
-export const reportContextKey = (projectId: string) => ['reports', 'context', projectId] as const;
-
-/** Project and its versions, for the page title and the submitted check. */
-export async function fetchReportContext(projectId: string) {
-  const api = browserApi();
-  const path = { project_id: projectId };
-  const [project, versions] = await Promise.all([
-    api.GET('/projects/{project_id}', { params: { path } }),
-    api.GET('/projects/{project_id}/versions', { params: { path } }),
-  ]);
-  if (!project.data) throw new Error('empty project answer');
-  return { project: project.data, versions: versions.data?.items ?? [] };
-}
+/** The job of one version's report, kept per version so it survives moving between pages. */
+export const reportJobKey = (projectId: string, versionId: string) =>
+  ['reports', 'job', projectId, versionId] as const;
 
 /** Asks for a report; the server returns the existing job for the same submission. */
 export async function requestReport(projectId: string, versionId: string): Promise<string> {
@@ -37,6 +25,3 @@ export async function fetchJob(jobId: string): Promise<Job> {
 
 /** The api streams the PDF after its own session and ownership check. */
 export const downloadUrl = (jobId: string) => `/api/v1/reports/${jobId}/download`;
-
-/** Same file with `disposition=inline`, so a frame shows it instead of saving it. */
-export const inlineUrl = (jobId: string) => `${downloadUrl(jobId)}?disposition=inline`;

@@ -5,9 +5,10 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
-import { IconArrowRight, IconFileTypePdf } from '@tabler/icons-react';
+import { IconArrowRight } from '@tabler/icons-react';
 
 import { Button, EmptyState, Icon, LEVELS, LevelBadge, Skeleton, Tabs } from '@/components/ui';
+import { ReportButton } from '@/features/reports/ReportButton';
 import { ProjectSteps } from '@/features/shell/ProjectSteps';
 import { fetchProject, projectKey } from '@/features/versions/api';
 import { projectPaths } from '@/features/versions/rules';
@@ -153,13 +154,13 @@ export function ResultsPage({ projectId, versionId }: { projectId: string; versi
         <div className={styles.titleRow}>
           <h1 className={styles.title}>{t('page.title', { no: version.data.version_no })}</h1>
           <div className={styles.actions}>
-            <Link
+            <ReportButton
+              projectId={projectId}
+              versionId={versionId}
+              submitted
+              toast
               className={styles.actionSecondary}
-              href={`/projects/${projectId}/versions/${versionId}/report`}
-            >
-              <Icon icon={IconFileTypePdf} size={18} />
-              {t('page.reportAction')}
-            </Link>
+            />
             <button type="button" className={styles.actionPrimary} onClick={() => setTab('hvh')}>
               {t('page.adviceAction')}
               <Icon icon={IconArrowRight} size={18} />
