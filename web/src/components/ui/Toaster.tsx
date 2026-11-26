@@ -98,7 +98,7 @@ export function ToasterProvider({ children }: { children: ReactNode }) {
             </li>
           </RadixToast.Root>
         ))}
-        <RadixToast.Viewport className={styles.viewport} />
+        <RadixToast.Viewport className={styles.viewport} label={t('toaster.region')} />
       </RadixToast.Provider>
     </ToasterContext.Provider>
   );
