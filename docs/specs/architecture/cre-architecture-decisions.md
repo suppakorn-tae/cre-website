@@ -1,10 +1,10 @@
-# CRE — Architecture Decisions (v2.13, 2026-11-24)
+# CRE — Architecture Decisions (v2.14, 2026-11-26)
 
 Aligned with Requirements & Use Case Specification v1.14 (23 Nov 2026) and Database Design v1.1 (23 Nov 2026).
 Document: `architecture/v2.3/cre-architecture-v2.3.docx` / `.pdf` (v2.3 resolves the database schema, optional backup and export expiry: AD-23 – AD-26).
 Diagram: `architecture/v2.3/cre-architecture-v2.3.drawio` / `.png` (UML component view, updated for Database Design v1.1 and the optional backup container).
 
-Database Design v1.1 was written against v2.10. Its three changes to this set — snapshot as rows, rounding per version, percentages on the result — are carried into v2.12 as AD-16 (updated), AD-17 (updated) and AD-23. v2.12 adds AD-26 (backup is optional) and nothing in v1.1 contradicts it. v2.13 (24 Nov 2026) fixes three open items: PDF engine = Gotenberg, e-mail provider = Brevo (SMTP relay), session lifetime by env defaults; and sets the production domain (conriskexpert.com) and the backup repository type (S3-compatible).
+Database Design v1.1 was written against v2.10. Its three changes to this set — snapshot as rows, rounding per version, percentages on the result — are carried into v2.12 as AD-16 (updated), AD-17 (updated) and AD-23. v2.12 adds AD-26 (backup is optional) and nothing in v1.1 contradicts it. v2.13 (24 Nov 2026) fixes three open items: PDF engine = Gotenberg, e-mail provider = Brevo (SMTP relay), session lifetime by env defaults; and sets the production domain (conriskexpert.com) and the backup repository type (S3-compatible). v2.14 (26 Nov 2026, UI review) keeps one current PDF report per version: reuse it while its inputs are unchanged, replace it (and delete the old file) after they change.
 
 ## Stack
 - Frontend: Next.js (TypeScript)
@@ -34,7 +34,7 @@ Database Design v1.1 was written against v2.10. Its three changes to this set �
 - **Integrity:** foreign keys `on delete restrict`; cascade only for `advice_item_text`, `answer_y3`, `risk_result` children (`result_advice_list`, `strategy_choice`). Checks cover threshold patterns, score ranges, level/RM agreement and date/value rules. The advice `(indicator_code, list, position)` unique key is deferrable for reordering.
 - **Roles:** schema owner (migrate) and application (api, worker). The application role has INSERT + SELECT only on `audit_log`; it cannot UPDATE, DELETE or TRUNCATE it. Backup has its own S3 credentials.
 - **Migrations:** versioned, embedded SQL; idempotent and backward-compatible (expand → migrate → contract), runnable as a Job.
-- **Soft delete:** `deleted_at` on projects, versions and accounts; repository filters. Nothing is physically deleted except advice items an admin removes and expired export files.
+- **Soft delete:** `deleted_at` on projects, versions and accounts; repository filters. Nothing is physically deleted except advice items an admin removes, expired export files and report PDFs replaced by a newer report of the same version (v2.14).
 - **Indexes:** the seven in Database Design v1.1 §4.5 (`project_owner_ix`, `job_requester_ix`, `job_expiry_ix`, `report_job_version_ix`, `audit_log_time_ix`, `audit_log_admin_ix`, `audit_log_target_ix`). Version, answer and result reads use their composite primary keys.
 
 ## Accounts, sign-in, sessions
@@ -59,7 +59,7 @@ Admin Service: manage users (list, search, role, deactivate, delete = anonymise;
 ## Authorisation and deletion
 - Object-level authorisation in services/repositories: every project, version, answer, result, report and job query carries the session user's id. **No admin bypass** — admins cannot open other users' projects, versions, answers, results or reports. Not owned or soft-deleted → 404.
 - Repositories for user-facing reads require an owner id and always filter `deleted_at IS NULL`. A separate research read path (export only) includes soft-deleted rows.
-- Soft delete (projects, versions): `deleted_at`, no restore, nothing physically removed (report files kept too).
+- Soft delete (projects, versions): `deleted_at`, no restore, nothing physically removed (the version's current report file is kept too).
 - Account deletion (by user or admin) = anonymise: e-mail, password hash, Google id removed; `status = deleted`; row marked deleted; projects kept. Each account has a random `pseudonym` created at sign-up (not derived from e-mail) that survives anonymisation and is used in exports.
 
 ## Versions, snapshot, submit
@@ -116,7 +116,8 @@ Admin Service: manage users (list, search, role, deactivate, delete = anonymise;
 
 ## Jobs: reports and research export (async)
 - One job model (Jobs Service): `job` row in Postgres (source of truth: queued / running / done / failed / expired) + asynq queue (`reports`, `exports`). Status visible to the requester only.
-- Report: api enqueues → 202 + job id → worker builds data from stored results + advice + strategies, renders HTML template → PDF via **Gotenberg** (`POST http://gotenberg:3000/forms/chromium/convert/html`; `index.html` + CSS + Thai font files sent as assets in the same request, so no custom Gotenberg image), uploads `reports/{id}.pdf`, marks done → client polls → downloads through api (session + ownership check, stream). Repeated request for the same submission returns the existing job.
+- Report: api enqueues → 202 + job id → worker builds data from stored results + advice + strategies, renders HTML template → PDF via **Gotenberg** (`POST http://gotenberg:3000/forms/chromium/convert/html`; `index.html` + CSS + Thai font files sent as assets in the same request, so no custom Gotenberg image), uploads `reports/{id}.pdf`, marks done → client polls → downloads through api (session + ownership check, stream).
+- **One current report per version (v2.14).** The report job stores a fingerprint of what the PDF shows (last submission, chosen strategies, project fields). A request with the same fingerprint as the current done report returns that job and file, no new render. A changed fingerprint renders a new PDF; once it is uploaded it becomes current and the previous object `reports/{old}.pdf` is deleted; the old job row stays (marked replaced) for history. The old file is never deleted before the new one is uploaded; a failed render keeps it.
 - Export (admin): `job` + `export_job` (+ `export_job_account`) and audit entry in one transaction → enqueue → Export Builder (all / selected users, optional soft-deleted data; e-mail and Google id removed; account → pseudonym; organisation kept) → one ZIP (`user.json`, `project.json`, one CSV per version) at `exports/{id}.zip` → download through api (admin role, audited). `expires_at` = finish + 7 days; after that the endpoint returns 410 and a daily 03:00 sweep deletes the object and marks the job expired. Export files are not backed up.
 - Worker scales and is resource-limited independently of the api; separate concurrency per queue so exports cannot starve reports.
 
@@ -127,7 +128,7 @@ Admin Service: manage users (list, search, role, deactivate, delete = anonymise;
 - **Targets (when enabled):** RPO ≤ 5 min, RTO ≤ 4 h.
 - **PostgreSQL (when enabled):** physical backup with continuous WAL archiving; `archive_mode = on`, `archive_timeout = 60s`. `backup` runs pgBackRest: full every Sunday 02:00 Asia/Bangkok, differential on the other days at 02:00. Retention: 5 full backups with all WAL between them (4–5 weeks of PITR); the first full of each month is copied to a second repository with object lock and kept 12 months. Encrypted (AES-256) and compressed (zstd) before upload; separate credentials.
 - **Where:** any S3-compatible bucket (endpoint, region, bucket and keys from env) at a different provider or region — never the app's RustFS on the same host. 3-2-1: live database, off-site repository, monthly immutable copy.
-- **RustFS (when enabled):** `reports/` mirrored nightly; `exports/` not backed up (rebuilt by requesting the export again).
+- **RustFS (when enabled):** `reports/` mirrored nightly (replaced reports drop out of the mirror under its retention); `exports/` not backed up (rebuilt by requesting the export again).
 - **Valkey:** no backup; only short-lived state. Jobs survive because the `job` table is the source of truth; on start-up the worker re-enqueues queued / running jobs.
 - **Restore (when enabled):** PITR to the latest point by default. To undo a mistake, restore to a separate instance and copy the affected rows back; production is not rolled back as a whole. Monthly automated restore test + quarterly full drill.
 - **Monitoring:** while enabled, alert when the newest WAL is older than 10 minutes, the last backup older than 26 hours, or `pgbackrest check` fails; while disabled, emit one `backup disabled` warning instead.
