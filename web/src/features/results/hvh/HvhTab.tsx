@@ -1,11 +1,11 @@
 'use client';
 
-import { IconArrowRight } from '@tabler/icons-react';
+import { IconAlertCircle, IconArrowRight } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
-import { Alert, EmptyState, Icon, LevelBadge } from '@/components/ui';
+import { EmptyState, Icon, LevelBadge } from '@/components/ui';
 import { planPath } from '@/features/plan/rules';
 import { StrategyChip } from '@/features/plan/StrategyChip';
 import { formatNumber } from '@/lib/format/locale';
@@ -61,21 +61,14 @@ export function HvhTab({ projectId, versionId, results, names }: Props) {
 
   return (
     <section className={overview.panelBody}>
-      <Alert
-        tone="error"
-        role="status"
-        action={
-          <Link
-            href={planPath(projectId, versionId)}
-            className="focus-ring inline-flex items-center gap-2 rounded-control bg-primary px-4 py-2 text-small font-semibold text-white no-underline hover:bg-primary-hover"
-          >
-            {t('toPlan')}
-            <Icon icon={IconArrowRight} size={18} />
-          </Link>
-        }
-      >
-        {t('banner', { count: rows.length, vh: VH, h: H })}
-      </Alert>
+      <div role="status" className={styles.banner}>
+        <Icon icon={IconAlertCircle} size={20} className={styles.bannerIcon} />
+        <p className={styles.bannerText}>{t('banner', { count: rows.length, vh: VH, h: H })}</p>
+        <Link href={planPath(projectId, versionId)} className={styles.bannerAction}>
+          {t('toPlan')}
+          <Icon icon={IconArrowRight} size={18} />
+        </Link>
+      </div>
       <ol aria-label={t('listLabel')} className={styles.cards}>
         {visible.map((row) => {
           const meta = names.get(row.indicator_code);
