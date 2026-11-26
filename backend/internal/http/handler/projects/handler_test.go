@@ -233,9 +233,16 @@ func TestValidation(t *testing.T) {
 		"value negative":   {func(s string) string { return strings.Replace(s, "123456789012.34", "-1", 1) }, "/value_baht:must_be_positive"},
 		"progress 101":     {func(s string) string { return strings.Replace(s, `"value_baht"`, `"progress_pct":101,"value_baht"`, 1) }, "/progress_pct:out_of_range"},
 		"progress -1":      {func(s string) string { return strings.Replace(s, `"value_baht"`, `"progress_pct":-1,"value_baht"`, 1) }, "/progress_pct:out_of_range"},
-		"blank name":       {func(s string) string { return strings.Replace(s, `"Hotel"`, `"  "`, 1) }, "/name:required"},
-		"other no text":    {func(s string) string { return strings.Replace(s, `"koh_tao"`, `"other"`, 1) }, "/island_other:required"},
-		"missing value":    {func(s string) string { return strings.Replace(s, `,"value_baht":123456789012.34`, "", 1) }, "/value_baht:required"},
+		"name 121":         {func(s string) string { return strings.Replace(s, `"Hotel"`, `"`+strings.Repeat("a", 121)+`"`, 1) }, "/name:too_long"},
+		"island other 61": {func(s string) string {
+			return strings.Replace(strings.Replace(s, `"koh_tao"`, `"other"`, 1), `"value_baht"`, `"island_other":"`+strings.Repeat("a", 61)+`","value_baht"`, 1)
+		}, "/island_other:too_long"},
+		"description 1001": {func(s string) string {
+			return strings.Replace(s, `"value_baht"`, `"description":"`+strings.Repeat("a", 1001)+`","value_baht"`, 1)
+		}, "/description:too_long"},
+		"blank name":    {func(s string) string { return strings.Replace(s, `"Hotel"`, `"  "`, 1) }, "/name:required"},
+		"other no text": {func(s string) string { return strings.Replace(s, `"koh_tao"`, `"other"`, 1) }, "/island_other:required"},
+		"missing value": {func(s string) string { return strings.Replace(s, `,"value_baht":123456789012.34`, "", 1) }, "/value_baht:required"},
 	} {
 		w := create(c.mod)
 		if w.Code != 422 || len(field(w)) != 1 || field(w)[0] != c.want {
