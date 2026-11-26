@@ -82,7 +82,7 @@ test('a card opens to X, y1, y2 and y3, each with a label, and the question show
   // The question is in the page for screen readers, but not seen until the field has focus.
   const hintId = (await y1.getAttribute('aria-describedby'))!.split(' ')[0];
   const hint = page.locator(`[id="${hintId}"]`);
-  await expect(hint).toContainText('คำถาม · EC-MG-2 · y1');
+  await expect(hint).toContainText('y1 ผลกระทบด้านต้นทุน');
   expect((await hint.boundingBox())!.width).toBeLessThanOrEqual(1);
 
   await y1.focus();
@@ -162,7 +162,7 @@ test('the bottom bar holds both buttons and never covers the notes or the last c
   page,
 }) => {
   await open(page, 375, V1);
-  const save = bar(page).getByRole('button', { name: 'บันทึกคำตอบ' });
+  const save = bar(page).getByRole('button', { name: 'ย้อนกลับ' });
   const submit = bar(page).getByRole('button', { name: 'ส่งผลการประเมิน' });
   await expect(save).toBeVisible();
   await expect(submit).toBeVisible();
@@ -217,7 +217,7 @@ for (const [label, width, rootSize] of [
 
     // Both buttons are whole inside the bar.
     const barBox = (await bar(page).boundingBox())!;
-    for (const name of ['บันทึกคำตอบ', 'ส่งผลการประเมิน']) {
+    for (const name of ['ย้อนกลับ', 'ส่งผลการประเมิน']) {
       const box = (await bar(page).getByRole('button', { name }).boundingBox())!;
       expect(box.y).toBeGreaterThanOrEqual(barBox.y);
       expect(box.y + box.height).toBeLessThanOrEqual(barBox.y + barBox.height + 1);

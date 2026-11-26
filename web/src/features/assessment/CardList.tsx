@@ -3,14 +3,16 @@
 import * as Accordion from '@radix-ui/react-accordion';
 import { IconChevronDown } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 
 import { Icon, type CheckboxOption } from '@/components/ui';
+import { dimensionOf, dimensionStyle } from '@/lib/dimensions';
 
 import type { Catalogue } from './api';
 import styles from './assessment.module.css';
 import type { ServerErrors } from './fieldErrors';
-import { codesOf, Progress } from './GroupProgress';
+import { isDimensionOpen, isFactorOpen, type CollapseState } from './collapse';
+import { codesOf, GroupToggle, Progress } from './GroupProgress';
 import { NumberField, Y3Field, useIndicatorFields, type Indicator } from './indicatorFields';
 import { answeredFields, emptyDraft, type Draft } from './rules';
 
@@ -87,8 +89,9 @@ type Props = {
   drafts: Record<string, Draft | undefined>;
   y3Options: CheckboxOption[];
   disabled: boolean;
-  /** Factor code to show alone; all factors when unset. */
-  factor?: string;
+  /** Factor codes to show; all factors when unset. */
+  factors?: string[];
+  collapse: CollapseState;
   serverErrors?: ServerErrors;
   onChange: (code: string, draft: Draft) => void;
 };
@@ -100,10 +103,14 @@ type Props = {
  */
 function DimensionHead({
   name,
+  open,
+  onToggle,
   codes,
   drafts,
 }: {
   name: string;
+  open: boolean;
+  onToggle: () => void;
   codes: string[];
   drafts: Record<string, Draft | undefined>;
 }) {
@@ -123,7 +130,9 @@ function DimensionHead({
   }, []);
   return (
     <h2 ref={head} className={styles.dimensionHead}>
-      <span className={styles.groupName}>{name}</span>
+      <GroupToggle open={open} onToggle={onToggle}>
+        {name}
+      </GroupToggle>
       <Progress codes={codes} drafts={drafts} />
     </h2>
   );
@@ -138,7 +147,8 @@ export function CardList({
   drafts,
   y3Options,
   disabled,
-  factor,
+  factors: shown,
+  collapse,
   serverErrors,
   onChange,
 }: Props) {
@@ -158,7 +168,7 @@ export function CardList({
   const dimensions = catalogue.dimensions
     .map((d) => ({
       ...d,
-      factors: d.factors.filter((f: Factor) => factor === undefined || f.code === factor),
+      factors: d.factors.filter((f: Factor) => shown === undefined || shown.includes(f.code)),
     }))
     .filter((d) => d.factors.length > 0);
 
@@ -171,32 +181,54 @@ export function CardList({
       role="region"
       aria-label={t('table.label')}
     >
-      {dimensions.map((dimension) => (
-        <section key={dimension.code} className={styles.dimension}>
-          <DimensionHead name={dimension.name} codes={codesOf(dimension.factors)} drafts={drafts} />
-          {dimension.factors.map((f: Factor) => (
-            <div key={f.code} className={styles.factor}>
-              <h3 className={styles.factorHead}>
-                <span className={styles.groupName}>
-                  {f.code} {f.name}
-                </span>
-                <Progress codes={codesOf([f])} drafts={drafts} />
-              </h3>
-              {f.indicators.map((indicator) => (
-                <IndicatorCard
-                  key={indicator.code}
-                  indicator={indicator}
-                  draft={drafts[indicator.code] ?? emptyDraft()}
-                  y3Options={y3Options}
-                  disabled={disabled}
-                  serverErrors={serverErrors?.[indicator.code]}
-                  onChange={(draft) => onChange(indicator.code, draft)}
-                />
-              ))}
-            </div>
-          ))}
-        </section>
-      ))}
+      {dimensions.map((dimension) => {
+        const dimensionOpen = isDimensionOpen(collapse.collapsed, dimension.code);
+        const code = dimensionOf(dimension.code);
+        const colours = code && dimensionStyle(code);
+        return (
+          <section
+            key={dimension.code}
+            className={styles.dimension}
+            style={
+              colours && ({ '--dim': colours.color, '--dim-tint': colours.tint } as CSSProperties)
+            }
+          >
+            <DimensionHead
+              name={dimension.name}
+              open={dimensionOpen}
+              onToggle={() => collapse.toggleDimension(dimension.code)}
+              codes={codesOf(dimension.factors)}
+              drafts={drafts}
+            />
+            {dimensionOpen &&
+              dimension.factors.map((f: Factor) => {
+                const open = isFactorOpen(collapse.collapsed, dimension.code, f.code);
+                return (
+                  <div key={f.code} className={styles.factor}>
+                    <h3 className={styles.factorHead}>
+                      <GroupToggle open={open} onToggle={() => collapse.toggleFactor(f.code)}>
+                        {f.code} {f.name}
+                      </GroupToggle>
+                      <Progress codes={codesOf([f])} drafts={drafts} />
+                    </h3>
+                    {open &&
+                      f.indicators.map((indicator) => (
+                        <IndicatorCard
+                          key={indicator.code}
+                          indicator={indicator}
+                          draft={drafts[indicator.code] ?? emptyDraft()}
+                          y3Options={y3Options}
+                          disabled={disabled}
+                          serverErrors={serverErrors?.[indicator.code]}
+                          onChange={(draft) => onChange(indicator.code, draft)}
+                        />
+                      ))}
+                  </div>
+                );
+              })}
+          </section>
+        );
+      })}
     </Accordion.Root>
   );
 }

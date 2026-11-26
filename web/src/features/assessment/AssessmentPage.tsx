@@ -1,14 +1,22 @@
 'use client';
 
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { IconArrowLeft } from '@tabler/icons-react';
+import { useFormatter, useTranslations } from 'next-intl';
 import { useCallback, useRef, useState } from 'react';
 
-import { Button, Skeleton } from '@/components/ui';
+import { Button, Icon, Skeleton } from '@/components/ui';
 import { ProjectSteps } from '@/features/shell/ProjectSteps';
 
-import { saveAnswers, useAnswers, useCatalogue, type AnswerList, type Catalogue } from './api';
+import {
+  saveAnswers,
+  useAnswers,
+  useCatalogue,
+  useUnitBasis,
+  type AnswerList,
+  type Catalogue,
+} from './api';
+import { useCollapsed } from './collapse';
 import styles from './assessment.module.css';
 import { fieldErrorsOf, type ServerErrors } from './fieldErrors';
 import { GroupList } from './GroupList';
@@ -41,6 +49,7 @@ function Form({
   answers: AnswerList;
 }) {
   const t = useTranslations('assessment');
+  const format = useFormatter();
   const [drafts, setDrafts] = useState<Record<string, Draft | undefined>>(() =>
     Object.fromEntries(answers.items.map((a) => [a.indicator_code, fromAnswer(a)])),
   );
@@ -53,7 +62,7 @@ function Form({
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [failure, setFailure] = useState<SubmitFailure | null>(null);
-  const [filter, setFilter] = useState('all');
+  const collapse = useCollapsed(versionId);
   const [unitSkipped, setUnitSkipped] = useState(0);
   const submitLock = useRef(false);
 
@@ -89,6 +98,9 @@ function Form({
     d.factors.flatMap((f) => f.indicators.map((i) => i.code)),
   );
   const factors = catalogue.dimensions.flatMap((d) => d.factors);
+  const [selected, setSelected] = useState(() => factors.map((f) => f.code));
+  // The unit switch converts % with the version's value and dates: wait until they are loaded.
+  const basisReady = useUnitBasis(projectId, versionId).data !== undefined;
   const options = catalogue.ri_e_options;
 
   const change = (code: string, draft: Draft) => {
@@ -149,7 +161,9 @@ function Form({
           <span data-status={status}>
             {t(`save.${status}`, {
               time:
-                savedAt?.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) ?? '',
+                savedAt === null
+                  ? ''
+                  : format.dateTime(savedAt, { hour: '2-digit', minute: '2-digit' }),
             })}
           </span>
           {status === 'error' && (
@@ -165,18 +179,17 @@ function Form({
         lastOption={options[options.length - 1]?.code ?? ''}
         complete={complete}
         total={total}
-        filter={filter}
-        filterOptions={[
-          { value: 'all', label: t('toolbar.filterAll', { count: factors.length }) },
-          ...factors.map((f) => ({ value: f.code, label: `${f.code} ${f.name}` })),
-        ]}
+        selected={selected}
+        factorOptions={catalogue.dimensions.flatMap((d) =>
+          d.factors.map((f) => ({ value: f.code, label: `${f.code} ${f.name}`, group: d.name })),
+        )}
         costUnit={sharedUnit(all, drafts, 'y1')}
         timeUnit={sharedUnit(all, drafts, 'y2')}
         costUnits={COST_UNITS}
         timeUnits={TIME_UNITS}
-        disabled={!answers.editable}
+        disabled={!answers.editable || !basisReady}
         unitSkipped={unitSkipped}
-        onFilter={setFilter}
+        onSelect={setSelected}
         onCostUnit={(unit) => setUnit('y1', unit)}
         onTimeUnit={(unit) => setUnit('y2', unit)}
       />
@@ -184,7 +197,8 @@ function Form({
         catalogue={catalogue}
         drafts={drafts}
         disabled={!answers.editable}
-        factor={filter === 'all' ? undefined : filter}
+        factors={selected.length === factors.length ? undefined : selected}
+        collapse={collapse}
         serverErrors={serverErrors}
         onChange={change}
       />
@@ -196,21 +210,21 @@ function Form({
       )}
       <footer className={styles.footer} ref={barRef}>
         <span className={styles.showing}>
-          {filter === 'all'
+          {selected.length === factors.length
             ? t('footer.showingAll', { total: factors.length })
-            : t('footer.showing', { shown: 1, total: factors.length })}
+            : t('footer.showing', { shown: selected.length, total: factors.length })}
         </span>
         <div className={styles.footerActions}>
-          <Link href={`/projects/${projectId}`} className={styles.projectLink}>
-            {t('footer.project')}
-          </Link>
           <Button
             variant="secondary"
             size={narrow ? 'lg' : 'md'}
-            disabled={!answers.editable}
-            onClick={() => void flush()}
+            icon={<Icon icon={IconArrowLeft} size={20} />}
+            onClick={() =>
+              // No earlier page in this tab (opened from a link): go to the project.
+              window.history.length > 1 ? router.back() : router.push(`/projects/${projectId}`)
+            }
           >
-            {t('footer.save')}
+            {t('footer.back')}
           </Button>
           <SubmitBar
             complete={complete}
