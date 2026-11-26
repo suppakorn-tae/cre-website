@@ -1,6 +1,6 @@
 'use client';
 
-import { IconBulb, IconChartBar, IconEye, IconPencil } from '@tabler/icons-react';
+import { IconChartPie, IconEdit, IconEye, IconShieldCheck } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui';
 import { ReportButton } from '@/features/reports/ReportButton';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format/locale';
+import { timeZone } from '@/lib/i18n/config';
 
 import type { Project, VersionSummary } from './api';
 import {
@@ -113,35 +114,47 @@ function LatestVersionCard({
       </p>
       {submitted && latest.submitted_at ? (
         <>
-          <p className={styles.muted}>
-            {t('latest.submittedAt', { at: formatDateTime(latest.submitted_at) })}
-          </p>
-          <LevelSummary projectId={projectId} version={latest} indicatorTotal={indicatorTotal} />
-          <dl className={styles.stats}>
-            <div>
-              <dt>{tList('columns.averageRm')}</dt>
-              <dd>
-                {latest.average_rm === null
-                  ? tList('none')
-                  : formatNumber(latest.average_rm, undefined, {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-              </dd>
-            </div>
-            {delta !== null && (
-              <div>
-                <dt>{t('latest.hvh')}</dt>
-                <dd>
-                  {delta === 0
-                    ? t('latest.deltaSame')
-                    : t(delta < 0 ? 'latest.deltaDown' : 'latest.deltaUp', {
-                        value: formatNumber(Math.abs(delta)),
-                      })}
-                </dd>
-              </div>
+          <SubmittedLine
+            at={formatShortDateTime(latest.submitted_at)}
+            scored={latest.scored_count}
+            indicatorTotal={indicatorTotal}
+          />
+          <LevelSummary projectId={projectId} version={latest} />
+          <p className={styles.stats}>
+            {tList('columns.averageRm')}{' '}
+            <strong>
+              {latest.average_rm === null
+                ? tList('none')
+                : formatNumber(latest.average_rm, undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+            </strong>
+            {latest.high_count !== null && latest.very_high_count !== null && (
+              <>
+                {' · '}
+                {t('latest.hvh')}{' '}
+                <strong>{formatNumber(latest.high_count + latest.very_high_count)}</strong>
+                {delta !== null && (
+                  <>
+                    {' '}
+                    <span
+                      className={
+                        delta.delta < 0 ? styles.deltaGood : delta.delta > 0 ? styles.deltaBad : ''
+                      }
+                    >
+                      {delta.delta === 0
+                        ? t('latest.deltaSame', { from: delta.fromNo })
+                        : t(delta.delta < 0 ? 'latest.deltaDown' : 'latest.deltaUp', {
+                            value: formatNumber(Math.abs(delta.delta)),
+                            from: delta.fromNo,
+                          })}
+                    </span>
+                  </>
+                )}
+              </>
             )}
-          </dl>
+          </p>
         </>
       ) : (
         <p className={styles.muted}>{t('latest.draftHint')}</p>
@@ -149,17 +162,17 @@ function LatestVersionCard({
       <div className={styles.latestActions}>
         {submitted && (
           <Link className={styles.primaryLink} href={projectPaths.results(projectId, latest.id)}>
-            <Icon icon={IconChartBar} size={18} />
+            <Icon icon={IconChartPie} size={18} />
             {tList('actions.results')}
           </Link>
         )}
         <Link className={styles.secondaryLink} href={projectPaths.assessment(projectId, latest.id)}>
-          <Icon icon={latest.editable ? IconPencil : IconEye} size={18} />
+          <Icon icon={latest.editable ? IconEdit : IconEye} size={18} />
           {latest.editable ? t('latest.editAnswers') : tList('actions.viewAnswers')}
         </Link>
         {submitted && (
           <Link className={styles.secondaryLink} href={projectPaths.plan(projectId, latest.id)}>
-            <Icon icon={IconBulb} size={18} />
+            <Icon icon={IconShieldCheck} size={18} />
             {t('latest.plan')}
           </Link>
         )}
@@ -182,22 +195,15 @@ function LatestVersionCard({
 }
 
 /** Level chips VL to VH, the stacked bar and "scored/total indicators" from the stored counts. */
-function LevelSummary({
-  projectId,
-  version,
-  indicatorTotal,
-}: {
-  projectId: string;
-  version: VersionSummary;
-  indicatorTotal?: number;
-}) {
+function LevelSummary({ projectId, version }: { projectId: string; version: VersionSummary }) {
   const t = useTranslations('versions.overview.latest');
   const tUi = useTranslations('ui');
-  const parts = levelParts(version);
-  if (!parts) {
+  const levels = levelParts(version);
+  if (!levels) {
     return <p className={styles.muted}>{t('noLevels')}</p>;
   }
-  const scored = version.scored_count ?? parts.reduce((sum, p) => sum + p.count, 0);
+  // Highest level first, as in the hi-fi; a level with no indicator has no chip and no segment.
+  const parts = levels.filter((p) => p.count > 0).reverse();
   return (
     <div className={styles.levelSummary}>
       <div className={styles.levelRow}>
@@ -226,27 +232,54 @@ function LevelSummary({
         })}
       </div>
       <div role="img" aria-label={t('barLabel')} className={styles.levelBar}>
-        {parts
-          .filter((p) => p.count > 0)
-          .map((p) => (
-            <span
-              key={p.level}
-              className={styles.levelBarPart}
-              data-level={p.level}
-              style={{ flexGrow: p.count }}
-            />
-          ))}
+        {parts.map((p) => (
+          <span
+            key={p.level}
+            className={styles.levelBarPart}
+            data-level={p.level}
+            style={{ flexGrow: p.count }}
+          />
+        ))}
       </div>
-      <p className={styles.muted}>
-        {indicatorTotal
-          ? t('scoredOfTotal', {
-              scored: formatNumber(scored),
-              total: formatNumber(indicatorTotal),
-            })
-          : t('scored', { scored: formatNumber(scored) })}
-      </p>
     </div>
   );
+}
+
+/** "ส่งล่าสุด 14 พ.ย. 69 16:40 · 55 / 55 ตัวชี้วัดที่ประเมิน", from the stored scored count. */
+function SubmittedLine({
+  at,
+  scored,
+  indicatorTotal,
+}: {
+  at: string;
+  scored: number | null | undefined;
+  indicatorTotal?: number;
+}) {
+  const t = useTranslations('versions.overview.latest');
+  const text =
+    scored === null || scored === undefined
+      ? t('submittedAt', { at })
+      : indicatorTotal
+        ? t('submittedScoredOfTotal', {
+            at,
+            scored: formatNumber(scored),
+            total: formatNumber(indicatorTotal),
+          })
+        : t('submittedScored', { at, scored: formatNumber(scored) });
+  return <p className={styles.submittedLine}>{text}</p>;
+}
+
+/** 14 พ.ย. 69 16:40: Buddhist year in two digits, Bangkok time. */
+function formatShortDateTime(value: string): string {
+  return new Intl.DateTimeFormat('th-TH-u-ca-buddhist', {
+    day: 'numeric',
+    month: 'short',
+    year: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+    timeZone,
+  }).format(new Date(value));
 }
 
 function ProjectInfoCard({ project }: { project: Project }) {

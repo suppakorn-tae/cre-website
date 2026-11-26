@@ -301,25 +301,44 @@
   gap: var(--space-2);
   margin-bottom: var(--space-3);
 }
-.stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-6);
+.submittedLine {
   margin: 0 0 var(--space-4);
-}
-.stats dt {
   color: var(--color-text-muted);
-  font-size: var(--text-caption);
-}
-.stats dd {
-  margin: 0;
   font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+.stats {
+  margin: var(--space-4) 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+.stats strong {
+  color: var(--color-text);
   font-weight: var(--weight-semibold);
+}
+.deltaGood,
+.deltaBad {
+  font-weight: var(--weight-semibold);
+}
+.deltaGood {
+  color: var(--color-success);
+}
+.deltaBad {
+  color: var(--color-error);
 }
 .latestActions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-3);
+}
+/* Compact buttons (control-md, 36 px): link, report button and primary share one box. */
+.latestActions .primaryLink,
+.latestActions .secondaryLink {
+  box-sizing: border-box;
+  min-height: var(--control-md);
+  padding: 0 var(--space-4);
+  line-height: var(--leading-body);
 }
 .newVersion {
   margin: var(--space-4) 0 0;
@@ -327,6 +346,10 @@
 }
 .newVersion .muted {
   margin: 0;
+}
+.newVersion .link {
+  font-size: inherit;
+  font-weight: var(--weight-semibold);
 }
 .primaryLink {
   display: inline-flex;
@@ -379,8 +402,16 @@
 }
 
 @media (max-width: 767px) {
-  .latestActions > * {
-    flex: 1 1 100%;
+  /* 2 x 2 grid of touch-size buttons; a long label wraps inside its button. */
+  .latestActions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+  }
+  .latestActions .primaryLink,
+  .latestActions .secondaryLink {
+    min-height: var(--control-lg);
+    padding: var(--space-1) var(--space-2);
   }
   .card {
     padding: var(--space-4);
@@ -397,18 +428,14 @@
 .levelSummary .levelRow {
   margin-bottom: var(--space-2);
 }
-.levelSummary .muted {
-  margin: var(--space-2) 0 0;
-}
 .levelBar {
   display: flex;
+  gap: var(--space-1);
   height: 0.75rem;
-  overflow: hidden;
-  border-radius: var(--radius-pill);
-  background: var(--color-subtle);
 }
 .levelBarPart {
-  min-width: 2px;
+  min-width: 6px;
+  border-radius: var(--radius-pill);
 }
 .levelBarPart[data-level='VL'] {
   background: var(--level-vl);
