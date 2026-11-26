@@ -171,3 +171,34 @@ func TestDownloadStatesAndOwnerCheck(t *testing.T) {
 		t.Fatalf("deleted version: err = %v, want ErrNotFound", err)
 	}
 }
+
+func TestRequestNewJobAfterResubmitOrFailure(t *testing.T) {
+	ctx := context.Background()
+	e := setup(t)
+	v := e.submitted(t)
+	first, err := e.svc.Request(ctx, e.owner, e.project, v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.pool.Exec(ctx, `UPDATE assessment_version SET submission_no = submission_no + 1,
+		submitted_at = now() WHERE id = $1`, v); err != nil {
+		t.Fatal(err)
+	}
+	second, err := e.svc.Request(ctx, e.owner, e.project, v)
+	if err != nil || second == first {
+		t.Fatalf("after resubmit: id = %v err = %v, want a new job", second, err)
+	}
+
+	js := jobs.New(e.pool, enq{e.rec})
+	if err := js.MarkFailed(ctx, second, "boom"); err != nil {
+		t.Fatal(err)
+	}
+	// The failed job does not count and the older one is stale: a new job.
+	third, err := e.svc.Request(ctx, e.owner, e.project, v)
+	if err != nil || third == first || third == second {
+		t.Fatalf("after failure: id = %v err = %v", third, err)
+	}
+	if again, err := e.svc.Request(ctx, e.owner, e.project, v); err != nil || again != third {
+		t.Fatalf("repeat: id = %v err = %v, want %v", again, err, third)
+	}
+}

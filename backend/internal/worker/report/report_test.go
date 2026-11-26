@@ -13,6 +13,7 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/pdf"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/jobs"
 	"github.com/suppakorn-tae/cre-website/backend/internal/worker/report"
+	"github.com/suppakorn-tae/cre-website/backend/internal/worker/runtime"
 	tmpl "github.com/suppakorn-tae/cre-website/backend/templates/report"
 )
 
@@ -40,6 +41,19 @@ func (f *fakeRenderer) Render(_ context.Context, html []byte, assets map[string]
 type fakeUploader struct {
 	objects map[string][]byte
 	err     error
+	delErr  map[string]error
+	log     *[]string // shared event log, when set
+}
+
+func (f *fakeUploader) Delete(_ context.Context, key string) error {
+	if err := f.delErr[key]; err != nil {
+		return err
+	}
+	if f.log != nil {
+		*f.log = append(*f.log, "delete "+key)
+	}
+	delete(f.objects, key)
+	return nil
 }
 
 func (f *fakeUploader) Put(_ context.Context, key string, r io.Reader, size int64, ct string) error {
@@ -131,5 +145,112 @@ func TestRunnerStampsReportDate(t *testing.T) {
 	}
 	if !strings.Contains(r.html, "25 พฤศจิกายน พ.ศ. 2569") {
 		t.Error("report date is not stamped in Buddhist era")
+	}
+}
+
+// replacingSource is a Source that also implements report.Replacements.
+type replacingSource struct {
+	fakeSource
+	olds    []report.Replaced
+	listErr error
+	markErr error
+	log     *[]string
+}
+
+func (s *replacingSource) Replaced(context.Context, uuid.UUID) ([]report.Replaced, error) {
+	*s.log = append(*s.log, "list")
+	return s.olds, s.listErr
+}
+
+func (s *replacingSource) MarkReplaced(_ context.Context, id uuid.UUID) (bool, error) {
+	if s.markErr != nil {
+		return false, s.markErr
+	}
+	*s.log = append(*s.log, "mark "+id.String())
+	return true, nil
+}
+
+func old() report.Replaced {
+	id := uuid.New()
+	return report.Replaced{JobID: id, VersionID: uuid.New(), ObjectKey: "reports/" + id.String() + ".pdf"}
+}
+
+func TestReplacementWaitsForDoneThenDeletesBeforeMarking(t *testing.T) {
+	var log []string
+	a, b := old(), old()
+	src := &replacingSource{fakeSource: fakeSource{data: data()}, olds: []report.Replaced{a, b}, log: &log}
+	up := &fakeUploader{log: &log, objects: map[string][]byte{a.ObjectKey: nil, b.ObjectKey: nil}}
+	run := report.NewRunner(src, &fakeRenderer{out: []byte("%PDF-1")}, up)
+
+	ctx, fireDone := runtime.WithDoneHooks(context.Background())
+	if err := run(ctx, job()); err != nil {
+		t.Fatal(err)
+	}
+	if len(log) != 0 {
+		t.Fatalf("replacement ran before the job was done: %v", log)
+	}
+	fireDone(context.Background())
+	want := []string{"list", "delete " + a.ObjectKey, "mark " + a.JobID.String(), "delete " + b.ObjectKey, "mark " + b.JobID.String()}
+	if strings.Join(log, "|") != strings.Join(want, "|") {
+		t.Fatalf("log = %v, want %v", log, want)
+	}
+	if _, ok := up.objects[a.ObjectKey]; ok {
+		t.Error("replaced object still stored")
+	}
+}
+
+func TestFailedRenderKeepsReplacedReports(t *testing.T) {
+	var log []string
+	src := &replacingSource{fakeSource: fakeSource{data: data()}, olds: []report.Replaced{old()}, log: &log}
+	run := report.NewRunner(src, &fakeRenderer{err: errors.New("boom")}, &fakeUploader{log: &log})
+	ctx, fireDone := runtime.WithDoneHooks(context.Background())
+	if err := run(ctx, job()); err == nil {
+		t.Fatal("want a render error")
+	}
+	fireDone(context.Background()) // the runtime would not, but even so nothing is queued
+	if len(log) != 0 {
+		t.Fatalf("a failed render touched old reports: %v", log)
+	}
+}
+
+func TestReplacementFailuresKeepRowsForRetry(t *testing.T) {
+	boom := errors.New("boom")
+	t.Run("delete fails: not marked, next one still handled", func(t *testing.T) {
+		var log []string
+		a, b := old(), old()
+		src := &replacingSource{fakeSource: fakeSource{data: data()}, olds: []report.Replaced{a, b}, log: &log}
+		up := &fakeUploader{log: &log, delErr: map[string]error{a.ObjectKey: boom}}
+		ctx, fireDone := runtime.WithDoneHooks(context.Background())
+		if err := report.NewRunner(src, &fakeRenderer{out: []byte("%PDF-1")}, up)(ctx, job()); err != nil {
+			t.Fatal(err)
+		}
+		fireDone(context.Background())
+		want := []string{"list", "delete " + b.ObjectKey, "mark " + b.JobID.String()}
+		if strings.Join(log, "|") != strings.Join(want, "|") {
+			t.Fatalf("log = %v, want %v", log, want)
+		}
+	})
+	t.Run("list fails: nothing deleted", func(t *testing.T) {
+		var log []string
+		src := &replacingSource{fakeSource: fakeSource{data: data()}, olds: []report.Replaced{old()}, listErr: boom, log: &log}
+		ctx, fireDone := runtime.WithDoneHooks(context.Background())
+		if err := report.NewRunner(src, &fakeRenderer{out: []byte("%PDF-1")}, &fakeUploader{log: &log})(ctx, job()); err != nil {
+			t.Fatal(err)
+		}
+		fireDone(context.Background())
+		if strings.Join(log, "|") != "list" {
+			t.Fatalf("log = %v", log)
+		}
+	})
+}
+
+func TestNoReplacementOutsideRuntime(t *testing.T) {
+	var log []string
+	src := &replacingSource{fakeSource: fakeSource{data: data()}, olds: []report.Replaced{old()}, log: &log}
+	if err := report.NewRunner(src, &fakeRenderer{out: []byte("%PDF-1")}, &fakeUploader{log: &log})(context.Background(), job()); err != nil {
+		t.Fatal(err)
+	}
+	if len(log) != 0 {
+		t.Fatalf("old reports touched without a done hook: %v", log)
 	}
 }
