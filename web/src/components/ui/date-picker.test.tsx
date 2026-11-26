@@ -162,6 +162,54 @@ describe('DatePicker', () => {
     expect(cell('2027-03-01')).toBeTruthy();
   });
 
+  it('keeps focus on the month buttons when stepping months', async () => {
+    render(<Harness initial="2026-11-24" />);
+    openCalendar();
+    await opened();
+    const next = screen.getByRole('button', { name: 'เดือนถัดไป' });
+    next.focus();
+    fireEvent.click(next);
+    expect(document.activeElement).toBe(next);
+    expect(cell('2026-12-24')).toBeTruthy();
+    // The grid keys still move focus inside the grid.
+    fireEvent.keyDown(cell('2026-12-24'), { key: 'PageDown' });
+    expect(document.activeElement).toBe(cell('2027-01-24'));
+  });
+
+  it('moves focus into the next view after picking a year and a month', async () => {
+    render(<Harness initial="2026-11-24" />);
+    openCalendar();
+    await opened();
+    fireEvent.click(screen.getByRole('button', { name: '2569' }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: '2569' })),
+    );
+    fireEvent.click(screen.getByRole('button', { name: '2570' }));
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: 'พฤศจิกายน' })),
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'มีนาคม' }));
+    await waitFor(() => expect(document.activeElement).toBe(cell('2027-03-24')));
+  });
+
+  it('clamps 29 Feb to 28 Feb a year later (PageDown with Shift)', async () => {
+    render(<Harness initial="2024-02-29" />);
+    openCalendar();
+    await opened();
+    fireEvent.keyDown(cell('2024-02-29'), { key: 'PageDown', shiftKey: true });
+    expect(document.activeElement).toBe(cell('2025-02-28'));
+  });
+
+  it('clamps 31 Jan to the last day of the next month', async () => {
+    render(<Harness initial="2026-01-31" />);
+    openCalendar();
+    await opened();
+    fireEvent.click(screen.getByRole('button', { name: 'เดือนถัดไป' }));
+    expect(cell('2026-02-28').getAttribute('tabindex')).toBe('0');
+    fireEvent.keyDown(cell('2026-02-28'), { key: 'PageUp' });
+    expect(document.activeElement).toBe(cell('2026-01-28'));
+  });
+
   it('has no axe violations while open', async () => {
     render(<Harness initial="2026-11-24" />);
     openCalendar();

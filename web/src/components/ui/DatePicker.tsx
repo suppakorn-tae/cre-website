@@ -179,6 +179,7 @@ function CalendarPanel({ value, min, max, today, labels, locale, onPick, id }: P
   const [view, setView] = useState<View>('days');
   const [yearStart, setYearStart] = useState(() => parts(clamp(value || today, min, max))[0] - 4);
   const gridRef = useRef<HTMLDivElement>(null);
+  const choicesRef = useRef<HTMLDivElement>(null);
   const wantFocus = useRef(true);
 
   const [cy, cm] = parts(cursor);
@@ -186,7 +187,18 @@ function CalendarPanel({ value, min, max, today, labels, locale, onPick, id }: P
 
   // Focus follows the cursor while the keyboard drives the grid.
   useEffect(() => {
-    if (view !== 'days') return;
+    if (view !== 'days') {
+      // Month and year views: the button that opened them is gone, so land on the current choice.
+      if (wantFocus.current) {
+        const root = choicesRef.current;
+        const choice =
+          root?.querySelector<HTMLElement>('[aria-pressed="true"]:not(:disabled)') ??
+          root?.querySelector<HTMLElement>('button:not(:disabled)');
+        choice?.focus();
+        wantFocus.current = false;
+      }
+      return;
+    }
     const cell = gridRef.current?.querySelector<HTMLElement>(`[data-iso="${cursor}"]`);
     if (cell && (wantFocus.current || gridRef.current?.contains(document.activeElement))) {
       cell.focus();
@@ -240,7 +252,8 @@ function CalendarPanel({ value, min, max, today, labels, locale, onPick, id }: P
         : null;
 
   const step = (dir: 1 | -1) => {
-    if (view === 'days') go(addMonths(cursor, dir));
+    // Buttons keep focus: only the keyboard inside the grid moves focus to a day.
+    if (view === 'days') setCursor(clamp(addMonths(cursor, dir), min, max));
     else if (view === 'months') setCursor(clamp(addMonths(cursor, 12 * dir), min, max));
     else setYearStart(yearStart + 12 * dir);
   };
@@ -263,7 +276,10 @@ function CalendarPanel({ value, min, max, today, labels, locale, onPick, id }: P
               <button
                 type="button"
                 className={styles.headingButton}
-                onClick={() => setView('months')}
+                onClick={() => {
+                  wantFocus.current = true;
+                  setView('months');
+                }}
               >
                 {fmt.monthName(cm)}
               </button>
@@ -271,6 +287,7 @@ function CalendarPanel({ value, min, max, today, labels, locale, onPick, id }: P
                 type="button"
                 className={styles.headingButton}
                 onClick={() => {
+                  wantFocus.current = true;
                   setYearStart(cy - 4);
                   setView('years');
                 }}
@@ -348,7 +365,7 @@ function CalendarPanel({ value, min, max, today, labels, locale, onPick, id }: P
       )}
 
       {view === 'months' && (
-        <div className={styles.choices}>
+        <div ref={choicesRef} className={styles.choices}>
           {Array.from({ length: 12 }, (_, m) => (
             <button
               key={m}
@@ -369,7 +386,7 @@ function CalendarPanel({ value, min, max, today, labels, locale, onPick, id }: P
       )}
 
       {view === 'years' && (
-        <div className={styles.choices}>
+        <div ref={choicesRef} className={styles.choices}>
           {Array.from({ length: 12 }, (_, i) => {
             const y = yearStart + i;
             return (
@@ -380,6 +397,7 @@ function CalendarPanel({ value, min, max, today, labels, locale, onPick, id }: P
                 disabled={yearDisabled(y)}
                 aria-pressed={y === cy}
                 onClick={() => {
+                  wantFocus.current = true;
                   setCursor(clamp(inMonth(cursor, y, cm), min, max));
                   setView('months');
                 }}
