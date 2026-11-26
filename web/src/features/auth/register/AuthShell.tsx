@@ -1,6 +1,7 @@
 import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 
+import { Logo } from '@/components/ui/Logo';
 import '@/styles/tokens.css';
 
 import styles from './register.module.css';
@@ -12,6 +13,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <div className={styles.page}>
       <aside className={styles.brand}>
+        <Logo variant="full" className={styles.logo} />
         <div className={styles.brandBody}>
           <h2 className={styles.headline}>{t('headline')}</h2>
           <p className={styles.tagline}>{t('tagline')}</p>
@@ -32,7 +34,10 @@ export function AuthShell({ children }: { children: ReactNode }) {
         <p className={styles.copyright}>{t('copyright')}</p>
       </aside>
       <main className={styles.panel}>
-        <div className={styles.card}>{children}</div>
+        <div className={styles.card}>
+          <Logo variant="full" className={styles.logoMobile} />
+          {children}
+        </div>
       </main>
     </div>
   );
