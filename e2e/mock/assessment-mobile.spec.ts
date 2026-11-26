@@ -187,6 +187,53 @@ test('the bottom bar holds both buttons and never covers the notes or the last c
   expect(last.y + last.height).toBeLessThanOrEqual(noteBox.y);
 });
 
+for (const [label, width, rootSize] of [
+  ['320px', 320, '100%'],
+  ['320px with text at 200%', 320, '200%'],
+] as const) {
+  test(`the bar stays clear of the notes and the last card at ${label}`, async ({ page }) => {
+    await open(page, width, V1, 640);
+    await page.addStyleTag({ content: `html { font-size: ${rootSize} !important; }` });
+    const note = page.getByRole('note').filter({ hasText: 'ส่งผลการประเมินไม่ได้' });
+    await expect(note).toBeVisible();
+
+    // --bar-height follows the bar's real height, not a one-line guess.
+    await expect
+      .poll(async () =>
+        bar(page).evaluate((el) => {
+          const set = parseFloat(el.parentElement!.style.getPropertyValue('--bar-height'));
+          return Math.abs(set - el.getBoundingClientRect().height);
+        }),
+      )
+      .toBeLessThan(1);
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const barTop = (await bar(page).boundingBox())!.y;
+    const noteBox = (await note.boundingBox())!;
+    expect(noteBox.y + noteBox.height).toBeLessThanOrEqual(barTop);
+    const last = (await cards(page).last().boundingBox())!;
+    expect(last.y + last.height).toBeLessThanOrEqual(noteBox.y);
+
+    // Both buttons are whole inside the bar.
+    const barBox = (await bar(page).boundingBox())!;
+    for (const name of ['บันทึกคำตอบ', 'ส่งผลการประเมิน']) {
+      const box = (await bar(page).getByRole('button', { name }).boundingBox())!;
+      expect(box.y).toBeGreaterThanOrEqual(barBox.y);
+      expect(box.y + box.height).toBeLessThanOrEqual(barBox.y + barBox.height + 1);
+    }
+    // (Sideways scroll at 200% is outside this check: other parts of the page are not sized for it.)
+    if (rootSize === '100%') expect(await sideways(page)).toBe(0);
+
+    // A focused last field scrolls to rest fully above the bar.
+    const lastCard = cards(page).last();
+    await lastCard.locator(':scope > h4 > button').click();
+    const field = lastCard.getByRole('textbox', { name: /^y3|^y2 / }).last();
+    await field.focus();
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    const fieldBox = (await field.boundingBox())!;
+    expect(fieldBox.y + fieldBox.height).toBeLessThanOrEqual((await bar(page).boundingBox())!.y);
+  });
+}
+
 test('the last card can be opened and filled while the bar is in view', async ({ page }) => {
   await open(page, 375, V1, 667);
   const last = cards(page).last();

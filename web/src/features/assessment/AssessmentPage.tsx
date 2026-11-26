@@ -27,6 +27,7 @@ import { commitUnitSwitch, requestUnitSwitch, type PendingSwitch } from './unitS
 import { Toolbar } from './Toolbar';
 import { classifySubmitFailure, resultsPath, submitVersion, type SubmitFailure } from './submit';
 import { useAutosave } from './useAutosave';
+import { useBarHeight } from './useBarHeight';
 import { useNarrow } from './useNarrow';
 
 type Ids = { projectId: string; versionId: string };
@@ -46,6 +47,9 @@ function Form({
   );
   const router = useRouter();
   const narrow = useNarrow();
+  const pageRef = useRef<HTMLDivElement>(null);
+  const barRef = useRef<HTMLElement>(null);
+  useBarHeight(pageRef, barRef, narrow);
   const [serverErrors, setServerErrors] = useState<ServerErrors>({});
   const [confirming, setConfirming] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -144,7 +148,7 @@ function Form({
   const { complete, total } = countGroup(all, drafts);
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} ref={pageRef}>
       <ProjectSteps current="assessment" />
       <header className={styles.header}>
         <div>
@@ -201,7 +205,7 @@ function Form({
           <SubmitNotes complete={complete} editable={answers.editable} failure={failure} />
         </div>
       )}
-      <footer className={styles.footer}>
+      <footer className={styles.footer} ref={barRef}>
         <span className={styles.showing}>
           {filter === 'all'
             ? t('footer.showingAll', { total: factors.length })
