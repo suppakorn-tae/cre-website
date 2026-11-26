@@ -16,6 +16,7 @@ import (
 type fakeStore struct {
 	job      jobs.Job
 	runErr   error
+	doneErr  error
 	done     bool
 	failed   string
 	requeued int
@@ -25,7 +26,13 @@ func (f *fakeStore) MarkRunning(context.Context, uuid.UUID) (jobs.Job, error) {
 	return f.job, f.runErr
 }
 
-func (f *fakeStore) MarkDone(context.Context, jobs.Job) error { f.done = true; return nil }
+func (f *fakeStore) MarkDone(context.Context, jobs.Job) error {
+	if f.doneErr != nil {
+		return f.doneErr
+	}
+	f.done = true
+	return nil
+}
 
 func (f *fakeStore) MarkFailed(_ context.Context, _ uuid.UUID, msg string) error {
 	f.failed = msg
@@ -64,6 +71,51 @@ func TestSuccessMarksDone(t *testing.T) {
 	_, srv := setup(st, func(context.Context, jobs.Job) error { return nil })
 	if err := fire(context.Background(), srv); err != nil || !st.done {
 		t.Fatalf("err=%v done=%v, want done", err, st.done)
+	}
+}
+
+func TestOnDoneRunsOnlyAfterMarkDone(t *testing.T) {
+	st := &fakeStore{job: jobs.Job{Kind: jobs.KindReport}}
+	var calls []bool // st.done at each hook call
+	_, srv := setup(st, func(ctx context.Context, _ jobs.Job) error {
+		if !OnDone(ctx, func(ctx context.Context) { calls = append(calls, st.done && ctx.Err() == nil) }) {
+			t.Error("OnDone = false inside the runtime")
+		}
+		return nil
+	})
+	if err := fire(context.Background(), srv); err != nil {
+		t.Fatal(err)
+	}
+	if len(calls) != 1 || !calls[0] {
+		t.Fatalf("calls = %v, want one call after the job is done", calls)
+	}
+}
+
+func TestOnDoneSkippedWhenJobNotDone(t *testing.T) {
+	for name, st := range map[string]*fakeStore{
+		"runner failed":    {job: jobs.Job{Kind: jobs.KindReport}},
+		"mark done failed": {job: jobs.Job{Kind: jobs.KindReport}, doneErr: errors.New("db down")},
+	} {
+		t.Run(name, func(t *testing.T) {
+			called := false
+			_, srv := setup(st, func(ctx context.Context, _ jobs.Job) error {
+				OnDone(ctx, func(context.Context) { called = true })
+				if st.doneErr == nil {
+					return errors.New("boom")
+				}
+				return nil
+			})
+			_ = fire(context.Background(), srv)
+			if called {
+				t.Fatal("hook ran for a job that is not done")
+			}
+		})
+	}
+}
+
+func TestOnDoneOutsideRuntime(t *testing.T) {
+	if OnDone(context.Background(), func(context.Context) {}) {
+		t.Fatal("OnDone = true without a runtime")
 	}
 }
 

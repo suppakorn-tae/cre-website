@@ -47,6 +47,37 @@ func ConcurrencyFromEnv(get func(string) (string, bool)) (map[string]int, error)
 // stays running and asynq puts the task back.
 type Runner func(ctx context.Context, j jobs.Job) error
 
+// doneHooks collects what a runner asks to run once its job is marked done.
+type doneHooks struct{ fns []func(context.Context) }
+
+type doneHooksKey struct{}
+
+// OnDone asks the runtime to call fn after the job of ctx is marked done, so
+// that fn may rely on the job's file being stored and referenced (a report
+// that replaces an older one deletes the old file then). fn is not called
+// when the job fails or marking it done fails, and its context is not
+// cancelled by shutdown. OnDone reports false when ctx does not come from a
+// runtime (or WithDoneHooks), and fn is then never called.
+func OnDone(ctx context.Context, fn func(context.Context)) bool {
+	h, ok := ctx.Value(doneHooksKey{}).(*doneHooks)
+	if ok {
+		h.fns = append(h.fns, fn)
+	}
+	return ok
+}
+
+// WithDoneHooks returns a context that collects OnDone calls and a function
+// that runs them in order. The runtime uses it around each job; tests that
+// call a Runner directly use it to play the runtime's part.
+func WithDoneHooks(ctx context.Context) (context.Context, func(context.Context)) {
+	h := &doneHooks{}
+	return context.WithValue(ctx, doneHooksKey{}, h), func(ctx context.Context) {
+		for _, fn := range h.fns {
+			fn(ctx)
+		}
+	}
+}
+
 // Server is the part of queue.Server the runtime uses.
 type Server interface {
 	Handle(kind string, h queue.Handler)
@@ -112,7 +143,8 @@ func (r *Runtime) handle(ctx context.Context, run Runner, payload []byte) error 
 	if err != nil {
 		return err // transient: asynq retries
 	}
-	if err := run(ctx, j); err != nil {
+	runCtx, fireDone := WithDoneHooks(ctx)
+	if err := run(runCtx, j); err != nil {
 		if ctx.Err() != nil {
 			return ctx.Err() // shutdown: leave it running, asynq re-queues
 		}
@@ -122,5 +154,9 @@ func (r *Runtime) handle(ctx context.Context, run Runner, payload []byte) error 
 		}
 		return nil
 	}
-	return r.store.MarkDone(context.WithoutCancel(ctx), j)
+	if err := r.store.MarkDone(context.WithoutCancel(ctx), j); err != nil {
+		return err
+	}
+	fireDone(context.WithoutCancel(ctx))
+	return nil
 }
