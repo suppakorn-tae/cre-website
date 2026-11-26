@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
@@ -18,7 +21,8 @@ import type { IndicatorName } from '../overview/api';
 import { mockResultItems } from '../overview/mocks';
 import { HvhTab } from './HvhTab';
 import { mockResultsWithAdvice } from '@/features/plan/mocks';
-import { highRisks, HVH_VISIBLE } from './rules';
+import { highRisks, HVH_VISIBLE, xInput } from './rules';
+import { formatNumber } from '@/lib/format/locale';
 
 const wrap = (node: ReactNode) =>
   renderToStaticMarkup(
@@ -82,28 +86,90 @@ describe('H / VH summary', () => {
     expect(html).toContain(`… และอีก ${rows.length - HVH_VISIBLE} รายการ`);
   });
 
-  it('prints the four input to score pills and the RM box of a card', () => {
+  it('writes each input as a sentence with both names and the score', () => {
     const html = render();
     const [top] = rows;
-    expect(html).toContain('ครั้ง/ช่วงเวลา');
-    expect(html).toContain('ของมูลค่าโครงการ');
-    expect(html).toContain('ของระยะเวลาโครงการ');
+    const text = html.replace(/<\/?(strong|sub)>/g, '');
+    expect(text).toContain(
+      `ครั้ง/ช่วงเวลา: ${formatNumber(top.x)} → โอกาสเกิด (RL) ${top.rl.toFixed(2)}`,
+    );
+    expect(text).toContain(
+      `ต้นทุนเพิ่ม ${formatNumber(top.y1_pct)}% ของมูลค่าโครงการ → ผลกระทบด้านต้นทุน (RIC) ${top.ri_c.toFixed(2)}`,
+    );
+    expect(text).toContain(
+      `เวลาเพิ่ม ${formatNumber(top.y2_pct)}% ของระยะเวลาโครงการ → ผลกระทบด้านเวลา (RIT) ${top.ri_t.toFixed(2)}`,
+    );
+    expect(text).toContain(`ผลกระทบด้านสิ่งแวดล้อม (RIE) ${top.ri_e.toFixed(2)}`);
+    expect(html).not.toContain('X → RL');
     expect(html).toContain(top.rm.toFixed(3));
-    for (const score of [top.rl, top.ri_c, top.ri_t, top.ri_e]) {
-      expect(html).toContain(score.toFixed(2));
-    }
   });
 
-  it('shows the strategy as a chip and no advice text or radios', () => {
+  it('shows a chosen strategy as a chip and nothing when none is chosen', () => {
     const html = render();
-    expect(html).not.toContain('type="radio"');
-    expect(html).not.toContain('คำแนะนำ RL ข้อที่');
-    expect(html).toContain('ยังไม่เลือกกลยุทธ์');
     expect(html).toMatch(/กลยุทธ์: (REDUCE|TRANSFER|ACCEPT)/);
+    expect(html).not.toContain('type="radio"');
+    const none = { ...data, items: data.items.map((i) => ({ ...i, strategy: undefined })) };
+    const bare = render(none);
+    expect(bare).not.toContain('ยังไม่เลือกกลยุทธ์');
+    expect(bare).not.toContain('กลยุทธ์:');
   });
 
   it('shows an empty state without H or VH rows', () => {
     const low = { ...data, items: data.items.filter((i) => i.level === 'L') };
     expect(render(low)).toContain('ไม่พบตัวชี้วัดที่มีความเสี่ยงสูง');
+  });
+});
+
+/** Distinct `unit_th` values of the real catalogue seed (the CSV has quoted cells, so split with care). */
+function seedUnits(): string[] {
+  const text = readFileSync(
+    resolve(process.cwd(), '../backend/seed/cre-indicators.csv'),
+    'utf8',
+  ).replace(/^\uFEFF/, '');
+  const rows: string[][] = [[]];
+  let cell = '';
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch === '"' && text[i + 1] === '"') cell += text[i++];
+      else if (ch === '"') quoted = false;
+      else cell += ch;
+    } else if (ch === '"') {
+      quoted = true;
+    } else if (ch === ',') {
+      rows[rows.length - 1].push(cell);
+      cell = '';
+    } else if (ch === '\n') {
+      rows[rows.length - 1].push(cell.replace(/\r$/, ''));
+      cell = '';
+      rows.push([]);
+    } else {
+      cell += ch;
+    }
+  }
+  const [header, ...body] = rows.filter((r) => r.length > 1);
+  const col = header.indexOf('unit_th');
+  return [...new Set(body.map((r) => r[col]))];
+}
+
+describe('X sentence for every real catalogue unit', () => {
+  const units = seedUnits();
+
+  it('reads the seed and finds the distinct units', () => {
+    expect(units.length).toBeGreaterThan(25);
+  });
+
+  it.each(units)('writes "%s" as a label followed by the value', (unit) => {
+    const { unit: label, value } = xInput(unit, 11);
+    expect(label).toBe(unit.replace(/\s+/g, ' ').trim());
+    expect(label).not.toBe('');
+    expect(value).toBe(unit.includes('ร้อยละ') ? '11%' : '11');
+    // The leading word is never cut, so the sentence reads "<unit>: <value> → …".
+    expect(label.startsWith(unit.trim().slice(0, 4))).toBe(true);
+  });
+
+  it('has no unit for an empty catalogue value', () => {
+    expect(xInput('  ', 3)).toEqual({ unit: '', value: '3' });
   });
 });
