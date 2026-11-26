@@ -9,19 +9,20 @@ test('the user menu opens, moves with the arrow keys and closes with Esc', async
   await page.goto('/account');
   const trigger = page.getByRole('button', { name: 'เมนูบัญชี' });
   await trigger.focus();
-  // ArrowDown on the trigger opens the menu with the first item focused.
   await page.keyboard.press('ArrowDown');
 
   const items = page.getByRole('menuitem');
   await expect(items).toHaveText(['บัญชีของฉัน', 'ผู้ดูแลระบบ', 'ออกจากระบบ']);
-  await expect(items.first()).toBeFocused();
 
+  // Radix owns the roving focus: Home, ArrowDown and End move between the items.
+  await page.keyboard.press('Home');
+  await expect(items.first()).toBeFocused();
   await page.keyboard.press('ArrowDown');
   await expect(items.nth(1)).toBeFocused();
   await page.keyboard.press('End');
   await expect(items.last()).toBeFocused();
-  await page.keyboard.press('ArrowDown');
-  await expect(items.first()).toBeFocused();
+  await page.keyboard.press('ArrowUp');
+  await expect(items.nth(1)).toBeFocused();
 
   await page.keyboard.press('Escape');
   await expect(page.getByRole('menu')).toHaveCount(0);
