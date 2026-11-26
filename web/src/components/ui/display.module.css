@@ -709,3 +709,21 @@ button.kpiSelected:hover {
   color: var(--color-text-muted);
   text-align: center;
 }
+
+/* Donut: the ring is revealed clockwise from 12 o'clock. Not played under reduced motion. */
+.donutSweep {
+  stroke-dashoffset: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .donutSweep {
+    animation: donut-sweep var(--motion-chart, 700ms) ease-out both;
+  }
+}
+@keyframes donut-sweep {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
