@@ -96,6 +96,36 @@ test('the project page builds the report in the button, with no toast', async ({
   expect(new URL(page.url()).pathname).toBe(path);
 });
 
+test('a submitted version builds its own report from its menu, a draft has no item', async ({
+  page,
+}) => {
+  await page.goto(`/projects/${PROJECT}?tab=versions`);
+  await page.getByRole('button', { name: 'การดำเนินการของ v2' }).click();
+
+  const download = page.waitForEvent('download', BUILD);
+  await page.getByRole('menuitem', { name: REPORT, exact: true }).click();
+  // The menu stays open and the item says it is building; a second click starts nothing new.
+  const busy = page.getByRole('menuitem', { name: 'กำลังสร้าง…' });
+  await expect(busy).toHaveAttribute('aria-busy', 'true');
+  await busy.click();
+  // Version 2 fails its first report in the mock: the item offers a retry.
+  const retry = page.getByRole('menuitem', { name: 'ลองอีกครั้ง' });
+  await expect(retry).toBeVisible(BUILD);
+  await expect(toasts(page).locator('li')).toHaveCount(0);
+  await retry.click();
+  expect((await download).suggestedFilename()).toBe(FILE_V2);
+  await expect(page.getByRole('menuitem', { name: 'ดาวน์โหลดอีกครั้ง' })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe(`/projects/${PROJECT}`);
+
+  // A draft has no report item at all; its menu keeps the answers and the delete.
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'การดำเนินการของ v1' }).click();
+  await expect(page.getByRole('menuitem', { name: 'ดูคำตอบ' })).toBeVisible();
+  await expect(
+    page.getByRole('menuitem', { name: /รายงาน PDF|กำลังสร้าง|ดาวน์โหลดอีกครั้ง|ลองอีกครั้ง/ }),
+  ).toHaveCount(0);
+});
+
 test('the old report url redirects to the results', async ({ page }) => {
   await page.goto(`/projects/${PROJECT}/versions/${V3}/report`);
   await expect(page).toHaveURL(new RegExp(`/projects/${PROJECT}/versions/${V3}/results$`));

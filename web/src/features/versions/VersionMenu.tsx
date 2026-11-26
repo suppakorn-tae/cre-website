@@ -1,12 +1,24 @@
 'use client';
 
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { IconChartBar, IconDots, IconEye, IconPencil, IconTrash } from '@tabler/icons-react';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
+import {
+  IconChartBar,
+  IconDots,
+  IconDownload,
+  IconEye,
+  IconFileTypePdf,
+  IconPencil,
+  IconRefresh,
+  IconTrash,
+} from '@tabler/icons-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useRef } from 'react';
 
-import { Icon } from '@/components/ui';
+import { Icon, Spinner } from '@/components/ui';
+import { buttonText, type ReportState } from '@/features/reports/state';
+import { useReportDownload } from '@/features/reports/useReportDownload';
 
 import type { VersionSummary } from './api';
 import { projectPaths } from './rules';
@@ -23,11 +35,17 @@ type Props = {
   onDelete: (version: VersionSummary, trigger: HTMLElement | null) => void;
 };
 
-/** The ⋯ menu of a version card: answer or view answers, results, delete. */
+/** The ⋯ menu of a version card: answer or view answers, results, PDF report, delete. */
 export function VersionMenu({ projectId, version, onDelete }: Props) {
   const t = useTranslations('versions.list');
   const trigger = useRef<HTMLButtonElement>(null);
+  const tReports = useTranslations('reports');
   const answer = version.editable ? t('actions.answer') : t('actions.viewAnswers');
+  // The hook lives here, not in the menu content, so a build goes on after the menu closes.
+  const report = useReportDownload(projectId, version.id);
+  const submitted = version.status === 'submitted';
+  const reportText = tReports(`action.${buttonText(report.state, false)}`);
+  const spoken = report.observed ? spokenText(report.state, report.tooMany, tReports) : '';
 
   return (
     <DropdownMenu.Root>
@@ -62,6 +80,21 @@ export function VersionMenu({ projectId, version, onDelete }: Props) {
               </Link>
             </DropdownMenu.Item>
           )}
+          {submitted && (
+            <DropdownMenu.Item
+              className={menuItem}
+              aria-busy={report.state === 'building'}
+              data-report={report.state}
+              // Stay open: the label says building, then "again" or "retry", as in the shell's menu.
+              onSelect={(event) => {
+                event.preventDefault();
+                report.start();
+              }}
+            >
+              <ReportIcon state={report.state} />
+              {reportText}
+            </DropdownMenu.Item>
+          )}
           <DropdownMenu.Separator className="my-1 h-px bg-divider" />
           <DropdownMenu.Item
             className={dangerItem}
@@ -72,6 +105,29 @@ export function VersionMenu({ projectId, version, onDelete }: Props) {
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
+      {submitted && (
+        <VisuallyHidden.Root role="status" aria-live="polite">
+          {spoken}
+        </VisuallyHidden.Root>
+      )}
     </DropdownMenu.Root>
   );
+}
+
+function ReportIcon({ state }: { state: ReportState }) {
+  if (state === 'building') return <Spinner size={18} />;
+  if (state === 'ready') return <Icon icon={IconDownload} size={18} />;
+  if (state === 'failed') return <Icon icon={IconRefresh} size={18} />;
+  return <Icon icon={IconFileTypePdf} size={18} />;
+}
+
+function spokenText(
+  state: ReportState,
+  tooMany: boolean,
+  t: ReturnType<typeof useTranslations>,
+): string {
+  if (state === 'building') return t('toast.building.title');
+  if (state === 'ready') return t('toast.ready.title');
+  if (state === 'failed') return tooMany ? t('toast.failed.tooMany') : t('toast.failed.title');
+  return '';
 }

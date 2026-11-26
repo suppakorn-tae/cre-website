@@ -56,15 +56,15 @@ export const VersionList = forwardRef<HTMLHeadingElement, Props>(function Versio
           action={<Button onClick={(e) => onCreate(e.currentTarget)}>{t('create')}</Button>}
         />
       ) : (
-        <ul className={styles.cards}>
+        <ul className={styles.versionCards}>
           {rows.map((v) => (
-            <li key={v.id} className={styles.cardItem}>
+            <li key={v.id} className={styles.versionCardItem}>
               <VersionCard
                 version={v}
                 selected={v.id === selectedId}
                 onSelect={() => onSelect(v)}
               />
-              <div className={styles.cardMenu}>
+              <div className={styles.versionCardMenu}>
                 <VersionMenu projectId={projectId} version={v} onDelete={onDelete} />
               </div>
             </li>
@@ -93,13 +93,13 @@ function VersionCard({
     <button
       type="button"
       aria-pressed={selected}
-      className={cx(styles.card, selected && styles.cardSelected)}
+      className={cx(styles.versionCard, selected && styles.versionCardSelected)}
       onClick={onSelect}
     >
-      <span className={styles.cardHead}>
+      <span className={styles.versionCardHead}>
         <strong>{t('versionNo', { no: v.version_no })}</strong>
         <span aria-hidden="true">·</span>
-        <span className={styles.cardCreated}>
+        <span className={styles.versionCardCreated}>
           {t('createdOn', { date: formatDate(v.created_at) })}
         </span>
       </span>
@@ -112,7 +112,7 @@ function VersionCard({
         </span>
       </span>
       {submitted && v.submitted_at ? (
-        <span className={styles.cardLine}>
+        <span className={styles.versionCardLine}>
           {v.progress_at_submit === null
             ? t('submittedAt', { at: formatDateTime(v.submitted_at) })
             : t('submittedWithProgress', {
@@ -121,16 +121,16 @@ function VersionCard({
               })}
         </span>
       ) : (
-        <span className={styles.cardLine}>
+        <span className={styles.versionCardLine}>
           {v.editable ? t('notSubmittedYet') : t('neverSubmitted')}
         </span>
       )}
       {hasLevels && (
-        <span className={styles.cardLevels}>
+        <span className={styles.versionCardLevels}>
           <LevelBadge level="VH" count={v.very_high_count ?? 0} label={tUi('levels.VH')} />
           <LevelBadge level="H" count={v.high_count ?? 0} label={tUi('levels.H')} />
           {v.average_rm !== null && (
-            <span className={styles.cardRm}>
+            <span className={styles.versionCardRm}>
               {t('averageRm', {
                 value: formatNumber(v.average_rm, undefined, {
                   minimumFractionDigits: 2,

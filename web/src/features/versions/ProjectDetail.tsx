@@ -8,12 +8,12 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Button, ConfirmDialog, EmptyState, Skeleton, Toast, useToaster } from '@/components/ui';
 import type { CompareViewName } from '@/features/compare/ComparePanel';
+import { useDeleteProject } from '@/features/projects/api';
 import { ApiError } from '@/lib/api/errors';
 
 import {
   catalogueTotalKey,
   createVersion,
-  deleteProject,
   deleteVersion,
   fetchIndicatorTotal,
   fetchProject,
@@ -100,10 +100,19 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   });
   const remove = useMutation({
     mutationFn: (versionId: string) => deleteVersion(projectId, versionId),
-    onSuccess: () => {
+    onSuccess: (_data, versionId) => {
       // The card is about to leave the list, so focus lands on the list heading instead.
       opener.current = null;
       setDeleting(null);
+      // The comparison, the trend and the RM matrix still name the deleted version. Drop them
+      // first (the panel shows its skeleton) so nothing asks the api about it and fails.
+      queryClient.removeQueries({
+        queryKey: projectKey(projectId),
+        predicate: ({ queryKey }) =>
+          queryKey[2] === 'trend' ||
+          queryKey[2] === 'indicator-rm' ||
+          (queryKey[2] === 'compare' && queryKey.includes(versionId)),
+      });
       refresh();
     },
     onError: (error) => {
@@ -115,32 +124,38 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       );
     },
   });
-  const removeProject = useMutation({
-    mutationFn: () => deleteProject(projectId),
-    onSuccess: () => {
-      setDeletingProject(false);
-      void queryClient.invalidateQueries({ queryKey: ['projects', 'list'] });
-      void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-      toaster.show({
-        id: 'project-deleted',
-        title: tProjects('deleted'),
-        tone: 'success',
-        duration: 6000,
-      });
-      router.replace('/dashboard');
-    },
-    onError: () => {
-      setDeletingProject(false);
-      setFailure('deleteProject.failed');
-    },
-  });
+  const removeProject = useDeleteProject();
+  function confirmDeleteProject() {
+    removeProject.mutate(projectId, {
+      onSuccess: () => {
+        setDeletingProject(false);
+        // The dashboard figures and panels hold the deleted project too.
+        void queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+        toaster.show({
+          id: 'project-deleted',
+          title: tProjects('deleted'),
+          tone: 'success',
+          duration: 6000,
+        });
+        router.replace('/dashboard');
+      },
+      onError: () => {
+        setDeletingProject(false);
+        setFailure('deleteProject.failed');
+      },
+    });
+  }
 
   const open = (button: HTMLElement | null) => {
     opener.current = button;
   };
   const changeTab = (next: ProjectTab) => writeProjectView(next, view);
 
-  if (project.isError) {
+  // While the project is being deleted, the shared hook refetches it before the mutation ends and
+  // gets a 404. Keep showing the page (the data stays) until the move to the dashboard.
+  const deleted = removeProject.isPending || removeProject.isSuccess;
+
+  if (project.isError && !deleted) {
     const missing = project.error instanceof ApiError && project.error.status === 404;
     return (
       <EmptyState
@@ -188,7 +203,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
         />
       )}
 
-      {versions.isError ? (
+      {versions.isError && !deleted ? (
         <EmptyState
           title={t('list.loadFailed')}
           action={
@@ -281,7 +296,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
             : tProjects('deleteDialog.confirm')
         }
         cancelLabel={tUi('cancel')}
-        onConfirm={() => removeProject.mutate()}
+        onConfirm={confirmDeleteProject}
         onCancel={() => setDeletingProject(false)}
       >
         {project.data && (

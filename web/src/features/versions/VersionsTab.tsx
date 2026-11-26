@@ -92,7 +92,7 @@ function NeverSubmitted({
         <h2 className={styles.neverTitle}>
           <strong>{tList('versionNo', { no: version.version_no })}</strong>
           <span aria-hidden="true"> · </span>
-          <span className={styles.cardCreated}>
+          <span className={styles.versionCardCreated}>
             {tList('createdOn', { date: formatDate(version.created_at) })}
           </span>
         </h2>

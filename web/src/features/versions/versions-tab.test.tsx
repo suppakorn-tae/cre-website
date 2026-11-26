@@ -6,6 +6,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import compare from '../../../messages/th/compare.json';
+import reports from '../../../messages/th/reports.json';
 import ui from '../../../messages/th/ui.json';
 import versions from '../../../messages/th/versions.json';
 
@@ -55,7 +56,7 @@ function mount(overrides: Partial<React.ComponentProps<typeof VersionsTab>> = {}
     <QueryClientProvider
       client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
     >
-      <NextIntlClientProvider locale="th" messages={{ versions, compare, ui }}>
+      <NextIntlClientProvider locale="th" messages={{ versions, compare, reports, ui }}>
         <VersionsTab {...props} />
       </NextIntlClientProvider>
     </QueryClientProvider>,
@@ -127,6 +128,7 @@ describe('VersionsTab', () => {
     const menu = await screen.findByRole('menu');
     expect(within(menu).getByRole('menuitem', { name: 'ดูคำตอบ' })).toBeTruthy();
     expect(within(menu).getByRole('menuitem', { name: 'ดูผลการประเมิน' })).toBeTruthy();
+    expect(within(menu).getByRole('menuitem', { name: 'รายงาน PDF' })).toBeTruthy();
     fireEvent.click(within(menu).getByRole('menuitem', { name: 'ลบเวอร์ชัน' }));
     expect(props.onDelete).toHaveBeenCalledTimes(1);
     const [version, button] = props.onDelete.mock.calls[0];
@@ -139,6 +141,7 @@ describe('VersionsTab', () => {
     fireEvent.keyDown(screen.getByRole('button', { name: 'การดำเนินการของ v1' }), { key: 'Enter' });
     const menu = await screen.findByRole('menu');
     expect(within(menu).queryByRole('menuitem', { name: 'ดูผลการประเมิน' })).toBeNull();
+    expect(within(menu).queryByRole('menuitem', { name: 'รายงาน PDF' })).toBeNull();
     expect(within(menu).getByRole('menuitem', { name: 'ดูคำตอบ' })).toBeTruthy();
   });
 
