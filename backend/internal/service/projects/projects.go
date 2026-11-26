@@ -127,6 +127,13 @@ func New(db dal.DBTX, tx dal.Beginner, rounding versions.Rounding, now func() ti
 
 const dateLayout = "2006-01-02"
 
+// Text limits in Unicode characters, the same as maxLength in the contract.
+const (
+	maxName        = 120
+	maxOther       = 60
+	maxDescription = 1000
+)
+
 var (
 	islands      = set("koh_tao", "koh_samui", "koh_phangan", "koh_phi_phi", "koh_lanta", "koh_chang", "koh_kood", "other")
 	projectTypes = set("building", "pier", "road", "utilities", "coastal", "other")
@@ -375,7 +382,7 @@ func validate(f Fields) (Fields, error) {
 	switch n := utf8.RuneCountInString(f.Name); {
 	case n == 0:
 		bad("name", "required")
-	case n > 200:
+	case n > maxName:
 		bad("name", "too_long")
 	}
 	switch n := utf8.RuneCountInString(f.Nickname); {
@@ -431,7 +438,7 @@ func validate(f Fields) (Fields, error) {
 	if f.ProgressPct < 0 || f.ProgressPct > 100 {
 		bad("progress_pct", "out_of_range")
 	}
-	if f.Description != nil && utf8.RuneCountInString(*f.Description) > 5000 {
+	if f.Description != nil && utf8.RuneCountInString(*f.Description) > maxDescription {
 		bad("description", "too_long")
 	}
 	if len(errs) > 0 {
@@ -456,7 +463,7 @@ func checkOther(bad func(field, code string), field string, isOther bool, v *str
 		bad(field, "required")
 	case !isOther && v != nil:
 		bad(field, "not_allowed")
-	case v != nil && utf8.RuneCountInString(*v) > 200:
+	case v != nil && utf8.RuneCountInString(*v) > maxOther:
 		bad(field, "too_long")
 	}
 }

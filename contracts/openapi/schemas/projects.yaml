@@ -36,7 +36,7 @@ ProjectFields:
     name:
       type: string
       minLength: 1
-      maxLength: 200
+      maxLength: 120
       pattern: '\S'
       description: Not blank.
     nickname:
@@ -48,13 +48,13 @@ ProjectFields:
     island_other:
       type: [string, 'null']
       minLength: 1
-      maxLength: 200
+      maxLength: 60
     type_code:
       $ref: '#/ProjectType'
     type_other:
       type: [string, 'null']
       minLength: 1
-      maxLength: 200
+      maxLength: 60
     start_date:
       type: string
       format: date
@@ -74,7 +74,7 @@ ProjectFields:
       description: Entered progress in percent.
     description:
       type: [string, 'null']
-      maxLength: 5000
+      maxLength: 1000
 ProjectCreate:
   allOf:
     - $ref: '#/ProjectFields'
