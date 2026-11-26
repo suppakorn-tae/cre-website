@@ -121,7 +121,9 @@ test('the y3 panel is a bottom sheet of at most 80% of the screen with the same 
 
   // Choosing A with another option is flagged at once, as in the popover.
   await sheet.getByRole('checkbox', { name: /^B / }).check();
-  await expect(sheet.getByText('เลือก A ร่วมกับตัวเลือกอื่นไม่ได้')).toBeVisible();
+  await expect(sheet.getByText('A เลือกคู่กับข้ออื่นไม่ได้')).toBeVisible();
+  // "เสร็จ" stays off while the choice is in conflict.
+  await expect(sheet.getByRole('button', { name: 'เสร็จ' })).toBeDisabled();
 
   // Esc closes it, focus goes back to the button and the hint stays closed.
   await page.keyboard.press('Escape');

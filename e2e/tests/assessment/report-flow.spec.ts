@@ -339,9 +339,9 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
 
     // The comparison is the versions tab now: v2 is selected, compared with v1.
     await go(page, `/projects/${projectId}?tab=versions`);
-    const versus = page.getByLabel(msg('compare', 'head.versus', { no: 2 }));
+    const versus = page.getByRole('combobox', { name: msg('compare', 'head.versus', { no: 2 }) });
     await expect(versus).toBeVisible();
-    await expect(versus.locator('option:checked')).toContainText('v1');
+    await expect(versus).toContainText('v1');
     // EC-MG-1 went VH -> M (4.578 -> 2.55): the changed-level card counts it.
     const changed = page
       .locator('div')
