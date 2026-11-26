@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"regexp"
@@ -8,7 +9,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/mailer"
+	applog "github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
 )
 
 var resetOTPPattern = regexp.MustCompile(`[0-9]{6}`)
@@ -212,4 +216,74 @@ func TestResetConcurrentSameCodeSucceedsOnce(t *testing.T) {
 	if ok != 1 || len(e.sess.bumped) != 1 {
 		t.Errorf("successes = %d, bumps = %d, want 1 and 1", ok, len(e.sess.bumped))
 	}
+}
+
+func TestRequestCodeSendFailureIsLoggedCountedAndKeepsCooldown(t *testing.T) {
+	var buf bytes.Buffer
+	st := &loginFakeStore{accs: map[string]LoginAccount{
+		"a@example.com": {ID: "a", PasswordHash: loginMustHash(t, "old-password"), Status: "active", Version: 1},
+	}}
+	m := &mailer.Fake{Err: errors.New("smtp down")}
+	s, err := NewResetService(st, &loginFakeSessions{}, loginNewMemCache(), m, applog.New(&buf, "info"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.Async = func(f func()) { f() }
+	ctx := applog.WithRequestID(context.Background(), "req-123")
+	before := resetFailureCount(t, "reset_code")
+
+	// The answer stays the same as for an unknown e-mail.
+	if _, err := s.RequestCode(ctx, "A@Example.com "); err != nil {
+		t.Fatalf("answer must not reveal the failure: %v", err)
+	}
+	if !strings.Contains(buf.String(), `"request_id":"req-123"`) || !strings.Contains(buf.String(), "smtp down") {
+		t.Fatalf("log lacks request id or cause: %s", buf.String())
+	}
+	if got := resetFailureCount(t, "reset_code"); got != before+1 {
+		t.Fatalf("failure counter = %v, want %v", got, before+1)
+	}
+	// An immediate retry answers the same for the failed-send e-mail and an
+	// unknown one (no enumeration oracle): both hit the cool-down.
+	_, errKnown := s.RequestCode(ctx, "a@example.com")
+	if _, err := s.RequestCode(ctx, "nobody@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	_, errUnknown := s.RequestCode(ctx, "nobody@example.com")
+	if !errors.Is(errKnown, ErrResetCooldown) || !errors.Is(errUnknown, ErrResetCooldown) {
+		t.Fatalf("retry answers differ: known=%v unknown=%v", errKnown, errUnknown)
+	}
+}
+
+func TestRequestCodeMailerOnlyForEligibleAccount(t *testing.T) {
+	e := resetNewEnv(t)
+	for _, em := range []string{"nobody@example.com", "off@example.com"} {
+		if _, err := e.s.RequestCode(context.Background(), em); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if n := len(e.mail.Sent()); n != 0 {
+		t.Fatalf("sent %d e-mails for unknown or deactivated accounts, want 0", n)
+	}
+}
+
+// resetFailureCount reads one label of MailFailures through a throw-away
+// registry, so the test needs no extra module.
+func resetFailureCount(t *testing.T, kind string) float64 {
+	t.Helper()
+	reg := prometheus.NewRegistry()
+	reg.MustRegister(MailFailures)
+	mfs, err := reg.Gather()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, mf := range mfs {
+		for _, m := range mf.GetMetric() {
+			for _, l := range m.GetLabel() {
+				if l.GetName() == "kind" && l.GetValue() == kind {
+					return m.GetCounter().GetValue()
+				}
+			}
+		}
+	}
+	return 0
 }
