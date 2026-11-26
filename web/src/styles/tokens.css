@@ -101,8 +101,20 @@
   --space-12: 48px;
   --space-16: 64px;
 
+  /* Dimension colours (hi-fi 00 Foundations, 26 Nov): a solid for text and
+     marks, a 10% tint for backgrounds. Apart from the primary blue, the
+     accent orange, the status colours and the risk scale. The code is always
+     shown as text next to the colour. */
+  --dim-ec: #4c2a92;
+  --dim-ec-tint: #edeaf4;
+  --dim-so: #a8327a;
+  --dim-so-tint: #f6eaf2;
+  --dim-ev: #0e7490;
+  --dim-ev-tint: #e7f1f4;
+
   /* Radius */
   --radius-badge: 6px;
+  --radius-input: 6px;
   --radius-control: 8px;
   --radius-card: 12px;
   --radius-dialog: 16px;
@@ -113,12 +125,17 @@
   --shadow-floating: 0 8px 24px rgba(15, 42, 74, 0.1);
 
   /* Controls */
-  --control-sm: 32px;
-  --control-md: 40px;
-  --control-lg: 48px;
-  --field-height: 44px;
+  --control-sm: 30px;
+  --control-md: 36px;
+  --control-lg: 44px;
+  --field-height: var(--control-md);
   --hit-area: 40px;
   --focus-ring: 0 0 0 2px var(--color-white), 0 0 0 4px var(--color-blue-600);
+
+  /* Motion: popups 150 ms, charts 700 ms. Zero under prefers-reduced-motion. */
+  --motion-fast: 150ms;
+  --motion-chart: 700ms;
+  --motion-ease: ease-out;
 
   /* Layout */
   --container-max: 1200px;
@@ -138,5 +155,12 @@
   :root {
     --margin-page: 16px;
     --gutter: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-chart: 0ms;
   }
 }

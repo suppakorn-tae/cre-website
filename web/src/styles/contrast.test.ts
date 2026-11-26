@@ -59,6 +59,22 @@ describe('risk chips use a tint and dark text pair (4.5:1)', () => {
   });
 });
 
+describe('dimension colours (hi-fi 00 Foundations, 26 Nov)', () => {
+  it.each(['ec', 'so', 'ev'])('dimension %s text passes on its tint and on white (4.5:1)', (d) => {
+    expect(contrast(token(`dim-${d}`), token(`dim-${d}-tint`))).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(token(`dim-${d}`), token('color-white'))).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('are not the primary blue, the accent orange or a risk level colour', () => {
+    const taken = [
+      'color-blue-600',
+      'color-orange-500',
+      ...['vl', 'l', 'm', 'h', 'vh'].map((l) => `level-${l}`),
+    ].map(token);
+    for (const d of ['ec', 'so', 'ev']) expect(taken).not.toContain(token(`dim-${d}`));
+  });
+});
+
 describe('text on a solid level fill, used for labels inside chart bars (4.5:1)', () => {
   it.each(['vl', 'l', 'm', 'h', 'vh'])('level %s', (level) => {
     const ratio = contrast(token(`level-${level}-on`), token(`level-${level}`));

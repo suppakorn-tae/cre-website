@@ -130,6 +130,19 @@
   --font-weight-semibold: var(--weight-semibold);
   --font-weight-bold: var(--weight-bold);
 
+  /* Dimensions: bg-dim-ec, text-dim-so, bg-dim-ev-tint */
+  --color-dim-ec: var(--dim-ec);
+  --color-dim-ec-tint: var(--dim-ec-tint);
+  --color-dim-so: var(--dim-so);
+  --color-dim-so-tint: var(--dim-so-tint);
+  --color-dim-ev: var(--dim-ev);
+  --color-dim-ev-tint: var(--dim-ev-tint);
+
+  /* Motion */
+  --transition-duration-fast: var(--motion-fast);
+  --transition-duration-chart: var(--motion-chart);
+  --ease-standard: var(--motion-ease);
+
   /* Spacing: p-4 is --space-4 (16px). The base step is the 4px grid. */
   --spacing: var(--space-1);
   --spacing-gutter: var(--gutter);
@@ -144,6 +157,7 @@
 
   /* Radius */
   --radius-badge: var(--radius-badge);
+  --radius-input: var(--radius-input);
   --radius-control: var(--radius-control);
   --radius-card: var(--radius-card);
   --radius-dialog: var(--radius-dialog);
