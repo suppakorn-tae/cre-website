@@ -31,8 +31,6 @@ export const projectPaths = {
     `/projects/${projectId}/versions/${versionId}/assess`,
   results: (projectId: string, versionId: string) =>
     `/projects/${projectId}/versions/${versionId}/results`,
-  report: (projectId: string, versionId: string) =>
-    `/projects/${projectId}/versions/${versionId}/report`,
 };
 
 /** Whole days from start to end date (both `YYYY-MM-DD`). */

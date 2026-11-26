@@ -7,6 +7,7 @@ import { projectKey } from '@/features/versions/api';
 import { mockProject, mockProjectId, mockVersions } from '@/features/versions/mocks';
 
 import common from '../../../../messages/th/common.json';
+import reports from '../../../../messages/th/reports.json';
 import results from '../../../../messages/th/results.json';
 import shell from '../../../../messages/th/shell.json';
 import ui from '../../../../messages/th/ui.json';
@@ -33,7 +34,7 @@ function renderPage(query = '') {
   client.setQueryData(['catalogue', 'names'], new Map());
   const html = renderToStaticMarkup(
     <QueryClientProvider client={client}>
-      <NextIntlClientProvider locale="th" messages={{ results, common, ui, shell }}>
+      <NextIntlClientProvider locale="th" messages={{ results, reports, common, ui, shell }}>
         <ResultsPage projectId={mockProjectId} versionId={version.id} />
       </NextIntlClientProvider>
     </QueryClientProvider>,
@@ -42,10 +43,11 @@ function renderPage(query = '') {
 }
 
 describe('results header actions', () => {
-  it('links to the report page of the same version', () => {
-    const { html, versionId } = renderPage();
-    expect(html).toContain(`href="/projects/${mockProjectId}/versions/${versionId}/report"`);
-    expect(html).toContain(results.page.reportAction);
+  it('has a report button that builds the PDF in place', () => {
+    const { html } = renderPage();
+    expect(html).toContain(reports.action.label);
+    expect(html).toMatch(/<button[^>]*data-report="idle"/);
+    expect(html).not.toContain('/report');
   });
 
   it('offers the advice and strategy action', () => {

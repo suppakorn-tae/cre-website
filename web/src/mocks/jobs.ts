@@ -1,5 +1,6 @@
 import { HttpResponse, http as mswHttp, type HttpHandler } from 'msw';
 
+import { mockVersions } from '@/features/versions/mocks';
 import type { components } from '@/lib/api/generated/schema';
 
 type Job = components['schemas']['Job'];
@@ -8,6 +9,8 @@ type JobStatus = components['schemas']['JobStatus'];
 type Options = {
   /** Make the first report job of each version fail, so retry can be tried. */
   failFirst?: boolean;
+  /** Same, only for the versions this answers true for. */
+  failFirstFor?: (versionId: string) => boolean;
 };
 
 type Entry = { job: Job; polls: number; willFail: boolean };
@@ -22,7 +25,10 @@ const PDF = '%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%
  * over successive polls of `GET /jobs/{id}`; asking again for the same
  * version returns the existing job unless it failed.
  */
-export function createJobHandlers({ failFirst = false }: Options = {}): HttpHandler[] {
+export function createJobHandlers({
+  failFirst = false,
+  failFirstFor,
+}: Options = {}): HttpHandler[] {
   const jobs = new Map<string, Entry>();
   const byVersion = new Map<string, string>();
   let serial = 0;
@@ -49,7 +55,11 @@ export function createJobHandlers({ failFirst = false }: Options = {}): HttpHand
         expires_at: null,
         error: null,
       };
-      jobs.set(id, { job, polls: 0, willFail: failFirst && !byVersion.has(key) });
+      jobs.set(id, {
+        job,
+        polls: 0,
+        willFail: (failFirst || !!failFirstFor?.(String(params.versionId))) && !byVersion.has(key),
+      });
       byVersion.set(key, id);
       return HttpResponse.json({ job_id: id }, { status: 202 });
     }),
@@ -88,4 +98,8 @@ export function createJobHandlers({ failFirst = false }: Options = {}): HttpHand
   ];
 }
 
-export const jobHandlers: HttpHandler[] = createJobHandlers();
+// The sample version 2 fails its first report, so retry can be tried in mock mode.
+const failingVersionId = mockVersions()[1]?.id;
+export const jobHandlers: HttpHandler[] = createJobHandlers({
+  failFirstFor: (versionId) => versionId === failingVersionId,
+});

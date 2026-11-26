@@ -1,7 +1,9 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NextIntlClientProvider } from 'next-intl';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it, vi } from 'vitest';
 
+import reports from '../../../messages/th/reports.json';
 import ui from '../../../messages/th/ui.json';
 import versions from '../../../messages/th/versions.json';
 import { mockProject, mockVersions } from './mocks';
@@ -11,9 +13,11 @@ import { hvhDelta, periodDays, recentVersions } from './rules';
 
 const wrap = (node: React.ReactNode) =>
   renderToStaticMarkup(
-    <NextIntlClientProvider locale="th" messages={{ versions, ui }}>
-      {node}
-    </NextIntlClientProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <NextIntlClientProvider locale="th" messages={{ versions, ui, reports }}>
+        {node}
+      </NextIntlClientProvider>
+    </QueryClientProvider>,
   );
 
 const panel = (items = mockVersions(), indicatorTotal?: number) =>
@@ -69,7 +73,9 @@ describe('OverviewPanel', () => {
     expect(html).toContain('ลดลง 5 จากเวอร์ชันก่อน');
     expect(html).toContain(`${v3}/results`);
     expect(html).toContain(`${v3}/assess`);
-    expect(html).toContain(`${v3}/report`);
+    // The report is built in place: a button, not a page.
+    expect(html).toContain(reports.action.label);
+    expect(html).not.toContain('/report');
   });
 
   it('links the H and VH chips to the advice tab of the results page', () => {
@@ -97,12 +103,13 @@ describe('OverviewPanel', () => {
     expect(html).toContain('3.03');
   });
 
-  it('offers no results or PDF for a draft latest version', () => {
+  it('offers no results for a draft latest version and disables the PDF with the reason', () => {
     const html = panel([{ ...mockVersions()[2], editable: true }]);
     expect(html).toContain('ฉบับร่าง');
     expect(html).not.toContain('/results');
-    expect(html).not.toContain('/report');
     expect(html).toContain('/assess');
+    expect(html).toContain('aria-disabled="true"');
+    expect(html).toContain(reports.action.draftReason);
   });
 
   it('asks to create the first version when there is none', () => {
