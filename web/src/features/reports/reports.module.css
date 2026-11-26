@@ -1,6 +1,11 @@
 /* The report button sits in other pages' button and link styles; this only adds its states. */
 .button {
+  /* The hosts are written for links: same box model and line height, so a button matches its neighbours. */
+  box-sizing: content-box;
+  display: inline-flex;
+  align-items: center;
   gap: var(--space-2);
+  line-height: inherit;
   font-family: inherit;
   cursor: pointer;
 }
