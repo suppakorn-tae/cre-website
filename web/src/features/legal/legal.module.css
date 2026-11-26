@@ -1,0 +1,103 @@
+/* Legal reading pages. Values come from styles/tokens.css. */
+.page {
+  min-height: 100vh;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+}
+.header {
+  display: flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-white);
+}
+.brand {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+.main {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 720px;
+  margin-inline: auto;
+  padding: var(--space-8) var(--space-4) var(--space-16);
+}
+.back {
+  display: inline-block;
+  margin-bottom: var(--space-6);
+  color: var(--color-blue-700);
+  font-weight: var(--weight-medium);
+}
+.title {
+  margin: 0;
+  color: var(--color-navy-900);
+  font-size: var(--text-h1);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-h1);
+  overflow-wrap: anywhere;
+}
+.version {
+  margin: var(--space-1) 0 var(--space-6);
+  color: var(--color-text-muted);
+}
+.section {
+  margin-top: var(--space-8);
+}
+.heading {
+  margin: 0 0 var(--space-2);
+  color: var(--color-navy-900);
+  font-size: var(--text-h3);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-h3);
+}
+.paragraph {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-h3);
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+.list {
+  margin: 0;
+  padding-left: var(--space-6);
+  font-size: var(--text-h3);
+  line-height: 1.75;
+}
+.list li {
+  margin-bottom: var(--space-2);
+  overflow-wrap: anywhere;
+}
+.link {
+  color: var(--color-blue-700);
+  text-decoration: underline;
+}
+.back:focus-visible,
+.link:focus-visible,
+.brand:focus-visible {
+  outline: 2px solid var(--color-blue-600);
+  outline-offset: 2px;
+}
+
+@media print {
+  .header,
+  .back {
+    display: none;
+  }
+  .page {
+    background: none;
+  }
+  .main {
+    max-width: none;
+    padding: 0;
+  }
+  .section {
+    break-inside: avoid;
+  }
+  .link {
+    color: inherit;
+  }
+}
