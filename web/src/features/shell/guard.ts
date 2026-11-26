@@ -1,11 +1,13 @@
 import { notFound, redirect } from 'next/navigation';
 import { connection } from 'next/server';
+import { cache } from 'react';
 
 import { ApiError } from '@/lib/api/errors';
 import type { components } from '@/lib/api/generated/schema';
 import { serverApi } from '@/lib/api/server';
 import { assertNoMocksInProduction, isMockMode, mockRole } from '@/lib/mocks/mock-mode';
 
+import type { ShellVariant } from './AppShell';
 import { LOGIN_PATH } from './login-path';
 
 export type AuthSession = components['schemas']['AuthSession'];
@@ -65,3 +67,12 @@ export async function requireSession(options: { requireAdmin: boolean }): Promis
   }, options);
   return enforceGuard(result);
 }
+
+/**
+ * One session check per request, shared by everything that needs the session:
+ * the account control, the guard and the page title. Share this, not
+ * `requireSession`, so a second reader does not call `/auth/me` again.
+ */
+export const sessionFor = cache((variant: ShellVariant) =>
+  requireSession({ requireAdmin: variant === 'admin' }),
+);

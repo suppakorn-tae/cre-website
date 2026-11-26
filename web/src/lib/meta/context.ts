@@ -1,13 +1,17 @@
 import { connection } from 'next/server';
 
 import { serverApi } from '@/lib/api/server';
+import { sessionFor } from '@/features/shell/guard';
 
 import { versionContext } from './title';
 
 /**
- * Reads context for a page title on the server. Like the session guard it
- * is per request, so it opts out of prerendering first. A failed read gives
- * `undefined`: the title then has no context and the page shows the error.
+ * Reads context for a page title on the server. Like the session guard it is
+ * per request, so it opts out of prerendering first: without `connection()`
+ * Next's validation render reaches the api client's random request id and
+ * reports "unstable value `Math.random()`" on every title page. A failed read
+ * gives `undefined`: the title then has no context and the page shows the
+ * error.
  */
 export async function projectTitleData(
   projectId: string,
@@ -43,9 +47,15 @@ export async function versionTitleContext(
   }
 }
 
+/**
+ * The e-mail of the user an admin is looking at. The admin check comes first,
+ * from the request's session (the same `/auth/me` answer the admin layout
+ * uses), so a non-admin never triggers the read and gets the generic title,
+ * whatever the api would answer.
+ */
 export async function adminUserEmail(userId: string): Promise<string | undefined> {
   try {
-    await connection();
+    await sessionFor('admin');
     const api = await serverApi();
     const { data } = await api.GET('/admin/users/{user_id}', {
       params: { path: { user_id: userId } },
