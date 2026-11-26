@@ -42,7 +42,7 @@ export function GroupToggle({
 }) {
   return (
     <button type="button" className={styles.groupToggle} aria-expanded={open} onClick={onToggle}>
-      <Icon icon={IconChevronDown} size={18} className={styles.groupChevron} />
+      <Icon icon={IconChevronDown} size={16} className={styles.groupChevron} />
       <span className={styles.groupName}>{children}</span>
     </button>
   );

@@ -24,7 +24,7 @@ test('the question shows on focus, never on hover, and goes on Esc or blur', asy
   await expect(bubble(page)).toHaveCount(0);
 
   await x.focus();
-  await expect(bubble(page)).toContainText('คำถาม · EC-MG-1 · X ความถี่ของเหตุการณ์');
+  await expect(bubble(page)).toContainText('X ความถี่ของเหตุการณ์');
   // The unit shows under the input, not in the question bubble.
   await expect(bubble(page)).not.toContainText('หน่วย:');
 
@@ -36,7 +36,7 @@ test('the question shows on focus, never on hover, and goes on Esc or blur', asy
   // The same text is what a screen reader reads.
   const id = await x.getAttribute('aria-describedby');
   expect(id).toBeTruthy();
-  await expect(page.locator(`[id="${id!.split(' ')[0]}"]`)).toContainText('คำถาม · EC-MG-1');
+  await expect(page.locator(`[id="${id!.split(' ')[0]}"]`)).toContainText('X ความถี่ของเหตุการณ์');
 
   await page.keyboard.press('Escape');
   await expect(bubble(page)).toHaveCount(0);
@@ -45,7 +45,8 @@ test('the question shows on focus, never on hover, and goes on Esc or blur', asy
   await x.focus();
   await expect(bubble(page)).toHaveCount(1);
   await page.getByRole('textbox', { name: 'y1 ผลกระทบด้านต้นทุน EC-MG-1' }).focus();
-  await expect(bubble(page)).toContainText('y1 ผลกระทบด้านต้นทุน');
+  // The bubble of X is still fading out for 150 ms: the new one is the last.
+  await expect(bubble(page).last()).toContainText('y1 ผลกระทบด้านต้นทุน');
   await page.locator('h1').click();
   await expect(bubble(page)).toHaveCount(0);
 });
@@ -163,4 +164,32 @@ test('the y3 panel asks the question first, one lettered checkbox per line, and 
   await expect(trigger).toBeFocused();
   // Focus came back by itself, so the hint stays closed until the field is entered again.
   await expect(bubble(page)).toHaveCount(0);
+});
+
+test('a dimension folds its factors, each factor keeps its own state, and a reload keeps both', async ({
+  page,
+}) => {
+  await open(page);
+  const rows = page.locator('tbody tr[data-state]');
+  const total = await rows.count();
+  const factor = page.getByRole('button', { name: /^EC-MG / });
+  const dimension = page.getByRole('button', { name: 'ด้านเศรษฐกิจ', exact: true });
+
+  await factor.click();
+  await expect(factor).toHaveAttribute('aria-expanded', 'false');
+  await expect(page.getByRole('textbox', { name: 'X ความถี่ของเหตุการณ์ EC-MG-1' })).toHaveCount(0);
+
+  await dimension.click();
+  await expect(dimension).toHaveAttribute('aria-expanded', 'false');
+  await expect(factor).toHaveCount(0);
+
+  // Folded state is remembered for this version.
+  await page.reload();
+  await expect(dimension).toHaveAttribute('aria-expanded', 'false');
+
+  // Opening the dimension brings the factor back as it was left: still folded.
+  await dimension.click();
+  await expect(factor).toHaveAttribute('aria-expanded', 'false');
+  await factor.click();
+  await expect(rows).toHaveCount(total);
 });

@@ -285,10 +285,7 @@
 }
 /* Name of a dimension or factor: a button that folds its rows. */
 .groupToggle {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: var(--hit-area);
+  display: block;
   padding: 0;
   border: 0;
   border-radius: var(--radius-input);
@@ -305,8 +302,11 @@
   outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
+/* In the text flow, so a long name wraps under the chevron and uses the whole line. */
 .groupChevron {
-  flex: none;
+  display: inline-block;
+  margin-inline-end: var(--space-1);
+  vertical-align: -3px;
   transition: rotate 150ms;
 }
 .groupToggle[aria-expanded='false'] .groupChevron {
@@ -622,7 +622,7 @@
   column-gap: var(--space-2);
   box-sizing: border-box;
   margin: 0;
-  padding: var(--space-1) var(--space-3);
+  padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-control);
   font-size: var(--text-small);
   line-height: var(--leading-small);
