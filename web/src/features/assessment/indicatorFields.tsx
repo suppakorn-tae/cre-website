@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useId, useRef } from 'react';
+import { useId, useRef, useState } from 'react';
 
 import type { CheckboxOption } from '@/components/ui';
 
@@ -19,7 +19,10 @@ type FieldProps = {
   inputLabel: string;
   value: string;
   disabled: boolean;
+  /** Error from the server for the saved value. */
   error?: string;
+  /** Error for text that cannot be saved, or undefined when it is fine (blank is fine). */
+  validate: (text: string) => string | undefined;
   /** Question shown above the field while it has focus. */
   hint?: Hint;
   /** Unit written under the input (X: it changes from indicator to indicator). */
@@ -31,18 +34,35 @@ type FieldProps = {
   onChange: (value: string) => void;
 };
 
-/** One number field: its focus hint, unit and the error under the input. */
+/**
+ * One number field: its focus hint, unit and the error under the input. What the user types
+ * stays in the field; `onChange` runs only when they leave it or press Enter, and only when
+ * the text changed and can be saved. Invalid text stays, with its error, until it is fixed.
+ */
 export function NumberField({
   inputLabel,
   value,
   disabled,
-  error,
+  error: serverError,
+  validate,
   hint,
   unit,
   suffix,
   label,
   onChange,
 }: FieldProps) {
+  // The text being typed, or null when the field shows the saved value.
+  const [typed, setTyped] = useState<string | null>(null);
+  const text = typed ?? value;
+  const error = validate(text) ?? (typed === null ? serverError : undefined);
+  const commit = () => {
+    if (typed === null) return;
+    if (typed === value) setTyped(null);
+    else if (validate(typed) === undefined) {
+      setTyped(null);
+      onChange(typed);
+    }
+  };
   const id = useId();
   const inputId = `${id}-input`;
   const hintId = `${id}-hint`;
@@ -67,9 +87,13 @@ export function NumberField({
             aria-label={inputLabel}
             aria-invalid={error ? true : undefined}
             aria-describedby={described || undefined}
-            value={value}
+            value={text}
             disabled={disabled}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => setTyped(e.target.value)}
+            onBlur={commit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commit();
+            }}
           />
           {suffix && <span className={styles.suffix}>{suffix}</span>}
         </div>
@@ -113,6 +137,21 @@ export function Y3Field({
   // A closing y3 panel hands focus back to its button; the hint should not pop up then.
   const quietRef = useRef(false);
   const stacked = label !== undefined;
+  // The panel opens with the question, so the table shows no question bubble for y3;
+  // a card keeps the question inline above the button.
+  const withHint = stacked && hint !== undefined;
+  const picker = (
+    <Y3Picker
+      code={indicator.code}
+      question={indicator.question_y3}
+      options={options}
+      value={value}
+      disabled={disabled}
+      describedBy={[withHint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ')}
+      quietRef={quietRef}
+      onChange={onChange}
+    />
+  );
   return (
     <div className={stacked ? styles.stackField : undefined}>
       {stacked && (
@@ -120,18 +159,13 @@ export function Y3Field({
           {label}
         </span>
       )}
-      <FocusHint hint={hint} id={hintId} quietRef={quietRef} inline={stacked}>
-        <Y3Picker
-          code={indicator.code}
-          question={indicator.question_y3}
-          options={options}
-          value={value}
-          disabled={disabled}
-          describedBy={[hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ')}
-          quietRef={quietRef}
-          onChange={onChange}
-        />
-      </FocusHint>
+      {withHint ? (
+        <FocusHint hint={hint} id={hintId} quietRef={quietRef} inline>
+          {picker}
+        </FocusHint>
+      ) : (
+        picker
+      )}
       {error && (
         <p id={errorId} className={styles.cellError}>
           {error}
@@ -188,8 +222,9 @@ export function useIndicatorFields({ indicator, draft, serverErrors, onChange }:
       inputLabel: `${t('fields.x')} ${code}`,
       value: draft.x,
       unit: indicator.unit,
-      error: numberError(draft.x) ?? serverError('x'),
-      hint: hint('x', indicator.question_x, t('fields.xUnit', { unit: indicator.unit })),
+      error: serverError('x'),
+      validate: (text: string) => numberError(text),
+      hint: hint('x', indicator.question_x),
       onChange: (x: string) => onChange({ ...draft, x }),
     },
     y1: {
@@ -197,7 +232,8 @@ export function useIndicatorFields({ indicator, draft, serverErrors, onChange }:
       inputLabel: `${t('fields.y1')} ${code}`,
       value: draft.y1.amount,
       suffix: tUnits(draft.y1.unit),
-      error: numberError(draft.y1.amount, maxFor(draft.y1.unit)) ?? serverError('y1'),
+      error: serverError('y1'),
+      validate: (text: string) => numberError(text, maxFor(draft.y1.unit)),
       hint: hint('y1', indicator.question_y1),
       onChange: (amount: string) => onChange({ ...draft, y1: { ...draft.y1, amount } }),
     },
@@ -206,7 +242,8 @@ export function useIndicatorFields({ indicator, draft, serverErrors, onChange }:
       inputLabel: `${t('fields.y2')} ${code}`,
       value: draft.y2.amount,
       suffix: tUnits(draft.y2.unit),
-      error: numberError(draft.y2.amount, maxFor(draft.y2.unit)) ?? serverError('y2'),
+      error: serverError('y2'),
+      validate: (text: string) => numberError(text, maxFor(draft.y2.unit)),
       hint: hint('y2', indicator.question_y2),
       onChange: (amount: string) => onChange({ ...draft, y2: { ...draft.y2, amount } }),
     },

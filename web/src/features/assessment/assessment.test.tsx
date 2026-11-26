@@ -106,7 +106,8 @@ describe('GroupList', () => {
   it('shows the catalogue questions and Thai labels only', () => {
     const html = render(false);
     expect(html).toContain('เกิดบ่อยแค่ไหน');
-    expect(html).toContain('หน่วย: ครั้ง/เดือน');
+    // The X unit is under the input only, not in the question.
+    expect(html.match(/ครั้ง\/เดือน/g)).toHaveLength(1);
     expect(html).toContain('บาท');
     expect(html).toContain('วัน');
   });
@@ -135,7 +136,7 @@ describe('assessment table', () => {
     expect(id).toBeTruthy();
     const hint = new RegExp(`<span id="${id}"[^>]*>([^<]*)</span>`).exec(html)?.[1];
     expect(hint).toContain('เกิดบ่อยแค่ไหน');
-    expect(hint).toContain('หน่วย: ครั้ง/เดือน');
+    expect(hint).not.toContain('ครั้ง/เดือน');
   });
   it('has no hover-driven hint markup', () => {
     expect(render(false)).not.toContain('role="tooltip"');

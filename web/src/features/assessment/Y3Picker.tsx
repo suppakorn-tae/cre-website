@@ -3,7 +3,7 @@
 import * as Popover from '@radix-ui/react-popover';
 import { IconChevronDown } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useEffect, useId, useRef, useState, type RefObject } from 'react';
 import { createPortal } from 'react-dom';
 
 import { Button, Icon, type CheckboxOption } from '@/components/ui';
@@ -40,29 +40,32 @@ function TriggerContent({ name, value }: { name: string; value: string[] }) {
           {v}
         </span>
       ))}
-      {value.length > 0 && (
+      {value.length > 0 ? (
         <span className={styles.srOnly}>{t('table.picked', { count: value.length })}</span>
+      ) : (
+        <span className={styles.pick}>{t('table.pick')}</span>
       )}
-      <span className={styles.pick}>{t('table.pick')}</span>
       <Icon icon={IconChevronDown} size={16} />
     </>
   );
 }
 
-/** The question, the helper, the nine choices and the clear and done buttons. */
+/**
+ * The question, the helper, the nine choices and the clear and done buttons. `value` is the
+ * choice being edited, not the saved one; "done" is off while A is chosen with another letter.
+ */
 function Panel({
   name,
   question,
   options,
   value,
   disabled,
-  done,
+  onDone,
   footerClass,
   onChange,
 }: Pick<Props, 'question' | 'options' | 'value' | 'disabled' | 'onChange'> & {
   name: string;
-  /** The "done" button, wrapped by whatever closes the panel. */
-  done: ReactNode;
+  onDone: () => void;
   /** Extra class of the button row (the sheet keeps it in view while the choices scroll). */
   footerClass?: string;
 }) {
@@ -108,10 +111,29 @@ function Panel({
         >
           {t('y3.clear')}
         </Button>
-        {done}
+        <Button disabled={disabled || conflict} onClick={onDone}>
+          {t('y3.done')}
+        </Button>
       </div>
     </>
   );
+}
+
+/**
+ * The choice edited while the panel is open. It starts from the saved value each time the
+ * panel opens; only `done` hands it to `onChange` (when it changed), so closing any other
+ * way (Esc, a click outside) saves nothing.
+ */
+function useChoice(value: string[], onChange: (value: string[]) => void) {
+  const [choice, setChoice] = useState(value);
+  const start = () => setChoice(value);
+  const done = () => {
+    if (y3Conflict(choice)) return false;
+    const same = choice.length === value.length && choice.every((c) => value.includes(c));
+    if (!same) onChange(choice);
+    return true;
+  };
+  return { choice, setChoice, start, done };
 }
 
 /**
@@ -137,9 +159,20 @@ function Y3Popover({
   const trigger = useRef<HTMLButtonElement>(null);
   const name = `${t('fields.y3')} ${code}`;
   const [top, setTop] = useState(0);
+  const [open, setOpen] = useState(false);
+  const edit = useChoice(value, onChange);
 
   return (
-    <Popover.Root onOpenChange={(open) => open && setTop(stickyTop(trigger.current))}>
+    <Popover.Root
+      open={open}
+      onOpenChange={(next) => {
+        if (next) {
+          setTop(stickyTop(trigger.current));
+          edit.start();
+        }
+        setOpen(next);
+      }}
+    >
       <Popover.Trigger
         ref={trigger}
         className={styles.pickerHead}
@@ -168,14 +201,10 @@ function Y3Popover({
             name={name}
             question={question}
             options={options}
-            value={value}
+            value={edit.choice}
             disabled={disabled}
-            onChange={onChange}
-            done={
-              <Popover.Close asChild>
-                <Button>{t('y3.done')}</Button>
-              </Popover.Close>
-            }
+            onChange={edit.setChoice}
+            onDone={() => edit.done() && setOpen(false)}
           />
         </Popover.Content>
       </Popover.Portal>
@@ -201,6 +230,7 @@ function Y3Sheet({
   const t = useTranslations('assessment');
   const name = `${t('fields.y3')} ${code}`;
   const [open, setOpen] = useState(false);
+  const edit = useChoice(value, onChange);
   const sheet = useRef<HTMLDialogElement>(null);
   // True when the current press started on the dimmed area, so a drag that ends there
   // (for example from a choice row) does not close the sheet.
@@ -238,7 +268,10 @@ function Y3Sheet({
         aria-haspopup="dialog"
         aria-expanded={open}
         aria-describedby={describedBy || undefined}
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          edit.start();
+          setOpen(true);
+        }}
       >
         <TriggerContent name={name} value={value} />
       </button>
@@ -261,11 +294,11 @@ function Y3Sheet({
                 name={name}
                 question={question}
                 options={options}
-                value={value}
+                value={edit.choice}
                 disabled={disabled}
-                onChange={onChange}
+                onChange={edit.setChoice}
                 footerClass={styles.sheetFooter}
-                done={<Button onClick={close}>{t('y3.done')}</Button>}
+                onDone={() => edit.done() && close()}
               />
             </div>
           </dialog>,
