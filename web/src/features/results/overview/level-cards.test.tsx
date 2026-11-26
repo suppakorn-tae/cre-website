@@ -18,7 +18,7 @@ import { mockResults } from './mocks';
 import { ResultsPage } from './ResultsPage';
 
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ replace: vi.fn() }),
+  useRouter: () => ({ replace: vi.fn(), back: vi.fn(), push: vi.fn() }),
   usePathname: () => '/projects/p/versions/v/results',
   useSearchParams: () => new URLSearchParams(),
 }));
@@ -54,10 +54,24 @@ describe('results level cards', () => {
     const html = renderPage();
     for (const level of ['VH', 'H', 'M', 'L', 'VL']) {
       const card = new RegExp(
-        `data-level="${level}"><span class="[^"]*badge[^"]*"[^>]*>${level}</span><p class="[^"]*countValue[^"]*"><span class="[^"]*countNumber[^"]*">\\d+</span><span class="[^"]*countUnit[^"]*">ตัวชี้วัด</span>`,
+        `data-level="${level}"><p class="[^"]*countName[^"]*"><span class="[^"]*badge[^"]*"[^>]*>${level}</span><span aria-hidden="true"> – [^<]+</span></p><p class="[^"]*countValue[^"]*"><span class="[^"]*countNumber[^"]*">\\d+</span><span class="[^"]*countUnit[^"]*">ตัวชี้วัด</span>`,
       );
       expect(html).toMatch(card);
     }
+  });
+
+  it('names every level in full next to its code', () => {
+    const html = renderPage();
+    for (const name of [
+      'ความเสี่ยงสูงมาก',
+      'ความเสี่ยงสูง',
+      'ความเสี่ยงปานกลาง',
+      'ความเสี่ยงต่ำ',
+      'ความเสี่ยงต่ำมาก',
+    ]) {
+      expect(html).toContain(` – ${name}</span>`);
+    }
+    expect(/\.countName\s*\{([^}]*)\}/.exec(css)?.[1]).toContain('--weight-bold');
   });
 
   it('colours the stripe of every level with its level token', () => {
