@@ -1,35 +1,17 @@
 import { useTranslations } from 'next-intl';
 import type { CSSProperties } from 'react';
 
-import { LEVELS, type Level } from '@/components/ui';
+import { DonutChart, LEVELS } from '@/components/ui';
 import { formatNumber } from '@/lib/format/locale';
 
 import type { DashboardSummary } from './api';
 import styles from './dashboard.module.css';
+import { CountUp } from './motion';
 
 /** Whole-percent share of a level; display only, the counts stay the source. */
 export function levelPercent(count: number, total: number): number {
   return total <= 0 ? 0 : Math.round((count / total) * 100);
 }
-
-export type DonutSegment = { level: Level; length: number; offset: number };
-
-/** Arcs on a ring of circumference 100: one per non-empty level, in level order. */
-export function donutSegments(counts: DashboardSummary['level_distribution']): DonutSegment[] {
-  const total = LEVELS.reduce((sum, l) => sum + counts[l], 0);
-  if (total === 0) return [];
-  let offset = 0;
-  const segments: DonutSegment[] = [];
-  for (const level of LEVELS) {
-    if (counts[level] === 0) continue;
-    const length = (counts[level] / total) * 100;
-    segments.push({ level, length, offset });
-    offset += length;
-  }
-  return segments;
-}
-
-const RING_RADIUS = 15.9155; // circumference 100
 
 /** One decimal, e.g. "15.5%": the hi-fi legend shows shares like 2.1% and 38.0%. */
 function formatShare(count: number, total: number): string {
@@ -37,7 +19,7 @@ function formatShare(count: number, total: number): string {
   return `${formatNumber(share, undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
 }
 
-/** Legend order of the hi-fi: highest risk first. */
+/** Order of the hi-fi, in the ring (clockwise from the top) and in the legend: highest risk first. */
 const LEGEND_ORDER = [...LEVELS].reverse();
 
 /** Donut of the level distribution with a legend of counts and percentages. */
@@ -62,33 +44,28 @@ export function LevelChart({ counts }: { counts: DashboardSummary['level_distrib
       ) : (
         <div className={styles.donutWrap}>
           <div className={styles.donut}>
-            <svg viewBox="0 0 40 40" role="img" aria-label={label} className={styles.donutSvg}>
-              <circle cx="20" cy="20" r={RING_RADIUS} fill="none" className={styles.donutTrack} />
-              {donutSegments(counts).map((seg) => (
-                <circle
-                  key={seg.level}
-                  cx="20"
-                  cy="20"
-                  r={RING_RADIUS}
-                  fill="none"
-                  stroke={`var(--level-${seg.level.toLowerCase()})`}
-                  strokeWidth="6"
-                  strokeDasharray={`${seg.length} ${100 - seg.length}`}
-                  strokeDashoffset={25 - seg.offset}
-                />
-              ))}
-            </svg>
-            <span className={styles.donutCentre} aria-hidden="true">
-              <span className={styles.donutTotal}>{formatNumber(total)}</span>
-              <span className={styles.donutUnit}>{t('unit')}</span>
-            </span>
+            <DonutChart
+              segments={LEGEND_ORDER.map((l) => ({
+                key: l,
+                value: counts[l],
+                color: `var(--level-${l.toLowerCase()})`,
+              }))}
+              label={label}
+              centre={total}
+              caption={t('unit')}
+            />
           </div>
           <ul className={styles.donutLegend}>
             {LEGEND_ORDER.map((level) => (
               <li key={level} className={styles.donutRow} data-level={level}>
                 <span className={styles.dot} aria-hidden="true" />
-                <span className={styles.barName}>{tLevels(level)}</span>
-                <span className={styles.barValue}>{formatNumber(counts[level])}</span>
+                <span className={styles.barName}>
+                  <span aria-hidden="true">{level}</span>
+                  <span className={styles.srOnly}>{tLevels(level)}</span>
+                </span>
+                <span className={styles.barValue}>
+                  <CountUp value={counts[level]} />
+                </span>
                 <span className={styles.donutPct}>{formatShare(counts[level], total)}</span>
                 <span className={styles.donutBar} aria-hidden="true">
                   <span
@@ -125,12 +102,12 @@ export function ProjectRiskChart({ risks }: { risks: DashboardSummary['project_r
           <p className={styles.chartCaption}>{t('caption')}</p>
         </div>
         {risks.length > 0 && (
-          <p className={styles.legend}>
+          <p className={styles.legend} aria-hidden="true">
             <span className={styles.legendItem} data-level="H">
-              {t('high')}
+              {t('legendH')}
             </span>
             <span className={styles.legendItem} data-level="VH">
-              {t('veryHigh')}
+              {t('legendVH')}
             </span>
           </p>
         )}
@@ -138,32 +115,43 @@ export function ProjectRiskChart({ risks }: { risks: DashboardSummary['project_r
       {risks.length === 0 ? (
         <p className={styles.chartNone}>{t('none')}</p>
       ) : (
-        <>
-          <ul className={styles.bars} style={{ '--axis-steps': max / 5 } as CSSProperties}>
-            {risks.map((r) => (
-              <li key={r.project_id} className={styles.barRow}>
-                <span className={styles.barLabel}>
-                  <span className={styles.nicknameChip}>{r.nickname}</span>
-                  <span className={styles.barProject}>{r.name}</span>
-                </span>
-                <span className={styles.track} aria-hidden="true">
-                  <span
-                    className={styles.stack}
-                    style={{ width: `${(100 * (r.h_count + r.vh_count)) / max}%` }}
-                  >
-                    <span className={styles.fill} data-level="H" style={{ flex: r.h_count }} />
-                    <span className={styles.fill} data-level="VH" style={{ flex: r.vh_count }} />
+        <div className={styles.plot} style={{ '--axis-steps': max / 5 } as CSSProperties}>
+          <span className={styles.grid} aria-hidden="true" />
+          <ul className={styles.bars}>
+            {risks.map((r) => {
+              const total = r.h_count + r.vh_count;
+              const width = (100 * total) / max;
+              return (
+                <li key={r.project_id} className={styles.barRow}>
+                  <span className={styles.barLabel}>
+                    <span className={styles.nicknameChip}>{r.nickname}</span>
+                    <span className={styles.barProject}>{r.name}</span>
                   </span>
-                </span>
-                <span className={styles.barValue}>
-                  <span aria-hidden="true">{formatNumber(r.h_count + r.vh_count)}</span>
-                  <span className={styles.srOnly}>
-                    {t('high')} {formatNumber(r.h_count)} · {t('veryHigh')}{' '}
-                    {formatNumber(r.vh_count)}
+                  <span className={styles.track}>
+                    <span
+                      className={styles.stack}
+                      style={{ width: `${width}%` }}
+                      aria-hidden="true"
+                    >
+                      <span className={styles.fill} data-level="H" style={{ flex: r.h_count }} />
+                      <span className={styles.fill} data-level="VH" style={{ flex: r.vh_count }} />
+                    </span>
+                    <span
+                      className={`${styles.total} ${styles.barValue}`}
+                      style={{ left: `${width}%` }}
+                    >
+                      <span aria-hidden="true">
+                        <CountUp value={total} />
+                      </span>
+                      <span className={styles.srOnly}>
+                        {t('high')} {formatNumber(r.h_count)} · {t('veryHigh')}{' '}
+                        {formatNumber(r.vh_count)}
+                      </span>
+                    </span>
                   </span>
-                </span>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
           <div className={styles.axis} aria-hidden="true">
             <span className={styles.axisTicks}>
@@ -174,7 +162,7 @@ export function ProjectRiskChart({ risks }: { risks: DashboardSummary['project_r
               ))}
             </span>
           </div>
-        </>
+        </div>
       )}
     </section>
   );

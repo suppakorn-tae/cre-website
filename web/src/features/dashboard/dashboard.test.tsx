@@ -12,7 +12,7 @@ import ui from '../../../messages/th/ui.json';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
-import { axisMax, donutSegments, levelPercent, LevelChart, ProjectRiskChart } from './Charts';
+import { axisMax, levelPercent, LevelChart, ProjectRiskChart } from './Charts';
 import { DashboardPage } from './DashboardPage';
 import { formatMillionBaht } from './format';
 import { ProjectsTable } from './ProjectsTable';
@@ -63,12 +63,12 @@ describe('level donut', () => {
     expect(levelPercent(0, 0)).toBe(0);
   });
 
-  it('draws one arc per non-empty level, in level order, filling the ring', () => {
-    const segs = donutSegments({ VL: 1, L: 0, M: 1, H: 2, VH: 0 });
-    expect(segs.map((s) => s.level)).toEqual(['VL', 'M', 'H']);
-    expect(segs.map((s) => s.length)).toEqual([25, 25, 50]);
-    expect(segs.map((s) => s.offset)).toEqual([0, 25, 50]);
-    expect(donutSegments({ VL: 0, L: 0, M: 0, H: 0, VH: 0 })).toEqual([]);
+  it('draws the shared donut with gaps, highest risk first from the top', () => {
+    const html = render(<LevelChart counts={counts} />);
+    expect(html).toContain('<mask');
+    // VH is the first arc; the ring has 5 non-empty levels, so each arc is shorter than its share.
+    expect(html.indexOf('var(--level-vh)')).toBeLessThan(html.indexOf('var(--level-vl)'));
+    expect(html.match(/stroke-dasharray="[\d.]+ [\d.]+"/g)!.length).toBeGreaterThanOrEqual(5);
   });
 
   it('is an image with a Thai label and a legend of counts and percentages', () => {
@@ -80,6 +80,8 @@ describe('level donut', () => {
     expect(html.indexOf('>ความเสี่ยงสูงมาก<')).toBeLessThan(html.indexOf('>ความเสี่ยงต่ำมาก<'));
     expect(html).not.toContain('--level-vh-on');
     expect(html).toContain('stroke="var(--level-vh)"');
+    // The legend prints the level code as in the hi-fi, the Thai name is for screen readers.
+    expect(html).toContain('<span aria-hidden="true">VH</span>');
   });
 });
 
@@ -202,7 +204,7 @@ describe('DashboardPage', () => {
       'เกาะที่ดำเนินการ',
       'มูลค่ารวม',
       'การกระจายระดับความเสี่ยง',
-      'จำนวนความเสี่ยงสูงและสูงมากรายโครงการ',
+      'จำนวนความเสี่ยง H / VH รายโครงการ',
       'กำลังแสดง',
       'เพิ่มโครงการ',
     ]) {
