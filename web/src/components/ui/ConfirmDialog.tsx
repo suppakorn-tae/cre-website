@@ -52,8 +52,17 @@ export function ConfirmDialog({
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
+    if (!open) {
+      if (dialog.open) dialog.close();
+      return;
+    }
+    if (!dialog.open) dialog.showModal();
+    // Close on unmount and when the page is hidden but kept: after a client-side
+    // navigation Next.js keeps the old page in a hidden <Activity>, and a modal
+    // dialog left open there stays in the top layer and makes the new page inert.
+    return () => {
+      if (dialog.open) dialog.close();
+    };
   }, [open]);
 
   return (

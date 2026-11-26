@@ -123,6 +123,8 @@ function Form({
         return;
       }
       await submitVersion(projectId, versionId);
+      // Close first: Next.js keeps this page (and its state) for the way back.
+      setConfirming(false);
       router.push(resultsPath(projectId, versionId));
     } catch (error) {
       setConfirming(false);
