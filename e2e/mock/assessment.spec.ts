@@ -76,7 +76,7 @@ for (const width of [768, 1280]) {
       return [...row.children].map((cell, i) => {
         const control = cell.querySelector('input, button');
         return {
-          head: textLeft(heads[i]),
+          head: textLeft(heads[i]!),
           cell: control ? control.getBoundingClientRect().left : textLeft(cell),
         };
       });
