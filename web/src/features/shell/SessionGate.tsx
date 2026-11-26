@@ -1,13 +1,8 @@
-import { cache, Suspense, type ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 
 import { AccountControl, AdminSide, AppShell, type ShellVariant } from './AppShell';
-import { requireSession } from './guard';
+import { sessionFor } from './guard';
 import { AccountSkeleton, ContentSkeleton, SideSkeleton } from './Skeletons';
-
-// One session check per request, shared by the account control and the guard.
-const sessionFor = cache((variant: ShellVariant) =>
-  requireSession({ requireAdmin: variant === 'admin' }),
-);
 
 /**
  * Wraps the signed-in pages in the shell. The frame (header, logo, side menu)
