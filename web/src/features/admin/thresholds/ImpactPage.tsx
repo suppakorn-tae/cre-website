@@ -11,16 +11,12 @@ export function ImpactPage() {
   return (
     <div className={styles.page}>
       <header>
-        <h1 className={styles.title}>{t('impact.title')}</h1>
+        <h1 className={styles.title}>
+          {t.rich('impact.titleRich', { sub: (chunks) => <sub>{chunks}</sub> })}
+        </h1>
         <p className={styles.subtitle}>{t('impact.subtitle')}</p>
       </header>
-      <aside className={styles.notice}>
-        <p className={styles.noticeTitle}>{t('notice.title')}</p>
-        <p className={styles.noticeBody}>{t('notice.body')}</p>
-      </aside>
-      <section className={styles.card} aria-label={t('impact.title')}>
-        <ImpactTables />
-      </section>
+      <ImpactTables />
     </div>
   );
 }

@@ -118,6 +118,12 @@ export function createVersionHandlers(): HttpHandler[] {
     }),
     mswHttp.delete('*/api/v1/projects/:projectId/versions/:versionId', ({ params }) => {
       const projectId = String(params.projectId);
+      if (listFor(projectId).length <= 1) {
+        return HttpResponse.json(
+          { error: { code: 'last_version', message: 'a project keeps at least one version' } },
+          { status: 409 },
+        );
+      }
       lists.set(
         projectId,
         listFor(projectId).filter((v) => v.id !== params.versionId),

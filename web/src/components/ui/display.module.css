@@ -15,7 +15,27 @@
   overflow-x: auto;
   border-bottom: 1px solid var(--color-border);
 }
+/* Narrow screens: the strip scrolls inside itself; a fade shows which side has more. */
+@media (max-width: 767px) {
+  .tablist {
+    gap: var(--space-5);
+    scrollbar-width: none;
+    background:
+      linear-gradient(to right, var(--color-canvas) 30%, transparent) left center / 2rem 100%
+        no-repeat local,
+      linear-gradient(to left, var(--color-canvas) 30%, transparent) right center / 2rem 100%
+        no-repeat local,
+      linear-gradient(to right, var(--color-border), transparent) left center / 0.75rem 100%
+        no-repeat scroll,
+      linear-gradient(to left, var(--color-border), transparent) right center / 0.75rem 100%
+        no-repeat scroll;
+  }
+  .tablist::-webkit-scrollbar {
+    display: none;
+  }
+}
 .tab {
+  flex: none;
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -140,6 +160,15 @@
   text-align: end !important;
   font-variant-numeric: tabular-nums;
 }
+.nowrap {
+  white-space: nowrap;
+  overflow-wrap: normal !important;
+}
+.bare {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
 .caption {
   position: absolute;
   width: 1px;
@@ -203,6 +232,47 @@
   }
 }
 
+/* Data table with `renderCard`: the table above 767px, the cards below */
+.hasCards + .cards {
+  display: none;
+}
+.denseWrap {
+  border-inline: 0;
+  border-radius: 0;
+}
+.dense th,
+.dense td {
+  padding: var(--space-3) var(--space-3);
+  overflow-wrap: break-word;
+}
+.dense th:first-child,
+.dense td:first-child {
+  padding-inline-start: var(--space-4);
+}
+.dense th:last-child,
+.dense td:last-child {
+  padding-inline-end: var(--space-4);
+}
+.cards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.card {
+  margin-bottom: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+@media (max-width: 767px) {
+  .hasCards {
+    display: none;
+  }
+  .hasCards + .cards {
+    display: block;
+  }
+}
+
 /* Level badge */
 .badge {
   display: inline-flex;
@@ -256,7 +326,8 @@
   color: var(--level-vh-on);
 }
 
-/* KPI card */
+/* KPI card: icon tile, label, value and note. A clickable card shows a chevron,
+   the selected one a tag and a 2px blue border (hi-fi "Dashboard"). */
 .kpi {
   display: flex;
   flex-direction: column;
@@ -282,22 +353,58 @@ button.kpi:focus-visible {
   outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }
-.kpiSelected {
+.kpiSelected,
+button.kpiSelected:hover {
+  padding: calc(var(--space-5) - 1px);
+  border-width: 2px;
   border-color: var(--color-blue-600);
-  background: var(--color-blue-50);
+  background: var(--color-white);
 }
 .kpiHead {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  gap: var(--space-3);
   color: var(--color-text-secondary);
   font-size: var(--text-body);
 }
+.kpiHeadIcon {
+  margin-bottom: var(--space-2);
+}
+.kpiLabel {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.kpiIcon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-control);
+}
+.kpiTone-blue {
+  background: var(--color-blue-50);
+  color: var(--color-blue-600);
+}
+.kpiTone-red {
+  background: var(--level-vh-tint);
+  color: var(--level-vh-text);
+}
+.kpiTone-orange {
+  background: var(--color-orange-50);
+  color: var(--color-warning);
+}
+.kpiChevron {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-text-muted);
+}
 .kpiTag {
+  flex: none;
   padding: 0 var(--space-2);
-  border-radius: var(--radius-badge);
-  background: var(--color-blue-100);
+  border-radius: var(--radius-pill);
+  background: var(--color-blue-50);
   color: var(--color-blue-700);
   font-size: var(--text-caption);
   line-height: 22px;
@@ -307,7 +414,7 @@ button.kpi:focus-visible {
   flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-2);
-  color: var(--color-navy-900);
+  color: var(--color-text);
   font-size: var(--text-kpi);
   font-weight: var(--weight-bold);
   line-height: var(--leading-kpi);
@@ -323,6 +430,33 @@ button.kpi:focus-visible {
   font-size: var(--text-caption);
 }
 
+/* Phone: tile and chevron on the first row, the label under them (hi-fi mobile) */
+@media (max-width: 599px) {
+  .kpi {
+    padding: var(--space-3) var(--space-3) var(--space-3);
+  }
+  .kpiSelected,
+  button.kpiSelected:hover {
+    padding: calc(var(--space-3) - 1px);
+  }
+  .kpiHeadIcon {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .kpiHeadIcon .kpiIcon {
+    width: 32px;
+    height: 32px;
+  }
+  .kpiHeadIcon .kpiLabel {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .kpiHeadIcon .kpiChevron,
+  .kpiHeadIcon .kpiTag {
+    margin-inline-start: auto;
+  }
+}
+
 /* Empty state */
 .empty {
   display: flex;
@@ -331,6 +465,17 @@ button.kpi:focus-visible {
   gap: var(--space-2);
   padding: var(--space-8) var(--space-4);
   text-align: center;
+}
+.emptyIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-dialog);
+  background: var(--color-blue-50);
+  color: var(--color-blue-600);
 }
 .emptyTitle {
   margin: 0;

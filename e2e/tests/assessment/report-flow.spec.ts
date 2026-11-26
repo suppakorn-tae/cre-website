@@ -94,7 +94,8 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     v1 = versions.items[0]!.id;
 
     await go(page, '/projects');
-    await expect(page.getByText(projectName).first()).toBeVisible();
+    // The list has a table for wide screens and cards for phones; one of them is hidden.
+    await expect(page.getByText(projectName).and(page.locator(':visible')).first()).toBeVisible();
 
     // The project page links straight to answering v1.
     await go(page, `/projects/${projectId}`);
@@ -324,8 +325,9 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
 
   test('delete the project: it disappears everywhere and the report is gone', async () => {
     await go(page, '/projects');
-    const r = page.getByRole('row').filter({ hasText: projectName });
-    await r.getByRole('button', { name: msg('projects', 'list.delete') }).click();
+    await page
+      .getByRole('button', { name: `${msg('projects', 'list.delete')} ${nickname}`, exact: true })
+      .click();
     await page
       .getByRole('button', { name: msg('projects', 'list.deleteDialog.confirm'), exact: true })
       .click();

@@ -60,15 +60,18 @@ describe('AppShell', () => {
     for (const label of [
       'จัดการผู้ใช้',
       'คำแนะนำตัวชี้วัด',
-      'เกณฑ์ระดับความเสี่ยง',
-      'เกณฑ์ผลกระทบต้นทุนและเวลา',
+      'เกณฑ์ RL (a–e)',
+      'RI<sub>C</sub> / RI<sub>T</sub>',
       'ส่งออกข้อมูลวิจัย',
-      'บันทึกการกระทำ',
+      'Audit log',
     ]) {
       expect(html).toContain(label);
     }
     expect(html.match(/<li>/g)).toHaveLength(6);
-    expect(html).toMatch(/aria-current="page"[^>]*>จัดการผู้ใช้/);
+    expect(html).toMatch(/aria-current="page"[^>]*>(?:(?!<li).)*จัดการผู้ใช้/);
+    // Every item has a decorative icon (the header has its own, outside the nav).
+    const nav = html.slice(html.indexOf('<nav'), html.indexOf('</nav>'));
+    expect(nav.match(/<svg[^>]*aria-hidden="true"/g)).toHaveLength(6);
   });
 });
 
@@ -90,10 +93,16 @@ describe('AppShell admin layout and header', () => {
     expect(render('app', false)).not.toContain('admin-badge');
   });
 
-  it('titles the sidebar card and collapses it behind a closed toggle', () => {
+  it('titles the admin menu and keeps it as one labelled nav with no toggle', () => {
     const html = render('admin', true);
     expect(html).toContain('เมนูผู้ดูแลระบบ');
-    expect(html).toMatch(/<button[^>]*aria-expanded="false"[^>]*aria-controls="admin-nav"/);
+    expect(html).toMatch(/<nav[^>]*aria-label="เมนูผู้ดูแลระบบ"/);
+    expect(html.match(/<nav/g)).toHaveLength(1);
+    expect(html).not.toContain('aria-controls="admin-nav"');
+  });
+
+  it('writes the badge as Admin', () => {
+    expect(render('admin', true)).toMatch(/data-testid="admin-badge"[^>]*>Admin</);
   });
 
   it('renders the account button as a closed menu button', () => {

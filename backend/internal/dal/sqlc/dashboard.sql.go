@@ -251,16 +251,22 @@ LEFT JOIN LATERAL (
     FROM risk_result r WHERE r.version_id = ls.id
 ) s ON ls.id IS NOT NULL
 WHERE p.owner_id = $1 AND p.deleted_at IS NULL
-  AND ($2::text = '' OR p.name ILIKE $2::text OR p.nickname ILIKE $2::text)
+  AND ($2::text = ''
+       OR p.name ILIKE $2::text
+       OR p.nickname ILIKE $2::text
+       OR replace(p.island_code, '_', ' ') ILIKE $2::text
+       OR p.island_other ILIKE $2::text
+       OR p.island_code = ANY($3::text[]))
 ORDER BY p.created_at DESC, p.id DESC
-LIMIT $4 OFFSET $3
+LIMIT $5 OFFSET $4
 `
 
 type DashboardProjectsPanelParams struct {
-	OwnerID    uuid.UUID
-	Q          string
-	PageOffset int32
-	PageLimit  int32
+	OwnerID     uuid.UUID
+	Q           string
+	IslandCodes []string
+	PageOffset  int32
+	PageLimit   int32
 }
 
 type DashboardProjectsPanelRow struct {
@@ -284,7 +290,10 @@ type DashboardProjectsPanelRow struct {
 	Total                    int32
 }
 
-// @q is a LIKE pattern already escaped by the caller, or empty for all.
+// @q is a LIKE pattern already escaped by the caller, or empty for all. It
+// matches name, nickname, the island code (read with spaces, "koh samui"),
+// the free-text island, and the islands in @island_codes, which the caller
+// picked by Thai name (the island table holds codes only).
 // Columns of the submitted version are zero values when submitted is false
 // (sqlc cannot mark lateral join columns nullable); avg_rm is ” when no
 // indicator is scored. Projects without a live version are not listed: the
@@ -293,6 +302,7 @@ func (q *Queries) DashboardProjectsPanel(ctx context.Context, arg DashboardProje
 	rows, err := q.db.Query(ctx, dashboardProjectsPanel,
 		arg.OwnerID,
 		arg.Q,
+		arg.IslandCodes,
 		arg.PageOffset,
 		arg.PageLimit,
 	)

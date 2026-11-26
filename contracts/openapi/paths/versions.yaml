@@ -68,7 +68,11 @@
   delete:
     operationId: deleteVersion
     summary: Delete a version (soft)
-    description: Hides the version and its reports. There is no restore and its number is not reused.
+    description: |
+      Hides the version and its reports. There is no restore and its number
+      is not reused. A project always keeps at least one version: deleting
+      the last live one is refused with 409 and code `last_version`. Delete
+      the project instead.
     responses:
       '204':
         description: Deleted.
@@ -78,3 +82,5 @@
         $ref: ../schemas/common.yaml#/responses/Forbidden
       '404':
         $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        $ref: ../schemas/common.yaml#/responses/Conflict

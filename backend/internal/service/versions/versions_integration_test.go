@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -188,5 +189,133 @@ func TestSubmittedVersionStats(t *testing.T) {
 	}
 	if sum != *got.ScoredCount || got.LevelCounts["H"] != *got.HighCount || got.LevelCounts["VH"] != *got.VeryHighCount {
 		t.Fatalf("level counts %v do not match scored %d", got.LevelCounts, *got.ScoredCount)
+	}
+}
+
+func TestDeleteKeepsTheLastVersion(t *testing.T) {
+	ctx := context.Background()
+	db, svc, pid, owner := setup(t)
+	v1, _ := svc.Create(ctx, pid, owner)
+	v2, _ := svc.Create(ctx, pid, owner)
+
+	if err := svc.Delete(ctx, pid, v1.ID, owner); err != nil {
+		t.Fatalf("delete one of two: %v", err)
+	}
+	if err := svc.Delete(ctx, pid, v2.ID, owner); !errors.Is(err, versions.ErrLastVersion) {
+		t.Fatalf("delete the last: err = %v, want ErrLastVersion", err)
+	}
+	if n := count(t, db, `SELECT count(*) FROM assessment_version WHERE project_id = $1 AND deleted_at IS NULL`, pid); n != 1 {
+		t.Fatalf("live versions = %d, want 1", n)
+	}
+	// An already deleted or unknown version is still absent, not a conflict.
+	if err := svc.Delete(ctx, pid, v1.ID, owner); !errors.Is(err, versions.ErrNotFound) {
+		t.Fatalf("delete a deleted version: err = %v, want ErrNotFound", err)
+	}
+	// After a new version exists the old one can go again.
+	v3, _ := svc.Create(ctx, pid, owner)
+	if err := svc.Delete(ctx, pid, v2.ID, owner); err != nil {
+		t.Fatalf("delete with a newer version present: %v", err)
+	}
+	if err := svc.Delete(ctx, pid, v3.ID, owner); !errors.Is(err, versions.ErrLastVersion) {
+		t.Fatalf("delete the last again: err = %v, want ErrLastVersion", err)
+	}
+}
+
+// Two deletes racing for the last two versions must leave one behind.
+func TestConcurrentDeletesLeaveOneVersion(t *testing.T) {
+	ctx := context.Background()
+	for round := 0; round < 5; round++ {
+		db, svc, pid, owner := setup(t)
+		v1, _ := svc.Create(ctx, pid, owner)
+		v2, _ := svc.Create(ctx, pid, owner)
+
+		errs := make([]error, 2)
+		var wg sync.WaitGroup
+		start := make(chan struct{})
+		for i, id := range []uuid.UUID{v1.ID, v2.ID} {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				<-start
+				errs[i] = svc.Delete(ctx, pid, id, owner)
+			}()
+		}
+		close(start)
+		wg.Wait()
+
+		if n := count(t, db, `SELECT count(*) FROM assessment_version WHERE project_id = $1 AND deleted_at IS NULL`, pid); n != 1 {
+			t.Fatalf("round %d: live versions = %d, want 1 (errs %v)", round, n, errs)
+		}
+		ok, last := 0, 0
+		for _, err := range errs {
+			switch {
+			case err == nil:
+				ok++
+			case errors.Is(err, versions.ErrLastVersion):
+				last++
+			default:
+				t.Fatalf("round %d: unexpected error %v", round, err)
+			}
+		}
+		if ok != 1 || last != 1 {
+			t.Fatalf("round %d: ok = %d, last = %d, want 1 and 1", round, ok, last)
+		}
+	}
+}
+
+// The barrier test above cannot fail reliably (both deletes usually finish one
+// after the other), so this one pins the lock itself: while another
+// transaction holds the project row, Delete must wait for it.
+func TestDeleteWaitsForTheProjectLock(t *testing.T) {
+	ctx := context.Background()
+	db, svc, pid, owner := setup(t)
+	v1, _ := svc.Create(ctx, pid, owner)
+	_, _ = svc.Create(ctx, pid, owner)
+
+	holder, err := db.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = holder.Rollback(ctx) }()
+	if _, err := holder.Exec(ctx, `SELECT id FROM project WHERE id = $1 FOR UPDATE`, pid); err != nil {
+		t.Fatal(err)
+	}
+
+	done := make(chan error, 1)
+	go func() { done <- svc.Delete(ctx, pid, v1.ID, owner) }()
+	select {
+	case err := <-done:
+		t.Fatalf("Delete finished (err %v) while the project row was locked", err)
+	case <-time.After(500 * time.Millisecond):
+	}
+
+	if err := holder.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("Delete after the lock was released: %v", err)
+		}
+	case <-time.After(10 * time.Second):
+		t.Fatal("Delete did not finish after the lock was released")
+	}
+}
+
+// The panel lists projects through their latest live version, so every live
+// project must still have one after the guard. This is the read-only check
+// to run on dev and prod too (see the PR).
+func TestNoLiveProjectEndsWithoutAVersion(t *testing.T) {
+	ctx := context.Background()
+	db, svc, pid, owner := setup(t)
+	v1, _ := svc.Create(ctx, pid, owner)
+	v2, _ := svc.Create(ctx, pid, owner)
+	_ = svc.Delete(ctx, pid, v1.ID, owner)
+	_ = svc.Delete(ctx, pid, v2.ID, owner)
+	if n := count(t, db, `
+		SELECT count(*) FROM project p
+		WHERE p.deleted_at IS NULL AND NOT EXISTS (
+		    SELECT 1 FROM assessment_version v WHERE v.project_id = p.id AND v.deleted_at IS NULL)`); n != 0 {
+		t.Fatalf("%d live projects have no live version", n)
 	}
 }

@@ -23,15 +23,26 @@
   font-size: var(--text-small);
   overflow-wrap: anywhere;
 }
-.breadcrumb a,
-.rowLink {
+.breadcrumb a {
   color: var(--color-blue-700);
   text-decoration: none;
   border-radius: var(--radius-control);
 }
-.breadcrumb a:hover,
-.rowLink:hover {
+.breadcrumb a:hover {
   text-decoration: underline;
+}
+/* 32px icon button that opens the account. */
+.rowLink {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-sm);
+  height: var(--control-sm);
+  border-radius: var(--radius-control);
+  color: var(--color-blue-700);
+}
+.rowLink:hover {
+  background: var(--color-blue-50);
 }
 .breadcrumb a:focus-visible,
 .rowLink:focus-visible {
@@ -96,46 +107,50 @@
 /* Cells */
 .emailCell {
   display: inline-flex;
-  flex-wrap: wrap;
   align-items: baseline;
   gap: var(--space-2);
+  max-width: 100%;
+  min-width: 0;
+}
+.truncate {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 .email {
-  color: var(--color-navy-900);
-  font-weight: var(--weight-semibold);
+  color: var(--color-text);
+  font-weight: var(--weight-medium);
 }
 .emailDeleted {
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 .you {
+  flex: none;
   color: var(--color-text-muted);
   font-size: var(--text-small);
-}
-.role {
-  display: inline-flex;
-  align-items: center;
-  min-height: 22px;
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-badge);
-  font-size: var(--text-caption);
-  font-weight: var(--weight-medium);
   white-space: nowrap;
 }
-.role_admin {
-  background: var(--color-blue-50);
-  color: var(--color-blue-700);
-}
-.role_user {
-  background: var(--color-subtle);
-  color: var(--color-text-secondary);
-  box-shadow: inset 0 0 0 1px var(--color-border);
-}
+.role,
 .status {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  min-height: 22px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-caption);
+  font-weight: var(--weight-medium);
   white-space: nowrap;
+}
+.status {
+  padding: 0 var(--space-3) 0 var(--space-2);
+}
+.role_admin {
+  background: var(--color-navy-900);
+  color: var(--color-white);
+}
+.role_user {
+  background: var(--color-disabled-bg);
+  color: var(--color-text-secondary);
 }
 .dot {
   width: 6px;
@@ -144,22 +159,104 @@
   background: currentcolor;
 }
 .status_active {
+  background: var(--color-success-bg);
   color: var(--color-success);
 }
 .status_deactivated {
-  color: var(--color-warning);
+  background: var(--color-error-bg);
+  color: var(--color-error);
 }
 .status_deleted {
-  color: var(--color-text-muted);
+  background: var(--color-disabled-bg);
+  color: var(--color-text-secondary);
 }
 
-/* Keep short cells on one line in the wide table; cards wrap freely. */
+/* Wide table: one line per row. E-mail and organisation clip with an
+   ellipsis (the full value is in title and in the text itself); cards wrap. */
 @media (min-width: 768px) {
+  .page :global(table) th,
+  .page :global(table) td {
+    padding-inline: var(--space-3);
+  }
+  .page :global(table) th:first-child,
+  .page :global(table) td:first-child {
+    padding-inline-start: var(--space-5);
+  }
   .page :global(table) th,
   .methods,
   .emailCell {
     white-space: nowrap;
   }
+  .truncate {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .email,
+  .emailDeleted {
+    max-width: 15rem;
+  }
+  .org {
+    max-width: 10rem;
+  }
+}
+
+/* Pager */
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pageBtn {
+  min-width: var(--control-sm);
+  min-height: var(--control-sm);
+  padding: 0 var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--text-small);
+  cursor: pointer;
+}
+.pageBtn:hover:not(:disabled) {
+  background: var(--color-subtle);
+}
+.pageBtn[aria-current='page'] {
+  border-color: var(--color-blue-600);
+  background: var(--color-blue-50);
+  color: var(--color-blue-700);
+  font-weight: var(--weight-medium);
+}
+.pageBtn:disabled {
+  color: var(--color-disabled);
+  cursor: not-allowed;
+}
+.pageBtn:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--focus-ring);
+}
+.pageStep {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-color: var(--color-field-border);
+  background: var(--color-white);
+  color: var(--color-text);
+}
+.pageStep:disabled {
+  border-color: var(--color-border);
+  background: var(--color-disabled-bg);
+}
+.ellipsis {
+  min-width: var(--control-sm);
+  color: var(--color-text-muted);
+  text-align: center;
 }
 
 /* Detail */

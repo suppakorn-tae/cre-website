@@ -67,7 +67,37 @@ describe('overview', () => {
     expect(html).toContain('การกระจายระดับความเสี่ยง');
     expect(html).toContain('10 อันดับความเสี่ยงสูงสุด');
     expect(html).toContain('ด้านทดสอบ');
-    expect(html.match(/<tr>/g)).toHaveLength(11);
+    expect(html.match(/<tr>/g)).toHaveLength(6); // header + the first 5 of the top 10
+    expect(html).toContain('แสดงครบ 10 อันดับ');
+    expect(html).toContain('aria-expanded="false"');
+  });
+
+  it('shows the donut with the total and a legend row per level (code, count, share)', () => {
+    const results = mockResults('v', items);
+    const html = wrap(<OverviewTab results={results} names={names} />);
+    expect(html).toContain(`<svg viewBox="0 0 40 40" role="img"`);
+    expect(html).toContain(`>${results.summary.scored_count}</span>`); // centre
+    for (const level of ['VH', 'H', 'M', 'L', 'VL']) {
+      expect(html).toMatch(
+        new RegExp(`data-level="${level}"[^>]*><span[^>]*><span[^>]*></span>${level}`),
+      );
+    }
+    expect(html).toMatch(/\d+ · \d+\.\d%/);
+  });
+
+  it('keeps codes, ranks, RM and levels on one line; the name column wraps', () => {
+    const html = wrap(<OverviewTab results={mockResults('v', items)} names={names} />);
+    const row = /<tr>(?:(?!<\/tr>)[\s\S])*<td data-label="#"[\s\S]*?<\/tr>/.exec(html)?.[0] ?? '';
+    const cells = [...row.matchAll(/<td data-label="([^"]*)"[^>]*class="([^"]*)"/g)];
+    const wrapping = cells.filter(([, , cls]) => !cls.includes('nowrap')).map(([, label]) => label);
+    expect(wrapping).toEqual(['ตัวชี้วัด']);
+  });
+
+  it('shows the factor as a code, with the full name for screen readers', () => {
+    const html = wrap(<OverviewTab results={mockResults('v', items)} names={names} />);
+    expect(html).toContain(
+      '<span aria-hidden="true">F</span><span class="sr-only">ด้านทดสอบ</span>',
+    );
   });
 });
 

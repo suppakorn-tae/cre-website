@@ -1,5 +1,6 @@
 'use client';
 
+import { IconChevronRight } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
@@ -8,8 +9,8 @@ import {
   Button,
   DataTable,
   EmptyState,
+  Icon,
   Input,
-  Pagination,
   Select,
   Skeleton,
   type DataTableColumn,
@@ -26,6 +27,7 @@ import {
   type UserRole,
 } from './api';
 import { RoleBadge, StatusBadge } from './UserBadges';
+import { UserPager } from './UserPager';
 import styles from './users.module.css';
 
 const SEARCH_DELAY_MS = 300;
@@ -74,7 +76,12 @@ export function UserList() {
       primary: true,
       render: (u) => (
         <span className={styles.emailCell}>
-          <span className={u.email ? styles.email : styles.emailDeleted}>{accountName(u)}</span>
+          <span
+            className={`${styles.truncate} ${u.email ? styles.email : styles.emailDeleted}`}
+            title={accountName(u)}
+          >
+            {accountName(u)}
+          </span>
           {u.id === ownId && <span className={styles.you}>{t('you')}</span>}
         </span>
       ),
@@ -82,7 +89,14 @@ export function UserList() {
     {
       key: 'organisation',
       header: t('columns.organisation'),
-      render: (u) => u.organisation ?? t('noOrganisation'),
+      render: (u) =>
+        u.organisation ? (
+          <span className={`${styles.truncate} ${styles.org}`} title={u.organisation}>
+            {u.organisation}
+          </span>
+        ) : (
+          t('noOrganisation')
+        ),
     },
     { key: 'role', header: t('columns.role'), render: (u) => <RoleBadge role={u.role} /> },
     {
@@ -123,8 +137,9 @@ export function UserList() {
           href={`/admin/users/${u.id}`}
           className={styles.rowLink}
           aria-label={t('viewLabel', { account: accountName(u) })}
+          title={t('viewLabel', { account: accountName(u) })}
         >
-          {t('view')}
+          <Icon icon={IconChevronRight} size={18} />
         </Link>
       ),
     },
@@ -219,7 +234,7 @@ export function UserList() {
                   total: formatNumber(total),
                 })}
               </p>
-              <Pagination
+              <UserPager
                 page={page}
                 pageCount={pageCount}
                 onChange={setPage}

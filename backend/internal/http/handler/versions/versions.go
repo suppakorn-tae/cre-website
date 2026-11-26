@@ -133,6 +133,10 @@ func pathID(w http.ResponseWriter, r *http.Request, name string) (uuid.UUID, boo
 }
 
 func fail(w http.ResponseWriter, r *http.Request, err error) {
+	if errors.Is(err, svc.ErrLastVersion) {
+		middleware.WriteError(w, r, http.StatusConflict, "last_version", "a project keeps at least one version; delete the project instead")
+		return
+	}
 	if errors.Is(err, svc.ErrNotFound) {
 		notFound(w, r)
 		return

@@ -1,6 +1,6 @@
 import { LEVELS } from '@/components/ui';
 
-import type { IndicatorResult, ResultsResponse } from './api';
+import type { IndicatorResult, Level, ResultsResponse } from './api';
 
 export const TOP_COUNT = 10;
 
@@ -84,3 +84,22 @@ export function valuePlacement(rm: number, hLine: number = FALLBACK_H_LINE_RM): 
   if (top >= LABEL_PCT) return { mode: 'inside', bottomPct: top - LABEL_PCT };
   return { mode: 'above', bottomPct: line + LINE_PCT };
 }
+
+/** Level cut-offs of the api, or the documented defaults when a response carries none. */
+export type Cutoffs = NonNullable<ResultsResponse['level_cutoffs']>;
+export const FALLBACK_CUTOFFS: Cutoffs = { l: 1.5, m: 2.5, h: FALLBACK_H_LINE_RM, vh: 4.5 };
+
+/**
+ * Level that a factor's stored mean falls in, for the bar colour (hi-fi 3.3a). Display
+ * only: it reads the api's cut-offs and never changes a stored level.
+ */
+export function levelOfMean(rm: number, cutoffs: Cutoffs = FALLBACK_CUTOFFS): Level {
+  if (rm >= cutoffs.vh) return 'VH';
+  if (rm >= cutoffs.h) return 'H';
+  if (rm >= cutoffs.m) return 'M';
+  if (rm >= cutoffs.l) return 'L';
+  return 'VL';
+}
+
+/** Rows the Top 10 card shows before "show all". */
+export const TOP_COLLAPSED = 5;

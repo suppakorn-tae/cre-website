@@ -12,7 +12,7 @@ import ui from '../../../messages/th/ui.json';
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
-import { barPercent, donutSegments, levelPercent, LevelChart, ProjectRiskChart } from './Charts';
+import { axisMax, donutSegments, levelPercent, LevelChart, ProjectRiskChart } from './Charts';
 import { DashboardPage } from './DashboardPage';
 import { formatMillionBaht } from './format';
 import { ProjectsTable } from './ProjectsTable';
@@ -45,13 +45,13 @@ describe('formatMillionBaht', () => {
   });
 });
 
-describe('barPercent', () => {
-  it('scales to the largest value and keeps a sliver for small values', () => {
-    expect(barPercent(50, 100)).toBe(50);
-    expect(barPercent(100, 100)).toBe(100);
-    expect(barPercent(1, 1000)).toBe(2);
-    expect(barPercent(0, 100)).toBe(0);
-    expect(barPercent(5, 0)).toBe(0);
+describe('axisMax', () => {
+  it('rounds the largest bar up to the next multiple of 5, at least 5', () => {
+    expect(axisMax(13)).toBe(15);
+    expect(axisMax(15)).toBe(15);
+    expect(axisMax(16)).toBe(20);
+    expect(axisMax(1)).toBe(5);
+    expect(axisMax(0)).toBe(5);
   });
 });
 
@@ -75,15 +75,20 @@ describe('level donut', () => {
     const html = render(<LevelChart counts={counts} />);
     expect(html).toContain('role="img"');
     expect(html).toMatch(/aria-label="[^"]*ความเสี่ยงสูงมาก 9[^"]*"/);
-    expect(html).toContain('22%');
+    expect(html).toContain('22.1%');
+    // Highest risk first, as in the hi-fi; no white text on a solid level colour.
+    expect(html.indexOf('>ความเสี่ยงสูงมาก<')).toBeLessThan(html.indexOf('>ความเสี่ยงต่ำมาก<'));
+    expect(html).not.toContain('--level-vh-on');
     expect(html).toContain('stroke="var(--level-vh)"');
   });
 });
 
 describe('projects table', () => {
+  const risks = new Map([[seedProjects[0].project_id, { h: 6, vh: 3 }]]);
+
   it('shows island, type, value, progress, version status, H+VH and the three actions', () => {
-    const html = render(<ProjectsTable items={seedProjects} />);
-    for (const text of ['TK2', 'เกาะเต่า', 'ท่าเรือ', '48.5', 'ฉบับร่าง', 'ส่งแล้ว', 'ประเมินต่อ']) {
+    const html = render(<ProjectsTable items={seedProjects} risks={risks} />);
+    for (const text of ['TK2', 'เกาะเต่า', 'ท่าเรือ', '48.5', 'ฉบับร่าง', 'ส่งแล้ว', 'v2']) {
       expect(html).toContain(text);
     }
     const [first] = seedProjects;
@@ -95,12 +100,43 @@ describe('projects table', () => {
     );
     expect(html).toContain(`href="/projects/${first.project_id}"`);
     expect(html).toContain('role="progressbar"');
+    // The action names say which project they act on.
+    expect(html).toContain('aria-label="ประเมินความเสี่ยง TK2"');
+    expect(html).toContain('aria-label="ดูผลการประเมิน TK2"');
   });
 
-  it('has no results link and says so when nothing was submitted', () => {
+  it('renders the table and one card per project, for CSS to pick between', () => {
+    const html = render(<ProjectsTable items={seedProjects.slice(0, 2)} />);
+    expect(html).toContain('<table');
+    expect(html.match(/<article/g)).toHaveLength(2);
+    expect(html).toContain('ความก้าวหน้าโครงการ');
+    expect(html).toContain('<dd>48.5</dd>');
+    expect(html).toContain('เกาะเต่า · ท่าเรือ');
+  });
+
+  it('splits H and VH into two chips when the counts are known, else shows the total', () => {
+    const split = render(<ProjectsTable items={seedProjects.slice(0, 1)} risks={risks} />);
+    expect(split).toContain('aria-label="ความเสี่ยงสูง 6"');
+    expect(split).toContain('aria-label="ความเสี่ยงสูงมาก 3"');
+    const total = render(<ProjectsTable items={seedProjects.slice(0, 1)} />);
+    expect(total).toContain('aria-label="สูงและสูงมาก 9 ตัวชี้วัด"');
+  });
+
+  it('shows a new project as version 1, a draft, with no results link', () => {
+    // A project made after IO-169: version 1, never submitted.
     const html = render(<ProjectsTable items={seedProjects.slice(4)} />);
+    expect(html).toContain('v1');
+    expect(html).toContain('ฉบับร่าง');
     expect(html).toContain('ยังไม่ส่งผลการประเมิน');
     expect(html).not.toContain('/results');
+    expect(html).toContain('/assess');
+  });
+
+  it('adds the extra row actions of the project list after the three standard ones', () => {
+    const html = render(
+      <ProjectsTable items={seedProjects.slice(0, 1)} extraActions={() => <b>เพิ่มเติม</b>} />,
+    );
+    expect(html).toContain('เพิ่มเติม');
   });
 
   it('prints the typed island and type when the code is other', () => {
@@ -147,17 +183,24 @@ describe('DashboardPage', () => {
   it('shows four KPI cards, both charts and marks the projects card as shown', () => {
     const html = render(<DashboardPage />, seedSummary);
     for (const text of [
-      'มูลค่ารวมโครงการ',
-      'ตัวชี้วัดที่เสี่ยงสูง',
-      'เกาะที่มีโครงการ',
+      'Dashboard',
+      'ภาพรวมโครงการก่อสร้างบนพื้นที่เกาะ',
+      'โครงการทั้งหมด',
+      'ความเสี่ยงสูง',
+      'เกาะที่ดำเนินการ',
+      'มูลค่ารวม',
       'การกระจายระดับความเสี่ยง',
-      'ตัวชี้วัดความเสี่ยงสูงและสูงมากแต่ละโครงการ',
+      'จำนวนความเสี่ยงสูงและสูงมากรายโครงการ',
       'กำลังแสดง',
-      'รายการโครงการ',
+      'เพิ่มโครงการ',
     ]) {
       expect(html).toContain(text);
     }
-    expect(html).toContain('aria-pressed="true"');
+    // Only the projects card is selected; the two other clickable cards are not.
+    expect(html.match(/aria-pressed="true"/g)).toHaveLength(1);
+    expect(html.match(/aria-pressed="false"/g)).toHaveLength(2);
+    // Icon tiles, and a chevron on the clickable cards that are not shown.
+    expect(html.match(/<svg/g)!.length).toBeGreaterThanOrEqual(7);
     expect(html).toContain('318<span');
     expect(html).toContain('ล้านบาท');
     expect(html).not.toContain('317,950,000');
@@ -175,6 +218,7 @@ describe('DashboardPage', () => {
   it('shows the empty state for a new user, without charts', () => {
     const html = render(<DashboardPage />, emptySummary);
     expect(html).toContain('ยังไม่มีโครงการ');
+    expect(html).toContain('สร้างโครงการแรก');
     expect(html).toContain('href="/projects/new"');
     expect(html).not.toContain('การกระจายระดับความเสี่ยง');
   });
@@ -193,10 +237,17 @@ describe('mock dashboard api', () => {
     setDashboardEmpty(false);
   });
 
-  it('searches the projects panel by name or nickname', async () => {
+  it('searches the projects panel by name, nickname or island', async () => {
+    const nicknames = (r: { items: { nickname: string }[] }) => r.items.map((p) => p.nickname);
     const byNick = await get('/dashboard/panels/projects?q=smr&page=1&page_size=10');
-    expect(byNick.items.map((p: { nickname: string }) => p.nickname)).toEqual(['SMR']);
+    expect(nicknames(byNick)).toEqual(['SMR']);
     expect(byNick.page.total).toBe(1);
+    const byCode = await get('/dashboard/panels/projects?q=koh%20tao&page=1&page_size=10');
+    expect(nicknames(byCode)).toEqual(['TK2', 'TKR1']);
+    const byThai = await get(
+      `/dashboard/panels/projects?q=${encodeURIComponent('สมุย')}&page=1&page_size=10`,
+    );
+    expect(nicknames(byThai)).toEqual(['SMR']);
   });
 
   it('serves ten ranked indicators and the islands grouping', async () => {

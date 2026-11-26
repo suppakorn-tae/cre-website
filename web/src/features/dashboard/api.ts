@@ -25,7 +25,7 @@ export function useDashboard() {
   });
 }
 
-/** Panel of the projects card; `q` searches name and nickname. */
+/** Panel of the projects card; `q` searches name, nickname and island (code or Thai name). */
 export function useProjectsPanel(q: string, page: number, enabled: boolean) {
   return useQuery({
     queryKey: keys.projects(q, page),

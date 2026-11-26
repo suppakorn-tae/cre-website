@@ -9,11 +9,11 @@ type Page = { name: string; path: string; texts: (string | RegExp)[] };
 
 /** Each page, with text that only shows once its mock data has loaded. */
 const PAGES: Page[] = [
-  { name: 'dashboard', path: '/dashboard', texts: ['ภาพรวมความเสี่ยง', 'TK2', 'ตัวชี้วัดที่เสี่ยงสูง'] },
+  { name: 'dashboard', path: '/dashboard', texts: ['Dashboard', 'TK2', 'การกระจายระดับความเสี่ยง'] },
   {
     name: 'projects',
     path: '/projects',
-    texts: ['โครงการของฉัน', 'โครงการก่อสร้างเกาะลันตา ระยะที่ 19'],
+    texts: ['โครงการของฉัน', 'ท่าเรือเกาะเต่า ระยะที่ 2'],
   },
   {
     name: 'project',
@@ -51,8 +51,8 @@ const PAGES: Page[] = [
     path: `/admin/users/${PROJECT}`,
     texts: ['ข้อมูลบัญชี', 'มหาวิทยาลัยทักษิณ'],
   },
-  { name: 'admin thresholds', path: '/admin/thresholds', texts: ['เกณฑ์ระดับความเสี่ยง', 'EC-MG-1'] },
-  { name: 'admin impact', path: '/admin/impact-thresholds', texts: ['เกณฑ์ผลกระทบ RIC / RIT'] },
+  { name: 'admin thresholds', path: '/admin/thresholds', texts: ['เกณฑ์ RL (a–e)', 'EC-MG-1'] },
+  { name: 'admin impact', path: '/admin/impact-thresholds', texts: ['เกณฑ์ผลกระทบ'] },
   { name: 'admin advice', path: '/admin/advice', texts: ['คำแนะนำตัวชี้วัด', 'EC-MG-1'] },
   { name: 'admin audit', path: '/admin/audit', texts: ['บันทึกการกระทำ', 'เปลี่ยนบทบาท'] },
   { name: 'admin export', path: '/admin/export', texts: ['ส่งออกข้อมูลวิจัย'] },
@@ -103,6 +103,6 @@ test('the results level counts match the versions tab', async ({ page }) => {
     ['L', 14],
     ['VL', 8],
   ] as const) {
-    await expect(cards).toContainText(new RegExp(`${level} · [^\\d]*\\s*${count}\\s*ตัวชี้วัด`));
+    await expect(cards).toContainText(new RegExp(`${level}\\s*${count}\\s*ตัวชี้วัด`));
   }
 });

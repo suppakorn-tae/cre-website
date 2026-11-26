@@ -5,7 +5,9 @@ import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 
-import { Button, EmptyState, KpiCard, LEVELS, LevelBadge, Skeleton, Tabs } from '@/components/ui';
+import { IconArrowRight, IconFileTypePdf } from '@tabler/icons-react';
+
+import { Button, EmptyState, Icon, LEVELS, LevelBadge, Skeleton, Tabs } from '@/components/ui';
 import { ProjectSteps } from '@/features/shell/ProjectSteps';
 import { fetchProject, projectKey } from '@/features/versions/api';
 import { projectPaths } from '@/features/versions/rules';
@@ -155,10 +157,12 @@ export function ResultsPage({ projectId, versionId }: { projectId: string; versi
               className={styles.actionSecondary}
               href={`/projects/${projectId}/versions/${versionId}/report`}
             >
+              <Icon icon={IconFileTypePdf} size={18} />
               {t('page.reportAction')}
             </Link>
             <button type="button" className={styles.actionPrimary} onClick={() => setTab('hvh')}>
               {t('page.adviceAction')}
+              <Icon icon={IconArrowRight} size={18} />
             </button>
           </div>
         </div>
@@ -180,14 +184,13 @@ export function ResultsPage({ projectId, versionId }: { projectId: string; versi
       <div className={styles.counts} role="group" aria-label={t('page.countsLabel')}>
         {[...LEVELS].reverse().map((level) => (
           <div key={level} className={styles.count} data-level={level}>
-            <span className={styles.countBadge}>
-              <LevelBadge level={level} label={tUi(`levels.${level}`)} />
-            </span>
-            <KpiCard
-              label={`${level} · ${tUi(`levels.${level}`)}`}
-              value={formatNumber(summary.level_counts[level])}
-              unit={t('page.indicatorUnit')}
-            />
+            <LevelBadge level={level} label={tUi(`levels.${level}`)} />
+            <p className={styles.countValue}>
+              <span className={styles.countNumber}>
+                {formatNumber(summary.level_counts[level])}
+              </span>
+              <span className={styles.countUnit}>{t('page.indicatorUnit')}</span>
+            </p>
           </div>
         ))}
       </div>

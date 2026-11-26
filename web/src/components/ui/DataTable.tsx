@@ -11,6 +11,10 @@ export type DataTableColumn<T> = {
   align?: 'end';
   /** Card title on small screens: shown without its header label. */
   primary?: boolean;
+  /** Keep the value on one line (codes, numbers). The other columns wrap instead. */
+  nowrap?: boolean;
+  /** Keeps the header for screen readers only, e.g. a column of row actions. */
+  hideHeader?: boolean;
 };
 
 type Props<T> = {
@@ -21,44 +25,84 @@ type Props<T> = {
   rowKey: (row: T) => string;
   /** Rendered instead of the table when there are no rows. */
   empty?: ReactNode;
+  /** No border or background, for a table that sits inside a card of its own. */
+  bare?: boolean;
+  /**
+   * Below 768px show this card for each row instead of the label/value layout.
+   * The table stays in the page for wider screens; CSS shows one of the two.
+   */
+  renderCard?: (row: T) => ReactNode;
+  /** Tighter cells for tables with many columns. */
+  dense?: boolean;
 };
 
 /**
  * A table on wide screens. Below 768px CSS turns each row into a card and
  * shows every cell's `data-label` (the column header) next to its value.
  */
-export function DataTable<T>({ caption, columns, rows, rowKey, empty }: Props<T>) {
+export function DataTable<T>({
+  caption,
+  columns,
+  rows,
+  rowKey,
+  empty,
+  bare,
+  renderCard,
+  dense,
+}: Props<T>) {
   if (rows.length === 0 && empty) return <>{empty}</>;
   return (
-    <div className={styles.tableWrap}>
-      <table className={styles.table}>
-        <caption className={styles.caption}>{caption}</caption>
-        <thead>
-          <tr>
-            {columns.map((c) => (
-              <th key={c.key} scope="col" className={cx(c.align === 'end' && styles.end)}>
-                {c.header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={rowKey(row)}>
+    <>
+      <div
+        className={cx(
+          styles.tableWrap,
+          bare && styles.bare,
+          renderCard && styles.hasCards,
+          dense && styles.denseWrap,
+        )}
+      >
+        <table className={cx(styles.table, dense && styles.dense)}>
+          <caption className={styles.caption}>{caption}</caption>
+          <thead>
+            <tr>
               {columns.map((c) => (
-                <td
+                <th
                   key={c.key}
-                  data-label={c.header}
-                  data-primary={c.primary ? 'true' : undefined}
-                  className={cx(c.align === 'end' && styles.end)}
+                  scope="col"
+                  className={cx(c.align === 'end' && styles.end, c.nowrap && styles.nowrap)}
                 >
-                  {c.render(row)}
-                </td>
+                  {c.hideHeader ? <span className={styles.caption}>{c.header}</span> : c.header}
+                </th>
               ))}
             </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={rowKey(row)}>
+                {columns.map((c) => (
+                  <td
+                    key={c.key}
+                    data-label={c.header}
+                    data-primary={c.primary ? 'true' : undefined}
+                    className={cx(c.align === 'end' && styles.end, c.nowrap && styles.nowrap)}
+                  >
+                    {c.render(row)}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {renderCard && (
+        <ul className={styles.cards} aria-label={caption}>
+          {rows.map((row) => (
+            <li key={rowKey(row)} className={styles.card}>
+              {renderCard(row)}
+            </li>
           ))}
-        </tbody>
-      </table>
-    </div>
+        </ul>
+      )}
+    </>
   );
 }

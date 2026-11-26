@@ -3,6 +3,7 @@ export { Button } from './Button';
 export { CheckboxGroup, toggleOption, type CheckboxOption } from './CheckboxGroup';
 export { ConfirmDialog } from './ConfirmDialog';
 export { DataTable, type DataTableColumn } from './DataTable';
+export { DonutChart, donutArcs, type DonutArc, type DonutSegment } from './DonutChart';
 export { EmptyState } from './EmptyState';
 export { FieldError, FieldOk } from './Field';
 export { GoogleMark } from './GoogleMark';

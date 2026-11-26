@@ -1,7 +1,8 @@
 'use client';
 
+import * as ToggleGroup from '@radix-ui/react-toggle-group';
 import { useTranslations } from 'next-intl';
-import { useRef, useState, type KeyboardEvent } from 'react';
+import { useState } from 'react';
 
 import { Button, EmptyState, Skeleton } from '@/components/ui';
 
@@ -12,9 +13,6 @@ import { AdviceMocks } from './AdviceMocks';
 import { IndicatorPicker } from './IndicatorPicker';
 import { Notation } from './Notation';
 import { LISTS, type AdviceList, type Draft } from './rules';
-
-const tabId = (l: AdviceList) => `advice-tab-${l}`;
-const panelId = (l: AdviceList) => `advice-panel-${l}`;
 
 /** Admin screen to edit the four advice lists of any indicator. */
 export function AdvicePage({ initialCode }: { initialCode?: string }) {
@@ -30,6 +28,7 @@ function Screen({ initialCode }: { initialCode?: string }) {
   const catalogue = useIndicatorCatalogue();
   const [picked, setPicked] = useState<string | null>(initialCode ?? null);
   // Unsaved edits, kept per indicator and list so switching never loses them.
+  const [list, setList] = useState<AdviceList>('RL');
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
 
   const indicators = catalogue.data?.indicators ?? [];
@@ -67,14 +66,12 @@ function Screen({ initialCode }: { initialCode?: string }) {
       )}
       {catalogue.data && (
         <>
-          <IndicatorPicker
-            catalogue={catalogue.data.catalogue}
-            indicators={indicators}
-            value={code}
-            onChange={setPicked}
-          />
+          <div className={styles.controls}>
+            <IndicatorPicker indicators={indicators} value={code} onChange={setPicked} />
+            {code && <ListPicker code={code} list={list} onChange={setList} drafts={drafts} />}
+          </div>
           {code ? (
-            <Lists key={code} code={code} drafts={drafts} setDraft={setDraft} />
+            <Lists key={code} code={code} list={list} drafts={drafts} setDraft={setDraft} />
           ) : (
             <EmptyState title={t('empty.title')} description={t('empty.description')} />
           )}
@@ -84,40 +81,60 @@ function Screen({ initialCode }: { initialCode?: string }) {
   );
 }
 
+/** Segmented control: which of the four advice lists to edit. */
+function ListPicker({
+  code,
+  list,
+  onChange,
+  drafts,
+}: {
+  code: string;
+  list: AdviceList;
+  onChange: (list: AdviceList) => void;
+  drafts: Record<string, Draft>;
+}) {
+  const t = useTranslations('admin-advice');
+  return (
+    <div className={styles.listPick}>
+      <span id="advice-list-label" className={styles.pickerLabel}>
+        {t('tabs.label')}
+      </span>
+      <ToggleGroup.Root
+        type="single"
+        value={list}
+        // A segmented control always keeps one list selected.
+        onValueChange={(v) => v && onChange(v as AdviceList)}
+        aria-labelledby="advice-list-label"
+        className={styles.segmented}
+      >
+        {LISTS.map((l) => (
+          <ToggleGroup.Item key={l} value={l} className={styles.segment}>
+            <span>
+              <Notation list={l} /> · {t(`tabs.${l}`)}
+            </span>
+            {drafts[`${code}:${l}`] && (
+              <span className={styles.dot} role="img" aria-label={t('tabs.unsaved')} />
+            )}
+          </ToggleGroup.Item>
+        ))}
+      </ToggleGroup.Root>
+    </div>
+  );
+}
+
 function Lists({
   code,
   drafts,
+  list,
   setDraft,
 }: {
   code: string;
+  list: AdviceList;
   drafts: Record<string, Draft>;
   setDraft: (key: string, draft: Draft | undefined) => void;
 }) {
   const t = useTranslations('admin-advice');
   const advice = useAdvice(code);
-  const [list, setList] = useState<AdviceList>('RL');
-  const tabs = useRef<Record<string, HTMLButtonElement | null>>({});
-
-  function onKeyDown(e: KeyboardEvent, index: number) {
-    const last = LISTS.length - 1;
-    const next =
-      e.key === 'ArrowRight'
-        ? (index + 1) % LISTS.length
-        : e.key === 'ArrowLeft'
-          ? index === 0
-            ? last
-            : index - 1
-          : e.key === 'Home'
-            ? 0
-            : e.key === 'End'
-              ? last
-              : null;
-    if (next === null) return;
-    e.preventDefault();
-    setList(LISTS[next]);
-    tabs.current[LISTS[next]]?.focus();
-  }
-
   if (advice.isPending) {
     return (
       <div className={styles.status} role="status" aria-busy="true">
@@ -140,40 +157,16 @@ function Lists({
   const data = advice.data;
   return (
     <section className={styles.section}>
-      <div role="tablist" aria-label={t('tabs.label')} className={styles.tablist}>
-        {LISTS.map((l, i) => (
-          <button
-            key={l}
-            ref={(el) => {
-              tabs.current[l] = el;
-            }}
-            type="button"
-            role="tab"
-            id={tabId(l)}
-            aria-selected={l === list}
-            aria-controls={panelId(l)}
-            tabIndex={l === list ? 0 : -1}
-            className={styles.tab}
-            onClick={() => setList(l)}
-            onKeyDown={(e) => onKeyDown(e, i)}
-          >
-            <Notation list={l} /> · {t(`tabs.${l}`)}
-            {drafts[`${code}:${l}`] && <span className={styles.dot} aria-hidden="true" />}
-          </button>
-        ))}
-      </div>
-      <div role="tabpanel" id={panelId(list)} aria-labelledby={tabId(list)}>
-        <AdviceListEditor
-          key={list}
-          code={code}
-          list={list}
-          saved={data.lists[list]}
-          updatedAt={data.updated_at}
-          updatedBy={data.updated_by}
-          draft={drafts[`${code}:${list}`]}
-          onDraft={(d) => setDraft(`${code}:${list}`, d)}
-        />
-      </div>
+      <AdviceListEditor
+        key={list}
+        code={code}
+        list={list}
+        saved={data.lists[list]}
+        updatedAt={data.updated_at}
+        updatedBy={data.updated_by}
+        draft={drafts[`${code}:${list}`]}
+        onDraft={(d) => setDraft(`${code}:${list}`, d)}
+      />
     </section>
   );
 }
