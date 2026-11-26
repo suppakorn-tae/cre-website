@@ -92,7 +92,11 @@ export function StrategyPanel({ code, value, updatedAt, editable, onChange }: Pr
         </div>
       )}
 
-      {error && <Alert tone="error">{error}</Alert>}
+      {error && (
+        <Alert tone="error" onClose={() => setError(null)} closeLabel={t('close')}>
+          {error}
+        </Alert>
+      )}
 
       <div className="flex flex-col gap-1 text-caption text-text-secondary">
         {editable && (

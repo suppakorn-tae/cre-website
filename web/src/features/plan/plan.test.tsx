@@ -18,9 +18,10 @@ import { mockResultItems } from '@/features/results/overview/mocks';
 import { projectKey } from '@/features/versions/api';
 import { mockProject, mockProjectId, mockVersions } from '@/features/versions/mocks';
 
-import { withStrategy } from './api';
+import { AdviceLists } from './AdviceLists';
+import { StrategySequencer, withStrategy } from './api';
 import { PlanPage } from './PlanPage';
-import { adviceFollowsLikelihood, chosenCount, highRisks, PLAN_VISIBLE, planPath } from './rules';
+import { adviceReason, chosenCount, highRisks, PLAN_VISIBLE, planPath } from './rules';
 import { StrategyPanel } from './StrategyPanel';
 
 vi.mock('next/navigation', () => ({
@@ -81,9 +82,10 @@ describe('plan rules', () => {
   });
 
   it('reads which advice the api sent', () => {
-    expect(adviceFollowsLikelihood([{ list: 'RL', items: ['a'] }])).toBe(true);
-    expect(adviceFollowsLikelihood([{ list: 'RI_E', items: ['a'] }])).toBe(false);
-    expect(adviceFollowsLikelihood(undefined)).toBe(false);
+    expect(adviceReason([{ list: 'RL', items: ['a'] }])).toBe('whyRl');
+    expect(adviceReason([{ list: 'RI_E', items: ['a'] }])).toBe('whyRi');
+    expect(adviceReason([])).toBeNull();
+    expect(adviceReason(undefined)).toBeNull();
   });
 
   it('has a route per version', () => {
@@ -97,6 +99,72 @@ describe('plan rules', () => {
     expect(next.items.filter((i) => i.strategy === 'AVOID')).toHaveLength(
       data.items.filter((i) => i.strategy === 'AVOID').length + 1,
     );
+  });
+});
+
+describe('advice lists', () => {
+  const lists = mockResultsWithAdvice(latest.id).items.filter((i) => i.advice);
+
+  it('renders every list and item for 1 to 5 items and for ties', () => {
+    const lengths = new Set(lists.flatMap((i) => i.advice!.map((a) => a.items.length)));
+    expect([...lengths].sort()).toEqual([1, 2, 3, 4, 5]);
+    expect(lists.some((i) => i.advice!.length === 2)).toBe(true);
+    for (const row of lists) {
+      const html = wrap(<AdviceLists advice={row.advice} />);
+      expect(html.match(/<li /g)).toHaveLength(row.advice!.reduce((n, a) => n + a.items.length, 0));
+      expect(html.match(/<h4/g)).toHaveLength(row.advice!.length);
+      for (const list of row.advice!) {
+        expect(html).toContain(`${list.items.length} ข้อ`);
+        for (const text of list.items) expect(html).toContain(text);
+      }
+    }
+  });
+
+  it('says so when an indicator has no advice', () => {
+    for (const advice of [undefined, []]) {
+      const html = wrap(<AdviceLists advice={advice} />);
+      expect(html).toContain('ยังไม่มีคำแนะนำ');
+      expect(html).not.toContain('<li');
+    }
+  });
+});
+
+describe('strategy save order', () => {
+  it('runs the saves of one indicator in the order they were chosen', async () => {
+    const seq = new StrategySequencer();
+    const log: string[] = [];
+    const slow = seq.run('A', async () => {
+      await new Promise((r) => setTimeout(r, 20));
+      log.push('first');
+    });
+    const fast = seq.run('A', async () => {
+      log.push('second');
+    });
+    const other = seq.run('B', async () => {
+      log.push('other');
+    });
+    await Promise.all([slow, fast, other]);
+    expect(log).toEqual(['other', 'first', 'second']);
+  });
+
+  it('lets a failed save pass without blocking the next one', async () => {
+    const seq = new StrategySequencer();
+    const failed = seq.run('A', async () => {
+      throw new Error('nope');
+    });
+    await expect(failed).rejects.toThrow('nope');
+    await expect(seq.run('A', async () => 'ok')).resolves.toBe('ok');
+  });
+
+  it('lets only the newest choice of an indicator update the cache', () => {
+    const seq = new StrategySequencer();
+    const a = seq.next('A');
+    const b = seq.next('A');
+    expect(seq.isLatest('A', a)).toBe(false);
+    expect(seq.isLatest('A', b)).toBe(true);
+    // Another indicator has its own count.
+    expect(seq.isLatest('B', seq.next('B'))).toBe(true);
+    expect(seq.isLatest('A', b)).toBe(true);
   });
 });
 
@@ -147,6 +215,18 @@ describe('plan page', () => {
     expect(html).not.toMatch(/<input[^>]*disabled/);
     expect(html).toContain('โอนความเสี่ยงผ่านประกันภัยหรือสัญญา');
     expect(html).toContain('แสดงในผลการประเมินและรายงาน PDF');
+  });
+
+  it('leaves out the why-line when an indicator has no advice', () => {
+    const bare = {
+      ...data,
+      items: data.items.map((i) =>
+        i.indicator_code === rows[0].indicator_code ? { ...i, advice: undefined } : i,
+      ),
+    };
+    const html = renderPlan({ data: bare });
+    expect(html).not.toContain('จึงแสดงคำแนะนำด้าน');
+    expect(html).toContain('ยังไม่มีคำแนะนำ');
   });
 
   it('marks the saved strategy as checked and shows when it was saved', () => {

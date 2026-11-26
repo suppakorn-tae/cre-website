@@ -19,12 +19,13 @@ export function chosenCount(rows: IndicatorResult[]): number {
 }
 
 /**
- * Whether the advice shown follows the likelihood. The api picks the lists
- * (RL when RL >= RI_max, else the impact lists that equal RI_max); the page
- * only reads which it sent.
+ * Which "why this list" line to show. The api picks the lists (RL when
+ * RL >= RI_max, else the impact lists that equal RI_max); the page only reads
+ * which it sent. With no advice there is nothing to explain, so no line.
  */
-export function adviceFollowsLikelihood(advice: IndicatorResult['advice']): boolean {
-  return advice?.some((list) => list.list === 'RL') ?? false;
+export function adviceReason(advice: IndicatorResult['advice']): 'whyRl' | 'whyRi' | null {
+  if (!advice || advice.length === 0) return null;
+  return advice.some((list) => list.list === 'RL') ? 'whyRl' : 'whyRi';
 }
 
 /** The score chips of one row in the order RM is built: RL, RI_C, RI_T, RI_E, RI_max. */

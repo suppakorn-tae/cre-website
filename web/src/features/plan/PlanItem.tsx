@@ -10,7 +10,7 @@ import type { IndicatorName, IndicatorResult } from '@/features/results/overview
 import { formatRm, formatScore, subscript } from '@/features/results/overview/format';
 
 import { AdviceLists } from './AdviceLists';
-import { adviceFollowsLikelihood, PATH_STEPS } from './rules';
+import { adviceReason, PATH_STEPS } from './rules';
 import { StrategyChip } from './StrategyChip';
 import { StrategyPanel } from './StrategyPanel';
 import type { Strategy } from './api';
@@ -29,7 +29,7 @@ export function PlanItem({ row, meta, editable, onStrategy }: Props) {
   const t = useTranslations('plan');
   const tUi = useTranslations('ui');
   const code = row.indicator_code;
-  const why = adviceFollowsLikelihood(row.advice) ? 'whyRl' : 'whyRi';
+  const why = adviceReason(row.advice);
 
   return (
     <Accordion.Item
@@ -81,13 +81,15 @@ export function PlanItem({ row, meta, editable, onStrategy }: Props) {
                   </span>
                 </li>
               </ol>
-              <p className="m-0 box-border rounded-control bg-subtle px-3 py-2 text-small text-text-secondary">
-                {t.rich(`item.${why}`, {
-                  ...subscript,
-                  rl: formatScore(row.rl),
-                  riMax: formatScore(row.ri_max),
-                })}
-              </p>
+              {why && (
+                <p className="m-0 box-border rounded-control bg-subtle px-3 py-2 text-small text-text-secondary">
+                  {t.rich(`item.${why}`, {
+                    ...subscript,
+                    rl: formatScore(row.rl),
+                    riMax: formatScore(row.ri_max),
+                  })}
+                </p>
+              )}
             </section>
             <AdviceLists advice={row.advice} />
             <p className="m-0 text-caption text-text-muted">{t('item.footnote')}</p>

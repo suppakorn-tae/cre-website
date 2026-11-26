@@ -170,7 +170,7 @@ export function PlanPage({ projectId, versionId }: { projectId: string; versionI
                 row={row}
                 meta={names.data.get(row.indicator_code)}
                 editable={editable}
-                onStrategy={(code, strategy) => setStrategy.mutateAsync({ code, strategy })}
+                onStrategy={(code, strategy) => setStrategy.save(code, strategy)}
               />
             ))}
           </Accordion.Root>

@@ -190,7 +190,7 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     });
     if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
 
-    // The radio is controlled: it flips only once the save returns.
+    // The choice shows at once and is saved on change; wait for the saved line below.
     const group = main.getByRole('radiogroup', {
       name: msg('plan', 'strategy.groupLabel', { code: GOLDEN_VH.code }),
     });
