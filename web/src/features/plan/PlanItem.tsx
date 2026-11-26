@@ -9,6 +9,8 @@ import { cx } from '@/components/ui/cx';
 import type { IndicatorName, IndicatorResult } from '@/features/results/overview/api';
 import { formatRm, formatScore, subscript } from '@/features/results/overview/format';
 
+import { dimensionOf, dimensionStyle } from '@/lib/dimensions';
+
 import { AdviceLists } from './AdviceLists';
 import { adviceReason, PATH_STEPS } from './rules';
 import { StrategyChip } from './StrategyChip';
@@ -30,11 +32,17 @@ export function PlanItem({ row, meta, editable, onStrategy }: Props) {
   const tUi = useTranslations('ui');
   const code = row.indicator_code;
   const why = adviceReason(row.advice);
+  const dimension = dimensionOf(code);
 
   return (
     <Accordion.Item
       value={code}
-      className="rounded-card border border-border bg-surface data-[state=open]:border-blue-200"
+      data-dimension={dimension}
+      style={dimension ? { borderLeftColor: dimensionStyle(dimension).color } : undefined}
+      className={cx(
+        'overflow-hidden rounded-card border border-border bg-surface data-[state=open]:border-blue-200',
+        dimension && 'border-l-4',
+      )}
     >
       <Accordion.Header className="m-0 text-body font-normal">
         <Accordion.Trigger className="focus-ring group box-border flex w-full cursor-pointer flex-wrap items-center gap-x-3 gap-y-2 rounded-card border-0 bg-transparent px-4 py-3 text-left font-sans text-text">
