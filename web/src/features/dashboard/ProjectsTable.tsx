@@ -57,13 +57,28 @@ export function ProjectsTable({ items, risks, extraActions }: Props) {
     );
   };
 
-  const version = (p: DashboardProjectItem) => {
+  // Table: "v3 · 55 / 55 ตัวชี้วัด" on one line, the status chip under it.
+  // Card: "v3", the chip, then the count on its own line, as in the hi-fi.
+  const version = (p: DashboardProjectItem, card?: boolean) => {
+    const count = t('scoredCount', {
+      scored: p.latest_version_scored_count,
+      total: p.latest_version_indicator_total,
+    });
     return (
       <span className={styles.versionCell}>
-        <span className={styles.versionNo}>{t('versionNo', { no: p.latest_version_no })}</span>
+        <span className={styles.versionHead}>
+          <span className={styles.versionNo}>{t('versionNo', { no: p.latest_version_no })}</span>
+          {!card && (
+            <span className={styles.versionCount}>
+              {' · '}
+              {count}
+            </span>
+          )}
+        </span>
         <span className={styles.statusChip} data-status={p.latest_version_status}>
           {t(`status.${p.latest_version_status}`)}
         </span>
+        {card && <span className={styles.versionCount}>{count}</span>}
       </span>
     );
   };
@@ -190,7 +205,7 @@ export function ProjectsTable({ items, risks, extraActions }: Props) {
             </div>
             <div>
               <dt>{t('columns.version')}</dt>
-              <dd>{version(p)}</dd>
+              <dd>{version(p, true)}</dd>
             </div>
             <div>
               <dt>{t('columns.risk')}</dt>

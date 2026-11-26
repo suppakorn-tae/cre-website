@@ -2,6 +2,7 @@ package dashboard_test
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -145,6 +146,28 @@ func TestResponsesMatchContract(t *testing.T) {
 		}
 		if len(f.asked) != 1 || f.asked[0] != owner {
 			t.Fatalf("%s: asked for %v, want only the session account", path, f.asked)
+		}
+	}
+}
+
+// The scored-indicator counts of the latest version reach the JSON body as the
+// service gave them: 55 of 55 for a scored version, 0 of 55 for a fresh draft.
+func TestProjectsPanelCarriesScoredCounts(t *testing.T) {
+	resp := get(t, &fakeReader{}, owner.String(), "/api/v1/dashboard/panels/projects")
+	var body struct {
+		Items []map[string]any `json:"items"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		t.Fatal(err)
+	}
+	want := [][2]float64{{55, 55}, {0, 55}}
+	if len(body.Items) != len(want) {
+		t.Fatalf("items = %d, want %d", len(body.Items), len(want))
+	}
+	for i, w := range want {
+		got := [2]any{body.Items[i]["latest_version_scored_count"], body.Items[i]["latest_version_indicator_total"]}
+		if got[0] != w[0] || got[1] != w[1] {
+			t.Fatalf("item %d scored/total = %v, want %v", i, got, w)
 		}
 	}
 }
