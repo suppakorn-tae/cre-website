@@ -8,17 +8,15 @@ type Props = {
   level: Level;
   /** Optional count after the code, e.g. "H 11". */
   count?: number;
-  /** Tint for tables, solid for charts and heat maps. */
-  variant?: 'tint' | 'solid';
   /** Spoken name, e.g. "ความเสี่ยงสูง". The code alone is not read well. */
   label?: string;
 };
 
 /** Always prints the level code, never colour alone. */
-export function LevelBadge({ level, count, variant = 'tint', label }: Props) {
+export function LevelBadge({ level, count, label }: Props) {
   return (
     <span
-      className={cx(styles.badge, styles[level.toLowerCase()], styles[variant])}
+      className={cx(styles.badge, styles[level.toLowerCase()], styles.tint)}
       aria-label={label ? (count === undefined ? label : `${label} ${count}`) : undefined}
     >
       {level}

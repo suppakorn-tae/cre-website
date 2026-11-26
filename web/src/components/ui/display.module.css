@@ -305,26 +305,6 @@
   background: var(--level-vh-tint);
   color: var(--level-vh-text);
 }
-.vl.solid {
-  background: var(--level-vl);
-  color: var(--level-vl-on);
-}
-.l.solid {
-  background: var(--level-l);
-  color: var(--level-l-on);
-}
-.m.solid {
-  background: var(--level-m);
-  color: var(--level-m-on);
-}
-.h.solid {
-  background: var(--level-h);
-  color: var(--level-h-on);
-}
-.vh.solid {
-  background: var(--level-vh);
-  color: var(--level-vh-on);
-}
 
 /* KPI card: icon tile, label, value and note. A clickable card shows a chevron,
    the selected one a tag and a 2px blue border (hi-fi "Dashboard"). */

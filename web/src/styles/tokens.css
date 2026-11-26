@@ -19,11 +19,11 @@
   --color-subtle: #f6f8fb;
   --color-divider: #edf1f5;
   --color-border: #e3e8ef;
-  --color-field-border: #c3cdd9;
+  --color-field-border: #7f8c9e;
   --color-disabled-bg: #eef1f5;
   --color-disabled: #9aa6b6;
   --color-placeholder: #8a97a8;
-  --color-text-muted: #64748b;
+  --color-text-muted: #57677d;
   --color-text-secondary: #475569;
   --color-text: #0f1e33;
 
@@ -45,7 +45,7 @@
 
   /* One-hue risk scale VL to VH: solid for charts, tint and text for chips */
   --level-vl: #10b981;
-  --level-vl-on: #ffffff;
+  --level-vl-on: #0f1e33;
   --level-vl-tint: #e6f6ee;
   --level-vl-text: #0e7a4f;
   --level-l: #84cc16;
@@ -57,7 +57,7 @@
   --level-m-tint: #fdf6d8;
   --level-m-text: #8a6100;
   --level-h: #f97316;
-  --level-h-on: #ffffff;
+  --level-h-on: #0f1e33;
   --level-h-tint: #fff1e6;
   --level-h-text: #c2410c;
   --level-vh: #dc2626;
