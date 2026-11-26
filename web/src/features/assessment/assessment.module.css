@@ -152,6 +152,8 @@
   color: var(--color-text);
   font: inherit;
   font-size: var(--text-body);
+  min-width: 0;
+  max-width: 100%;
 }
 .unitGroup {
   display: flex;
@@ -585,20 +587,16 @@
   font-size: var(--text-small);
   line-height: var(--leading-small);
 }
-/* Both stay under the app header; the dimension has a fixed height so the factor can sit below. */
+/* Both stay under the app header; the factor sits below the dimension's measured height. */
 .dimensionHead {
   top: var(--nav-height);
   z-index: 3;
-  flex-wrap: nowrap;
   align-items: center;
-  height: 40px;
+  min-height: 40px;
   background: var(--color-blue-100);
 }
-.dimensionHead .progress {
-  white-space: nowrap;
-}
 .factorHead {
-  top: calc(var(--nav-height) + 40px);
+  top: calc(var(--nav-height) + var(--dimension-height, 40px));
   z-index: 2;
   min-height: 32px;
   margin-top: var(--space-2);
@@ -801,27 +799,34 @@
   }
   .toolbar {
     flex-direction: column;
+    /* A wrapping column sizes the unit group at its narrowest, which leaves it too tall. */
+    flex-wrap: nowrap;
     align-items: stretch;
     gap: var(--space-3);
   }
   .overallBlock {
     flex: none;
+    min-width: 0;
   }
   .filter {
     flex-direction: column;
     align-items: stretch;
+    min-width: 0;
+    max-width: 100%;
   }
   .select {
     min-height: 44px;
     font-size: var(--text-h3);
   }
-  /* Both unit switches in one row, each segment at least 44px tall. */
+  /* Both unit switches in one row (one per row when two do not fit), each segment at least 44px
+     tall. */
   .unitGroup {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
     gap: var(--space-3);
   }
   .unitSwitch {
+    flex: 1 1 8rem;
+    min-width: 0;
     flex-direction: column;
     align-items: stretch;
     gap: var(--space-1);
@@ -832,9 +837,11 @@
   .segment {
     flex: 1;
     min-height: 44px;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .allRows {
-    grid-column: 1 / -1;
+    flex-basis: 100%;
   }
   .showing,
   .projectLink {

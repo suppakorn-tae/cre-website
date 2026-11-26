@@ -3,7 +3,7 @@
 import * as Accordion from '@radix-ui/react-accordion';
 import { IconChevronDown } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Icon, type CheckboxOption } from '@/components/ui';
 
@@ -94,6 +94,42 @@ type Props = {
 };
 
 /**
+ * A dimension header. The progress drops under the name when the line is too narrow (a small
+ * screen or large text), so the header grows; its real height goes to `--dimension-height` on the
+ * section so the factor header stays stuck right under it.
+ */
+function DimensionHead({
+  name,
+  codes,
+  drafts,
+}: {
+  name: string;
+  codes: string[];
+  drafts: Record<string, Draft | undefined>;
+}) {
+  const head = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    const el = head.current;
+    const section = el?.parentElement;
+    if (!el || !section || typeof ResizeObserver === 'undefined') return;
+    const apply = () => section.style.setProperty('--dimension-height', `${el.offsetHeight}px`);
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      section.style.removeProperty('--dimension-height');
+    };
+  }, []);
+  return (
+    <h2 ref={head} className={styles.dimensionHead}>
+      <span className={styles.groupName}>{name}</span>
+      <Progress codes={codes} drafts={drafts} />
+    </h2>
+  );
+}
+
+/**
  * All indicators as cards (under 768 px), collapsed by default, under sticky dimension and
  * factor headers. A card the server rejected opens by itself so its error is not hidden.
  */
@@ -137,10 +173,7 @@ export function CardList({
     >
       {dimensions.map((dimension) => (
         <section key={dimension.code} className={styles.dimension}>
-          <h2 className={styles.dimensionHead}>
-            <span className={styles.groupName}>{dimension.name}</span>
-            <Progress codes={codesOf(dimension.factors)} drafts={drafts} />
-          </h2>
+          <DimensionHead name={dimension.name} codes={codesOf(dimension.factors)} drafts={drafts} />
           {dimension.factors.map((f: Factor) => (
             <div key={f.code} className={styles.factor}>
               <h3 className={styles.factorHead}>
