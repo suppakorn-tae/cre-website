@@ -164,7 +164,7 @@ export function OtpStep({ email, challenge, onBack }: Props) {
             disabled={verify.isPending}
           />
           {errorText && <FieldError id={errorId}>{errorText}</FieldError>}
-          {resent && !errorText && <FieldOk>{t('otp.resent')}</FieldOk>}
+          {resent && !errorText && <FieldOk role="status">{t('otp.resent')}</FieldOk>}
         </div>
         <p className={styles.resend}>
           {t('otp.noCode')}{' '}
