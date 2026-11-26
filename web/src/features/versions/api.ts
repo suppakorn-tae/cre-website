@@ -37,6 +37,13 @@ export async function deleteVersion(projectId: string, versionId: string): Promi
   });
 }
 
+/** Hides the project and all its versions from the user (the project's own delete, not a version's). */
+export async function deleteProject(projectId: string): Promise<void> {
+  await browserApi().DELETE('/projects/{project_id}', {
+    params: { path: { project_id: projectId } },
+  });
+}
+
 /** Number of indicators in the catalogue, the denominator of "scored/total". */
 export async function fetchIndicatorTotal(): Promise<number> {
   const { data } = await browserApi().GET('/catalogue', { params: { query: {} } });

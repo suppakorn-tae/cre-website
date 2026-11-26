@@ -1,9 +1,18 @@
 'use client';
 
+import { IconBulb, IconChartBar, IconEye, IconPencil } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
+import type { ReactNode } from 'react';
 
-import { Button, DataTable, EmptyState, LevelBadge, type DataTableColumn } from '@/components/ui';
+import {
+  Button,
+  DataTable,
+  EmptyState,
+  Icon,
+  LevelBadge,
+  type DataTableColumn,
+} from '@/components/ui';
 import { ReportButton } from '@/features/reports/ReportButton';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format/locale';
 
@@ -14,6 +23,7 @@ import {
   levelParts,
   newestFirst,
   periodDays,
+  planState,
   projectPaths,
   recentVersions,
 } from './rules';
@@ -22,7 +32,7 @@ import styles from './versions.module.css';
 type Props = {
   project: Project;
   versions: VersionSummary[];
-  onCreate: () => void;
+  onCreate: (trigger: HTMLElement | null) => void;
   onShowVersions: () => void;
   /** Indicators in the catalogue; undefined until it has loaded. */
   indicatorTotal?: number;
@@ -64,7 +74,7 @@ function LatestVersionCard({
   projectId: string;
   versions: VersionSummary[];
   latest: VersionSummary | undefined;
-  onCreate: () => void;
+  onCreate: (trigger: HTMLElement | null) => void;
   indicatorTotal?: number;
 }) {
   const t = useTranslations('versions.overview');
@@ -78,7 +88,7 @@ function LatestVersionCard({
         <EmptyState
           title={tList('empty.title')}
           description={tList('empty.description')}
-          action={<Button onClick={onCreate}>{tList('create')}</Button>}
+          action={<Button onClick={(e) => onCreate(e.currentTarget)}>{tList('create')}</Button>}
         />
       </section>
     );
@@ -139,12 +149,20 @@ function LatestVersionCard({
       <div className={styles.latestActions}>
         {submitted && (
           <Link className={styles.primaryLink} href={projectPaths.results(projectId, latest.id)}>
+            <Icon icon={IconChartBar} size={18} />
             {tList('actions.results')}
           </Link>
         )}
         <Link className={styles.secondaryLink} href={projectPaths.assessment(projectId, latest.id)}>
+          <Icon icon={latest.editable ? IconPencil : IconEye} size={18} />
           {latest.editable ? t('latest.editAnswers') : tList('actions.viewAnswers')}
         </Link>
+        {submitted && (
+          <Link className={styles.secondaryLink} href={projectPaths.plan(projectId, latest.id)}>
+            <Icon icon={IconBulb} size={18} />
+            {t('latest.plan')}
+          </Link>
+        )}
         <ReportButton
           projectId={projectId}
           versionId={latest.id}
@@ -152,9 +170,13 @@ function LatestVersionCard({
           className={styles.secondaryLink}
         />
       </div>
-      <Button variant="ghost" onClick={onCreate} className={styles.newVersion}>
-        {tList('create')}
-      </Button>
+      <p className={styles.newVersion}>
+        {t('latest.newPrompt')}{' '}
+        <button type="button" className={styles.link} onClick={(e) => onCreate(e.currentTarget)}>
+          {tList('create')}
+        </button>{' '}
+        <span className={styles.muted}>{t('latest.newNote', { no: latest.version_no })}</span>
+      </p>
     </section>
   );
 }
@@ -238,7 +260,10 @@ function ProjectInfoCard({ project }: { project: Project }) {
     project.type_code === 'other' && project.type_other
       ? project.type_other
       : t(`types.${project.type_code}`);
-  const rows: [string, string][] = [
+  const state = planState(project.progress_pct, project.expected_progress_pct);
+  const planText =
+    state.kind === 'onPlan' ? t('onPlan') : t(state.kind, { value: formatNumber(state.points) });
+  const rows: [string, ReactNode][] = [
     [tInfo('island'), island],
     [tInfo('type'), type],
     [tInfo('value'), t('value', { value: formatNumber(project.value_baht) })],
@@ -251,7 +276,13 @@ function ProjectInfoCard({ project }: { project: Project }) {
     ],
     [
       tInfo('progress'),
-      `${t('actual', { value: formatNumber(project.progress_pct) })} · ${t('expected', { value: formatNumber(project.expected_progress_pct) })}`,
+      <ProgressBlock
+        key="progress"
+        actual={project.progress_pct}
+        expected={project.expected_progress_pct}
+        planText={planText}
+        behind={state.kind === 'behind'}
+      />,
     ],
   ];
   if (project.description) rows.push([tInfo('description'), project.description]);
@@ -269,6 +300,41 @@ function ProjectInfoCard({ project }: { project: Project }) {
         ))}
       </dl>
     </section>
+  );
+}
+
+/** Entered progress against the expected progress: a bar with a tick at the plan. */
+function ProgressBlock({
+  actual,
+  expected,
+  planText,
+  behind,
+}: {
+  actual: number;
+  expected: number;
+  planText: string;
+  behind: boolean;
+}) {
+  const t = useTranslations('versions.detail');
+  const clamp = (n: number) => Math.min(100, Math.max(0, n));
+  return (
+    <div className={styles.progress}>
+      <div
+        className={styles.bar}
+        role="img"
+        aria-label={`${t('actual', { value: formatNumber(actual) })} · ${t('expected', { value: formatNumber(expected) })}`}
+      >
+        <span className={styles.barActual} style={{ width: `${clamp(actual)}%` }} />
+        <span className={styles.barExpected} style={{ insetInlineStart: `${clamp(expected)}%` }} />
+      </div>
+      <p className={styles.progressText}>
+        {t('actual', { value: formatNumber(actual) })}
+        {' · '}
+        {t('expected', { value: formatNumber(expected) })}
+        {' · '}
+        <span className={behind ? styles.behind : undefined}>{planText}</span>
+      </p>
+    </div>
   );
 }
 

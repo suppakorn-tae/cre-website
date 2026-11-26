@@ -1,137 +1,214 @@
 'use client';
 
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { useTranslations } from 'next-intl';
+import { useId, useState } from 'react';
 
-import { LEVELS } from '@/components/ui';
+import { formatNumber } from '@/lib/format/locale';
 
-import styles from './compare.module.css';
 import type { TrendPoint } from './api';
-import { BOX_H, PAD_X, PLOT_H, plotWidth, useBoxWidth } from './chartBox';
-import { linePath, plotPoints } from './rules';
+import { useBoxWidth } from './chartBox';
+import styles from './compare.module.css';
+import { DistributionCard } from './DistributionCard';
+import { InlineSelect } from './InlineSelect';
+import { barAxis, linePath, RM_BANDS, visiblePoints, type TrendFilter } from './rules';
 
-const H = PLOT_H;
-const MAX_RM = 5;
+const HEIGHT = 280;
+const M = { left: 44, right: 44, top: 28, bottom: 52 };
+const RM_TICKS = [1, 2, 3, 4, 5];
 
-/** Plain SVG: average RM line and stacked level distribution per version. */
-export function TrendCharts({ points }: { points: TrendPoint[] }) {
+type Props = {
+  points: TrendPoint[];
+  /** Progress at submit per version id, for the label under each version. */
+  progress?: Record<string, number>;
+};
+
+/** The two cross-version cards of the summary view: the trend and the level distribution. */
+export function TrendCharts({ points, progress }: Props) {
+  return (
+    <>
+      <TrendCard points={points} progress={progress} />
+      <DistributionCard points={points} />
+    </>
+  );
+}
+
+/** Bars for H + VH on the left axis and a line for the average RM on the right axis. */
+function TrendCard({ points, progress }: Props) {
   const t = useTranslations('compare.trend');
+  const titleId = useId();
+  const [filter, setFilter] = useState<TrendFilter>('all');
   const [boxRef, boxWidth] = useBoxWidth();
-  const W = plotWidth(boxWidth);
-  const tl = useTranslations('compare.levels');
-  const path = linePath(
-    plotPoints(
-      points.map((p) => p.avg_rm),
-      W,
-      H,
-      MAX_RM,
-    ),
+  const shown = visiblePoints(points, filter);
+
+  const plotW = Math.max(boxWidth - M.left - M.right, 1);
+  const plotH = HEIGHT - M.top - M.bottom;
+  const slot = plotW / Math.max(shown.length, 1);
+  const barW = Math.min(56, slot * 0.5);
+  const axis = barAxis(Math.max(0, ...shown.map((p) => p.h_vh_count ?? 0)));
+  const yBar = (v: number) => M.top + plotH - (v / axis.top) * plotH;
+  const yRm = (rm: number) =>
+    M.top + plotH - ((rm - RM_BANDS.min) / (RM_BANDS.max - RM_BANDS.min)) * plotH;
+  const centre = (i: number) => M.left + slot * (i + 0.5);
+  const dots = shown.map((p, i) =>
+    p.avg_rm === null ? undefined : { x: centre(i), y: yRm(p.avg_rm) },
   );
-  const dots = plotPoints(
-    points.map((p) => p.avg_rm),
-    W,
-    H,
-    MAX_RM,
-  );
-  const slot = W / Math.max(points.length, 1);
+  const rm = (v: number) =>
+    formatNumber(v, undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <section aria-labelledby="trend-title" className={styles.charts}>
-      <h2 id="trend-title" className={styles.sectionTitle}>
-        {t('title')}
-      </h2>
+    <section aria-labelledby={titleId} className={styles.card}>
+      <div className={styles.cardHead}>
+        <h2 id={titleId} className={styles.cardTitle}>
+          {t('title')}
+        </h2>
+        <InlineSelect
+          label={t('show')}
+          value={filter}
+          onChange={(v) => setFilter(v as TrendFilter)}
+          options={[
+            { value: 'all', label: t('filter.all') },
+            { value: 'submitted', label: t('filter.submitted') },
+          ]}
+        />
+      </div>
+      <ul className={styles.keys}>
+        <li>
+          <span className={styles.keyBar} aria-hidden="true" />
+          {t('legendBars')}
+        </li>
+        <li>
+          <span className={styles.keyLine} aria-hidden="true" />
+          {t('legendLine')}
+        </li>
+        <li>
+          <span className={styles.keyEmpty} aria-hidden="true" />
+          {t('legendEmpty')}
+        </li>
+      </ul>
       <figure className={styles.figure}>
-        <figcaption>{t('avgRm')}</figcaption>
         <div ref={boxRef} className={styles.plot}>
           <svg
             width={boxWidth}
-            height={BOX_H}
-            viewBox={`0 0 ${boxWidth} ${BOX_H}`}
+            height={HEIGHT}
+            viewBox={`0 0 ${boxWidth} ${HEIGHT}`}
             role="img"
-            aria-label={t('avgRm')}
+            aria-label={t('chartLabel')}
           >
-            <g transform={`translate(${PAD_X} 8)`}>
-              <path d={path} className={styles.line} fill="none" />
-              {dots.map((p, i) =>
-                p ? (
-                  <circle
-                    key={points[i].version_id}
-                    cx={p.x}
-                    cy={p.y}
-                    r="3.5"
-                    className={styles.dot}
-                  />
-                ) : null,
-              )}
-              {points.map((p, i) => (
-                <text
-                  key={p.version_id}
-                  x={dots[i]?.x ?? (points.length > 1 ? (i * W) / (points.length - 1) : 0)}
-                  y={H + 22}
-                  textAnchor="middle"
-                  className={styles.axis}
-                >
-                  {t('versionShort', { no: p.version_no })}
-                </text>
-              ))}
-            </g>
-          </svg>
-        </div>
-      </figure>
-      <figure className={styles.figure}>
-        <figcaption>{t('distribution')}</figcaption>
-        <div className={styles.plot}>
-          <svg
-            width={boxWidth}
-            height={BOX_H}
-            viewBox={`0 0 ${boxWidth} ${BOX_H}`}
-            role="img"
-            aria-label={t('distribution')}
-          >
-            <g transform={`translate(${PAD_X} 8)`}>
-              {points.map((p, i) => {
-                const d = p.level_distribution;
-                if (!d) return null;
-                const total = LEVELS.reduce((s, l) => s + d[l], 0) || 1;
-                let y = H;
-                return (
-                  <g key={p.version_id}>
-                    {LEVELS.map((l) => {
-                      const h = (d[l] / total) * H;
-                      y -= h;
-                      return (
-                        <rect
-                          key={l}
-                          x={i * slot + slot * 0.2}
-                          y={y}
-                          width={slot * 0.6}
-                          height={h}
-                          className={styles[`lv${l}`]}
-                        >
-                          <title>{`${tl(l)} ${d[l]}`}</title>
-                        </rect>
-                      );
-                    })}
-                    <text
-                      x={i * slot + slot / 2}
-                      y={H + 22}
-                      textAnchor="middle"
-                      className={styles.axis}
-                    >
-                      {t('versionShort', { no: p.version_no })}
+            {axis.ticks.map((tick, i) => {
+              const y = yBar(tick);
+              return (
+                <g key={tick}>
+                  <line x1={M.left} x2={M.left + plotW} y1={y} y2={y} className={styles.grid} />
+                  <text x={M.left - 8} y={y + 4} textAnchor="end" className={styles.axis}>
+                    {formatNumber(tick)}
+                  </text>
+                  <text x={M.left + plotW + 8} y={y + 4} textAnchor="start" className={styles.axis}>
+                    {RM_TICKS[i]}
+                  </text>
+                </g>
+              );
+            })}
+            {shown.map((p, i) => {
+              const x = centre(i);
+              const submitted = p.h_vh_count !== null;
+              const share = progress?.[p.version_id];
+              return (
+                <g key={p.version_id}>
+                  {submitted ? (
+                    <>
+                      <rect
+                        x={x - barW / 2}
+                        y={yBar(p.h_vh_count ?? 0)}
+                        width={barW}
+                        height={M.top + plotH - yBar(p.h_vh_count ?? 0)}
+                        rx="4"
+                        className={styles.bar}
+                      />
+                      <text
+                        x={x}
+                        y={yBar(p.h_vh_count ?? 0) - 6}
+                        textAnchor="middle"
+                        className={styles.barValue}
+                      >
+                        {formatNumber(p.h_vh_count ?? 0)}
+                      </text>
+                    </>
+                  ) : (
+                    <>
+                      <rect
+                        x={x - Math.max(barW, 44) / 2}
+                        y={M.top}
+                        width={Math.max(barW, 44)}
+                        height={plotH}
+                        rx="6"
+                        className={styles.emptySlot}
+                      />
+                      <text
+                        x={x}
+                        y={M.top + plotH / 2 - 2}
+                        textAnchor="middle"
+                        className={styles.emptyText}
+                      >
+                        {t('notSent')}
+                      </text>
+                      <text
+                        x={x}
+                        y={M.top + plotH / 2 + 14}
+                        textAnchor="middle"
+                        className={styles.emptyText}
+                      >
+                        {t('noResult')}
+                      </text>
+                    </>
+                  )}
+                  <text x={x} y={HEIGHT - 26} textAnchor="middle" className={styles.axisStrong}>
+                    {t('versionShort', { no: p.version_no })}
+                  </text>
+                  {share !== undefined && submitted && (
+                    <text x={x} y={HEIGHT - 8} textAnchor="middle" className={styles.axis}>
+                      {t('progress', { value: formatNumber(share) })}
                     </text>
-                  </g>
-                );
-              })}
-            </g>
+                  )}
+                </g>
+              );
+            })}
+            <path d={linePath(dots)} className={styles.rmLine} fill="none" />
+            {dots.map((d, i) =>
+              d ? (
+                <g key={shown[i].version_id}>
+                  <circle cx={d.x} cy={d.y} r="4.5" className={styles.rmDot} />
+                  <text x={d.x + 10} y={d.y - 8} className={styles.rmValue}>
+                    {rm(shown[i].avg_rm ?? 0)}
+                  </text>
+                </g>
+              ) : null,
+            )}
           </svg>
         </div>
-        <ul className={styles.legend}>
-          {LEVELS.map((l) => (
-            <li key={l} className={styles[`key${l}`]}>
-              {tl(l)}
-            </li>
-          ))}
-        </ul>
+        <VisuallyHidden.Root asChild>
+          <div>
+            <table>
+              <caption>{t('tableCaption')}</caption>
+              <thead>
+                <tr>
+                  <th scope="col">{t('columns.version')}</th>
+                  <th scope="col">{t('columns.hvh')}</th>
+                  <th scope="col">{t('columns.rm')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.map((p) => (
+                  <tr key={p.version_id}>
+                    <th scope="row">{t('versionShort', { no: p.version_no })}</th>
+                    <td>{p.h_vh_count === null ? t('notSent') : formatNumber(p.h_vh_count)}</td>
+                    <td>{p.avg_rm === null ? t('noResult') : rm(p.avg_rm)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </VisuallyHidden.Root>
       </figure>
     </section>
   );

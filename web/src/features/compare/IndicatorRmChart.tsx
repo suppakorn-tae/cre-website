@@ -1,99 +1,207 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { useTranslations } from 'next-intl';
-import { useState } from 'react';
 
-import { CheckboxGroup, Skeleton } from '@/components/ui';
+import { formatNumber } from '@/lib/format/locale';
 
-import { fetchIndicatorRm, indicatorRmKey } from './api';
+import { useBoxWidth } from './chartBox';
 import styles from './compare.module.css';
-import { useNames } from './names';
-import { BOX_H, PAD_X, PLOT_H, plotWidth, useBoxWidth } from './chartBox';
-import { linePath, plotPoints } from './rules';
+import { linePath, RM_BANDS } from './rules';
 
-const H = PLOT_H;
+export type RmSeries = {
+  code: string;
+  name: string;
+  /** Position among the drawn indicators: picks the colour and the marker shape. */
+  index: number;
+  /** Odd factors are drawn dashed, so two factors differ by more than colour. */
+  dashed: boolean;
+  /** One RM per entry of `versions`; null where the version has none. */
+  values: (number | null)[];
+};
 
-/** RM of each indicator across versions, filtered by factor (FR-46). Plain SVG. */
-export function IndicatorRmChart({ projectId }: { projectId: string }) {
-  const t = useTranslations('compare.indicatorRm');
-  const tc = useTranslations('compare');
-  const [factors, setFactors] = useState<string[]>([]);
-  const all = useQuery({
-    queryKey: indicatorRmKey(projectId, []),
-    queryFn: () => fetchIndicatorRm(projectId, []),
-  });
-  const shown = useQuery({
-    queryKey: indicatorRmKey(projectId, factors),
-    queryFn: () => fetchIndicatorRm(projectId, factors),
-  });
-  const names = useNames();
+export type RmVersion = { id: string; no: number; submitted: boolean; progress?: number };
+
+const HEIGHT = 300;
+const M = { left: 40, right: 44, top: 16, bottom: 52 };
+const TICKS = [1, 2, 3, 4, 5];
+export const SERIES_COUNT = 6;
+
+/** Marker for series `index`: circle, square, diamond or triangle, centred on (x, y). */
+function Marker({ x, y, index }: { x: number; y: number; index: number }) {
+  const props = { className: styles.marker, 'data-series': index % SERIES_COUNT };
+  switch (index % 4) {
+    case 1:
+      return <rect x={x - 4.5} y={y - 4.5} width="9" height="9" {...props} />;
+    case 2:
+      return <path d={`M${x} ${y - 6}L${x + 6} ${y}L${x} ${y + 6}L${x - 6} ${y}Z`} {...props} />;
+    case 3:
+      return <path d={`M${x} ${y - 6}L${x + 6} ${y + 5}L${x - 6} ${y + 5}Z`} {...props} />;
+    default:
+      return <circle cx={x} cy={y} r="5" {...props} />;
+  }
+}
+
+/** RM (1 to 5) of the chosen indicators over the versions, with the H and VH bands. Plain SVG. */
+export function IndicatorRmChart({
+  versions,
+  series,
+}: {
+  versions: RmVersion[];
+  series: RmSeries[];
+}) {
+  const t = useTranslations('compare.rm');
+  const tt = useTranslations('compare.trend');
   const [boxRef, boxWidth] = useBoxWidth();
-  const W = plotWidth(boxWidth);
-
-  if (!all.data) return <Skeleton height="8rem" />;
-  const factorCodes = [...new Set(all.data.indicators.map((i) => i.factor_code))];
-  const matrix = shown.data ?? all.data;
+  const plotW = Math.max(boxWidth - M.left - M.right, 1);
+  const plotH = HEIGHT - M.top - M.bottom;
+  const slot = plotW / Math.max(versions.length, 1);
+  const yRm = (rm: number) =>
+    M.top + plotH - ((rm - RM_BANDS.min) / (RM_BANDS.max - RM_BANDS.min)) * plotH;
+  const centre = (i: number) => M.left + slot * (i + 0.5);
+  const empty = Math.min(88, slot * 0.7);
+  const rm = (v: number | null) =>
+    v === null
+      ? t('noValue')
+      : formatNumber(v, undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <section aria-labelledby="rm-title" className={styles.charts}>
-      <h2 id="rm-title" className={styles.sectionTitle}>
-        {t('title')}
-      </h2>
-      <CheckboxGroup
-        legend={t('factorFilter')}
-        options={factorCodes.map((c) => ({ value: c, label: names.factor(c) }))}
-        value={factors}
-        onChange={(v) => setFactors(v)}
-      />
-      <figure className={styles.figure}>
-        <div ref={boxRef} className={styles.plot}>
-          <svg
-            width={boxWidth}
-            height={BOX_H}
-            viewBox={`0 0 ${boxWidth} ${BOX_H}`}
-            role="img"
-            aria-label={t('title')}
+    <figure className={styles.figure}>
+      <div ref={boxRef} className={styles.plot}>
+        <svg
+          width={boxWidth}
+          height={HEIGHT}
+          viewBox={`0 0 ${boxWidth} ${HEIGHT}`}
+          role="img"
+          aria-label={t('chartLabel')}
+        >
+          <rect
+            x={M.left}
+            y={yRm(RM_BANDS.max)}
+            width={plotW}
+            height={yRm(RM_BANDS.vh) - yRm(RM_BANDS.max)}
+            className={styles.bandVh}
+          />
+          <rect
+            x={M.left}
+            y={yRm(RM_BANDS.vh)}
+            width={plotW}
+            height={yRm(RM_BANDS.h) - yRm(RM_BANDS.vh)}
+            className={styles.bandH}
+          />
+          <text
+            x={M.left + plotW + 8}
+            y={(yRm(RM_BANDS.max) + yRm(RM_BANDS.vh)) / 2 + 4}
+            className={styles.bandVhLabel}
           >
-            <g transform={`translate(${PAD_X} 8)`}>
-              {matrix.indicators.map((row, n) => (
-                <path
-                  key={row.indicator_code}
-                  d={linePath(
-                    plotPoints(
-                      row.points.map((p) => p.rm),
-                      W,
-                      H,
-                      5,
-                    ),
-                  )}
-                  className={styles.series}
-                  data-series={n % 6}
-                  fill="none"
-                />
-              ))}
-              {matrix.versions.map((v, i) => (
-                <text
-                  key={v.version_id}
-                  x={matrix.versions.length > 1 ? (i * W) / (matrix.versions.length - 1) : 0}
-                  y={H + 22}
-                  textAnchor="middle"
-                  className={styles.axis}
-                >
-                  {tc('trend.versionShort', { no: v.version_no })}
-                </text>
-              ))}
+            {t('bandVh')}
+          </text>
+          <text
+            x={M.left + plotW + 8}
+            y={(yRm(RM_BANDS.vh) + yRm(RM_BANDS.h)) / 2 + 4}
+            className={styles.bandHLabel}
+          >
+            {t('bandH')}
+          </text>
+          {TICKS.map((tick) => (
+            <g key={tick}>
+              <line
+                x1={M.left}
+                x2={M.left + plotW}
+                y1={yRm(tick)}
+                y2={yRm(tick)}
+                className={styles.grid}
+              />
+              <text x={M.left - 8} y={yRm(tick) + 4} textAnchor="end" className={styles.axis}>
+                {tick}
+              </text>
             </g>
-          </svg>
-        </div>
-        <ul className={styles.legend}>
-          {matrix.indicators.map((row, n) => (
-            <li key={row.indicator_code} data-series={n % 6}>
-              {names.indicator(row.indicator_code)}
-            </li>
           ))}
-        </ul>
-      </figure>
-    </section>
+          {versions.map((v, i) => (
+            <g key={v.id}>
+              {!v.submitted && (
+                <>
+                  <rect
+                    x={centre(i) - empty / 2}
+                    y={M.top}
+                    width={empty}
+                    height={plotH}
+                    rx="6"
+                    className={styles.emptySlot}
+                  />
+                  <text
+                    x={centre(i)}
+                    y={M.top + plotH / 2 - 2}
+                    textAnchor="middle"
+                    className={styles.emptyText}
+                  >
+                    {t('noResult')}
+                  </text>
+                  <text
+                    x={centre(i)}
+                    y={M.top + plotH / 2 + 14}
+                    textAnchor="middle"
+                    className={styles.emptyText}
+                  >
+                    {t('left')}
+                  </text>
+                </>
+              )}
+              <text x={centre(i)} y={HEIGHT - 26} textAnchor="middle" className={styles.axisStrong}>
+                {tt('versionShort', { no: v.no })}
+              </text>
+              <text x={centre(i)} y={HEIGHT - 8} textAnchor="middle" className={styles.axis}>
+                {v.submitted
+                  ? v.progress === undefined
+                    ? ''
+                    : tt('progress', { value: formatNumber(v.progress) })
+                  : t('notSent')}
+              </text>
+            </g>
+          ))}
+          {series.map((s) => (
+            <g key={s.code} className={styles.series} data-series={s.index % SERIES_COUNT}>
+              <path
+                d={linePath(
+                  s.values.map((v, i) => (v === null ? undefined : { x: centre(i), y: yRm(v) })),
+                )}
+                fill="none"
+                strokeDasharray={s.dashed ? '6 4' : undefined}
+              />
+              {s.values.map((v, i) =>
+                v === null ? null : <Marker key={i} x={centre(i)} y={yRm(v)} index={s.index} />,
+              )}
+            </g>
+          ))}
+        </svg>
+      </div>
+      <VisuallyHidden.Root asChild>
+        <div>
+          <table>
+            <caption>{t('tableCaption')}</caption>
+            <thead>
+              <tr>
+                <th scope="col">{t('columns.indicator')}</th>
+                {versions.map((v) => (
+                  <th key={v.id} scope="col">
+                    {tt('versionShort', { no: v.no })}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {series.map((s) => (
+                <tr key={s.code}>
+                  <th scope="row">{s.name}</th>
+                  {s.values.map((v, i) => (
+                    <td key={versions[i].id}>{rm(v)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </VisuallyHidden.Root>
+    </figure>
   );
 }

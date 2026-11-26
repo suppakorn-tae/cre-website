@@ -1,64 +1,51 @@
 import { HttpResponse, http as mswHttp, type HttpHandler } from 'msw';
 
+import { mockResultItems } from '@/features/results/overview/mocks';
+import { mockVersions } from '@/features/versions/mocks';
+
 import type { IndicatorRmMatrix, TrendPoint, VersionComparison } from './api';
 
-const vid = (no: number) => `0193a5c2-0000-7000-8000-00000000010${no}`;
+/**
+ * The trend, the comparison and the per-indicator RM all come from the version
+ * mocks (and the results mock for each indicator), so every page shows the same
+ * numbers: v1 never submitted, v2 and v3 submitted.
+ */
+const ascending = () => [...mockVersions()].sort((a, b) => a.version_no - b.version_no);
 
-export const mockTrend = (): TrendPoint[] => [
-  {
-    version_id: vid(1),
-    version_no: 1,
-    status: 'submitted',
-    submitted_at: '2026-10-30T04:00:00Z',
-    avg_rm: 3.2,
-    h_vh_count: 20,
-    level_distribution: { VL: 5, L: 15, M: 40, H: 15, VH: 5 },
-  },
-  {
-    version_id: vid(2),
-    version_no: 2,
-    status: 'submitted',
-    submitted_at: '2026-11-05T04:20:00Z',
-    avg_rm: 3.03,
-    h_vh_count: 18,
-    level_distribution: { VL: 6, L: 17, M: 40, H: 14, VH: 4 },
-  },
-  {
-    version_id: vid(3),
-    version_no: 3,
-    status: 'submitted',
-    submitted_at: '2026-11-14T09:40:00Z',
-    avg_rm: 2.71,
-    h_vh_count: 13,
-    level_distribution: { VL: 8, L: 20, M: 40, H: 11, VH: 2 },
-  },
-  {
-    version_id: vid(4),
-    version_no: 4,
-    status: 'draft',
-    submitted_at: null,
-    avg_rm: null,
-    h_vh_count: null,
-    level_distribution: null,
-  },
-];
+export const mockTrend = (): TrendPoint[] =>
+  ascending().map((v) => {
+    const submitted = v.status === 'submitted' && v.level_counts !== null;
+    return {
+      version_id: v.id,
+      version_no: v.version_no,
+      status: v.status,
+      submitted_at: submitted ? v.submitted_at : null,
+      avg_rm: submitted ? v.average_rm : null,
+      h_vh_count: submitted ? (v.high_count ?? 0) + (v.very_high_count ?? 0) : null,
+      level_distribution: submitted ? (v.level_counts ?? null) : null,
+    };
+  });
 
 export const mockComparison = (base: string, target: string): VersionComparison => {
-  const find = (id: string) => mockTrend().find((p) => p.version_id === id) ?? mockTrend()[0];
-  const metrics = (p: TrendPoint) => ({
-    version_id: p.version_id,
-    version_no: p.version_no,
-    submitted_at: p.submitted_at ?? '2026-11-14T09:40:00Z',
-    progress_at_submit: p.version_no * 15,
-    avg_rm: p.avg_rm,
-    h_vh_count: p.h_vh_count ?? 0,
-    scored_count: 80,
-  });
+  const versions = ascending();
+  const find = (id: string) => versions.find((v) => v.id === id) ?? versions[1];
+  const metrics = (id: string) => {
+    const v = find(id);
+    return {
+      version_id: v.id,
+      version_no: v.version_no,
+      submitted_at: v.submitted_at ?? '2026-11-14T09:40:00Z',
+      progress_at_submit: v.progress_at_submit ?? 0,
+      avg_rm: v.average_rm,
+      h_vh_count: (v.high_count ?? 0) + (v.very_high_count ?? 0),
+      scored_count: v.scored_count ?? 0,
+    };
+  };
   return {
-    base: metrics(find(base)),
-    target: metrics(find(target)),
-    level_up_count: 1,
-    level_down_count: 2,
+    base: metrics(base),
+    target: metrics(target),
+    level_up_count: 5,
+    level_down_count: 12,
     level_changes: [
       {
         indicator_code: 'EC-MG-1',
@@ -91,36 +78,45 @@ export const mockComparison = (base: string, target: string): VersionComparison 
   };
 };
 
-export const mockIndicatorRm = (): IndicatorRmMatrix => ({
-  versions: mockTrend().map((p) => ({
-    version_id: p.version_id,
-    version_no: p.version_no,
-    submitted: p.status === 'submitted',
-  })),
-  indicators: [
-    { indicator_code: 'EC-MG-1', factor_code: 'EC-MG', rms: [4, 3.5, 3, null] },
-    { indicator_code: 'EC-TC-1', factor_code: 'EC-TC', rms: [2, 2, 3, null] },
-  ].map((row) => ({
-    indicator_code: row.indicator_code,
-    factor_code: row.factor_code,
-    points: row.rms.map((rm, i) => ({
-      version_id: vid(i + 1),
-      rm,
-      level: rm === null ? null : rm >= 4 ? 'H' : rm >= 3 ? 'M' : 'L',
+/** RM of every catalogue indicator in each version; a never-submitted version has none. */
+export const mockIndicatorRm = (): IndicatorRmMatrix => {
+  const versions = ascending();
+  const perVersion = versions.map((v) =>
+    v.level_counts && v.status === 'submitted' ? mockResultItems(v.level_counts) : null,
+  );
+  const rows = mockResultItems();
+  return {
+    versions: versions.map((v, i) => ({
+      version_id: v.id,
+      version_no: v.version_no,
+      submitted: perVersion[i] !== null,
     })),
-  })),
-});
+    indicators: rows.map((row, index) => ({
+      indicator_code: row.indicator_code,
+      factor_code: row.indicator_code.split('-').slice(0, 2).join('-'),
+      points: versions.map((v, i) => {
+        const item = perVersion[i]?.[index];
+        return { version_id: v.id, rm: item?.rm ?? null, level: item?.level ?? null };
+      }),
+    })),
+  };
+};
 
 /** Compare handlers for any project id. */
 export function createCompareHandlers(): HttpHandler[] {
+  const submitted = () => ascending().filter((v) => v.status === 'submitted');
   return [
     mswHttp.get('*/api/v1/projects/:projectId/trend', () =>
       HttpResponse.json({ versions: mockTrend() }),
     ),
     mswHttp.get('*/api/v1/projects/:projectId/compare', ({ request }) => {
       const q = new URL(request.url).searchParams;
+      const [older, newer] = submitted().slice(-2);
       return HttpResponse.json(
-        mockComparison(q.get('base_version_id') ?? vid(2), q.get('target_version_id') ?? vid(3)),
+        mockComparison(
+          q.get('base_version_id') ?? older.id,
+          q.get('target_version_id') ?? newer.id,
+        ),
       );
     }),
     mswHttp.get('*/api/v1/projects/:projectId/indicator-rm', ({ request }) => {
