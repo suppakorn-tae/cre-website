@@ -7,36 +7,58 @@ package sqlc
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const findReportJob = `-- name: FindReportJob :one
-SELECT j.id
+const findLatestReportJob = `-- name: FindLatestReportJob :one
+SELECT j.id, j.status, j.created_at, rj.submission_no,
+    GREATEST(
+        p.updated_at,
+        (SELECT max(sc.updated_at) FROM strategy_choice sc WHERE sc.version_id = rj.version_id)
+    )::timestamptz AS inputs_changed_at
 FROM job j
 JOIN report_job rj ON rj.job_id = j.id
+JOIN assessment_version v ON v.id = rj.version_id
+JOIN project p ON p.id = v.project_id
 WHERE rj.version_id = $1
-  AND rj.submission_no = $2
-  AND j.requested_by = $3
+  AND j.requested_by = $2
   AND j.status IN ('queued', 'running', 'done')
-ORDER BY j.created_at DESC
+ORDER BY j.created_at DESC, j.id DESC
 LIMIT 1
 `
 
-type FindReportJobParams struct {
-	VersionID    uuid.UUID
-	SubmissionNo int32
-	RequestedBy  uuid.UUID
+type FindLatestReportJobParams struct {
+	VersionID   uuid.UUID
+	RequestedBy uuid.UUID
 }
 
-// The live job for a submission; a failed job does not count, so the user
-// may ask again.
-func (q *Queries) FindReportJob(ctx context.Context, arg FindReportJobParams) (uuid.UUID, error) {
-	row := q.db.QueryRow(ctx, findReportJob, arg.VersionID, arg.SubmissionNo, arg.RequestedBy)
-	var id uuid.UUID
-	err := row.Scan(&id)
-	return id, err
+type FindLatestReportJobRow struct {
+	ID              uuid.UUID
+	Status          JobStatus
+	CreatedAt       time.Time
+	SubmissionNo    int32
+	InputsChangedAt time.Time
+}
+
+// The newest live report job of a version with what decides whether it is
+// still current (architecture decisions v2.14): the submission it was asked
+// for and the last change to what the PDF shows that is not a submission
+// (project fields, chosen strategies). A failed job does not count, so the
+// user may ask again and the previous done job stays the one to download.
+func (q *Queries) FindLatestReportJob(ctx context.Context, arg FindLatestReportJobParams) (FindLatestReportJobRow, error) {
+	row := q.db.QueryRow(ctx, findLatestReportJob, arg.VersionID, arg.RequestedBy)
+	var i FindLatestReportJobRow
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.CreatedAt,
+		&i.SubmissionNo,
+		&i.InputsChangedAt,
+	)
+	return i, err
 }
 
 const getReportForDownload = `-- name: GetReportForDownload :one
@@ -126,6 +148,54 @@ func (q *Queries) InsertReportJob(ctx context.Context, arg InsertReportJobParams
 	return err
 }
 
+const listReplacedReports = `-- name: ListReplacedReports :many
+SELECT o.id, o.object_key::text AS object_key, ro.version_id
+FROM report_job rn
+JOIN report_job ro ON ro.version_id = rn.version_id
+JOIN job o ON o.id = ro.job_id
+WHERE rn.job_id = $1
+  AND o.status = 'done'
+  AND EXISTS (
+      SELECT 1
+      FROM report_job nr
+      JOIN job n ON n.id = nr.job_id
+      WHERE nr.version_id = ro.version_id
+        AND n.status = 'done'
+        AND (n.created_at, n.id) > (o.created_at, o.id)
+  )
+ORDER BY o.created_at, o.id
+`
+
+type ListReplacedReportsRow struct {
+	ID        uuid.UUID
+	ObjectKey string
+	VersionID uuid.UUID
+}
+
+// Done reports of the same version as a report job that a newer done report
+// of that version replaces (one current PDF per version, v2.14). The job
+// itself is listed when a newer one finished first. A row stays listed until
+// it is marked expired, so a failed delete is retried on the next run.
+func (q *Queries) ListReplacedReports(ctx context.Context, jobID uuid.UUID) ([]ListReplacedReportsRow, error) {
+	rows, err := q.db.Query(ctx, listReplacedReports, jobID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ListReplacedReportsRow
+	for rows.Next() {
+		var i ListReplacedReportsRow
+		if err := rows.Scan(&i.ID, &i.ObjectKey, &i.VersionID); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const lockReportRequest = `-- name: LockReportRequest :exec
 SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))
 `
@@ -135,4 +205,19 @@ SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))
 func (q *Queries) LockReportRequest(ctx context.Context, versionID string) error {
 	_, err := q.db.Exec(ctx, lockReportRequest, versionID)
 	return err
+}
+
+const markReportReplaced = `-- name: MarkReportReplaced :execrows
+UPDATE job SET status = 'expired'
+WHERE id = $1 AND kind = 'report' AND status = 'done'
+`
+
+// The row stays for history; its object is gone. expired is the status of a
+// job whose file was removed (no new enum value).
+func (q *Queries) MarkReportReplaced(ctx context.Context, id uuid.UUID) (int64, error) {
+	result, err := q.db.Exec(ctx, markReportReplaced, id)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected(), nil
 }

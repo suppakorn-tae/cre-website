@@ -59,9 +59,12 @@ func New(db dal.DBTX, begin dal.Beginner, j Jobs, store Store, log *slog.Logger)
 	return &Service{db: db, begin: begin, jobs: j, store: store, log: log}
 }
 
-// Request creates a report job for the version's last submission, or returns
-// the live job when one exists. The version must belong to the requester's
-// project and not be deleted (ErrNotFound) and be submitted (ErrNotSubmitted).
+// Request returns the version's current report job, or creates one when there
+// is none or what the PDF shows changed since the latest one was asked for
+// (one current PDF per version, architecture decisions v2.14). The previous
+// done job keeps its file until the new one is done; the worker then deletes
+// it. The version must belong to the requester's project and not be deleted
+// (ErrNotFound) and be submitted (ErrNotSubmitted).
 func (s *Service) Request(ctx context.Context, requester, projectID, versionID uuid.UUID) (uuid.UUID, error) {
 	var job jobs.Job
 	var created bool
@@ -82,14 +85,16 @@ func (s *Service) Request(ctx context.Context, requester, projectID, versionID u
 		if err := q.LockReportRequest(ctx, versionID.String()); err != nil {
 			return fmt.Errorf("reports: lock: %w", err)
 		}
-		id, err := q.FindReportJob(ctx, sqlc.FindReportJobParams{
-			VersionID: versionID, SubmissionNo: v.SubmissionNo, RequestedBy: requester,
+		cur, err := q.FindLatestReportJob(ctx, sqlc.FindLatestReportJobParams{
+			VersionID: versionID, RequestedBy: requester,
 		})
-		if err == nil {
-			job = jobs.Job{ID: id}
-			return nil
-		}
-		if !errors.Is(err, pgx.ErrNoRows) {
+		switch {
+		case err == nil:
+			if isCurrent(cur, v.SubmissionNo) {
+				job = jobs.Job{ID: cur.ID}
+				return nil
+			}
+		case !errors.Is(err, pgx.ErrNoRows):
 			return fmt.Errorf("reports: find job: %w", err)
 		}
 		job, err = s.jobs.Insert(ctx, tx, jobs.KindReport, requester)
@@ -115,6 +120,16 @@ func (s *Service) Request(ctx context.Context, requester, projectID, versionID u
 		}
 	}
 	return job.ID, nil
+}
+
+// isCurrent reports whether the latest live job still shows what the version
+// shows now: it was asked for the version's last submission, and neither the
+// project nor a chosen strategy changed at or after the job was created. The
+// worker reads the data after the job is created, so a change before that is
+// in the PDF; an equal time counts as a change. Everything comes from stored
+// timestamps; nothing is recalculated.
+func isCurrent(j sqlc.FindLatestReportJobRow, submissionNo int32) bool {
+	return j.SubmissionNo == submissionNo && j.InputsChangedAt.Before(j.CreatedAt)
 }
 
 // File is a report ready to stream. The caller must close Body.

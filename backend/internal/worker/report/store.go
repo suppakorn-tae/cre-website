@@ -72,3 +72,26 @@ func (s *Store) Load(ctx context.Context, jobID uuid.UUID) (tmpl.Data, error) {
 	}
 	return d, nil
 }
+
+// Replaced lists the done reports of the version of jobID that a newer done
+// report of that version replaces.
+func (s *Store) Replaced(ctx context.Context, jobID uuid.UUID) ([]Replaced, error) {
+	rows, err := s.q.ListReplacedReports(ctx, jobID)
+	if err != nil {
+		return nil, fmt.Errorf("report: list replaced: %w", err)
+	}
+	out := make([]Replaced, 0, len(rows))
+	for _, r := range rows {
+		out = append(out, Replaced{JobID: r.ID, VersionID: r.VersionID, ObjectKey: r.ObjectKey})
+	}
+	return out, nil
+}
+
+// MarkReplaced marks a done report expired; false means it was not done.
+func (s *Store) MarkReplaced(ctx context.Context, jobID uuid.UUID) (bool, error) {
+	n, err := s.q.MarkReportReplaced(ctx, jobID)
+	if err != nil {
+		return false, fmt.Errorf("report: mark replaced %s: %w", jobID, err)
+	}
+	return n == 1, nil
+}

@@ -121,9 +121,12 @@ type Querier interface {
 	// Results of indicators that are no longer complete; advice lists and
 	// strategies cascade.
 	DeleteStaleResults(ctx context.Context, arg DeleteStaleResultsParams) error
-	// The live job for a submission; a failed job does not count, so the user
-	// may ask again.
-	FindReportJob(ctx context.Context, arg FindReportJobParams) (uuid.UUID, error)
+	// The newest live report job of a version with what decides whether it is
+	// still current (architecture decisions v2.14): the submission it was asked
+	// for and the last change to what the PDF shows that is not a submission
+	// (project fields, chosen strategies). A failed job does not count, so the
+	// user may ask again and the previous done job stays the one to download.
+	FindLatestReportJob(ctx context.Context, arg FindLatestReportJobParams) (FindLatestReportJobRow, error)
 	// Google sign-in: the account linked to this Google id. Deleted accounts
 	// have no Google id, so they never match.
 	GetAccountByGoogleSub(ctx context.Context, googleSub pgtype.Text) (GetAccountByGoogleSubRow, error)
@@ -217,6 +220,11 @@ type Querier interface {
 	// latest_version_no is 0 and latest_version_id NULL when the project has no
 	// live version.
 	ListProjects(ctx context.Context, arg ListProjectsParams) ([]ListProjectsRow, error)
+	// Done reports of the same version as a report job that a newer done report
+	// of that version replaces (one current PDF per version, v2.14). The job
+	// itself is listed when a newer one finished first. A row stays listed until
+	// it is marked expired, so a failed delete is retried on the next run.
+	ListReplacedReports(ctx context.Context, jobID uuid.UUID) ([]ListReplacedReportsRow, error)
 	// All accounts, or only those chosen for the job. A deleted account stays: its
 	// pseudonym still ties its projects together.
 	ListResearchAccounts(ctx context.Context, arg ListResearchAccountsParams) ([]ListResearchAccountsRow, error)
@@ -256,6 +264,9 @@ type Querier interface {
 	MarkJobFailed(ctx context.Context, arg MarkJobFailedParams) (int64, error)
 	// A job left running by a crashed worker may be claimed again.
 	MarkJobRunning(ctx context.Context, id uuid.UUID) (Job, error)
+	// The row stays for history; its object is gone. expired is the status of a
+	// job whose file was removed (no new enum value).
+	MarkReportReplaced(ctx context.Context, id uuid.UUID) (int64, error)
 	MarkVersionSubmitted(ctx context.Context, versionID uuid.UUID) (*time.Time, error)
 	// Owner check without a lock, for reads. Another account's project, or a
 	// deleted one, looks absent.
