@@ -5,7 +5,25 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/suppakorn-tae/cre-website/backend/internal/service/auth"
 )
+
+func TestRegistryGathersAuthMailFailures(t *testing.T) {
+	m := New()
+	// A CounterVec without children is not gathered, so create one.
+	auth.MailFailures.WithLabelValues("reset_code").Add(0)
+	mfs, err := m.Registry.Gather()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, mf := range mfs {
+		if mf.GetName() == "auth_mail_send_failures_total" {
+			return
+		}
+	}
+	t.Fatal("auth_mail_send_failures_total is not gathered")
+}
 
 func TestMetricsEndpointCountsRequests(t *testing.T) {
 	m := New()
