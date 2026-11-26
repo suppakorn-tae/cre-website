@@ -1,3 +1,4 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -142,13 +143,34 @@ describe('AppShell admin layout and header', () => {
 });
 
 describe('ProjectSteps', () => {
-  it('marks the current step and earlier ones as done', () => {
-    const html = wrap(<ProjectSteps current="results" />);
+  const steps = (current: 'results' | 'project', ids = {}) =>
+    wrap(
+      <QueryClientProvider client={new QueryClient()}>
+        <ProjectSteps current={current} {...ids} />
+      </QueryClientProvider>,
+    );
+
+  it('renders a nav with one list and the current step marked', () => {
+    const html = steps('results', { projectId: 'p', versionId: 'v' });
+    expect(html).toContain('aria-label="ขั้นตอนการประเมิน"');
+    expect(html.match(/<ol/g)).toHaveLength(1);
+    expect(html.match(/aria-current="step"/g)).toHaveLength(1);
     expect(html).toMatch(/aria-current="step"[^>]*>(?:(?!<li).)*ผลการประเมิน/);
-    expect(html.match(/เสร็จแล้ว/g)).toHaveLength(2);
     for (const label of ['ข้อมูลโครงการ', 'ประเมินความเสี่ยง', 'แผนจัดการ', 'รายงาน']) {
       expect(html).toContain(label);
     }
+  });
+
+  it('says where the step is for phones', () => {
+    expect(steps('results', { projectId: 'p', versionId: 'v' })).toContain(
+      'ขั้นที่ 3 จาก 5 · ผลการประเมิน',
+    );
+  });
+
+  it('has no link on the new-project page', () => {
+    const html = steps('project');
+    expect(html).not.toContain('<a ');
+    expect(html).toContain('aria-disabled="true"');
   });
 });
 

@@ -16,11 +16,15 @@ export function ProjectMocks({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const [{ worker }, { projectHandlers }] = await Promise.all([
-          import('@/mocks/browser'),
-          import('./mocks'),
-        ]);
-        worker.use(...projectHandlers);
+        const [{ worker }, { projectHandlers }, { resultHandlers }, { createVersionHandlers }] =
+          await Promise.all([
+            import('@/mocks/browser'),
+            import('./mocks'),
+            import('@/features/results/overview/mocks'),
+            import('@/features/versions/mocks'),
+          ]);
+        // The step indicator asks for the latest version of the project.
+        worker.use(...projectHandlers, ...resultHandlers, ...createVersionHandlers());
       } catch (error) {
         console.error('project mocks failed to register; continuing without them', error);
       }

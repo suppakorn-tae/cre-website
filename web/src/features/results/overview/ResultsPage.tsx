@@ -145,7 +145,7 @@ export function ResultsPage({ projectId, versionId }: { projectId: string; versi
 
   return (
     <div className={styles.page}>
-      <ProjectSteps current="results" />
+      <ProjectSteps current="results" projectId={projectId} versionId={versionId} />
       <header className={styles.head}>
         <nav aria-label={t('page.breadcrumbLabel')} className={styles.crumbs}>
           <Link href="/dashboard">{t('page.breadcrumbRoot')}</Link>

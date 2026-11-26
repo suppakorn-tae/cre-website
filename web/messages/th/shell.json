@@ -32,7 +32,16 @@
     "assessment": "ประเมินความเสี่ยง",
     "results": "ผลการประเมิน",
     "strategy": "แผนจัดการ",
-    "report": "รายงาน"
+    "report": "รายงาน",
+    "position": "ขั้นที่ {no} จาก {total} · {label}",
+    "needSubmit": "ส่งผลการประเมินก่อน",
+    "needProject": "บันทึกข้อมูลโครงการก่อน",
+    "reportState": {
+      "idle": "รายงาน",
+      "building": "กำลังสร้าง…",
+      "ready": "ดาวน์โหลดแล้ว",
+      "failed": "ลองอีกครั้ง"
+    }
   },
   "skipToContent": "ข้ามไปยังเนื้อหา",
   "loading": "กำลังโหลด…"
