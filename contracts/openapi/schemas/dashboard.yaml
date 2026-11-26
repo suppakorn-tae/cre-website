@@ -74,6 +74,8 @@ DashboardProjectItem:
     - latest_version_id
     - latest_version_no
     - latest_version_status
+    - latest_version_scored_count
+    - latest_version_indicator_total
     - latest_submitted_version_id
     - h_vh_count
     - avg_rm
@@ -109,6 +111,19 @@ DashboardProjectItem:
       minimum: 1
     latest_version_status:
       $ref: common.yaml#/schemas/VersionStatus
+    latest_version_scored_count:
+      type: integer
+      minimum: 0
+      description: |
+        Indicators with a stored result in the latest version (0 while it has
+        none, for example a draft that was never submitted). Counted from the
+        stored `risk_result` rows, never scored on read.
+    latest_version_indicator_total:
+      type: integer
+      minimum: 0
+      description: |
+        Indicators the latest version covers, from its stored threshold
+        snapshot (55 today). The denominator of `latest_version_scored_count`.
     latest_submitted_version_id:
       description: Target of the results action; null when never submitted.
       oneOf:
