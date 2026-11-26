@@ -11,7 +11,6 @@ const PAGES: [string, () => Promise<PageModule>][] = [
   ['compare', () => import('./(app)/projects/[projectId]/compare/page')],
   ['assess', () => import('./(app)/projects/[projectId]/versions/[versionId]/assess/page')],
   ['results', () => import('./(app)/projects/[projectId]/versions/[versionId]/results/page')],
-  ['report', () => import('./(app)/projects/[projectId]/versions/[versionId]/report/page')],
   ['admin user', () => import('./(admin)/admin/users/[userId]/page')],
 ];
 

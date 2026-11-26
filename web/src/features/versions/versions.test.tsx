@@ -1,8 +1,11 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NextIntlClientProvider } from 'next-intl';
 import { setupServer } from 'msw/node';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import reports from '../../../messages/th/reports.json';
+import ui from '../../../messages/th/ui.json';
 import versions from '../../../messages/th/versions.json';
 
 vi.mock('@/lib/api/client', async (importOriginal) => {
@@ -28,9 +31,11 @@ import { VersionList } from './VersionList';
 
 const wrap = (node: React.ReactNode) =>
   renderToStaticMarkup(
-    <NextIntlClientProvider locale="th" messages={{ versions }}>
-      {node}
-    </NextIntlClientProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <NextIntlClientProvider locale="th" messages={{ versions, reports, ui }}>
+        {node}
+      </NextIntlClientProvider>
+    </QueryClientProvider>,
   );
 
 describe('ProjectHeader', () => {
@@ -76,6 +81,15 @@ describe('VersionList', () => {
     expect(html).toContain('/versions/0193a5c2-0000-7000-8000-000000000103/results');
     expect(html).not.toContain('/versions/0193a5c2-0000-7000-8000-000000000101/results');
     expect(html).toContain(`/projects/${mockProjectId}/compare`);
+  });
+
+  it('has a report button for every version, enabled for submitted ones only', () => {
+    const html = render();
+    expect(html).not.toContain('/report');
+    expect(html).toContain('aria-label="รายงาน PDF เวอร์ชัน 3"');
+    const submitted = mockVersions().filter((v) => v.status === 'submitted').length;
+    expect(html.match(/data-report="idle"/g)).toHaveLength(submitted);
+    expect(html.match(/data-report="draft"/g)).toHaveLength(mockVersions().length - submitted);
   });
 
   it('shows an empty state with a create button and no compare link', () => {
