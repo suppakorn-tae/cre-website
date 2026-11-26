@@ -9,7 +9,13 @@ export type Version = components['schemas']['Version'];
 export type Level = IndicatorResult['level'];
 
 /** Indicator text from the catalogue; results carry only the code. */
-export type IndicatorName = { name: string; factorCode: string; factorName: string };
+export type IndicatorName = {
+  name: string;
+  /** Unit of the likelihood input X. */
+  unit: string;
+  factorCode: string;
+  factorName: string;
+};
 
 const keys = {
   version: (projectId: string, versionId: string) =>
@@ -59,6 +65,7 @@ export function useIndicatorNames() {
           for (const indicator of factor.indicators) {
             names.set(indicator.code, {
               name: indicator.name,
+              unit: indicator.unit,
               factorCode: factor.code,
               factorName: factor.name,
             });

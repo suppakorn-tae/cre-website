@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { browserApi } from '@/lib/api/client';
 import type { components } from '@/lib/api/generated/schema';
 
-import type { ResultsResponse } from '../overview/api';
+import type { ResultsResponse } from '@/features/results/overview/api';
 
 export type Strategy = components['schemas']['RiskStrategy'];
 export const STRATEGIES: readonly Strategy[] = ['REDUCE', 'TRANSFER', 'AVOID', 'ACCEPT'];

@@ -8,6 +8,7 @@ import { useTranslations } from 'next-intl';
 import { IconArrowRight, IconFileTypePdf } from '@tabler/icons-react';
 
 import { Button, EmptyState, Icon, LEVELS, LevelBadge, Skeleton, Tabs } from '@/components/ui';
+import { planPath } from '@/features/plan/rules';
 import { ProjectSteps } from '@/features/shell/ProjectSteps';
 import { fetchProject, projectKey } from '@/features/versions/api';
 import { projectPaths } from '@/features/versions/rules';
@@ -160,10 +161,10 @@ export function ResultsPage({ projectId, versionId }: { projectId: string; versi
               <Icon icon={IconFileTypePdf} size={18} />
               {t('page.reportAction')}
             </Link>
-            <button type="button" className={styles.actionPrimary} onClick={() => setTab('hvh')}>
+            <Link className={styles.actionPrimary} href={planPath(projectId, versionId)}>
               {t('page.adviceAction')}
               <Icon icon={IconArrowRight} size={18} />
-            </button>
+            </Link>
           </div>
         </div>
         <p className={styles.muted}>

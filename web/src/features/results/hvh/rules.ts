@@ -1,7 +1,4 @@
-import type { IndicatorResult } from '../overview/api';
-import { byRmDesc } from '../overview/rules';
+export { highRisks } from '@/features/plan/rules';
 
-/** H and VH indicators only, highest RM first (the code breaks ties). */
-export function highRisks(items: IndicatorResult[]): IndicatorResult[] {
-  return items.filter((i) => i.level === 'H' || i.level === 'VH').sort(byRmDesc);
-}
+/** Cards the H / VH summary shows before "… and n more". */
+export const HVH_VISIBLE = 3;

@@ -28,7 +28,7 @@ const items = mockResultItems();
 const names = new Map<string, IndicatorName>(
   items.map((i) => [
     i.indicator_code,
-    { name: `ชื่อ ${i.indicator_code}`, factorCode: 'F', factorName: 'ด้านทดสอบ' },
+    { name: `ชื่อ ${i.indicator_code}`, unit: 'ครั้ง', factorCode: 'F', factorName: 'ด้านทดสอบ' },
   ]),
 );
 
