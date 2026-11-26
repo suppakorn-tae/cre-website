@@ -244,8 +244,11 @@ function Y3Sheet({
     const root = document.documentElement;
     const before = root.style.overflow;
     root.style.overflow = 'hidden';
+    // Also close it: when Next.js keeps this page in a hidden <Activity> after a
+    // navigation, an open modal sheet would stay on top and make the next page inert.
     return () => {
       root.style.overflow = before;
+      if (dialog.open) dialog.close();
     };
   }, [open]);
 
