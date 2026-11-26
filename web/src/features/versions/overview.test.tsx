@@ -78,6 +78,15 @@ describe('OverviewPanel', () => {
     expect(html).not.toContain('/report');
   });
 
+  it('has four actions with the plan link, and the prompt to start a new round', () => {
+    const html = panel();
+    expect(html).toContain(`${v3}/plan`);
+    expect(html).toContain('คำแนะนำ &amp; กลยุทธ์');
+    expect(html).toContain('แก้ไขคำตอบ');
+    expect(html).toContain('ต้องการประเมินรอบใหม่?');
+    expect(html).toContain('(v3 จะเป็นแบบอ่านอย่างเดียว)');
+  });
+
   it('links the H and VH chips to the advice tab of the results page', () => {
     const html = panel();
     const links = html.match(/<a [^>]*href="[^"]*\/results\?tab=hvh"[^>]*>/g) ?? [];
@@ -96,6 +105,13 @@ describe('OverviewPanel', () => {
     expect(html).toContain('ขยายท่าเทียบเรือโดยสาร');
   });
 
+  it('holds the progress bar, which moved here from the header', () => {
+    const html = panel();
+    expect(html).toContain('จริง 45 % · ตามแผน 48 %');
+    expect(html).toContain('ช้ากว่าแผน 3 %');
+    expect(html).toContain('width:45%');
+  });
+
   it('lists recent versions with a button to the versions tab', () => {
     const html = panel();
     expect(html).toContain('ประวัติเวอร์ชันล่าสุด');
@@ -107,6 +123,7 @@ describe('OverviewPanel', () => {
     const html = panel([{ ...mockVersions()[2], editable: true }]);
     expect(html).toContain('ฉบับร่าง');
     expect(html).not.toContain('/results');
+    expect(html).not.toContain('/plan');
     expect(html).toContain('/assess');
     expect(html).toContain('aria-disabled="true"');
     expect(html).toContain(reports.action.draftReason);

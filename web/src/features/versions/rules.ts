@@ -1,3 +1,5 @@
+import type { CompareViewName } from '@/features/compare/ComparePanel';
+
 import type { VersionSummary } from './api';
 
 export type PlanState = { kind: 'onPlan' } | { kind: 'behind' | 'ahead'; points: number };
@@ -24,14 +26,40 @@ export function newestFirst(versions: VersionSummary[]): VersionSummary[] {
   return [...versions].sort((a, b) => b.version_no - a.version_no);
 }
 
+export type ProjectTabName = 'overview' | 'versions';
+
 export const projectPaths = {
   edit: (projectId: string) => `/projects/${projectId}/edit`,
-  compare: (projectId: string) => `/projects/${projectId}/compare`,
+  /** The versions tab, optionally on the RM-per-indicator view. */
+  versions: (projectId: string, view?: CompareViewName) =>
+    `/projects/${projectId}?tab=versions${view === 'rm' ? '&view=rm' : ''}`,
   assessment: (projectId: string, versionId: string) =>
     `/projects/${projectId}/versions/${versionId}/assess`,
   results: (projectId: string, versionId: string) =>
     `/projects/${projectId}/versions/${versionId}/results`,
+  plan: (projectId: string, versionId: string) =>
+    `/projects/${projectId}/versions/${versionId}/plan`,
 };
+
+/** `?tab=` and `?view=` of the project page; anything unknown falls back to the defaults. */
+export function readProjectView(params: { get(name: string): string | null }): {
+  tab: ProjectTabName;
+  view: CompareViewName;
+} {
+  return {
+    tab: params.get('tab') === 'versions' ? 'versions' : 'overview',
+    view: params.get('view') === 'rm' ? 'rm' : 'summary',
+  };
+}
+
+/** Progress at submit per version id, for the labels under the charts. */
+export function progressByVersion(versions: VersionSummary[]): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const v of versions) {
+    if (v.progress_at_submit !== null) out[v.id] = v.progress_at_submit;
+  }
+  return out;
+}
 
 /** Whole days from start to end date (both `YYYY-MM-DD`). */
 export function periodDays(start: string, end: string): number {
