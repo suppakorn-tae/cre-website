@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { getTranslations } from 'next-intl/server';
+import { Suspense } from 'react';
 
 import { versionTitleContext } from '@/lib/meta/context';
 import { pageTitle } from '@/lib/meta/title';
+import { ContentSkeleton } from '@/features/shell/Skeletons';
 import { ResultsMocks } from '@/features/results/overview/ResultsMocks';
 import { ResultsPage } from '@/features/results/overview/ResultsPage';
 
@@ -19,7 +21,21 @@ export async function generateMetadata({
   return { title: pageTitle(t('title'), context) };
 }
 
-export default async function VersionResultsPage({
+export default function VersionResultsPage({
+  params,
+}: {
+  params: Promise<{ projectId: string; versionId: string }>;
+}) {
+  // Reading `params` ties the output to one URL, so it waits inside the
+  // boundary and the shell around it can prerender.
+  return (
+    <Suspense fallback={<ContentSkeleton />}>
+      <ResultsContent params={params} />
+    </Suspense>
+  );
+}
+
+async function ResultsContent({
   params,
 }: {
   params: Promise<{ projectId: string; versionId: string }>;
