@@ -217,6 +217,12 @@ button.stepInner:hover:not([aria-disabled='true']) {
 
 /* 768 to 1023: only the current step keeps its label; the others keep their name for assistive tech */
 @media (max-width: 1023px) {
+  .step:not([data-pos='current']) {
+    flex: none;
+  }
+  .step[data-pos='current'] {
+    flex: 1 1 auto;
+  }
   .step:not([data-pos='current']) .stepLabel {
     position: absolute;
     width: 1px;
@@ -259,6 +265,9 @@ button.stepInner:hover:not([aria-disabled='true']) {
   .stepSide {
     display: inline-flex;
     color: var(--color-text);
+  }
+  .stepInner[aria-disabled='true'] .stepSide {
+    color: var(--color-disabled);
   }
   .stepSummary {
     display: block;
