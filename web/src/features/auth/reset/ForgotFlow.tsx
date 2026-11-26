@@ -323,7 +323,7 @@ function ResetStep({
             disabled={reset.isPending}
           />
           {otpError && <FieldError id="reset-otp-error">{otpError}</FieldError>}
-          {resent && !otpError && <FieldOk>{t('resent')}</FieldOk>}
+          {resent && !otpError && <FieldOk role="status">{t('resent')}</FieldOk>}
         </div>
         <p className={styles.resend}>
           {t('noCode')}{' '}

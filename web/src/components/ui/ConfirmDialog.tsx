@@ -95,7 +95,8 @@ export function ConfirmDialog({
         />
       )}
       <div className={styles.actions}>
-        <Button variant="secondary" onClick={onCancel} autoFocus={destructive}>
+        {/* Cancel always takes first focus: the close X has a tooltip that would swallow Esc. */}
+        <Button variant="secondary" onClick={onCancel} autoFocus>
           {cancelLabel}
         </Button>
         <Button

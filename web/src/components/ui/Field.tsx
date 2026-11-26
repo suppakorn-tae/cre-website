@@ -54,10 +54,21 @@ export function FieldError({ id, children }: { id?: string; children: ReactNode 
   );
 }
 
-/** Success text under a field, e.g. "passwords match": check icon (16) and the message. */
-export function FieldOk({ id, children }: { id?: string; children: ReactNode }) {
+/**
+ * Success text under a field, e.g. "passwords match": check icon (16) and the message.
+ * Pass `role="status"` when the text appears after an action and must be announced.
+ */
+export function FieldOk({
+  id,
+  role,
+  children,
+}: {
+  id?: string;
+  role?: 'status';
+  children: ReactNode;
+}) {
   return (
-    <p id={id} className={styles.okText}>
+    <p id={id} className={styles.okText} role={role}>
       <Icon icon={IconCircleCheck} size={16} className={styles.messageIcon} />
       <span>{children}</span>
     </p>
