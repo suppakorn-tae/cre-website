@@ -35,7 +35,7 @@ test('the report builds from the results page with a toast and downloads without
   // Building: the toast and the button both say so.
   await expect(toasts(page).getByText(BUILDING_TITLE)).toBeVisible();
   await expect(toasts(page).getByText('ใช้เวลาประมาณ 10–30 วินาที')).toBeVisible();
-  const busy = page.getByRole('button', { name: 'กำลังสร้าง…' });
+  const busy = page.locator('button[data-report="building"]');
   await expect(busy).toHaveAttribute('aria-busy', 'true');
 
   // Ready: the file is saved, the toast says so, and the page did not change.
