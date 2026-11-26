@@ -149,7 +149,7 @@ function Form({
 
   return (
     <div className={styles.page} ref={pageRef}>
-      <ProjectSteps current="assessment" />
+      <ProjectSteps current="assessment" projectId={projectId} versionId={versionId} />
       <header className={styles.header}>
         <div>
           <h1 className={styles.title}>{t('title')}</h1>

@@ -107,7 +107,7 @@ export function PlanPage({ projectId, versionId }: { projectId: string; versionI
 
   return (
     <div className="flex flex-col gap-4">
-      <ProjectSteps current="strategy" />
+      <ProjectSteps current="strategy" projectId={projectId} versionId={versionId} />
       <header className="flex flex-col gap-2">
         <nav aria-label={t('page.breadcrumbLabel')} className="text-small text-text-muted">
           <Link className={LINK} href="/dashboard">

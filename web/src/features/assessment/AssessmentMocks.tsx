@@ -17,11 +17,13 @@ export function AssessmentMocks({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const [{ worker }, { createAnswerHandlers }] = await Promise.all([
+        const [{ worker }, { createAnswerHandlers }, { resultHandlers }] = await Promise.all([
           import('@/mocks/browser'),
           import('./mocks'),
+          import('@/features/results/overview/mocks'),
         ]);
-        worker.use(...createAnswerHandlers());
+        // The step indicator asks for the version and its results too.
+        worker.use(...createAnswerHandlers(), ...resultHandlers);
       } catch (error) {
         console.error('assessment mocks failed to register; continuing without them', error);
       }

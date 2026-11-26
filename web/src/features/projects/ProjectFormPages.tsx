@@ -91,6 +91,9 @@ function EditLoader({ projectId }: { projectId: string }) {
         subtitle={t('editSubtitle')}
         current={`${project.data.nickname} ${project.data.name}`}
       />
+      <div className={styles.steps}>
+        <ProjectSteps current="project" projectId={projectId} />
+      </div>
       <ProjectForm project={project.data} />
     </>
   );

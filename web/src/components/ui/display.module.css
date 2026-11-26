@@ -76,51 +76,202 @@
   background: var(--color-blue-50);
 }
 
-/* Stepper */
+/* Stepper: a white card, one segment per step, chevrons between (hi-fi) */
+.stepper {
+  padding: var(--space-1);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-white);
+}
 .steps {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2) var(--space-6);
   margin: 0;
   padding: 0;
   list-style: none;
 }
 .step {
   display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  min-width: 0;
+}
+/* The chevron between two segments */
+.step + .step::before {
+  content: '';
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin: 0 var(--space-1);
+  border-top: 1.75px solid var(--color-disabled);
+  border-right: 1.75px solid var(--color-disabled);
+  transform: rotate(45deg);
+}
+.stepInner {
+  display: flex;
+  flex: 1;
   align-items: center;
   gap: var(--space-2);
+  box-sizing: border-box;
   min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
   color: var(--color-text-muted);
+  font: inherit;
   font-size: var(--text-body);
+  font-weight: var(--weight-medium);
   line-height: var(--leading-body);
+  text-align: left;
+  text-decoration: none;
+}
+a.stepInner,
+button.stepInner {
+  cursor: pointer;
+}
+.stepInner[data-done] {
+  color: var(--color-text);
+}
+a.stepInner:hover,
+button.stepInner:hover:not([aria-disabled='true']) {
+  background: var(--color-subtle);
+}
+.stepInner[aria-disabled='true'] {
+  cursor: default;
+}
+.stepInner:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--focus-ring);
+}
+.stepInner[aria-current='step'] {
+  background: var(--color-blue-50);
+  color: var(--color-blue-700);
+  font-weight: var(--weight-semibold, 600);
+}
+.stepInner[data-failed] {
+  color: var(--color-error);
 }
 .stepNum {
   display: inline-flex;
   flex: none;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   width: 20px;
   height: 20px;
+  border: 1.5px solid var(--color-disabled);
   border-radius: var(--radius-pill);
-  background: var(--color-disabled-bg);
+  background: var(--color-white);
   color: var(--color-text-muted);
-  font-size: var(--text-caption);
+  font-size: var(--text-overline);
   font-weight: var(--weight-bold);
+  line-height: 1;
 }
-.step[aria-current='step'] {
-  color: var(--color-blue-700);
-  font-weight: var(--weight-medium);
-}
-.step[aria-current='step'] .stepNum {
+.stepInner[data-done] .stepNum,
+.stepInner[aria-current='step'] .stepNum {
+  border-color: var(--color-blue-600);
   background: var(--color-blue-600);
   color: var(--color-white);
 }
-.stepDone {
-  color: var(--color-text);
+.stepInner[data-failed] .stepNum {
+  border-color: var(--color-error);
+  color: var(--color-error);
 }
-.stepDone .stepNum {
-  background: var(--color-success);
+.stepLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stepSide,
+.stepSummary,
+.progress {
+  display: none;
+}
+.progress {
+  gap: 3px;
+  padding: var(--space-1) var(--space-3) var(--space-2);
+}
+.progressSeg {
+  flex: 1;
+  height: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+}
+.progressSeg[data-state='done'] {
+  background: var(--color-blue-400);
+}
+.progressSeg[data-state='current'] {
+  background: var(--color-blue-600);
+}
+.tooltip {
+  z-index: 50;
+  max-width: 16rem;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--color-navy-900);
   color: var(--color-white);
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+}
+
+/* 768 to 1023: only the current step keeps its label; the others keep their name for assistive tech */
+@media (max-width: 1023px) {
+  .step:not([data-pos='current']) .stepLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .step:not([data-pos='current']) .stepInner {
+    flex: none;
+    justify-content: center;
+    padding: 0 var(--space-3);
+  }
+}
+
+/* Phones: previous, "step n of m", next, and a progress line */
+@media (max-width: 767px) {
+  .step + .step::before {
+    display: none;
+  }
+  .step[data-pos='far'] {
+    display: none;
+  }
+  .step[data-pos='current'] {
+    flex: 1 1 auto;
+  }
+  .step[data-pos='prev'],
+  .step[data-pos='next'] {
+    flex: none;
+  }
+  .step[data-pos='current'] .stepNum,
+  .step[data-pos='current'] .stepLabel,
+  .step:not([data-pos='current']) .stepNum {
+    display: none;
+  }
+  .step:not([data-pos='current']) .stepInner {
+    width: 44px;
+    justify-content: center;
+    padding: 0;
+  }
+  .stepSide {
+    display: inline-flex;
+    color: var(--color-text);
+  }
+  .stepSummary {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .step[data-pos='current'] .stepInner {
+    justify-content: center;
+  }
+  .progress {
+    display: flex;
+  }
 }
 
 /* Data table: real table on wide screens, one card per row below 768px */
