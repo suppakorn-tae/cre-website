@@ -91,29 +91,34 @@ export function ReportButton({
     const reason = t('action.draftReason');
     return (
       <Tooltip.Provider delayDuration={200} skipDelayDuration={100}>
-        <Tooltip.Root>
-          <Tooltip.Trigger asChild>
-            <button
-              type="button"
-              aria-disabled="true"
-              aria-describedby={reasonId}
-              aria-label={name}
-              data-report="draft"
-              className={cx(styles.button, className)}
-              onClick={(event) => event.preventDefault()}
+        <span className={styles.draft}>
+          <Tooltip.Root>
+            <Tooltip.Trigger asChild>
+              <button
+                type="button"
+                aria-disabled="true"
+                aria-describedby={reasonId}
+                aria-label={name}
+                data-report="draft"
+                className={cx(styles.button, className)}
+                onClick={(event) => event.preventDefault()}
+              >
+                <Icon icon={IconFileTypePdf} size={18} />
+                {text}
+              </button>
+            </Tooltip.Trigger>
+            <Tooltip.Content
+              sideOffset={6}
+              className="z-50 max-w-64 rounded-control bg-navy-900 px-2 py-1 text-caption text-white"
             >
-              <Icon icon={IconFileTypePdf} size={18} />
-              {text}
-            </button>
-          </Tooltip.Trigger>
-          <Tooltip.Content
-            sideOffset={6}
-            className="z-50 max-w-64 rounded-control bg-navy-900 px-2 py-1 text-caption text-white"
-          >
+              {reason}
+            </Tooltip.Content>
+          </Tooltip.Root>
+          {/* Seen on a phone, where there is no hover; the button points at it for screen readers. */}
+          <span id={reasonId} className={styles.reason}>
             {reason}
-          </Tooltip.Content>
-        </Tooltip.Root>
-        <VisuallyHidden.Root id={reasonId}>{reason}</VisuallyHidden.Root>
+          </span>
+        </span>
       </Tooltip.Provider>
     );
   }

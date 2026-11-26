@@ -249,6 +249,10 @@ describe('ReportButton', () => {
     expect(html).toContain('data-report="draft"');
     expect(html).toContain('ส่งผลการประเมินก่อนจึงสร้างรายงานได้');
     expect(html).toContain('aria-describedby=');
+    // Also written under the button (shown on narrow screens), and the button points at it.
+    expect(html).toMatch(/<span id="([^"]+)"[^>]*>ส่งผลการประเมินก่อนจึงสร้างรายงานได้<\/span>/);
+    const id = /<span id="([^"]+)"/.exec(html)?.[1];
+    expect(html).toContain(`aria-describedby="${id}"`);
   });
 });
 

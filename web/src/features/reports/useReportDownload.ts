@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { fetchProject, fetchVersions, projectKey, versionsKey } from '@/features/versions/api';
@@ -10,6 +10,17 @@ import { downloadUrl, fetchJob, jobKey, reportJobKey, requestReport, versionKey 
 import { pollInterval } from './polling';
 import { reportFileName, reportState, triggerDownload, type ReportState } from './state';
 
+const downloaded = new WeakMap<QueryClient, Set<string>>();
+
+/** True for the first caller per job and client; the automatic download runs only then. */
+function claimDownload(client: QueryClient, jobId: string): boolean {
+  const ids = downloaded.get(client) ?? new Set<string>();
+  downloaded.set(client, ids);
+  if (ids.has(jobId)) return false;
+  ids.add(jobId);
+  return true;
+}
+
 export type ReportDownload = {
   state: ReportState;
   /** Job of the last request for this version; kept while moving between pages. */
@@ -18,7 +29,7 @@ export type ReportDownload = {
   downloadUrl: string | null;
   /** The request was refused because reports were asked for too often. */
   tooMany: boolean;
-  /** This component has seen the report being built, so a result is news worth announcing. */
+  /** This component has seen a report being built, so a result is news worth announcing. */
   observed: boolean;
   /**
    * Asks for the report, polls the job and downloads the PDF once when it is
@@ -53,8 +64,12 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
     queryKey: jobKey(jobId ?? ''),
     queryFn: () => fetchJob(jobId ?? ''),
     enabled: jobId !== null,
-    // Backoff grows with each answer; polling stops once the job has finished.
-    refetchInterval: (query) => pollInterval(query.state.data?.status, query.state.dataUpdateCount),
+    // Backoff grows with each answer; polling stops once the job has finished, and
+    // on an error too: the state is then "failed" and a retry starts it again.
+    refetchInterval: (query) =>
+      query.state.status === 'error'
+        ? false
+        : pollInterval(query.state.data?.status, query.state.dataUpdateCount),
   });
   const request = useMutation({
     mutationFn: () => requestReport(projectId, versionId),
@@ -73,10 +88,15 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
     pollFailed: job.isError,
   });
   const tooMany = request.error instanceof ApiError && request.error.status === 429;
-  // Once this component has seen a build, its result is news (a toast, a spoken update);
-  // a job that was finished before the page opened is not.
+  // A build this tab is waiting for: the request is on its way, or a fresh answer (not data left
+  // in the cache from before) says the job is queued or running. Missing or old data never counts,
+  // so a page that opens on a cached job does not download on its own.
+  const building =
+    request.isPending ||
+    (job.isFetchedAfterMount && (job.data?.status === 'queued' || job.data?.status === 'running'));
+  // Once this component has seen such a build, its result is news (a toast, a spoken update).
   const [observed, setObserved] = useState(false);
-  if (state === 'building' && !observed) setObserved(true);
+  if (building && !observed) setObserved(true);
 
   const download = useCallback(async () => {
     if (jobId === null) return;
@@ -101,21 +121,21 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
     triggerDownload(downloadUrl(jobId), reportFileName(project?.nickname, versionNo));
   }, [jobId, projectId, versionId, queryClient]);
 
-  // True from a click (or from finding a job still being built) until the download.
+  // True from a click (or a build seen above) until the download.
   const awaiting = useRef(false);
   // True between a click and the first render that shows it, so two clicks in a row start one job.
   const starting = useRef(false);
   useEffect(() => {
     if (state !== 'idle') starting.current = false;
-    if (state === 'building') {
-      awaiting.current = true;
-    } else if (state === 'ready' && awaiting.current) {
+    if (building) awaiting.current = true;
+    if (state === 'ready' && awaiting.current) {
       awaiting.current = false;
-      void download();
+      // Once per job in this client, even when two components wait for the same one.
+      if (jobId !== null && claimDownload(queryClient, jobId)) void download();
     } else if (state === 'failed') {
       awaiting.current = false;
     }
-  }, [state, download]);
+  }, [state, building, download, jobId, queryClient]);
 
   const { mutate, reset } = request;
   const start = useCallback(() => {
