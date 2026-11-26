@@ -152,6 +152,9 @@ button.stepInner:hover:not([aria-disabled='true']) {
 .stepInner[data-failed] {
   color: var(--color-error);
 }
+.stepInner[data-success] {
+  color: var(--color-success);
+}
 .stepNum {
   display: inline-flex;
   flex: none;
@@ -177,6 +180,11 @@ button.stepInner:hover:not([aria-disabled='true']) {
 .stepInner[data-failed] .stepNum {
   border-color: var(--color-error);
   color: var(--color-error);
+}
+.stepInner[data-success] .stepNum {
+  border-color: var(--color-success);
+  background: var(--color-success);
+  color: var(--color-white);
 }
 .stepLabel {
   overflow: hidden;
@@ -268,6 +276,9 @@ button.stepInner:hover:not([aria-disabled='true']) {
   }
   .stepInner[aria-disabled='true'] .stepSide {
     color: var(--color-disabled);
+  }
+  .stepInner[data-success] .stepSide {
+    color: var(--color-success);
   }
   .stepSummary {
     display: block;

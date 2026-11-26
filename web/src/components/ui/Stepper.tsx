@@ -27,6 +27,8 @@ export type StepItem = {
   busy?: boolean;
   /** Error colour, e.g. after the action failed. */
   failed?: boolean;
+  /** Success colour, e.g. once the report is downloaded. */
+  success?: boolean;
 };
 
 type Props = {
@@ -141,6 +143,7 @@ function StepBody({ step, no, total, pos, done, doneLabel, position }: BodyProps
     className: styles.stepInner,
     'data-done': (done && !isCurrent) || undefined,
     'data-failed': step.failed || undefined,
+    'data-success': step.success || undefined,
   };
 
   if (isCurrent) {
