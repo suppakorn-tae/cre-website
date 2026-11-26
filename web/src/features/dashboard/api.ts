@@ -41,17 +41,34 @@ export function useProjectsPanel(q: string, page: number, enabled: boolean) {
   });
 }
 
-/** Every project (the contract allows 100 a page) for fields the island rows do not carry. */
+const ALL_PAGE_SIZE = 100; // the contract maximum
+
+/** Reads page after page until `total` items are in, so nothing is dropped past the first page. */
+export async function collectPages<T>(
+  fetchPage: (page: number) => Promise<{ items: T[]; page: { total: number } }>,
+): Promise<T[]> {
+  const all: T[] = [];
+  for (let page = 1; ; page++) {
+    const res = await fetchPage(page);
+    all.push(...res.items);
+    if (res.items.length === 0 || all.length >= res.page.total) return all;
+  }
+}
+
+/** Every project, for fields the island rows do not carry (value, version). */
 export function useAllProjects(enabled: boolean) {
   return useQuery({
     queryKey: keys.allProjects,
     enabled,
-    queryFn: async () =>
-      (
-        await browserApi().GET('/dashboard/panels/projects', {
-          params: { query: { page: 1, page_size: 100 } },
-        })
-      ).data!.items,
+    queryFn: () =>
+      collectPages(
+        async (page) =>
+          (
+            await browserApi().GET('/dashboard/panels/projects', {
+              params: { query: { page, page_size: ALL_PAGE_SIZE } },
+            })
+          ).data!,
+      ),
   });
 }
 

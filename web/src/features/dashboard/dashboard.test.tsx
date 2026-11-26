@@ -14,6 +14,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 import { axisMax, levelPercent, LevelChart, ProjectRiskChart } from './Charts';
 import { DashboardPage } from './DashboardPage';
+import { collectPages } from './api';
 import { IslandsPanel, TopIndicatorsPanel } from './Panels';
 import { formatMillionBaht } from './format';
 import { ProjectsTable } from './ProjectsTable';
@@ -207,7 +208,7 @@ describe('top 10 panel', () => {
 
   it('is a table with the title, its caption and the four columns', () => {
     expect(html).toContain('Top 10 ตัวชี้วัดที่เป็น H / VH บ่อยที่สุด');
-    expect(html).toContain('เรียงตามจำนวนโครงการที่เป็น H/VH');
+    expect(html).toContain('เรียงตามจำนวนโครงการ แล้วตาม VH');
     for (const col of ['#', 'ตัวชี้วัด', 'พบใน (โครงการ)', 'VH / H']) {
       expect(html).toContain(`>${col}</th>`);
     }
@@ -220,6 +221,34 @@ describe('top 10 panel', () => {
     expect(html).toContain('4 / 4');
     expect(html).toContain('aria-label="ความเสี่ยงสูงมาก 1"');
     expect(html).toContain('aria-label="ความเสี่ยงสูง 3"');
+  });
+});
+
+describe('collectPages', () => {
+  it('reads every page of 230 projects, not just the first', async () => {
+    const total = 230;
+    const calls: number[] = [];
+    const all = await collectPages(async (page) => {
+      calls.push(page);
+      const from = (page - 1) * 100;
+      const items = Array.from(
+        { length: Math.max(0, Math.min(100, total - from)) },
+        (_, i) => from + i,
+      );
+      return { items, page: { total } };
+    });
+    expect(calls).toEqual([1, 2, 3]);
+    expect(all).toHaveLength(230);
+    expect(new Set(all).size).toBe(230);
+  });
+
+  it('stops after one page when the total fits', async () => {
+    let calls = 0;
+    await collectPages(async () => {
+      calls++;
+      return { items: [1, 2], page: { total: 2 } };
+    });
+    expect(calls).toBe(1);
   });
 });
 
