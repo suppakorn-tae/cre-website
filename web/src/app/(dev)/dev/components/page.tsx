@@ -235,7 +235,7 @@ export default function ComponentsPage() {
         ]}
       />
       <EmptyState
-        icon={IconBuilding}
+        icon={<Icon icon={IconBuilding} size={24} />}
         title={t('dev.emptyTitle')}
         description={t('dev.emptyText')}
         action={<Button icon={<Icon icon={IconPlus} size={18} />}>{t('dev.addProject')}</Button>}

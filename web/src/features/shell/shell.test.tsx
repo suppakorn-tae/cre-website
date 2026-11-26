@@ -71,8 +71,9 @@ describe('AppShell', () => {
     }
     expect(html.match(/<li>/g)).toHaveLength(6);
     expect(html).toMatch(/aria-current="page"[^>]*>(?:(?!<li).)*จัดการผู้ใช้/);
-    // Every item has a decorative icon.
-    expect(html.match(/<svg[^>]*aria-hidden="true"/g)).toHaveLength(6);
+    // Every item has a decorative icon (the header has its own, outside the nav).
+    const nav = html.slice(html.indexOf('<nav'), html.indexOf('</nav>'));
+    expect(nav.match(/<svg[^>]*aria-hidden="true"/g)).toHaveLength(6);
   });
 });
 
