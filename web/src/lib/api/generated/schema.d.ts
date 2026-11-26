@@ -1776,6 +1776,17 @@ export interface components {
             latest_version_id: components["schemas"]["Uuid"];
             latest_version_no: number;
             latest_version_status: components["schemas"]["VersionStatus"];
+            /**
+             * @description Indicators with a stored result in the latest version (0 while it has
+             *     none, for example a draft that was never submitted). Counted from the
+             *     stored `risk_result` rows, never scored on read.
+             */
+            latest_version_scored_count: number;
+            /**
+             * @description Indicators the latest version covers, from its stored threshold
+             *     snapshot (55 today). The denominator of `latest_version_scored_count`.
+             */
+            latest_version_indicator_total: number;
             /** @description Target of the results action; null when never submitted. */
             latest_submitted_version_id: components["schemas"]["Uuid"] | null;
             /** @description H plus VH indicators of the latest submitted version. */

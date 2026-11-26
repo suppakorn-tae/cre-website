@@ -146,6 +146,7 @@ func (h handler) projects(w http.ResponseWriter, r *http.Request) {
 				TypeCode: p.TypeCode, TypeOther: p.TypeOther, ProgressPct: p.ProgressPct,
 				VersionCount: p.VersionCount, LatestVersionId: p.LatestVersionID,
 				LatestVersionNo: p.LatestVersionNo, LatestVersionStatus: api.VersionStatus(p.LatestVersionStatus),
+				LatestVersionScoredCount: p.LatestVersionScored, LatestVersionIndicatorTotal: p.LatestVersionTotal,
 				LatestSubmittedVersionId: p.LatestSubmittedVersionID, HVhCount: p.HVhCount,
 			},
 			ValueBaht: json.Number(p.ValueBaht),

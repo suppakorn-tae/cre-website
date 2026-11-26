@@ -46,6 +46,8 @@ export const seedProjects: DashboardProjectItem[] = names.map(
     latest_version_id: id(100 + i),
     latest_version_no: risk[i] ? 2 : 1,
     latest_version_status: risk[i] ? 'submitted' : 'draft',
+    latest_version_scored_count: risk[i] ? 55 : 0,
+    latest_version_indicator_total: 55,
     latest_submitted_version_id: risk[i] ? id(100 + i) : null,
     h_vh_count: hvh,
     avg_rm: risk[i] ? 2.4 : null,

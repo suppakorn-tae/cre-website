@@ -46,11 +46,13 @@ func (f *fakeReader) Projects(_ context.Context, o uuid.UUID, _ svc.ProjectsPara
 			ProjectID: uuid.New(), Name: "Pier", Nickname: "PIER", IslandCode: "koh_tao", TypeCode: "pier",
 			TypeOther: &other, ValueBaht: "150000000.25", ProgressPct: 40, VersionCount: 3,
 			LatestVersionID: uuid.New(), LatestVersionNo: 3, LatestVersionStatus: "draft",
+			LatestVersionScored: 55, LatestVersionTotal: 55,
 			LatestSubmittedVersionID: &sub, HVhCount: &n, AvgRM: &rm,
 		},
 		{
 			ProjectID: uuid.New(), Name: "New", Nickname: "NEW1", IslandCode: "koh_samui", TypeCode: "road",
 			ValueBaht: "1.00", VersionCount: 1, LatestVersionID: uuid.New(), LatestVersionNo: 1, LatestVersionStatus: "draft",
+			LatestVersionTotal: 55,
 		},
 	}}, nil
 }
