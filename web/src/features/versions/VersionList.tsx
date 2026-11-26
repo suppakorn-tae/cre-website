@@ -1,164 +1,146 @@
 'use client';
 
-import Link from 'next/link';
+import { IconPlus } from '@tabler/icons-react';
 import { useTranslations } from 'next-intl';
+import { forwardRef } from 'react';
 
-import { Button, DataTable, EmptyState, LevelBadge, type DataTableColumn } from '@/components/ui';
-import { ReportButton } from '@/features/reports/ReportButton';
+import { Button, EmptyState, Icon, LevelBadge } from '@/components/ui';
+import { cx } from '@/components/ui/cx';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format/locale';
 
 import type { VersionSummary } from './api';
-import { canCompare, newestFirst, projectPaths } from './rules';
+import { newestFirst } from './rules';
 import styles from './versions.module.css';
+import { VersionMenu } from './VersionMenu';
 
 type Props = {
   projectId: string;
   versions: VersionSummary[];
-  onCreate: () => void;
-  onDelete: (version: VersionSummary) => void;
+  /** The card of the version being compared. */
+  selectedId: string | undefined;
+  onSelect: (version: VersionSummary) => void;
+  onCreate: (trigger: HTMLElement | null) => void;
+  onDelete: (version: VersionSummary, trigger: HTMLElement | null) => void;
 };
 
-/** Versions of one project, newest first (UC-06). Older ones are read-only. */
-export function VersionList({ projectId, versions, onCreate, onDelete }: Props) {
+/**
+ * The "เวอร์ชัน" card of the versions tab (hi-fi 2.4): one card per version, newest
+ * first. A click selects the version for the comparison; it does not navigate.
+ */
+export const VersionList = forwardRef<HTMLHeadingElement, Props>(function VersionList(
+  { projectId, versions, selectedId, onSelect, onCreate, onDelete },
+  titleRef,
+) {
   const t = useTranslations('versions.list');
   const rows = newestFirst(versions);
-  const none = t('none');
-
-  const columns: DataTableColumn<VersionSummary>[] = [
-    {
-      key: 'version',
-      header: t('columns.version'),
-      primary: true,
-      render: (v) => <strong>{t('versionNo', { no: v.version_no })}</strong>,
-    },
-    {
-      key: 'status',
-      header: t('columns.status'),
-      render: (v) => (
-        <span className={styles.badges}>
-          <span className={v.status === 'submitted' ? styles.badgeOk : styles.badgeMuted}>
-            {t(`status.${v.status}`)}
-          </span>
-          <span className={v.editable ? styles.badgeInfo : styles.badgeMuted}>
-            {v.editable ? t('status.latest') : t('status.readOnly')}
-          </span>
-        </span>
-      ),
-    },
-    { key: 'created', header: t('columns.created'), render: (v) => formatDate(v.created_at) },
-    {
-      key: 'submitted',
-      header: t('columns.submitted'),
-      render: (v) => (v.submitted_at ? formatDateTime(v.submitted_at) : t('neverSubmitted')),
-    },
-    {
-      key: 'progress',
-      header: t('columns.progress'),
-      align: 'end',
-      render: (v) =>
-        v.progress_at_submit === null
-          ? none
-          : t('percent', { value: formatNumber(v.progress_at_submit) }),
-    },
-    {
-      key: 'levels',
-      header: t('columns.levels'),
-      render: (v) =>
-        v.very_high_count === null || v.high_count === null ? (
-          none
-        ) : (
-          <span className={styles.badges}>
-            <LevelBadge level="VH" count={v.very_high_count} label={t('levelVeryHigh')} />
-            <LevelBadge level="H" count={v.high_count} label={t('levelHigh')} />
-          </span>
-        ),
-    },
-    {
-      key: 'averageRm',
-      header: t('columns.averageRm'),
-      align: 'end',
-      render: (v) =>
-        v.average_rm === null
-          ? none
-          : formatNumber(v.average_rm, undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            }),
-    },
-    {
-      key: 'actions',
-      header: t('columns.actions'),
-      render: (v) => {
-        const no = v.version_no;
-        const label = (action: string) => t('actions.forVersion', { action, no });
-        const answer = v.editable ? t('actions.answer') : t('actions.viewAnswers');
-        return (
-          <span className={styles.actions}>
-            <Link
-              className={styles.link}
-              href={projectPaths.assessment(projectId, v.id)}
-              aria-label={label(answer)}
-            >
-              {answer}
-            </Link>
-            {v.status === 'submitted' && (
-              <Link
-                className={styles.link}
-                href={projectPaths.results(projectId, v.id)}
-                aria-label={label(t('actions.results'))}
-              >
-                {t('actions.results')}
-              </Link>
-            )}
-            <ReportButton
-              projectId={projectId}
-              versionId={v.id}
-              versionNo={no}
-              submitted={v.status === 'submitted'}
-              className={styles.link}
-            />
-            <button
-              type="button"
-              className={styles.dangerLink}
-              aria-label={label(t('actions.delete'))}
-              onClick={() => onDelete(v)}
-            >
-              {t('actions.delete')}
-            </button>
-          </span>
-        );
-      },
-    },
-  ];
 
   return (
-    <section className={styles.card} aria-labelledby="versions-title">
-      <div className={styles.cardHead}>
-        <h2 id="versions-title" className={styles.cardTitle}>
+    <section className={styles.listCard} aria-labelledby="versions-title">
+      <div className={styles.listHead}>
+        <h2 id="versions-title" ref={titleRef} tabIndex={-1} className={styles.listTitle}>
           {t('title')}
         </h2>
-        <div className={styles.headActions}>
-          {canCompare(versions) && (
-            <Link className={styles.secondaryLink} href={projectPaths.compare(projectId)}>
-              {t('compare')}
-            </Link>
-          )}
-          <Button onClick={onCreate}>{t('create')}</Button>
-        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={<Icon icon={IconPlus} size={16} />}
+          onClick={(e) => onCreate(e.currentTarget)}
+        >
+          {t('createShort')}
+        </Button>
       </div>
-      <DataTable
-        caption={t('caption')}
-        columns={columns}
-        rows={rows}
-        rowKey={(v) => v.id}
-        empty={
-          <EmptyState
-            title={t('empty.title')}
-            description={t('empty.description')}
-            action={<Button onClick={onCreate}>{t('create')}</Button>}
-          />
-        }
-      />
+      {rows.length === 0 ? (
+        <EmptyState
+          title={t('empty.title')}
+          description={t('empty.description')}
+          action={<Button onClick={(e) => onCreate(e.currentTarget)}>{t('create')}</Button>}
+        />
+      ) : (
+        <ul className={styles.versionCards}>
+          {rows.map((v) => (
+            <li key={v.id} className={styles.versionCardItem}>
+              <VersionCard
+                version={v}
+                selected={v.id === selectedId}
+                onSelect={() => onSelect(v)}
+              />
+              <div className={styles.versionCardMenu}>
+                <VersionMenu projectId={projectId} version={v} onDelete={onDelete} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
+  );
+});
+
+function VersionCard({
+  version: v,
+  selected,
+  onSelect,
+}: {
+  version: VersionSummary;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const t = useTranslations('versions.list');
+  const tUi = useTranslations('ui');
+  const submitted = v.status === 'submitted';
+  const hasLevels = v.very_high_count !== null && v.high_count !== null;
+
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      className={cx(styles.versionCard, selected && styles.versionCardSelected)}
+      onClick={onSelect}
+    >
+      <span className={styles.versionCardHead}>
+        <strong>{t('versionNo', { no: v.version_no })}</strong>
+        <span aria-hidden="true">·</span>
+        <span className={styles.versionCardCreated}>
+          {t('createdOn', { date: formatDate(v.created_at) })}
+        </span>
+      </span>
+      <span className={styles.badges}>
+        <span className={submitted ? styles.badgeOk : styles.badgeMuted}>
+          {t(`status.${v.status}`)}
+        </span>
+        <span className={v.editable ? styles.badgeInfo : styles.badgeWarn}>
+          {v.editable ? t('status.latest') : t('status.readOnly')}
+        </span>
+      </span>
+      {submitted && v.submitted_at ? (
+        <span className={styles.versionCardLine}>
+          {v.progress_at_submit === null
+            ? t('submittedAt', { at: formatDateTime(v.submitted_at) })
+            : t('submittedWithProgress', {
+                at: formatDateTime(v.submitted_at),
+                value: formatNumber(v.progress_at_submit),
+              })}
+        </span>
+      ) : (
+        <span className={styles.versionCardLine}>
+          {v.editable ? t('notSubmittedYet') : t('neverSubmitted')}
+        </span>
+      )}
+      {hasLevels && (
+        <span className={styles.versionCardLevels}>
+          <LevelBadge level="VH" count={v.very_high_count ?? 0} label={tUi('levels.VH')} />
+          <LevelBadge level="H" count={v.high_count ?? 0} label={tUi('levels.H')} />
+          {v.average_rm !== null && (
+            <span className={styles.versionCardRm}>
+              {t('averageRm', {
+                value: formatNumber(v.average_rm, undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                }),
+              })}
+            </span>
+          )}
+        </span>
+      )}
+    </button>
   );
 }

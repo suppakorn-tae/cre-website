@@ -26,10 +26,56 @@
 }
 .titleRow {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: var(--space-3);
+  gap: var(--space-4);
+}
+.titleBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.headerActions {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+}
+.editButton,
+.moreButton {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  height: var(--control-md);
+  border: 1px solid var(--color-field-border);
+  border-radius: var(--radius-control);
+  background: var(--color-white);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-body);
+  font-weight: var(--weight-medium);
+  text-decoration: none;
+  cursor: pointer;
+}
+.editButton {
+  padding: 0 var(--space-4);
+}
+.moreButton {
+  width: var(--control-md);
+  padding: 0;
+}
+.editButton:hover,
+.moreButton:hover,
+.moreButton[data-state='open'] {
+  background: var(--color-subtle);
+}
+.editButton:focus-visible,
+.moreButton:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--focus-ring);
 }
 .title {
   margin: 0;
@@ -43,8 +89,8 @@
   margin-inline-start: var(--space-2);
   padding: 0 var(--space-2);
   border-radius: var(--radius-badge);
-  background: var(--color-blue-50);
-  color: var(--color-blue-700);
+  background: var(--color-navy-900);
+  color: var(--color-white);
   font-size: var(--text-small);
   font-weight: var(--weight-medium);
   vertical-align: middle;
@@ -56,14 +102,7 @@
   line-height: var(--leading-body);
 }
 .progress {
-  max-width: 32rem;
-  margin-top: var(--space-2);
-}
-.progressLabel {
-  margin: 0 0 var(--space-1);
-  color: var(--color-text-muted);
-  font-size: var(--text-caption);
-  line-height: var(--leading-caption);
+  min-width: 0;
 }
 .bar {
   position: relative;
@@ -87,6 +126,7 @@
 }
 .progressText {
   margin: var(--space-2) 0 0;
+  font-weight: var(--weight-regular);
   font-size: var(--text-small);
   line-height: var(--leading-small);
 }
@@ -129,13 +169,27 @@
 }
 .badgeOk,
 .badgeInfo,
+.badgeWarn,
 .badgeMuted {
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-badge);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-pill);
   font-size: var(--text-caption);
   font-weight: var(--weight-medium);
   line-height: var(--leading-small);
   white-space: nowrap;
+}
+.badgeOk::before,
+.badgeInfo::before,
+.badgeWarn::before,
+.badgeMuted::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
 }
 .badgeOk {
   background: var(--color-success-bg);
@@ -144,6 +198,10 @@
 .badgeInfo {
   background: var(--color-info-bg);
   color: var(--color-info);
+}
+.badgeWarn {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
 }
 .badgeMuted {
   background: var(--color-disabled-bg);
@@ -183,6 +241,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-2);
   min-height: var(--control-md);
   padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-field-border);
@@ -212,7 +271,7 @@
 }
 .overviewGrid {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  grid-template-columns: minmax(0, 7fr) minmax(0, 3fr);
   gap: var(--space-5);
   align-items: start;
 }
@@ -263,13 +322,17 @@
   gap: var(--space-3);
 }
 .newVersion {
-  margin-top: var(--space-2);
-  padding-inline: 0;
+  margin: var(--space-4) 0 0;
+  font-size: var(--text-small);
+}
+.newVersion .muted {
+  margin: 0;
 }
 .primaryLink {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: var(--space-2);
   min-height: var(--control-md);
   padding: var(--space-2) var(--space-4);
   border-radius: var(--radius-control);
@@ -372,4 +435,204 @@
 }
 .levelLink:focus-visible {
   box-shadow: var(--focus-ring);
+}
+
+/* Versions tab: the cards on the left, the comparison on the right (hi-fi 2.4) */
+.tabLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+.compareColumn {
+  min-width: 0;
+}
+.listCard {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: var(--space-5);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-white);
+}
+.listHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.listTitle {
+  margin: 0;
+  font-size: var(--text-h3);
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-h3);
+}
+.listTitle:focus-visible {
+  outline: 2px solid transparent;
+  border-radius: var(--radius-badge);
+  box-shadow: var(--focus-ring);
+}
+.versionCards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.versionCardItem {
+  position: relative;
+  min-width: 0;
+}
+.versionCardMenu {
+  position: absolute;
+  inset-block-start: var(--space-2);
+  inset-inline-end: var(--space-2);
+}
+.versionCard {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-white);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--text-small);
+  line-height: var(--leading-small);
+  text-align: start;
+  cursor: pointer;
+}
+.versionCard:hover {
+  border-color: var(--color-blue-400);
+}
+.versionCard:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--focus-ring);
+}
+.versionCardSelected,
+.versionCardSelected:hover {
+  border-color: var(--color-blue-200);
+  background: var(--color-blue-50);
+}
+.versionCardSelected::before {
+  content: '';
+  position: absolute;
+  inset-block: -1px;
+  inset-inline-start: -1px;
+  width: 3px;
+  border-start-start-radius: var(--radius-card);
+  border-end-start-radius: var(--radius-card);
+  background: var(--color-blue-600);
+}
+.versionCardHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding-inline-end: var(--space-10);
+  font-size: var(--text-body);
+}
+.versionCardCreated {
+  color: var(--color-text-muted);
+  font-weight: var(--weight-regular);
+}
+.versionCardLine {
+  color: var(--color-text-secondary);
+}
+.versionCardLevels {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.versionCardRm {
+  color: var(--color-text-muted);
+}
+
+/* A version that was never submitted (hi-fi 2.8) */
+.neverStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.neverHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+.neverTitle {
+  margin: 0;
+  font-size: var(--text-h2);
+  line-height: var(--leading-h2);
+}
+.neverCard {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-white);
+}
+.neverActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
+
+/* Header on a phone: the edit button shrinks to its icon, the name stays its accessible name */
+@media (max-width: 767px) {
+  .editButton {
+    width: var(--control-md);
+    padding: 0;
+  }
+  .editLabel {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+
+/* Tablet: the cards become a row that scrolls sideways, with the next card peeking in */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .versionCards {
+    flex-direction: row;
+    gap: var(--space-3);
+    margin-inline: calc(var(--space-2) * -1);
+    padding: var(--space-1) var(--space-2) var(--space-3);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--space-2);
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-field-border) var(--color-disabled-bg);
+    background:
+      linear-gradient(to left, var(--color-white) 20%, transparent) right center / 2rem 100%
+        no-repeat local,
+      linear-gradient(to left, var(--color-border), transparent) right center / 0.75rem 100%
+        no-repeat scroll;
+  }
+  .versionCardItem {
+    flex: 0 0 min(19rem, 72%);
+    scroll-snap-align: start;
+  }
+}
+
+@media (min-width: 1024px) {
+  .tabLayout {
+    grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+  }
+}
+
+@media (max-width: 767px) {
+  .listCard {
+    padding: var(--space-4);
+  }
 }

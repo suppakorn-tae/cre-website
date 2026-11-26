@@ -12,7 +12,6 @@ const FILE_V3 = 'CRE-TK2-v3.pdf';
 const FILE_V2 = 'CRE-TK2-v2.pdf';
 
 const REPORT = 'รายงาน PDF';
-const DRAFT_REASON = 'ส่งผลการประเมินก่อนจึงสร้างรายงานได้';
 const BUILDING_TITLE = 'กำลังสร้างรายงาน PDF…';
 const READY_TITLE = 'รายงานพร้อมแล้ว — กำลังดาวน์โหลด';
 const FAILED_TITLE = 'สร้างรายงานไม่สำเร็จ';
@@ -97,29 +96,34 @@ test('the project page builds the report in the button, with no toast', async ({
   expect(new URL(page.url()).pathname).toBe(path);
 });
 
-test('a version in the list can build its own report, a draft cannot', async ({ page }) => {
-  await page.goto(`/projects/${PROJECT}`);
-  await page.getByRole('tab', { name: /เวอร์ชัน/ }).click();
+test('a submitted version builds its own report from its menu, a draft has no item', async ({
+  page,
+}) => {
+  await page.goto(`/projects/${PROJECT}?tab=versions`);
+  await page.getByRole('button', { name: 'การดำเนินการของ v2' }).click();
 
-  const v2 = page.getByRole('button', { name: 'รายงาน PDF เวอร์ชัน 2' });
   const download = page.waitForEvent('download', BUILD);
-  await v2.click();
-  // Version 2 fails its first report in the mock: the button offers a retry.
-  const retry = page.getByRole('button', { name: 'ลองอีกครั้ง เวอร์ชัน 2' });
+  await page.getByRole('menuitem', { name: REPORT, exact: true }).click();
+  // The menu stays open and the item says it is building; a second click starts nothing new.
+  const busy = page.getByRole('menuitem', { name: 'กำลังสร้าง…' });
+  await expect(busy).toHaveAttribute('aria-busy', 'true');
+  await busy.click();
+  // Version 2 fails its first report in the mock: the item offers a retry.
+  const retry = page.getByRole('menuitem', { name: 'ลองอีกครั้ง' });
   await expect(retry).toBeVisible(BUILD);
+  await expect(toasts(page).locator('li')).toHaveCount(0);
   await retry.click();
   expect((await download).suggestedFilename()).toBe(FILE_V2);
-  await expect(page.getByRole('button', { name: 'ดาวน์โหลดอีกครั้ง เวอร์ชัน 2' })).toBeVisible();
+  await expect(page.getByRole('menuitem', { name: 'ดาวน์โหลดอีกครั้ง' })).toBeVisible();
+  expect(new URL(page.url()).pathname).toBe(`/projects/${PROJECT}`);
 
-  const draft = page.getByRole('button', { name: 'รายงาน PDF เวอร์ชัน 1' });
-  await expect(draft).toHaveAttribute('aria-disabled', 'true');
-  await draft.hover();
-  // The reason shows on hover (and focus), and a disabled click starts nothing.
+  // A draft has no report item at all; its menu keeps the answers and the delete.
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: 'การดำเนินการของ v1' }).click();
+  await expect(page.getByRole('menuitem', { name: 'ดูคำตอบ' })).toBeVisible();
   await expect(
-    page.locator('[data-radix-popper-content-wrapper]').getByText(DRAFT_REASON),
-  ).toBeVisible();
-  await draft.click({ force: true });
-  await expect(page.getByRole('button', { name: 'กำลังสร้าง… เวอร์ชัน 1' })).toHaveCount(0);
+    page.getByRole('menuitem', { name: /รายงาน PDF|กำลังสร้าง|ดาวน์โหลดอีกครั้ง|ลองอีกครั้ง/ }),
+  ).toHaveCount(0);
 });
 
 test('the old report url redirects to the results', async ({ page }) => {
