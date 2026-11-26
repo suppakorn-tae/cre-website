@@ -216,16 +216,27 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     expect(((await again.json()) as { job_id: string }).job_id).toBe(jobId);
   });
 
-  test('download the PDF and find the indicator and strategy', async () => {
+  test('build the PDF from the results page, download it and find the indicator and strategy', async () => {
     test.setTimeout(180_000);
-    await go(page, `/projects/${projectId}/versions/${v1}/report`);
-    await page.getByRole('button', { name: msg('reports', 'request') }).click();
-    await expect(page.getByText(msg('reports', 'status.done'))).toBeVisible({ timeout: 120_000 });
+    const resultsPath = `/projects/${projectId}/versions/${v1}/results`;
+    await go(page, resultsPath);
+    const toasts = page.getByRole('region', { name: msg('ui', 'toaster.region') });
+    const button = page.getByRole('button', { name: msg('reports', 'action.label'), exact: true });
 
-    const download = page
-      .getByRole('link', { name: msg('reports', 'download') })
-      .or(page.getByRole('button', { name: msg('reports', 'download') }));
-    const [dl] = await Promise.all([page.waitForEvent('download'), download.click()]);
+    // One click: a toast says the PDF is being built, then the file is saved
+    // by itself and the page stays on the results.
+    const download = page.waitForEvent('download', { timeout: 120_000 });
+    await button.click();
+    await expect(toasts.getByText(msg('reports', 'toast.building.title'))).toBeVisible();
+    const dl = await download;
+    await expect(toasts.getByText(msg('reports', 'toast.ready.title'))).toBeVisible();
+    expect(dl.suggestedFilename()).toMatch(/\.pdf$/);
+    expect(new URL(page.url()).pathname).toBe(resultsPath);
+
+    // The old report page is gone: its address opens the results.
+    await go(page, `/projects/${projectId}/versions/${v1}/report`);
+    await expect(page).toHaveURL(new RegExp(`${escapeRe(resultsPath)}$`));
+
     const pdf = readFileSync(await dl.path());
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
 
