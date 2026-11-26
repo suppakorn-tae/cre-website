@@ -4,6 +4,9 @@ import type { components } from '@/lib/api/generated/schema';
 export type Job = components['schemas']['Job'];
 
 export const jobKey = (jobId: string) => ['jobs', jobId] as const;
+/** One version, under the key the results page reads it with, so its cache is shared. */
+export const versionKey = (projectId: string, versionId: string) =>
+  ['projects', projectId, 'versions', versionId] as const;
 /** The job of one version's report, kept per version so it survives moving between pages. */
 export const reportJobKey = (projectId: string, versionId: string) =>
   ['reports', 'job', projectId, versionId] as const;

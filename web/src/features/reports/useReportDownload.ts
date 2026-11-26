@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchProject, fetchVersions, projectKey, versionsKey } from '@/features/versions/api';
 import { ApiError } from '@/lib/api/errors';
 
-import { downloadUrl, fetchJob, jobKey, reportJobKey, requestReport } from './api';
+import { downloadUrl, fetchJob, jobKey, reportJobKey, requestReport, versionKey } from './api';
 import { pollInterval } from './polling';
 import { reportFileName, reportState, triggerDownload, type ReportState } from './state';
 
@@ -80,23 +80,25 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
 
   const download = useCallback(async () => {
     if (jobId === null) return;
-    // Both are usually cached already; a failure only costs the nice file name.
-    const [project, versions] = await Promise.all([
-      queryClient
-        .ensureQueryData({
-          queryKey: projectKey(projectId),
-          queryFn: () => fetchProject(projectId),
-        })
-        .catch(() => undefined),
-      queryClient
-        .ensureQueryData({
-          queryKey: versionsKey(projectId),
-          queryFn: () => fetchVersions(projectId),
-        })
-        .catch(() => undefined),
-    ]);
-    const version = versions?.find((v) => v.id === versionId);
-    triggerDownload(downloadUrl(jobId), reportFileName(project?.nickname, version?.version_no));
+    // Usually cached already; a failure only costs the nice file name.
+    const project = await queryClient
+      .ensureQueryData({ queryKey: projectKey(projectId), queryFn: () => fetchProject(projectId) })
+      .catch(() => undefined);
+    // The results page holds this one version; any other page holds the list.
+    const cached = queryClient.getQueryData<{ version_no: number }>(
+      versionKey(projectId, versionId),
+    );
+    const versionNo =
+      cached?.version_no ??
+      (
+        await queryClient
+          .ensureQueryData({
+            queryKey: versionsKey(projectId),
+            queryFn: () => fetchVersions(projectId),
+          })
+          .catch(() => undefined)
+      )?.find((v) => v.id === versionId)?.version_no;
+    triggerDownload(downloadUrl(jobId), reportFileName(project?.nickname, versionNo));
   }, [jobId, projectId, versionId, queryClient]);
 
   // True from a click (or from finding a job still being built) until the download.
