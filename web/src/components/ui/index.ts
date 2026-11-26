@@ -2,6 +2,12 @@ export { Alert, TONE_ICONS, type AlertTone } from './Alert';
 export { Button } from './Button';
 export { CheckboxGroup, toggleOption, type CheckboxOption } from './CheckboxGroup';
 export { ConfirmDialog } from './ConfirmDialog';
+export {
+  DatePicker,
+  DEFAULT_DATE_LOCALE,
+  type DatePickerLabels,
+  type DatePickerProps,
+} from './DatePicker';
 export { DataTable, type DataTableColumn } from './DataTable';
 export { DonutChart, donutArcs, type DonutArc, type DonutSegment } from './DonutChart';
 export { EmptyState } from './EmptyState';
