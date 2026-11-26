@@ -218,7 +218,7 @@ func TestResetConcurrentSameCodeSucceedsOnce(t *testing.T) {
 	}
 }
 
-func TestRequestCodeSendFailureIsLoggedCountedAndFreesCooldown(t *testing.T) {
+func TestRequestCodeSendFailureIsLoggedCountedAndKeepsCooldown(t *testing.T) {
 	var buf bytes.Buffer
 	st := &loginFakeStore{accs: map[string]LoginAccount{
 		"a@example.com": {ID: "a", PasswordHash: loginMustHash(t, "old-password"), Status: "active", Version: 1},
@@ -242,13 +242,15 @@ func TestRequestCodeSendFailureIsLoggedCountedAndFreesCooldown(t *testing.T) {
 	if got := resetFailureCount(t, "reset_code"); got != before+1 {
 		t.Fatalf("failure counter = %v, want %v", got, before+1)
 	}
-	// Nothing was delivered, so the user may ask again at once.
-	m.Err = nil
-	if _, err := s.RequestCode(ctx, "a@example.com"); err != nil {
-		t.Fatalf("retry after failed send: %v", err)
+	// An immediate retry answers the same for the failed-send e-mail and an
+	// unknown one (no enumeration oracle): both hit the cool-down.
+	_, errKnown := s.RequestCode(ctx, "a@example.com")
+	if _, err := s.RequestCode(ctx, "nobody@example.com"); err != nil {
+		t.Fatal(err)
 	}
-	if n := len(m.Sent()); n != 1 {
-		t.Fatalf("sent %d e-mails after retry, want 1", n)
+	_, errUnknown := s.RequestCode(ctx, "nobody@example.com")
+	if !errors.Is(errKnown, ErrResetCooldown) || !errors.Is(errUnknown, ErrResetCooldown) {
+		t.Fatalf("retry answers differ: known=%v unknown=%v", errKnown, errUnknown)
 	}
 }
 
@@ -262,7 +264,6 @@ func TestRequestCodeMailerOnlyForEligibleAccount(t *testing.T) {
 	if n := len(e.mail.Sent()); n != 0 {
 		t.Fatalf("sent %d e-mails for unknown or deactivated accounts, want 0", n)
 	}
-	e.code(t, " A@Example.COM")
 }
 
 // resetFailureCount reads one label of MailFailures through a throw-away

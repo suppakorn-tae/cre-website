@@ -142,15 +142,16 @@ func (s *ResetService) RequestCode(ctx context.Context, email string) (ResetChal
 		return ch, fmt.Errorf("auth: store code: %w", err)
 	}
 	// Async keeps the answer time equal for every e-mail. A failed send is
-	// logged with the request id, counted, and frees the cool-down so the
-	// user can ask again at once instead of waiting 60 s for nothing.
+	// logged with the request id and counted, so an outage is visible.
 	s.Async(func() {
 		c, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
 		defer cancel()
 		if err := mailer.SendOTP(c, s.mail, email, code, int(ResetOTPTTL.Minutes())); err != nil {
 			MailFailures.WithLabelValues("reset_code").Inc()
 			s.log.ErrorContext(c, "password reset e-mail failed", "error", err)
-			_ = s.cache.Del(c, resetCooldownKey(email), resetCodeKey(email))
+			// The cool-down stays: freeing it only for a real account would let
+			// an immediate retry tell registered e-mails apart (BR-22).
+			_ = s.cache.Del(c, resetCodeKey(email))
 		}
 	})
 	return ch, nil
