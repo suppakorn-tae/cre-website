@@ -9,10 +9,11 @@ import common from '../../../messages/th/common.json';
 import projects from '../../../messages/th/projects.json';
 import ui from '../../../messages/th/ui.json';
 
-vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
+vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn(), replace: vi.fn() }) }));
 
 import { PAGE_SIZE } from './api';
 import { ProjectForm } from './ProjectForm';
+import { afterCreatePath } from './paths';
 import { getProjectStore, projectHandlers, resetProjectStore, searchProjects } from './mocks';
 import { fromProject } from './validation';
 
@@ -38,7 +39,7 @@ describe('ProjectForm', () => {
       '% ความก้าวหน้าปัจจุบัน',
       'ค่าเริ่มต้น 0 %',
       'รายละเอียดโครงการ',
-      'บันทึกและไปขั้นประเมินความเสี่ยง',
+      'บันทึก และไปขั้นประเมินความเสี่ยง',
     ]) {
       expect(html).toContain(text);
     }
@@ -46,6 +47,20 @@ describe('ProjectForm', () => {
     // "Other" text fields appear only after choosing อื่นๆ.
     expect(html).not.toContain('ระบุเกาะ / สถานที่');
     expect(html).not.toContain('ระบุประเภทโครงการ');
+  });
+
+  it('has a progress slider named for the field, with its value as text', () => {
+    const html = wrap(<ProjectForm />);
+    expect(html).toMatch(/role="slider"[^>]*aria-label="ความก้าวหน้าปัจจุบัน"/);
+    expect(html).toContain('aria-valuetext="0 %"');
+    expect(html).toContain('aria-valuemin="0"');
+    expect(html).toContain('aria-valuemax="100"');
+  });
+
+  it('shows the planned marker only when both dates are valid', () => {
+    const [first] = getProjectStore();
+    expect(wrap(<ProjectForm />)).not.toMatch(/ตามแผน \d+ %/);
+    expect(wrap(<ProjectForm project={first} />)).toMatch(/ตามแผน \d+ %/);
   });
 
   it('fills the edit form from the project, with Buddhist era dates', () => {
@@ -102,6 +117,31 @@ describe('mock create project', () => {
     expect(got.latest_version_id).toBe(created.latest_version_id);
     const list = await (await fetch('http://localhost/api/v1/projects?q=TST')).json();
     expect(list.items[0].latest_version_id).toBe(created.latest_version_id);
+  });
+
+  it('sends a new project to the assessment of its version 1', async () => {
+    const res = await fetch('http://localhost/api/v1/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'ทดสอบ',
+        nickname: 'TST',
+        island_code: 'koh_tao',
+        type_code: 'building',
+        start_date: '2027-01-01',
+        end_date: '2027-12-31',
+        value_baht: 1_000_000,
+        progress_pct: 0,
+      }),
+    });
+    const created = await res.json();
+    expect(afterCreatePath(created)).toBe(
+      `/projects/${created.id}/versions/${created.latest_version_id}/assess`,
+    );
+  });
+
+  it('falls back to the project page without a version id', () => {
+    expect(afterCreatePath({ id: 'abc', latest_version_id: null })).toBe('/projects/abc');
   });
 
   it('has no latest version id for a seeded project without versions', () => {

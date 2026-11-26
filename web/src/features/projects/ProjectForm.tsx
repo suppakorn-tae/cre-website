@@ -1,18 +1,22 @@
 'use client';
 
+import { IconArrowRight, IconCalendar, IconCheck, IconCurrencyBaht } from '@tabler/icons-react';
+import * as Slider from '@radix-ui/react-slider';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
 
-import { Button, Input, NumberInput } from '@/components/ui';
+import { Button, Icon, Input } from '@/components/ui';
+import { planState } from '@/features/versions/rules';
 import { ApiError } from '@/lib/api/errors';
 import { formatDate, formatNumber } from '@/lib/format/locale';
 
 import { useCreateProject, useUpdateProject } from './api';
 import { durationDays, expectedProgress, parseThaiDateInput, todayIso } from './dates';
 import { useProjectLabels } from './labels';
-import styles from './projects.module.css';
+import { controlClass, IconField } from './IconField';
+import { afterCreatePath } from './paths';
 import {
   emptyForm,
   fromProject,
@@ -58,7 +62,8 @@ export function ProjectForm({ project }: Props) {
 
   const create = useCreateProject();
   const update = useUpdateProject(project?.id ?? '');
-  const saving = create.isPending || update.isPending;
+  // Stay disabled after success: the page is about to change.
+  const saving = create.isPending || update.isPending || create.isSuccess || update.isSuccess;
 
   const start = parseThaiDateInput(values.startDate);
   const end = parseThaiDateInput(values.endDate);
@@ -100,197 +105,299 @@ export function ProjectForm({ project }: Props) {
       return;
     }
     const body = toPayload(values);
-    const done = (saved: Project) => router.push(`/projects/${saved.id}`);
-    if (project) update.mutate(body, { onSuccess: done, onError: onFailure });
-    else create.mutate(body, { onSuccess: done, onError: onFailure });
+    if (project) {
+      update.mutate(body, {
+        onSuccess: (saved) => router.push(`/projects/${saved.id}`),
+        onError: onFailure,
+      });
+    } else {
+      create.mutate(body, {
+        onSuccess: (saved) => router.replace(afterCreatePath(saved)),
+        onError: onFailure,
+      });
+    }
   }
 
+  const sliderValue = Math.min(100, Math.round(actual ?? 0));
+  const progressErrorId = 'project-progress-error';
+
   return (
-    <form className={styles.formLayout} onSubmit={submit} noValidate>
-      <div className={styles.formMain}>
+    <form
+      className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12"
+      onSubmit={submit}
+      noValidate
+    >
+      <div className="grid min-w-0 gap-4 xl:col-span-8">
         {formError && (
-          <p className={styles.formAlert} role="alert">
+          <p
+            className="m-0 rounded-control border border-error-border bg-error-bg px-4 py-3 text-error"
+            role="alert"
+          >
             {formError}
           </p>
         )}
-        <section className={styles.card} aria-labelledby="project-basic">
-          <h2 id="project-basic" className={styles.cardTitle}>
-            {t('sectionBasic')}
-          </h2>
+        <section
+          className="box-border rounded-card border border-border bg-white"
+          aria-labelledby="project-basic"
+        >
+          <div className="grid gap-5 p-5 md:gap-6 md:p-8">
+            <h2 id="project-basic" className="m-0 text-h3 font-semibold text-navy-900">
+              {t('sectionBasic')}
+            </h2>
 
-          <div className={styles.grid2}>
-            <Input
-              id="project-name"
-              label={t('name')}
-              placeholder={t('namePlaceholder')}
-              value={values.name}
-              onChange={(e) => set('name', e.target.value)}
-              error={error('name')}
-              required
-            />
-            <Input
-              id="project-nickname"
-              label={t('nickname')}
-              placeholder={t('nicknamePlaceholder')}
-              helper={t('nicknameHelper')}
-              value={values.nickname}
-              onChange={(e) => set('nickname', e.target.value)}
-              error={error('nickname')}
-              required
-            />
-          </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="min-w-0 md:col-span-2">
+                <Input
+                  id="project-name"
+                  label={t('name')}
+                  placeholder={t('namePlaceholder')}
+                  value={values.name}
+                  onChange={(e) => set('name', e.target.value)}
+                  error={error('name')}
+                  required
+                />
+              </div>
+              <Input
+                id="project-nickname"
+                label={t('nickname')}
+                placeholder={t('nicknamePlaceholder')}
+                helper={t('nicknameHelper')}
+                value={values.nickname}
+                onChange={(e) => set('nickname', e.target.value)}
+                error={error('nickname')}
+                required
+              />
+            </div>
 
-          <ChipGroup
-            id="project-islandCode"
-            legend={t('island')}
-            name="island"
-            options={ISLAND_CODES.map((code) => ({ value: code, label: labels.island(code) }))}
-            value={values.islandCode}
-            onChange={(v) => set('islandCode', v as FormValues['islandCode'])}
-            error={error('islandCode')}
-          />
-          {values.islandCode === 'other' && (
-            <Input
-              id="project-islandOther"
-              label={t('islandOther')}
-              placeholder={t('islandOtherPlaceholder')}
-              value={values.islandOther}
-              onChange={(e) => set('islandOther', e.target.value)}
-              error={error('islandOther')}
-              required
+            <ChipGroup
+              id="project-islandCode"
+              legend={t('island')}
+              name="island"
+              columns="md:grid-cols-4"
+              options={ISLAND_CODES.map((code) => ({ value: code, label: labels.island(code) }))}
+              value={values.islandCode}
+              onChange={(v) => set('islandCode', v as FormValues['islandCode'])}
+              error={error('islandCode')}
             />
-          )}
-
-          <ChipGroup
-            id="project-typeCode"
-            legend={t('type')}
-            name="type"
-            options={TYPE_CODES.map((code) => ({ value: code, label: labels.type(code) }))}
-            value={values.typeCode}
-            onChange={(v) => set('typeCode', v as FormValues['typeCode'])}
-            error={error('typeCode')}
-          />
-          {values.typeCode === 'other' && (
-            <Input
-              id="project-typeOther"
-              label={t('typeOther')}
-              placeholder={t('typeOtherPlaceholder')}
-              value={values.typeOther}
-              onChange={(e) => set('typeOther', e.target.value)}
-              error={error('typeOther')}
-              required
-            />
-          )}
-
-          <div className={styles.grid3}>
-            <NumberInput
-              id="project-value"
-              label={t('value')}
-              placeholder={t('valuePlaceholder')}
-              value={values.value}
-              onChange={(v) => set('value', v)}
-              suffix={tUnits('baht')}
-              error={error('value')}
-              required
-            />
-            <Input
-              id="project-startDate"
-              label={t('startDate')}
-              inputMode="numeric"
-              placeholder={t('datePlaceholder')}
-              helper={t('dateHelper')}
-              value={values.startDate}
-              onChange={(e) => set('startDate', e.target.value)}
-              error={error('startDate')}
-              required
-            />
-            <Input
-              id="project-endDate"
-              label={t('endDate')}
-              inputMode="numeric"
-              placeholder={t('datePlaceholder')}
-              helper={
-                start && end && durationDays(start, end) > 0
-                  ? t('afterStart', { days: formatNumber(durationDays(start, end)) })
-                  : t('dateHelper')
-              }
-              value={values.endDate}
-              onChange={(e) => set('endDate', e.target.value)}
-              error={error('endDate')}
-              required
-            />
-          </div>
-        </section>
-
-        <section className={styles.card} aria-labelledby="project-progress-title">
-          <h2 id="project-progress-title" className={styles.cardTitle}>
-            {t('progress')}
-            <span className={styles.cardHint}>{t('progressDefault')}</span>
-          </h2>
-          <div className={styles.progressRow}>
-            <NumberInput
-              id="project-progress"
-              label={<span className={styles.srOnly}>{t('progress')}</span>}
-              value={values.progress}
-              onChange={(v) => set('progress', v)}
-              suffix={tUnits('percent')}
-              error={error('progress')}
-              className={styles.progressField}
-            />
-            {expected && (
-              <span className={styles.expectedBadge}>
-                {t('expectedBadge', { pct: expected.pct })}
-              </span>
+            {values.islandCode === 'other' && (
+              <Input
+                id="project-islandOther"
+                label={t('islandOther')}
+                placeholder={t('islandOtherPlaceholder')}
+                value={values.islandOther}
+                onChange={(e) => set('islandOther', e.target.value)}
+                error={error('islandOther')}
+                required
+              />
             )}
+
+            <ChipGroup
+              id="project-typeCode"
+              legend={t('type')}
+              name="type"
+              columns="md:grid-cols-3"
+              options={TYPE_CODES.map((code) => ({ value: code, label: labels.type(code) }))}
+              value={values.typeCode}
+              onChange={(v) => set('typeCode', v as FormValues['typeCode'])}
+              error={error('typeCode')}
+            />
+            {values.typeCode === 'other' && (
+              <Input
+                id="project-typeOther"
+                label={t('typeOther')}
+                placeholder={t('typeOtherPlaceholder')}
+                value={values.typeOther}
+                onChange={(e) => set('typeOther', e.target.value)}
+                error={error('typeOther')}
+                required
+              />
+            )}
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <IconField
+                id="project-value"
+                label={t('value')}
+                placeholder={t('valuePlaceholder')}
+                inputMode="decimal"
+                icon={IconCurrencyBaht}
+                value={values.value}
+                onChange={(e) => set('value', e.target.value)}
+                error={error('value')}
+                required
+              />
+              <IconField
+                id="project-startDate"
+                label={t('startDate')}
+                inputMode="numeric"
+                placeholder={t('datePlaceholder')}
+                helper={t('dateHelper')}
+                icon={IconCalendar}
+                value={values.startDate}
+                onChange={(e) => set('startDate', e.target.value)}
+                error={error('startDate')}
+                required
+              />
+              <IconField
+                id="project-endDate"
+                label={t('endDate')}
+                inputMode="numeric"
+                placeholder={t('datePlaceholder')}
+                helper={
+                  start && end && durationDays(start, end) > 0
+                    ? t('afterStart', { days: formatNumber(durationDays(start, end)) })
+                    : t('dateHelper')
+                }
+                icon={IconCalendar}
+                value={values.endDate}
+                onChange={(e) => set('endDate', e.target.value)}
+                error={error('endDate')}
+                required
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <div>
+                <label htmlFor="project-progress" className="text-body font-medium text-text">
+                  {t('progress')}
+                </label>
+                <p className="m-0 text-caption text-text-muted">{t('progressDefault')}</p>
+              </div>
+              <div className="flex items-start gap-4 md:gap-6">
+                <div className="relative w-28 shrink-0">
+                  <input
+                    id="project-progress"
+                    type="text"
+                    inputMode="numeric"
+                    className={`${controlClass} pe-10`}
+                    value={values.progress}
+                    onChange={(e) => set('progress', e.target.value)}
+                    aria-invalid={errors.progress ? true : undefined}
+                    aria-describedby={errors.progress ? progressErrorId : undefined}
+                  />
+                  <span className="pointer-events-none absolute inset-y-0 end-3 flex items-center text-body text-text-muted">
+                    {tUnits('percent')}
+                  </span>
+                </div>
+                <div className="min-w-0 flex-1 pb-6">
+                  <Slider.Root
+                    className="relative flex h-hit w-full touch-none select-none items-center"
+                    value={[sliderValue]}
+                    onValueChange={([v]) => set('progress', String(v))}
+                    min={0}
+                    max={100}
+                    step={1}
+                  >
+                    <Slider.Track className="relative h-2 grow rounded-pill bg-blue-100">
+                      <Slider.Range className="absolute h-full rounded-pill bg-primary" />
+                    </Slider.Track>
+                    {expected && (
+                      <PlannedMarker
+                        pct={expected.pct}
+                        label={t('expectedBadge', { pct: expected.pct })}
+                      />
+                    )}
+                    <Slider.Thumb
+                      aria-label={t('progressSlider')}
+                      aria-valuetext={t('progressValueText', { pct: sliderValue })}
+                      className="focus-ring block size-5 rounded-pill border-2 border-primary bg-white"
+                    />
+                  </Slider.Root>
+                </div>
+              </div>
+              {errors.progress && (
+                <p id={progressErrorId} className="m-0 text-caption text-error" role="alert">
+                  {error('progress')}
+                </p>
+              )}
+              <p className="m-0 text-small text-text-secondary">
+                {expected
+                  ? t('expectedHelper', {
+                      today: formatDate(today),
+                      pct: expected.pct,
+                      elapsed: formatNumber(expected.elapsed),
+                      days: formatNumber(expected.duration),
+                    })
+                  : t('expectedNone')}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="project-description" className="text-body font-medium text-text">
+                {t('description')}
+                <span className="ms-2 text-caption font-normal text-text-muted">
+                  {tUi('optional')}
+                </span>
+              </label>
+              <textarea
+                id="project-description"
+                className={`${controlClass} resize-y`}
+                rows={4}
+                placeholder={t('descriptionPlaceholder')}
+                value={values.description}
+                onChange={(e) => set('description', e.target.value)}
+              />
+            </div>
           </div>
-          <p className={styles.expectedText}>
-            {expected
-              ? t('expectedHelper', {
-                  today: formatDate(today),
-                  pct: expected.pct,
-                  elapsed: formatNumber(expected.elapsed),
-                  days: formatNumber(expected.duration),
-                })
-              : t('expectedNone')}
-          </p>
-        </section>
 
-        <section className={styles.card}>
-          <label htmlFor="project-description" className={styles.cardTitle}>
-            {t('description')}
-            <span className={styles.cardHint}>{tUi('optional')}</span>
-          </label>
-          <textarea
-            id="project-description"
-            className={styles.textarea}
-            rows={4}
-            placeholder={t('descriptionPlaceholder')}
-            value={values.description}
-            onChange={(e) => set('description', e.target.value)}
-          />
+          <div className="flex flex-col gap-3 border-0 border-t border-solid border-border p-5 md:flex-row-reverse md:justify-start md:px-8">
+            <Button type="submit" size="lg" disabled={saving} className="w-full md:w-auto">
+              {saving ? (
+                t('submitting')
+              ) : (
+                <>
+                  {editing ? t('submitEdit') : t('submitCreate')}
+                  {!editing && <Icon icon={IconArrowRight} size={20} />}
+                </>
+              )}
+            </Button>
+            <Link
+              href={project ? `/projects/${project.id}` : '/dashboard'}
+              className="focus-ring box-border inline-flex min-h-control-lg w-full items-center justify-center rounded-control border border-field-border bg-white px-4 text-body font-medium text-text no-underline hover:bg-subtle md:w-auto"
+            >
+              {t('cancel')}
+            </Link>
+          </div>
         </section>
-
-        <div className={styles.actions}>
-          <Button type="submit" size="lg" disabled={saving}>
-            {saving ? t('submitting') : editing ? t('submitEdit') : t('submitCreate')}
-          </Button>
-          <Link
-            href={project ? `/projects/${project.id}` : '/projects'}
-            className={styles.cancelLink}
-          >
-            {t('cancel')}
-          </Link>
-        </div>
       </div>
 
-      <aside className={styles.preview} aria-label={t('preview.title')}>
+      <aside
+        className="grid min-w-0 gap-4 xl:sticky xl:top-[calc(var(--nav-height)+var(--space-4))] xl:col-span-4"
+        aria-label={t('preview.title')}
+      >
         <Preview values={values} expectedPct={expected?.pct ?? null} actual={actual} />
-        <div className={styles.note}>
-          <p className={styles.noteTitle}>{t('editLaterTitle')}</p>
-          <p className={styles.noteText}>{t('editLaterText')}</p>
+        <div className="rounded-card border border-info-border bg-info-bg p-4">
+          <p className="m-0 font-semibold text-info">{t('editLaterTitle')}</p>
+          <p className="m-0 mt-1 text-small text-text-secondary">{t('editLaterText')}</p>
         </div>
       </aside>
     </form>
+  );
+}
+
+/** Width of the slider thumb in px (`size-5`): the thumb centre stays inside the track. */
+const THUMB_PX = 20;
+
+/** Where the plan stands today, drawn on the slider track (BR-24, from `expectedProgress`). */
+function PlannedMarker({ pct, label }: { pct: number; label: string }) {
+  const left = `calc(${pct}% + ${((50 - pct) / 100) * THUMB_PX}px)`;
+  // Near the ends the label hangs inside the track instead of past the card edge.
+  const atEdge = pct < 12 || pct > 88;
+  const align = pct < 12 ? 'start-0' : pct > 88 ? 'end-0' : '-translate-x-1/2';
+  return (
+    <>
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute top-1/2 h-5 w-0.5 -translate-x-1/2 -translate-y-1/2 bg-navy-900"
+        style={{ left }}
+      />
+      <span
+        aria-hidden="true"
+        className={`pointer-events-none absolute top-full whitespace-nowrap text-caption font-semibold text-text ${align}`}
+        style={atEdge ? undefined : { left }}
+      >
+        {label}
+      </span>
+    </>
   );
 }
 
@@ -308,7 +415,8 @@ function Preview({
   const start = parseThaiDateInput(values.startDate);
   const end = parseThaiDateInput(values.endDate);
   const baht = parseBaht(values.value);
-  const gap = actual !== null && expectedPct !== null ? Math.round(actual - expectedPct) : null;
+  const plan = actual !== null && expectedPct !== null ? planState(actual, expectedPct) : null;
+  const barPct = Math.min(100, Math.max(0, actual ?? 0));
 
   const rows: [string, ReactNode][] = [
     [
@@ -327,38 +435,63 @@ function Preview({
   ];
 
   return (
-    <div className={styles.previewCard}>
-      <p className={styles.previewHead}>
+    <div className="grid gap-3 rounded-card border border-border bg-white p-5">
+      <p className="m-0 flex items-center justify-between text-small text-text-muted">
         <span>{t('title')}</span>
-        <span className={styles.liveTag}>{t('live')}</span>
+        <span className="rounded-pill bg-blue-50 px-3 py-0.5 text-caption text-blue-700">
+          {t('live')}
+        </span>
       </p>
-      <p className={styles.previewName}>
-        <span className={styles.previewNick}>
+      <div className="flex items-start gap-3">
+        <span className="rounded-pill bg-navy-900 px-3 py-0.5 text-small font-bold text-white">
           {values.nickname.trim() || t('placeholderNickname')}
         </span>
-        <span>{values.name.trim() || t('placeholderName')}</span>
-      </p>
-      <p className={styles.previewIsland}>
-        {values.islandCode ? labels.island(values.islandCode, values.islandOther) : '–'}
-      </p>
-      <dl className={styles.previewList}>
+        <div className="min-w-0">
+          <p className="m-0 break-words font-semibold text-text">
+            {values.name.trim() || t('placeholderName')}
+          </p>
+          <p className="m-0 text-small text-text-muted">
+            {values.islandCode ? labels.island(values.islandCode, values.islandOther) : '–'}
+          </p>
+        </div>
+      </div>
+      <dl className="m-0 grid gap-3 border-0 border-t border-solid border-divider pt-3">
         {rows.map(([term, detail]) => (
-          <div key={term} className={styles.previewRow}>
-            <dt>{term}</dt>
-            <dd>{detail}</dd>
+          <div key={term} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 text-small">
+            <dt className="text-text-muted">{term}</dt>
+            <dd className="m-0 break-words text-end font-semibold text-text">{detail}</dd>
           </div>
         ))}
       </dl>
-      <p className={styles.previewProgressHead}>{t('progress')}</p>
-      <p>
-        {actual !== null ? t('actual', { pct: actual }) : '–'}
-        {expectedPct !== null && <> · {t('expected', { pct: expectedPct })}</>}
-      </p>
-      {gap !== null && (
-        <p className={styles.gap} data-state={gap < 0 ? 'behind' : gap > 0 ? 'ahead' : 'on'}>
-          {gap < 0 ? t('behind', { pct: -gap }) : gap > 0 ? t('ahead', { pct: gap }) : t('onPlan')}
+      <div className="grid gap-2">
+        <p className="m-0 flex flex-wrap justify-between gap-x-3 text-small">
+          <span className="text-text-muted">{t('progress')}</span>
+          <span className="font-semibold text-text">
+            {actual !== null ? t('actual', { pct: actual }) : '–'}
+            {expectedPct !== null && <> · {t('expected', { pct: expectedPct })}</>}
+          </span>
         </p>
-      )}
+        <div className="relative h-2 rounded-pill bg-blue-100" aria-hidden="true">
+          <div className="h-full rounded-pill bg-primary" style={{ width: `${barPct}%` }} />
+          {expectedPct !== null && (
+            <span
+              className="absolute top-1/2 h-4 w-0.5 -translate-y-1/2 bg-navy-900"
+              style={{ left: `${expectedPct}%` }}
+            />
+          )}
+        </div>
+        {plan && (
+          <p
+            className={`m-0 text-small font-semibold ${plan.kind === 'behind' ? 'text-warning' : 'text-success'}`}
+          >
+            {plan.kind === 'behind'
+              ? t('behind', { pct: plan.points })
+              : plan.kind === 'ahead'
+                ? t('ahead', { pct: plan.points })
+                : t('onPlan')}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -367,6 +500,7 @@ function ChipGroup({
   id,
   legend,
   name,
+  columns,
   options,
   value,
   onChange,
@@ -375,6 +509,8 @@ function ChipGroup({
   id: string;
   legend: string;
   name: string;
+  /** Column count from the `md` width up, e.g. `md:grid-cols-4`; two columns below. */
+  columns: string;
   options: { value: string; label: string }[];
   value: string;
   onChange: (value: string) => void;
@@ -383,32 +519,45 @@ function ChipGroup({
   const errorId = useId();
   return (
     <fieldset
-      className={styles.chipset}
+      className="m-0 min-w-0 border-0 p-0"
       aria-describedby={error ? errorId : undefined}
       aria-invalid={error ? true : undefined}
     >
-      <legend className={styles.chipLegend}>
+      <legend className="mb-2 p-0 text-body font-medium text-text">
         {legend}
-        <span className={styles.required} aria-hidden="true">
+        <span className="ms-1 text-error" aria-hidden="true">
           *
         </span>
       </legend>
-      <div className={styles.chips} id={id} tabIndex={-1}>
-        {options.map((o) => (
-          <label key={o.value} className={styles.chip}>
-            <input
-              type="radio"
-              name={name}
-              value={o.value}
-              checked={value === o.value}
-              onChange={() => onChange(o.value)}
-            />
-            <span className={styles.chipFace}>{o.label}</span>
-          </label>
-        ))}
+      <div className={`grid grid-cols-2 gap-3 ${columns}`} id={id} tabIndex={-1}>
+        {options.map((o) => {
+          const selected = value === o.value;
+          return (
+            <label key={o.value} className="relative block min-w-0">
+              <input
+                type="radio"
+                name={name}
+                value={o.value}
+                checked={selected}
+                onChange={() => onChange(o.value)}
+                className="peer absolute inset-0 m-0 size-full cursor-pointer opacity-0"
+              />
+              <span
+                className={`box-border flex min-h-control-lg items-center justify-center gap-2 rounded-pill border px-4 text-center text-body peer-focus-visible:shadow-[var(--focus-ring)] ${
+                  selected
+                    ? 'border-primary bg-blue-50 font-semibold text-blue-700'
+                    : 'border-field-border bg-white text-text'
+                }`}
+              >
+                {selected && <Icon icon={IconCheck} size={16} />}
+                {o.label}
+              </span>
+            </label>
+          );
+        })}
       </div>
       {error && (
-        <p id={errorId} className={styles.fieldError} role="alert">
+        <p id={errorId} className="m-0 mt-2 text-caption text-error" role="alert">
           {error}
         </p>
       )}
