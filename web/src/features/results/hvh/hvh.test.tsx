@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NextIntlClientProvider } from 'next-intl';
 import type { ReactNode } from 'react';
@@ -18,7 +21,7 @@ import type { IndicatorName } from '../overview/api';
 import { mockResultItems } from '../overview/mocks';
 import { HvhTab } from './HvhTab';
 import { mockResultsWithAdvice } from '@/features/plan/mocks';
-import { highRisks, HVH_VISIBLE, spokenUnit } from './rules';
+import { highRisks, HVH_VISIBLE, xInput } from './rules';
 import { formatNumber } from '@/lib/format/locale';
 
 const wrap = (node: ReactNode) =>
@@ -88,7 +91,7 @@ describe('H / VH summary', () => {
     const [top] = rows;
     const text = html.replace(/<\/?(strong|sub)>/g, '');
     expect(text).toContain(
-      `เกิดขึ้น ${formatNumber(top.x)} ครั้งต่อช่วงเวลา → โอกาสเกิด (RL) ${top.rl.toFixed(2)}`,
+      `ครั้ง/ช่วงเวลา: ${formatNumber(top.x)} → โอกาสเกิด (RL) ${top.rl.toFixed(2)}`,
     );
     expect(text).toContain(
       `ต้นทุนเพิ่ม ${formatNumber(top.y1_pct)}% ของมูลค่าโครงการ → ผลกระทบด้านต้นทุน (RIC) ${top.ri_c.toFixed(2)}`,
@@ -117,13 +120,56 @@ describe('H / VH summary', () => {
   });
 });
 
-describe('spoken unit of X', () => {
-  it.each([
-    ['ครั้ง/เดือน', 'ครั้งต่อเดือน'],
-    ['ครั้ง / ช่วงเวลา', 'ครั้งต่อช่วงเวลา'],
-    ['ครั้ง', 'ครั้ง'],
-    ['  ', ''],
-  ])('reads %j as %j', (unit, spoken) => {
-    expect(spokenUnit(unit)).toBe(spoken);
+/** Distinct `unit_th` values of the real catalogue seed (the CSV has quoted cells, so split with care). */
+function seedUnits(): string[] {
+  const text = readFileSync(
+    resolve(process.cwd(), '../backend/seed/cre-indicators.csv'),
+    'utf8',
+  ).replace(/^\uFEFF/, '');
+  const rows: string[][] = [[]];
+  let cell = '';
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch === '"' && text[i + 1] === '"') cell += text[i++];
+      else if (ch === '"') quoted = false;
+      else cell += ch;
+    } else if (ch === '"') {
+      quoted = true;
+    } else if (ch === ',') {
+      rows[rows.length - 1].push(cell);
+      cell = '';
+    } else if (ch === '\n') {
+      rows[rows.length - 1].push(cell.replace(/\r$/, ''));
+      cell = '';
+      rows.push([]);
+    } else {
+      cell += ch;
+    }
+  }
+  const [header, ...body] = rows.filter((r) => r.length > 1);
+  const col = header.indexOf('unit_th');
+  return [...new Set(body.map((r) => r[col]))];
+}
+
+describe('X sentence for every real catalogue unit', () => {
+  const units = seedUnits();
+
+  it('reads the seed and finds the distinct units', () => {
+    expect(units.length).toBeGreaterThan(25);
+  });
+
+  it.each(units)('writes "%s" as a label followed by the value', (unit) => {
+    const { unit: label, value } = xInput(unit, 11);
+    expect(label).toBe(unit.replace(/\s+/g, ' ').trim());
+    expect(label).not.toBe('');
+    expect(value).toBe(unit.includes('ร้อยละ') ? '11%' : '11');
+    // The leading word is never cut, so the sentence reads "<unit>: <value> → …".
+    expect(label.startsWith(unit.trim().slice(0, 4))).toBe(true);
+  });
+
+  it('has no unit for an empty catalogue value', () => {
+    expect(xInput('  ', 3)).toEqual({ unit: '', value: '3' });
   });
 });

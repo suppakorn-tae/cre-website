@@ -14,7 +14,7 @@ import type { IndicatorName, IndicatorResult, ResultsResponse } from '../overvie
 import { formatRm, formatScore, subscript } from '../overview/format';
 import overview from '../overview/results.module.css';
 import styles from './hvh.module.css';
-import { highRisks, HVH_VISIBLE, spokenUnit } from './rules';
+import { highRisks, HVH_VISIBLE, xInput } from './rules';
 
 type Props = {
   projectId: string;
@@ -42,15 +42,12 @@ export function HvhTab({ projectId, versionId, results, names }: Props) {
   const hidden = rows.length - HVH_VISIBLE;
 
   const pills = (row: IndicatorResult, meta?: IndicatorName) => {
+    const x = xInput(meta?.unit ?? '', row.x);
     const bold = { b: (chunks: ReactNode) => <strong>{chunks}</strong> };
-    const rich = (key: 'x' | 'y1' | 'y2' | 'y3', values: Record<string, string>) =>
+    const rich = (key: 'x' | 'xBare' | 'y1' | 'y2' | 'y3', values: Record<string, string>) =>
       t.rich(`inputs.${key}`, { ...subscript, ...bold, ...values });
     return [
-      rich('x', {
-        value: formatNumber(row.x),
-        unit: spokenUnit(meta?.unit ?? ''),
-        score: formatScore(row.rl),
-      }),
+      rich(x.unit ? 'x' : 'xBare', { ...x, score: formatScore(row.rl) }),
       rich('y1', { value: formatNumber(row.y1_pct), score: formatScore(row.ri_c) }),
       rich('y2', { value: formatNumber(row.y2_pct), score: formatScore(row.ri_t) }),
       rich('y3', { score: formatScore(row.ri_e) }),
