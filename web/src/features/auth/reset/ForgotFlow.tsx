@@ -244,7 +244,9 @@ function ResetStep({
     },
     onError: (error) => {
       if (error instanceof AuthApiError && error.status === 429) {
-        start(error.retryAfter ?? RESEND_SECONDS);
+        const wait = error.retryAfter ?? RESEND_SECONDS;
+        start(wait);
+        setFailure({ kind: 'form', text: t('resendCooldown', { seconds: wait }) });
         return;
       }
       setFailure({ kind: 'form', text: tCommon('unknown') });

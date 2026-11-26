@@ -11,6 +11,8 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/mailer"
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
 )
@@ -26,6 +28,13 @@ const (
 	ResetMinPassword = 8
 	ResetMaxPassword = 128
 )
+
+// MailFailures counts e-mails the api failed to send, by kind. Register it
+// with the /metrics registry (platform/metrics) to expose it.
+var MailFailures = prometheus.NewCounterVec(prometheus.CounterOpts{
+	Name: "auth_mail_send_failures_total",
+	Help: "Account e-mails the api could not send, by kind.",
+}, []string{"kind"})
 
 // Errors returned by the reset service.
 var (
@@ -132,11 +141,16 @@ func (s *ResetService) RequestCode(ctx context.Context, email string) (ResetChal
 	if err := s.cache.Set(ctx, resetCodeKey(email), b, ResetOTPTTL); err != nil {
 		return ch, fmt.Errorf("auth: store code: %w", err)
 	}
+	// Async keeps the answer time equal for every e-mail. A failed send is
+	// logged with the request id, counted, and frees the cool-down so the
+	// user can ask again at once instead of waiting 60 s for nothing.
 	s.Async(func() {
 		c, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
 		defer cancel()
 		if err := mailer.SendOTP(c, s.mail, email, code, int(ResetOTPTTL.Minutes())); err != nil {
-			s.log.Error("password reset e-mail failed", "error", err)
+			MailFailures.WithLabelValues("reset_code").Inc()
+			s.log.ErrorContext(c, "password reset e-mail failed", "error", err)
+			_ = s.cache.Del(c, resetCooldownKey(email), resetCodeKey(email))
 		}
 	})
 	return ch, nil
@@ -153,7 +167,8 @@ func (s *ResetService) maybeSendGoogleMail(ctx context.Context, email string, ac
 		c, cancel := context.WithTimeout(context.WithoutCancel(ctx), 15*time.Second)
 		defer cancel()
 		if err := mailer.SendContinueWithGoogle(c, s.mail, email); err != nil {
-			s.log.Error("continue-with-google e-mail failed", "error", err)
+			MailFailures.WithLabelValues("continue_with_google").Inc()
+			s.log.ErrorContext(c, "continue-with-google e-mail failed", "error", err)
 		}
 	})
 }
