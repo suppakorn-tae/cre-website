@@ -25,7 +25,8 @@ test('the question shows on focus, never on hover, and goes on Esc or blur', asy
 
   await x.focus();
   await expect(bubble(page)).toContainText('คำถาม · EC-MG-1 · X ความถี่ของเหตุการณ์');
-  await expect(bubble(page)).toContainText('หน่วย:');
+  // The unit shows under the input, not in the question bubble.
+  await expect(bubble(page)).not.toContainText('หน่วย:');
 
   // The bubble sits above the field and does not cover it.
   const box = await bubble(page).boundingBox();
@@ -100,12 +101,13 @@ test('the y3 panel asks the question first, one lettered checkbox per line, and 
   await open(page);
   const trigger = page.getByRole('button', { name: /y3 ผลกระทบด้านสิ่งแวดล้อม EC-MG-1/ });
   await trigger.focus();
-  await expect(bubble(page)).toContainText('y3 ผลกระทบด้านสิ่งแวดล้อม');
+  // The y3 cell has no question bubble; the panel asks the question itself.
+  await expect(bubble(page)).toHaveCount(0);
   await trigger.press('Enter');
 
   const panel = page.getByRole('dialog');
   await expect(panel).toBeVisible();
-  // Focus moved inside; only the panel is open, the focus hint closed.
+  // Focus moved inside; the only popper left is the panel.
   await expect(panel.getByRole('checkbox').first()).toBeFocused();
   await expect(bubble(page)).toHaveCount(1);
 
@@ -120,7 +122,7 @@ test('the y3 panel asks the question first, one lettered checkbox per line, and 
   }
 
   // EC-MG-1 starts as A only: no error. Add B with the keyboard: error at once, choices kept.
-  const error = panel.getByText('เลือก A ร่วมกับตัวเลือกอื่นไม่ได้');
+  const error = panel.getByText('A เลือกคู่กับข้ออื่นไม่ได้');
   await expect(error).toHaveCount(0);
   await page.keyboard.press('Tab');
   await page.keyboard.press('Space');
@@ -128,17 +130,29 @@ test('the y3 panel asks the question first, one lettered checkbox per line, and 
   await expect(panel.getByRole('checkbox', { name: /^A / })).toBeChecked();
   await expect(panel.getByRole('checkbox', { name: /^B / })).toBeChecked();
   await expect(panel.locator('fieldset')).toHaveAttribute('aria-invalid', 'true');
-  await expect(panel.locator('[aria-live="polite"]')).toContainText('เลือก A ร่วมกับ');
+  await expect(panel.locator('[aria-live="polite"]')).toContainText('A เลือกคู่กับ');
 
-  // Clearing A fixes it.
+  // "เสร็จ" is off while A is chosen with another letter; clearing A fixes it.
+  await expect(panel.getByRole('button', { name: 'เสร็จ' })).toBeDisabled();
   await panel.getByRole('checkbox', { name: /^A / }).uncheck();
   await expect(error).toHaveCount(0);
+  await expect(panel.getByRole('button', { name: 'เสร็จ' })).toBeEnabled();
 
-  // Esc closes the panel and puts focus back on the button.
+  // Esc saves nothing: the cell keeps the saved choice (A only) and focus returns to the button.
   await page.keyboard.press('Escape');
   await expect(panel).toHaveCount(0);
   await expect(trigger).toBeFocused();
+  await expect(trigger).toContainText('A');
+  await expect(trigger).not.toContainText('B');
+
+  // "เสร็จ" saves the edited choice (B only) and closes.
+  await trigger.press('Enter');
+  await page.getByRole('checkbox', { name: /^B / }).check();
+  await page.getByRole('checkbox', { name: /^A / }).uncheck();
+  await page.getByRole('button', { name: 'เสร็จ' }).click();
+  await expect(panel).toHaveCount(0);
   await expect(trigger).toContainText('B');
+  await expect(trigger).not.toContainText('A');
 
   // "ล้าง" empties the choice and "เสร็จ" closes.
   await trigger.press('Enter');
