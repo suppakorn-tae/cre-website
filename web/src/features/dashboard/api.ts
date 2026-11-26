@@ -11,6 +11,7 @@ export type DashboardProjectItem = components['schemas']['DashboardProjectItem']
 const keys = {
   summary: ['dashboard', 'summary'] as const,
   projects: (q: string, page: number) => ['dashboard', 'projects', q, page] as const,
+  allProjects: ['dashboard', 'projects', 'all'] as const,
   top: ['dashboard', 'top-indicators'] as const,
   islands: ['dashboard', 'islands'] as const,
   islandNames: ['dashboard', 'islands', 'names'] as const,
@@ -37,6 +38,20 @@ export function useProjectsPanel(q: string, page: number, enabled: boolean) {
           params: { query: { q: q || undefined, page, page_size: PANEL_PAGE_SIZE } },
         })
       ).data!,
+  });
+}
+
+/** Every project (the contract allows 100 a page) for fields the island rows do not carry. */
+export function useAllProjects(enabled: boolean) {
+  return useQuery({
+    queryKey: keys.allProjects,
+    enabled,
+    queryFn: async () =>
+      (
+        await browserApi().GET('/dashboard/panels/projects', {
+          params: { query: { page: 1, page_size: 100 } },
+        })
+      ).data!.items,
   });
 }
 

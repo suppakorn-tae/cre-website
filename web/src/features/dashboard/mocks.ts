@@ -113,8 +113,9 @@ export const seedTop: TopIndicator[] = topCodes.map((code, i) => ({
   rank: i + 1,
   indicator_code: code,
   factor_code: factorOf(code),
-  h_count: 5 - Math.floor(i / 3),
-  vh_count: 3 - Math.floor(i / 4),
+  // Found in 4, 4, 4, 3, 3, 3, 2, 2, 2, 1 of the 4 projects with a submitted version.
+  vh_count: i % 3 === 0 ? 1 : 0,
+  h_count: 4 - Math.floor(i / 3) - (i % 3 === 0 ? 1 : 0),
 }));
 
 export const dashboardHandlers: HttpHandler[] = [

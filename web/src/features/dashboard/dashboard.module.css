@@ -454,36 +454,179 @@
   gap: var(--space-1);
 }
 
-/* Lists in the top-10 and island panels */
-.list {
+/* Top-10 table; cards below 600px */
+.topTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+.topTable th {
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--text-small);
+  font-weight: var(--weight-semibold);
+  text-align: start;
+  border-bottom: 1px solid var(--color-divider);
+}
+.topTable td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--color-divider);
+  vertical-align: middle;
+}
+.topTable tbody tr:last-child td {
+  border-bottom: 0;
+}
+.topTable .chips {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+.rank {
+  width: 2.5em;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.topName {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.foundIn {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  white-space: nowrap;
+}
+.foundText {
+  font-weight: var(--weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+.foundTrack {
+  width: 96px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-border);
+  overflow: hidden;
+}
+.foundFill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-blue-700);
+}
+@media (max-width: 599px) {
+  .topTable thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .topTable,
+  .topTable tbody {
+    display: block;
+  }
+  .topTable tr {
+    display: grid;
+    grid-template-columns: 2em minmax(0, 1fr);
+    gap: var(--space-2) 0;
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--color-divider);
+  }
+  .topTable td {
+    padding: 0;
+    border: 0;
+  }
+  .topTable td:nth-child(n + 3) {
+    grid-column: 2;
+  }
+}
+
+/* Islands: one card per island, one row per project */
+.islands {
   display: grid;
-  gap: 0;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+@media (max-width: 767px) {
+  .islands {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+.island {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+}
+.islandHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.islandIcon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-control);
+  background: var(--color-blue-50);
+  color: var(--color-blue-700);
+}
+.islandName {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-body);
+  font-weight: var(--weight-bold);
+}
+.islandList {
+  display: grid;
+  gap: var(--space-2);
   margin: 0;
   padding: 0;
   list-style: none;
 }
-.listItem,
-.rankItem {
+.islandProject {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
   gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--color-divider);
+  padding: var(--space-3);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-control);
+  background: var(--color-white);
 }
-.rankItem {
-  flex-wrap: nowrap;
-}
-.rank {
-  flex: none;
-  width: 2em;
-  color: var(--color-text-muted);
-  font-variant-numeric: tabular-nums;
-}
-.rankName {
+.islandInfo {
+  display: grid;
   flex: 1;
+  gap: var(--space-1);
   min-width: 0;
+}
+.islandProject .nicknameChip {
+  margin-top: 2px;
+}
+.islandProject .actionOutline {
+  flex: none;
+  gap: var(--space-1);
+  align-self: center;
+}
+.versionNo {
+  align-self: center;
+  font-size: var(--text-small);
+}
+@media (max-width: 599px) {
+  .islandProject {
+    flex-wrap: wrap;
+  }
+  .islandInfo {
+    flex: 1 1 calc(100% - 80px);
+  }
+  .islandProject .actionOutline {
+    width: 100%;
+    min-height: 44px;
+  }
 }
 .itemTitle {
   margin: 0;
@@ -494,15 +637,6 @@
   margin: 0;
   color: var(--color-text-muted);
   font-size: var(--text-small);
-}
-.group {
-  display: grid;
-  gap: var(--space-2);
-}
-.groupTitle {
-  margin: var(--space-2) 0 0;
-  color: var(--color-text);
-  font-size: var(--text-body);
 }
 
 /* Donut: the ring is components/ui/DonutChart, the legend is ours */
