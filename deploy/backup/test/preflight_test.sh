@@ -51,13 +51,22 @@ env -i PATH="$PATH" BACKUP_S3_ENDPOINT=minio:9000 BACKUP_S3_REGION=us-east-1 BAC
   BACKUP_S3_KEY=k BACKUP_S3_SECRET=s BACKUP_LOCK_S3_BUCKET=b BACKUP_CIPHER_PASS=0123456789abcdef \
   sh "$rc" "$tmp"
 for want in repo1-retention-full=5 repo2-retention-full=12 repo1-cipher-type=aes-256-cbc \
-  compress-type=zst repo1-s3-uri-style=path repo2-s3-bucket=b repo1-s3-endpoint=minio:9000; do
+  compress-type=zst repo1-s3-uri-style=path repo2-s3-bucket=b repo1-s3-endpoint=minio:9000 \
+  pg1-path=/var/lib/postgresql/19/docker; do
   if grep -q "^$want\$" "$tmp"; then echo "ok   render $want"; else
     echo "FAIL render lacks $want"
     fails=$((fails + 1))
   fi
 done
 rm -f "$tmp"
+
+# The db side config must point at the same PGDATA (image 18+ layout).
+if grep -q '^pg1-path=/var/lib/postgresql/19/docker$' "$here/../pgbackrest.db.conf"; then
+  echo "ok   db conf pg1-path"
+else
+  echo "FAIL db conf pg1-path is not /var/lib/postgresql/19/docker"
+  fails=$((fails + 1))
+fi
 
 [ "$fails" -eq 0 ] || { echo "$fails failure(s)"; exit 1; }
 echo "all passed"
