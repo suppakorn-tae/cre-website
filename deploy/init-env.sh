@@ -59,12 +59,22 @@ while [ $# -gt 0 ]; do
   shift
 done
 
+# deploy/backup/deploy.sh sources the env file in a shell, then compose reads
+# the exported variables. A value is therefore safe only if the shell leaves it
+# alone: no whitespace, quotes, $, backticks, ; & | < > ( ) \\, no CR or LF.
+unsafe_value() { # unsafe_value <value>: succeeds when the value is not plain
+  case $1 in
+    *[!A-Za-z0-9._~:/@%+,=?-]*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 # ---------------------------------------------------------------- check mode
 
 do_check() {
   local file=$1 line key val bad=0 n k perm pg app
   local -A v=()
-  local -a placeholders=()
+  local -a placeholders=() unsafe=()
   [ -f "$file" ] || die "no such file: $file"
 
   while IFS= read -r line || [ -n "$line" ]; do
@@ -74,6 +84,7 @@ do_check() {
     val=${line#*=}
     v[$key]=$val
     case $val in *CHANGEME*) placeholders+=("$key") ;; esac
+    if unsafe_value "$val"; then unsafe+=("$key"); fi
   done <"$file"
 
   fail() {
@@ -83,6 +94,10 @@ do_check() {
 
   for k in ${placeholders[@]+"${placeholders[@]}"}; do
     fail "$k is still CHANGEME"
+  done
+
+  for k in ${unsafe[@]+"${unsafe[@]}"}; do
+    fail "$k has a character the shell would change (space, quote, \$, backtick, ; & | < > ( ) \\, CR); use plain characters"
   done
 
   pg=${v[POSTGRES_PASSWORD]:-}
@@ -119,8 +134,8 @@ do_check() {
 
   if perm=$(stat -c %a "$file" 2>/dev/null) || perm=$(stat -f %Lp "$file" 2>/dev/null); then
     case $perm in
-      *00) ;;
-      *) fail "$file mode is $perm, want 600" ;;
+      600 | 400) ;;
+      *) fail "$file mode is $perm, want 600 or 400" ;;
     esac
   fi
 
@@ -161,21 +176,20 @@ cipher=$(hex 24)
 
 # ask <key> <secret:0|1>: sets REPLY from INIT_<key>, a prompt, or empty.
 ask() {
-  local cur
-  cur=$(printenv "INIT_$1" || true)
-  if [ -n "$cur" ]; then
-    REPLY=$cur
-    return 0
+  local name="INIT_$1"
+  REPLY=${!name:-}
+  if [ -z "$REPLY" ] && [ "$interactive" -eq 1 ]; then
+    if [ "$2" = 1 ]; then
+      printf '%s (hidden, empty to skip): ' "$1" >&2
+      IFS= read -rs REPLY || REPLY=
+      echo >&2
+    else
+      printf '%s (empty to skip): ' "$1" >&2
+      IFS= read -r REPLY || REPLY=
+    fi
   fi
-  REPLY=
-  [ "$interactive" -eq 1 ] || return 0
-  if [ "$2" = 1 ]; then
-    printf '%s (hidden, empty to skip): ' "$1" >&2
-    IFS= read -rs REPLY || REPLY=
-    echo >&2
-  else
-    printf '%s (empty to skip): ' "$1" >&2
-    IFS= read -r REPLY || REPLY=
+  if unsafe_value "$REPLY"; then
+    die "the value for $1 has a space, quote, \$, backtick, newline or other character the shell would change; edit .env.prod by hand for it"
   fi
 }
 

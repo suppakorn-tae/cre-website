@@ -109,8 +109,48 @@ rule short-session "s/^SESSION_SECRET=.*/SESSION_SECRET=abc/" "SESSION_SECRET is
 rule short-cipher "s/^BACKUP_CIPHER_PASS=.*/BACKUP_CIPHER_PASS=abc/" "BACKUP_CIPHER_PASS is shorter"
 chmod 644 r_equal.env
 bash "$script" --check r_equal.env >chk3.txt 2>&1
-t "check fails on loose mode" grep -q "want 600" chk3.txt
+t "check fails on loose mode" grep -q "want 600 or 400" chk3.txt
 t "check output shows no password" bash -c '! grep -qF -- "$1" chk3.txt r_*.txt' _ "$apw"
+
+# 7b. unsafe values: LF, CR, and what the shell would change
+reject() { # reject <name> <key> <value> [flag]: init must fail, name the key, write nothing
+  rm -rf rej && mkdir rej
+  if [ -n "${4:-}" ]; then
+    bash "$script" --non-interactive "$4" "$3" --output rej/o.env >"rej/out.txt" 2>&1
+  else
+    env "INIT_$2=$3" bash "$script" --non-interactive --output rej/o.env >"rej/out.txt" 2>&1
+  fi
+  t "rejects $1" test $? -ne 0
+  t "rejects $1: names the key" grep -q "$2" rej/out.txt
+  t "rejects $1: writes no file" test -z "$(find rej -name 'o.env*')"
+  t "rejects $1: does not echo the value" bash -c '! grep -qF -- "$1" rej/out.txt' _ "$3"
+}
+reject "LF in env value" GOOGLE_CLIENT_SECRET $'x\nSESSION_SECRET=evil'
+reject "LF in flag" ACME_EMAIL $'x\nSESSION_SECRET=evil' --acme-email
+reject "CR in env value" GOOGLE_CLIENT_SECRET $'x\rSESSION_SECRET=evil'
+reject "CR in flag" ACME_EMAIL $'x\rSESSION_SECRET=evil' --acme-email
+reject "dollar" SMTP_PASSWORD 'ab$HOME'
+reject "backtick" SMTP_PASSWORD 'ab`id`'
+reject "space" SMTP_USER 'a b'
+reject "semicolon" SMTP_USER 'a;b'
+reject "quote" SMTP_USER "a'b"
+mk r_unsafe.env 's/^SMTP_PASSWORD=.*/SMTP_PASSWORD=a$b/'
+bash "$script" --check r_unsafe.env >r_unsafe.txt 2>&1
+t "check fails on an unsafe value" test $? -eq 1
+t "check names the unsafe key" grep -q "SMTP_PASSWORD has a character" r_unsafe.txt
+for m in 640 700 644; do
+  cp full.env r_mode.env
+  chmod $m r_mode.env
+  bash "$script" --check r_mode.env >r_mode.txt 2>&1
+  t "check fails on mode $m" test $? -eq 1
+done
+cp full.env r_mode.env
+chmod 400 r_mode.env
+bash "$script" --check r_mode.env >r_mode.txt 2>&1
+t "check accepts mode 400" test $? -eq 0
+chmod 600 r_mode.env
+bash "$script" --check r_mode.env >r_mode.txt 2>&1
+t "check accepts mode 600" test $? -eq 0
 
 # 8. unknown flag and missing file
 bash "$script" --nope >/dev/null 2>&1

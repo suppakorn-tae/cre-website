@@ -63,13 +63,19 @@ Tick each item. Do them in this order.
   Give answers ahead of time with flags (`--acme-email`, `--registry`,
   `--image-tag`) or `INIT_<KEY>` variables such as `INIT_SMTP_PASSWORD`; with
   `--non-interactive` the rest stays `CHANGEME`. It never prints a secret.
+- `deploy/backup/deploy.sh` loads the env file by sourcing it in a shell, so
+  a value must be plain: letters, digits and `. _ ~ : / @ % + , = ? -` only.
+  The script rejects any answer with a space, quote, `$`, backtick, `;`, `&`,
+  `|`, `<`, `>`, parentheses, backslash, CR or LF (it names the key, never the
+  value), and `--check` flags such values in an existing file. Secrets from
+  Google and Brevo are normally plain; if one is not, regenerate it.
 - It refuses to overwrite an existing `.env.prod`. `--force` replaces it and
   keeps the old file as `.env.prod.bak.<timestamp>` (mode 600); delete the
   backup once you have copied the secrets to the team secret store.
 - `deploy/init-env.sh --check [file]` lists every `CHANGEME` left and every
   broken rule (equal database passwords, a password that needs URL escaping,
   a `DATABASE_URL` that does not match `APP_DB_PASSWORD`, a short secret, a
-  file mode other than 600). It prints key names only and exits 1 if it finds
+  value the shell would change, a file mode other than 600 or 400). It prints key names only and exits 1 if it finds
   a problem, so a deploy step can call it first.
 - Manual fallback: copy `deploy/compose/env.prod.example` to `.env.prod`,
   `chmod 600` it, and replace every `CHANGEME` by hand, using
