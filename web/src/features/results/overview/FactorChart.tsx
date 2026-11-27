@@ -110,6 +110,7 @@ export function FactorChart({ averages, items, names, cutoffs }: Props) {
                     levelName: tUi(`levels.${level}`),
                   };
                   const summary = hasInputs ? t('summary', values) : t('summaryRm', values);
+                  const detail = hasInputs ? t('detail', values) : t('detailRm', values);
                   return (
                     <li
                       key={a.factorCode}
@@ -123,10 +124,11 @@ export function FactorChart({ averages, items, names, cutoffs }: Props) {
                           <button
                             type="button"
                             className={styles.factorHit}
-                            aria-label={t('hitLabel', {
+                            aria-label={t(name ? 'hitLabelNamed' : 'hitLabel', {
                               rm: values.rm,
                               code: a.factorCode,
-                              summary,
+                              name: name ?? '',
+                              detail,
                             })}
                           >
                             {hasInputs && (

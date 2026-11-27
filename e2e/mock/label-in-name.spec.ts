@@ -70,3 +70,33 @@ for (const { name, path, ready, must } of PAGES) {
     expect(await mismatches(page)).toEqual([]);
   });
 }
+
+// IO-231: the spoken names also read well, not only contain the visible text.
+test('factor bars read their code once', async ({ page }) => {
+  await page.goto(`/projects/${PROJECT}/versions/${V3}/results`);
+  const bars = page.locator('button[class*="factorHit"]');
+  await expect(bars.first()).toBeVisible();
+  for (const bar of await bars.all()) {
+    const name = (await bar.getAttribute('aria-label')) ?? '';
+    const code = (await bar.locator('[class*="factorCode"]').textContent()) ?? '';
+    expect(code).not.toBe('');
+    expect(name.split(code)).toHaveLength(2); // the code occurs exactly once
+    expect(name).toMatch(new RegExp(`^\\d\\.\\d{2} ${code}`));
+  }
+});
+
+test('level badges start with the printed code, and the advice hint is a description', async ({
+  page,
+}) => {
+  await page.goto(`/projects/${PROJECT}`);
+  const links = page.locator('a[class*="levelLink"]');
+  await expect(links.first()).toBeVisible();
+  for (const link of await links.all()) {
+    const badge = link.locator('[aria-label]').first();
+    const name = (await badge.getAttribute('aria-label')) ?? '';
+    expect(name).toMatch(/^(H|VH) ความเสี่ยงสูง/);
+    expect(await link.getAttribute('title')).toBeNull();
+    const id = await link.getAttribute('aria-describedby');
+    expect(await page.locator(`[id="${id}"]`).textContent()).toContain('ดูคำแนะนำของตัวชี้วัด');
+  }
+});
