@@ -2,8 +2,11 @@
 # when BACKUP_ENABLED=true):
 #   docker compose -f compose.yaml -f compose.backup.yaml -f compose.prod.yaml ...
 # See docs/runbooks/deploy.md. Images are built and pushed by
-# .github/workflows/release.yml and pinned by git SHA through IMAGE_TAG.
-# Never set IMAGE_TAG to "latest" or a branch name.
+# .github/workflows/release.yml, tagged by git SHA and, for releases, by
+# version. IMAGE_TAG picks a version (v1.4.0) or a full SHA; deploy.sh
+# refuses "latest" and branch names, resolves the tag to each image's
+# digest on `pull` and passes IMAGE_DIGEST_* here, so a moved tag never
+# changes what runs (IO-245). Run it through deploy/backup/deploy.sh.
 
 x-limits-small: &limits-small
   limits: { cpus: "0.50", memory: 256M }
@@ -26,7 +29,7 @@ services:
         <<: *limits-small
 
   web:
-    image: ${IMAGE_REGISTRY:?}/cre-web:${IMAGE_TAG:?pin a git SHA}
+    image: ${IMAGE_REGISTRY:?}/cre-web@${IMAGE_DIGEST_WEB:?run deploy/backup/deploy.sh pull to pin IMAGE_TAG}
     build: !reset null
     restart: always
     deploy:
@@ -34,7 +37,7 @@ services:
         <<: *limits-medium
 
   api:
-    image: ${IMAGE_REGISTRY:?}/cre-api:${IMAGE_TAG:?pin a git SHA}
+    image: ${IMAGE_REGISTRY:?}/cre-api@${IMAGE_DIGEST_API:?run deploy/backup/deploy.sh pull to pin IMAGE_TAG}
     build: !reset null
     restart: always
     environment:
@@ -58,7 +61,7 @@ services:
         <<: *limits-medium
 
   worker:
-    image: ${IMAGE_REGISTRY:?}/cre-worker:${IMAGE_TAG:?pin a git SHA}
+    image: ${IMAGE_REGISTRY:?}/cre-worker@${IMAGE_DIGEST_WORKER:?run deploy/backup/deploy.sh pull to pin IMAGE_TAG}
     build: !reset null
     restart: always
     deploy:
@@ -66,7 +69,7 @@ services:
         <<: *limits-large
 
   migrate:
-    image: ${IMAGE_REGISTRY:?}/cre-migrate:${IMAGE_TAG:?pin a git SHA}
+    image: ${IMAGE_REGISTRY:?}/cre-migrate@${IMAGE_DIGEST_MIGRATE:?run deploy/backup/deploy.sh pull to pin IMAGE_TAG}
     build: !reset null
     restart: "no"
     deploy:
