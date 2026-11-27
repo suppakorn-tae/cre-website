@@ -2,8 +2,8 @@
  * Every foreground / background colour pair the UI draws, by token name, with the
  * WCAG 2.2 level it must reach. `contrast.test.ts` checks each one and fails for a
  * colour token that is in neither a pair nor `NOT_CHECKED`, so a new token has to
- * be added here first. The report in docs/a11y/contrast-2026-11.md is generated
- * from the same table.
+ * be added here first. The report in docs/a11y/contrast-2026-11.md lists
+ * the same table with its ratios.
  */
 
 /** text: 4.5:1 (1.4.3). large: 3:1 for text of 24 px or 18.66 px bold (1.4.3). ui: 3:1 (1.4.11). */
@@ -42,7 +42,7 @@ const DIMS = ['ec', 'so', 'ev'] as const;
 const CARDS = ['color-white', 'color-surface'] as const;
 
 const SOLID_WAIVER =
-  'Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision.';
+  'Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).';
 
 function pairs(): Pair[] {
   const out: Pair[] = [];
@@ -197,7 +197,7 @@ function pairs(): Pair[] {
     fg: 'color-blue-100',
     bg: 'color-white',
     use: 'slider track',
-    waived: 'Component change needed: the track class is bg-blue-100. Tracked in a separate issue.',
+    waived: 'Component change needed: the track class is bg-blue-100. Tracked in IO-222.',
   });
   add({
     kind: 'ui',
@@ -205,7 +205,7 @@ function pairs(): Pair[] {
     bg: 'color-white',
     use: 'progress track (steps not yet done)',
     waived:
-      'Component change needed. The step number and label also show the state. Tracked in a separate issue.',
+      'Component change needed. The step number and label also show the state. Tracked in IO-222.',
   });
   for (const s of ['success', 'error', 'info', 'warning']) {
     add({ kind: 'ui', fg: `color-${s}`, bg: 'color-white', use: `toast ${s} edge and icon` });
