@@ -7,6 +7,7 @@ import { useId, type ReactNode } from 'react';
 
 import styles from './display.module.css';
 import { Icon } from './Icon';
+import { TooltipContent } from './TooltipContent';
 
 export type StepItem = {
   id: string;
@@ -175,11 +176,7 @@ function StepBody({ step, no, total, pos, done, doneLabel, position }: BodyProps
       <>
         <Tooltip.Root>
           <Tooltip.Trigger asChild>{node}</Tooltip.Trigger>
-          <Tooltip.Portal>
-            <Tooltip.Content sideOffset={6} className={styles.tooltip}>
-              {step.reason}
-            </Tooltip.Content>
-          </Tooltip.Portal>
+          <TooltipContent>{step.reason}</TooltipContent>
         </Tooltip.Root>
         {/* Outside the control, so it describes it without becoming part of its name. */}
         <span id={reasonId} className={styles.srOnly}>

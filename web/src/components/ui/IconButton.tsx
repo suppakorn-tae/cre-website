@@ -6,6 +6,7 @@ import type { ButtonHTMLAttributes } from 'react';
 
 import { cx } from './cx';
 import { Icon, type IconSize } from './Icon';
+import { TooltipContent } from './TooltipContent';
 
 type Props = Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'aria-label' | 'children'> & {
   icon: TablerIcon;
@@ -36,12 +37,7 @@ export function IconButton({ icon, label, size = 20, type = 'button', className,
             <Icon icon={icon} size={size} />
           </button>
         </Tooltip.Trigger>
-        <Tooltip.Content
-          sideOffset={6}
-          className="z-50 max-w-64 rounded-control bg-navy-900 px-2 py-1 text-caption text-white"
-        >
-          {label}
-        </Tooltip.Content>
+        <TooltipContent inline>{label}</TooltipContent>
       </Tooltip.Root>
     </Tooltip.Provider>
   );

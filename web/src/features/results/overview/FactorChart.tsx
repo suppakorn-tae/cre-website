@@ -2,6 +2,7 @@ import * as Tooltip from '@radix-ui/react-tooltip';
 import { useTranslations } from 'next-intl';
 import type { CSSProperties } from 'react';
 
+import { TooltipContent } from '@/components/ui/TooltipContent';
 import { formatNumber } from '@/lib/format/locale';
 
 import type { IndicatorName, ResultsResponse } from './api';
@@ -157,11 +158,7 @@ export function FactorChart({ averages, items, names, cutoffs }: Props) {
                             </span>
                           </button>
                         </Tooltip.Trigger>
-                        <Tooltip.Portal>
-                          <Tooltip.Content sideOffset={6} className={styles.tip}>
-                            {summary}
-                          </Tooltip.Content>
-                        </Tooltip.Portal>
+                        <TooltipContent>{summary}</TooltipContent>
                       </Tooltip.Root>
                     </li>
                   );

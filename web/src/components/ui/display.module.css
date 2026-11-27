@@ -214,13 +214,29 @@ button.stepInner:hover:not([aria-disabled='true']) {
 }
 .tooltip {
   z-index: 50;
-  max-width: 16rem;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(28rem, calc(100vw - 2 * var(--space-4)));
+  max-height: 70vh;
+  overflow-y: auto;
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-control);
   background: var(--color-navy-900);
   color: var(--color-white);
   font-size: var(--text-caption);
   line-height: var(--leading-caption);
+  animation: popup-in var(--motion-fast) var(--motion-ease);
+}
+@keyframes popup-in {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tooltip {
+    animation: none;
+  }
 }
 
 /* 768 to 1023: only the current step keeps its label; the others keep their name for assistive tech */
