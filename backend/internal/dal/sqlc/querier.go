@@ -124,6 +124,10 @@ type Querier interface {
 	// Results of indicators that are no longer complete; advice lists and
 	// strategies cascade.
 	DeleteStaleResults(ctx context.Context, arg DeleteStaleResultsParams) error
+	// Ends jobs a dead worker left behind: running past the cutoff of their kind,
+	// or queued since before the queued cutoff. A job that finished meanwhile is
+	// not touched, because the status is checked in the same statement.
+	FailStuckJobs(ctx context.Context, arg FailStuckJobsParams) ([]FailStuckJobsRow, error)
 	// The newest live report job of a version with what decides whether it is
 	// still current (architecture decisions v2.14): the submission it was asked
 	// for and the last change to what the PDF shows that is not a submission

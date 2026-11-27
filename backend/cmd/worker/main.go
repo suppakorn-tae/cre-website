@@ -110,11 +110,16 @@ func run() int {
 	store.EnsureBucketLogged(ctx, l)
 	// The sweep is a plain queue task, not a job kind.
 	srv.Handle(sweep.TaskType, sweep.New(pool, store, l, nil).Handle)
+	srv.Handle(sweep.StuckTaskType, sweep.NewStuck(pool, sweep.StuckLimits{
+		Report: cfg.ReportTimeout, Export: cfg.ExportTimeout,
+		Margin: cfg.StuckMargin, QueuedMax: cfg.QueuedMaxAge,
+	}, l, nil).Handle)
 
 	// One runner per job kind.
 	rt := runtime.New(jobs.New(pool, enq), srv, l)
-	rt.Register(jobs.KindReport, report.NewRunner(report.NewStore(pool), pdf.New(gotenbergURL), store))
-	rt.Register(jobs.KindExport, export.NewRunner(export.NewRepository(pool), store))
+	rt.Register(jobs.KindReport, report.NewRunner(report.NewStore(pool), pdf.New(gotenbergURL), store,
+		report.WithTimeout(cfg.ReportTimeout), report.WithLogger(l)))
+	rt.Register(jobs.KindExport, export.NewRunner(export.NewRepository(pool), store, export.WithTimeout(cfg.ExportTimeout)))
 	if err := rt.Start(ctx); err != nil {
 		return fail("worker runtime, exiting", err)
 	}
@@ -133,6 +138,7 @@ func run() int {
 		}
 		defer sch.Shutdown()
 		l.Info("scheduler started", "task", sweep.TaskType, "spec", sweep.Spec, "timezone", sweep.Timezone)
+		l.Info("scheduler started", "task", sweep.StuckTaskType, "spec", sweep.StuckSpec)
 	} else {
 		l.Info("scheduler disabled by SCHEDULER_ENABLED")
 	}

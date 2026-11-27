@@ -68,6 +68,13 @@ type Worker struct {
 	Common
 	// HTTPAddr serves /healthz, /readyz and /metrics.
 	HTTPAddr string
+	// ExportTimeout and ReportTimeout bound one export or report job.
+	ExportTimeout, ReportTimeout time.Duration
+	// StuckMargin is added to those limits before the stuck-job sweep fails
+	// a job that is still running.
+	StuckMargin time.Duration
+	// QueuedMaxAge is how long a job may stay queued before the sweep fails it.
+	QueuedMaxAge time.Duration
 }
 
 // LoadAPI reads the api configuration and reports every problem at once.
@@ -114,6 +121,10 @@ func LoadWorker(get Getenv) (Worker, error) {
 		Common:   r.common(),
 		HTTPAddr: r.str("HTTP_ADDR", ":4001"),
 	}
+	c.ExportTimeout = r.duration("EXPORT_TIMEOUT", 25*time.Minute)
+	c.ReportTimeout = r.duration("REPORT_TIMEOUT", 5*time.Minute)
+	c.StuckMargin = r.duration("JOB_STUCK_MARGIN", 10*time.Minute)
+	c.QueuedMaxAge = r.duration("JOB_QUEUED_MAX_AGE", 6*time.Hour)
 	return c, r.err()
 }
 

@@ -13,6 +13,57 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const failStuckJobs = `-- name: FailStuckJobs :many
+UPDATE job
+SET status = 'failed', error = 'timed out', finished_at = $1::timestamptz
+WHERE (status = 'running' AND started_at < CASE kind
+          WHEN 'report' THEN $2::timestamptz
+          ELSE $3::timestamptz END)
+   OR (status = 'queued' AND created_at < $4::timestamptz)
+RETURNING id, kind, started_at
+`
+
+type FailStuckJobsParams struct {
+	Now          time.Time
+	ReportCutoff time.Time
+	ExportCutoff time.Time
+	QueuedCutoff time.Time
+}
+
+type FailStuckJobsRow struct {
+	ID        uuid.UUID
+	Kind      JobKind
+	StartedAt *time.Time
+}
+
+// Ends jobs a dead worker left behind: running past the cutoff of their kind,
+// or queued since before the queued cutoff. A job that finished meanwhile is
+// not touched, because the status is checked in the same statement.
+func (q *Queries) FailStuckJobs(ctx context.Context, arg FailStuckJobsParams) ([]FailStuckJobsRow, error) {
+	rows, err := q.db.Query(ctx, failStuckJobs,
+		arg.Now,
+		arg.ReportCutoff,
+		arg.ExportCutoff,
+		arg.QueuedCutoff,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []FailStuckJobsRow
+	for rows.Next() {
+		var i FailStuckJobsRow
+		if err := rows.Scan(&i.ID, &i.Kind, &i.StartedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const listExpiredExports = `-- name: ListExpiredExports :many
 SELECT id, object_key
 FROM job

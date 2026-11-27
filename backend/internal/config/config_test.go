@@ -160,3 +160,18 @@ func TestLoadAPISMTPProblems(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadWorkerJobLimits(t *testing.T) {
+	base := map[string]string{"DATABASE_URL": "p", "VALKEY_ADDR": "v"}
+	c, err := LoadWorker(env(base))
+	if err != nil || c.ExportTimeout != 25*time.Minute || c.ReportTimeout != 5*time.Minute ||
+		c.StuckMargin != 10*time.Minute || c.QueuedMaxAge != 6*time.Hour {
+		t.Fatalf("defaults: %+v %v", c, err)
+	}
+	base["EXPORT_TIMEOUT"] = "20m"
+	base["JOB_QUEUED_MAX_AGE"] = "bad"
+	c, err = LoadWorker(env(base))
+	if c.ExportTimeout != 20*time.Minute || err == nil || !strings.Contains(err.Error(), "JOB_QUEUED_MAX_AGE") {
+		t.Fatalf("override: %+v %v", c, err)
+	}
+}
