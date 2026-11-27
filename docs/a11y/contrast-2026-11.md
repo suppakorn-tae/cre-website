@@ -9,20 +9,20 @@ Ratios below are WCAG 2.x relative luminance of the token values in `web/src/sty
 
 - 142 pairs: 132 pass (15 of them within 0.3 of the limit), 10 fail and are waived below, 0 fail without a waiver.
 - Fixed in tokens: `--color-placeholder` `#8a97a8` to `#677689` (2.97:1 to 4.64:1 on white); `--color-blue-400` `#6e9be6` to `#4a80d8` (done progress step 2.28:1 to 3.18:1 on its track, KPI hover border 2.80:1 to 3.91:1 on white).
-- Open: risk-scale solids, slider track and progress track (see Failures).
+- Open: risk-scale solids (design decision), slider and progress track (IO-222), dashboard search field focus in forced colours (IO-221).
 
 ## Failures and near misses
 
-- color-blue-100 on color-white, slider track: 1.24:1, needs 3:1. Component change needed: the track class is bg-blue-100. Tracked in a separate issue.
-- color-border on color-white, progress track (steps not yet done): 1.23:1, needs 3:1. Component change needed. The step number and label also show the state. Tracked in a separate issue.
-- level-vl on color-white, level vl bar, donut segment, legend dot: 2.54:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision.
-- level-vl on color-surface, level vl bar, donut segment, legend dot: 2.47:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision.
-- level-l on color-white, level l bar, donut segment, legend dot: 1.98:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision.
-- level-l on color-surface, level l bar, donut segment, legend dot: 1.92:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision.
-- level-m on color-white, level m bar, donut segment, legend dot: 1.53:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision.
-- level-m on color-surface, level m bar, donut segment, legend dot: 1.49:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision.
-- level-h on color-white, level h bar, donut segment, legend dot: 2.80:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision.
-- level-h on color-surface, level h bar, donut segment, legend dot: 2.73:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision.
+- color-blue-100 on color-white, slider track: 1.24:1, needs 3:1. Component change needed: the track class is bg-blue-100. Tracked in IO-222.
+- color-border on color-white, progress track (steps not yet done): 1.23:1, needs 3:1. Component change needed. The step number and label also show the state. Tracked in IO-222.
+- level-vl on color-white, level vl bar, donut segment, legend dot: 2.54:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
+- level-vl on color-surface, level vl bar, donut segment, legend dot: 2.47:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
+- level-l on color-white, level l bar, donut segment, legend dot: 1.98:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
+- level-l on color-surface, level l bar, donut segment, legend dot: 1.92:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
+- level-m on color-white, level m bar, donut segment, legend dot: 1.53:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
+- level-m on color-surface, level m bar, donut segment, legend dot: 1.49:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
+- level-h on color-white, level h bar, donut segment, legend dot: 2.80:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
+- level-h on color-surface, level h bar, donut segment, legend dot: 2.73:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
 
 Near misses (pass, within 0.3 of the limit):
 
@@ -219,7 +219,7 @@ Pages: dashboard, projects, project (overview and versions tab, RM view), new an
 | Hover | The first element of each kind of interactive element, re-measured while hovered. | every page, desktop |
 | Focus-visible | A Tab walk of up to 18 stops: the ring (outline or the token box-shadow band) against the nearest solid background must reach 3:1. | every page, desktop |
 | Selected | Elements with aria-selected, aria-checked, aria-pressed or aria-current. | versions tab, plan |
-| Error | Invalid fields of the new project form after a failed save: edge present, message in text, text contrast. | new project |
+| Error | Invalid fields of the new project form after a failed save, and the character counter over its limit (121 / 120): edge present, message in text, text contrast. | new project |
 | Disabled | Exempt from 1.4.3 and 1.4.11. Listed only: the submitted assessment has disabled controls. | assessment |
 | Forced colours | Controls keep a border or a text label, the focused element keeps an outline. | every page, desktop |
 | Colour is not the only cue | Level codes (VL to VH), dimension codes (EC, SO, EV) and strategy names are text; each donut level row has a code and a count. | results, dashboard, plan |

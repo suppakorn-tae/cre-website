@@ -358,6 +358,24 @@ test.describe('states that need an action', () => {
     expect(problems).toEqual([]);
   });
 
+  test('error: the character counter turns red over the limit and keeps 4.5:1', async ({
+    page,
+  }) => {
+    await open(page, '/projects/new', 'สร้างโครงการก่อสร้างใหม่');
+    const name = page.locator('#project-name');
+    await name.fill('ก'.repeat(121));
+    // 121 / 120: the counter is in the error colour and the field carries the message.
+    const counter = page.getByText(/^121 \/ 120$/);
+    await expect(counter).toBeVisible();
+    await expect(name).toHaveAttribute('aria-invalid', 'true');
+    const problems = [
+      ...(await measure(counter)).problems,
+      ...(await measure(name)).problems,
+      ...(await measure(page.locator('main'))).problems,
+    ];
+    expect(problems).toEqual([]);
+  });
+
   test('selected: tabs, view switch and chosen strategy keep their contrast', async ({ page }) => {
     await open(page, `/projects/${PROJECT}?tab=versions`, 'แนวโน้มข้ามเวอร์ชัน');
     const selected = page.locator('[aria-selected="true"], [aria-checked="true"], [aria-current]');
