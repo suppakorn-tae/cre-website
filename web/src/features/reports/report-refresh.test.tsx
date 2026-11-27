@@ -154,7 +154,8 @@ describe('a click on a report that is ready', () => {
     });
     act(() => result.current.start());
     await waitFor(() => expect(result.current.jobId).toBe('j2'));
-    expect(result.current.state).toBe('building');
+    // No check for 'building' here: on a fast runner the polls finish before
+    // the next render. The poll count below proves the new job was polled.
     await waitFor(() => expect(result.current.state).toBe('ready'), { timeout: 3000 });
     await sleep(100);
     expect(clicks).toEqual(['/api/v1/reports/j2/download']);
