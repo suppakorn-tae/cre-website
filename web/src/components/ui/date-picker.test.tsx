@@ -29,11 +29,13 @@ function Harness({
   min,
   max,
   onValue,
+  onText,
 }: {
   initial?: string;
   min?: string;
   max?: string;
   onValue?: (v: string) => void;
+  onText?: (text: string) => void;
 }) {
   const [v, setV] = useState(initial);
   return (
@@ -44,6 +46,7 @@ function Harness({
       max={max}
       labels={labels}
       today="2026-11-24"
+      onTextChange={onText}
       onChange={(next) => {
         setV(next);
         onValue?.(next);
@@ -66,6 +69,28 @@ describe('DatePicker', () => {
     fireEvent.change(input(), { target: { value: '31/02/2568' } });
     expect(onValue).toHaveBeenLastCalledWith('');
     expect(input().value).toBe('31/02/2568');
+  });
+
+  it('reports the typed text, also when it is not a real date', () => {
+    const onValue = vi.fn();
+    const onText = vi.fn();
+    render(<Harness onValue={onValue} onText={onText} />);
+    fireEvent.change(input(), { target: { value: '31/02/2569' } });
+    expect(onText).toHaveBeenLastCalledWith('31/02/2569');
+    expect(onValue).toHaveBeenLastCalledWith('');
+    fireEvent.change(input(), { target: { value: '' } });
+    expect(onText).toHaveBeenLastCalledWith('');
+  });
+
+  it('reports the formatted text when a day is picked', async () => {
+    const onValue = vi.fn();
+    const onText = vi.fn();
+    render(<Harness onValue={onValue} onText={onText} />);
+    openCalendar();
+    await opened();
+    fireEvent.click(cell('2026-11-15'));
+    expect(onText).toHaveBeenLastCalledWith('15/11/2569');
+    expect(onValue).toHaveBeenLastCalledWith('2026-11-15');
   });
 
   it('shows the value as a Buddhist-era date and opens on its month', async () => {

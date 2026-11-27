@@ -52,6 +52,11 @@ export type DatePickerProps = {
   value: string;
   /** Called with the ISO date, or '' when the typed text is empty or not a real date. */
   onChange: (iso: string) => void;
+  /**
+   * Called with the raw text of the field on every edit, and with the formatted
+   * text after a pick. Lets a form tell an empty field from unreadable text.
+   */
+  onTextChange?: (text: string) => void;
   /** Earliest ISO date that can be chosen. */
   min?: string;
   /** Latest ISO date that can be chosen. */
@@ -423,6 +428,7 @@ export function DatePicker({
   optionalLabel,
   value,
   onChange,
+  onTextChange,
   min,
   max,
   labels,
@@ -455,7 +461,9 @@ export function DatePicker({
   const { describedBy } = messageIds(inputId, { helper, error: shownError });
 
   const pick = (iso: string) => {
-    setText(isoToThaiInput(iso));
+    const picked = isoToThaiInput(iso);
+    setText(picked);
+    onTextChange?.(picked);
     onChange(iso);
     setOpen(false);
   };
@@ -485,6 +493,7 @@ export function DatePicker({
               aria-describedby={describedBy}
               onChange={(e) => {
                 setText(e.target.value);
+                onTextChange?.(e.target.value);
                 onChange(parseThaiDateInput(e.target.value) ?? '');
               }}
               onBlur={onBlur}
