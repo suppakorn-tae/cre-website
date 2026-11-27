@@ -1,8 +1,10 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
 // The admin pages in dark mode, on the mock api: the theme is applied, and no
 // visible element keeps a pure white fill (a card or table left on the light
-// token). Contrast of the token pairs is covered in web/src/lib/contrast.test.ts.
+// token), and axe finds no colour-contrast violation. The storage key is the
+// THEME_STORAGE_KEY of web/src/lib/theme/theme.ts; e2e does not import from web.
 
 const PAGES: { name: string; path: string; ready: string }[] = [
   { name: 'users', path: '/admin/users', ready: 'จัดการผู้ใช้' },
@@ -24,11 +26,15 @@ test.beforeEach(async ({ page }) => {
 });
 
 for (const { name, path, ready } of PAGES) {
-  test(`admin ${name}: dark theme, no white fills`, async ({ page }) => {
+  test(`admin ${name}: dark theme, no white fills, axe colour contrast`, async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(path);
     await expect(page.getByText(ready).and(page.locator(':visible')).first()).toBeVisible();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const { violations } = await new AxeBuilder({ page }).withRules(['color-contrast']).analyze();
+    expect(
+      violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.target.join(' ')) })),
+    ).toEqual([]);
     const white = await page.evaluate(() =>
       [...document.body.querySelectorAll<HTMLElement>('*')]
         .filter((el) => {
