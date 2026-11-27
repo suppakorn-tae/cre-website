@@ -43,6 +43,8 @@ const version = (no: number, rest: Partial<VersionSummary>): VersionSummary => (
   average_rm: null,
   scored_count: null,
   level_counts: null,
+  strategies_chosen: null,
+  strategies_needed: null,
   ...rest,
 });
 
@@ -58,6 +60,8 @@ export const mockVersions = (): VersionSummary[] => [
     average_rm: 2.71,
     scored_count: 55,
     level_counts: { VL: 8, L: 14, M: 20, H: 11, VH: 2 },
+    strategies_chosen: 2,
+    strategies_needed: 13,
   }),
   version(2, {
     created_at: '2026-11-02T03:00:00Z',
@@ -68,6 +72,8 @@ export const mockVersions = (): VersionSummary[] => [
     average_rm: 3.03,
     scored_count: 55,
     level_counts: { VL: 5, L: 12, M: 20, H: 14, VH: 4 },
+    strategies_chosen: 6,
+    strategies_needed: 18,
   }),
   version(1, { status: 'draft' }),
 ];
