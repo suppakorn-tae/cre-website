@@ -24,9 +24,6 @@
   --color-card: #ffffff;
   /* Text and icons on a solid fill (primary, chosen chip, tooltip, destructive). */
   --color-on-solid: #ffffff;
-  /* Deprecated alias of --color-card for features not yet moved (IO-256 to
-     IO-260). IO-261 removes it. Never use it for text on a solid fill. */
-  --color-white: var(--color-card);
   --color-subtle: #f6f8fb;
   --color-divider: #edf1f5;
   --color-border: #e3e8ef;
