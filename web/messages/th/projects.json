@@ -99,6 +99,15 @@
     "endDate": "วันสิ้นสุดโครงการ",
     "datePlaceholder": "วว/ดด/ปปปป (พ.ศ.)",
     "dateHelper": "ปี พ.ศ. เช่น 01/12/2568",
+    "datePicker": {
+      "open": "เปิดปฏิทิน",
+      "calendar": "เลือกวันที่",
+      "previousMonth": "เดือนก่อนหน้า",
+      "nextMonth": "เดือนถัดไป",
+      "previousYears": "ปีก่อนหน้า",
+      "nextYears": "ปีถัดไป",
+      "outOfRange": "วันที่อยู่นอกช่วงที่เลือกได้"
+    },
     "afterStart": "หลังวันเริ่ม · ระยะเวลา {days} วัน",
     "progress": "% ความก้าวหน้าปัจจุบัน",
     "progressDefault": "ค่าเริ่มต้น 0 %",

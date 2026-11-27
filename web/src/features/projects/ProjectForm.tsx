@@ -1,19 +1,25 @@
 'use client';
 
-import { IconArrowRight, IconCalendar, IconCheck, IconCurrencyBaht } from '@tabler/icons-react';
+import { IconArrowRight, IconCheck, IconCurrencyBaht } from '@tabler/icons-react';
 import * as Slider from '@radix-ui/react-slider';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
 
-import { Button, Icon, Input } from '@/components/ui';
+import { Button, DatePicker, Icon, Input } from '@/components/ui';
 import { planState } from '@/features/versions/rules';
 import { ApiError } from '@/lib/api/errors';
 import { formatDate, formatNumber } from '@/lib/format/locale';
 
 import { useCreateProject, useUpdateProject } from './api';
-import { durationDays, expectedProgress, parseThaiDateInput, todayIso } from './dates';
+import {
+  durationDays,
+  expectedProgress,
+  isoToThaiInput,
+  parseThaiDateInput,
+  todayIso,
+} from './dates';
 import { useProjectLabels } from './labels';
 import { controlClass, IconField } from './IconField';
 import { afterCreatePath } from './paths';
@@ -54,6 +60,16 @@ export function ProjectForm({ project }: Props) {
   const tUnits = useTranslations('projects.units');
   const tCommon = useTranslations('common.errors');
   const tUi = useTranslations('ui');
+  const tDate = useTranslations('projects.form.datePicker');
+  const dateLabels = {
+    open: tDate('open'),
+    calendar: tDate('calendar'),
+    previousMonth: tDate('previousMonth'),
+    nextMonth: tDate('nextMonth'),
+    previousYears: tDate('previousYears'),
+    nextYears: tDate('nextYears'),
+    outOfRange: tDate('outOfRange'),
+  };
   const labels = useProjectLabels();
   const router = useRouter();
   const [values, setValues] = useState<FormValues>(project ? fromProject(project) : emptyForm);
@@ -225,31 +241,31 @@ export function ProjectForm({ project }: Props) {
                 error={error('value')}
                 required
               />
-              <IconField
+              <DatePicker
                 id="project-startDate"
                 label={t('startDate')}
-                inputMode="numeric"
                 placeholder={t('datePlaceholder')}
                 helper={t('dateHelper')}
-                icon={IconCalendar}
-                value={values.startDate}
-                onChange={(e) => set('startDate', e.target.value)}
+                labels={dateLabels}
+                value={start ?? ''}
+                max={end ?? undefined}
+                onChange={(iso) => set('startDate', iso ? isoToThaiInput(iso) : '')}
                 error={error('startDate')}
                 required
               />
-              <IconField
+              <DatePicker
                 id="project-endDate"
                 label={t('endDate')}
-                inputMode="numeric"
                 placeholder={t('datePlaceholder')}
                 helper={
                   start && end && durationDays(start, end) > 0
                     ? t('afterStart', { days: formatNumber(durationDays(start, end)) })
                     : t('dateHelper')
                 }
-                icon={IconCalendar}
-                value={values.endDate}
-                onChange={(e) => set('endDate', e.target.value)}
+                labels={dateLabels}
+                value={end ?? ''}
+                min={start ?? undefined}
+                onChange={(iso) => set('endDate', iso ? isoToThaiInput(iso) : '')}
                 error={error('endDate')}
                 required
               />
