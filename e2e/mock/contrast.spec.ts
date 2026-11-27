@@ -210,230 +210,267 @@ async function settle(page: Page) {
   );
 }
 
-for (const { name, path, ready } of PAGES) {
-  test.describe(name, () => {
-    test('default state: text and control edges', async ({ page }) => {
-      await open(page, path, ready);
-      const { problems, checked } = await measure(page.locator('body'));
-      expect(checked).toBeGreaterThan(0);
-      expect(problems).toEqual([]);
-    });
+// Every page state runs in both themes (IO-261). The theme comes from the system setting, as
+// for a visitor who never picked one; the dark palette is in docs/specs/ux-ui/feedback/2026-11-27.
+const THEMES = ['light', 'dark'] as const;
 
-    test('hover state: one of each interactive kind', async ({ page }, info) => {
-      test.skip(info.project.name === 'mobile', 'hover needs a pointer');
-      await open(page, path, ready);
-      const problems: string[] = [];
-      // Pick the first enabled element of each kind in one atomic read, as indexes into the
-      // live query; each is then re-resolved from the page, never held as a handle.
-      const live = page.locator(INTERACTIVE).and(page.locator(':visible'));
-      const picks = await live.evaluateAll((els) => {
-        const seen = new Set<string>();
-        const out: number[] = [];
-        els.forEach((e, i) => {
-          const key = `${e.tagName}.${e.className}|${e.getAttribute('role') ?? ''}`;
-          if (seen.has(key) || seen.size >= 14) return;
-          seen.add(key);
-          if (!e.matches(':disabled') && e.getAttribute('aria-disabled') !== 'true') out.push(i);
+for (const theme of THEMES) {
+  test.describe(`${theme} theme`, () => {
+    test.use({ colorScheme: theme });
+
+    for (const { name, path, ready } of PAGES) {
+      test.describe(name, () => {
+        test('default state: text and control edges', async ({ page }) => {
+          await open(page, path, ready);
+          const { problems, checked } = await measure(page.locator('body'));
+          expect(checked).toBeGreaterThan(0);
+          expect(problems).toEqual([]);
         });
-        return out;
-      });
-      for (const index of picks) {
-        // Hovering can re-render the control; read again until the page has settled.
-        await expect(async () => {
-          const el = live.nth(index);
-          await el.scrollIntoViewIfNeeded({ timeout: 2000 });
-          await el.hover({ timeout: 2000 }).catch(() => undefined);
-          await settle(page);
-          const found = (await measure(live.nth(index))).problems;
-          problems.push(...found.map((p) => `hover ${p}`));
-        }).toPass({ timeout: 10_000 });
-      }
-      expect(problems).toEqual([]);
-    });
 
-    test('focus-visible: a ring that reaches 3:1 against its surroundings', async ({
-      page,
-    }, info) => {
-      test.skip(info.project.name === 'mobile', 'keyboard focus is a desktop path');
-      await open(page, path, ready);
-      const problems: string[] = [];
-      let focused = 0;
-      for (let i = 0; i < 18; i++) {
-        await page.keyboard.press('Tab');
-        const finding = await page.evaluate(() => {
-          const e = document.activeElement;
-          // The Next.js dev overlay is not part of the app.
-          if (!e || e === document.body || e.tagName.includes('-')) return null;
-          const cs = getComputedStyle(e);
-          const parse = (v: string) =>
-            /rgba?\(([^)]+)\)/
-              .exec(v)?.[1]
-              ?.split(/[ ,/]+/)
-              .map(Number) ?? null;
-          const lum = (c: number[]) => {
-            const [r, g, b] = c.slice(0, 3).map((x) => {
-              const s = x / 255;
-              return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-            }) as [number, number, number];
-            return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-          };
-          const ratio = (a: number[], b: number[]) => {
-            const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x) as [number, number];
-            return (hi + 0.05) / (lo + 0.05);
-          };
-          let bg = [255, 255, 255];
-          for (let n: Element | null = e.parentElement; n; n = n.parentElement) {
-            const c = parse(getComputedStyle(n).backgroundColor);
-            if (c && (c[3] ?? 1) === 1) {
-              bg = c;
-              break;
-            }
+        test('hover state: one of each interactive kind', async ({ page }, info) => {
+          test.skip(info.project.name === 'mobile', 'hover needs a pointer');
+          await open(page, path, ready);
+          const problems: string[] = [];
+          // Pick the first enabled element of each kind in one atomic read, as indexes into the
+          // live query; each is then re-resolved from the page, never held as a handle.
+          const live = page.locator(INTERACTIVE).and(page.locator(':visible'));
+          const picks = await live.evaluateAll((els) => {
+            const seen = new Set<string>();
+            const out: number[] = [];
+            els.forEach((e, i) => {
+              const key = `${e.tagName}.${e.className}|${e.getAttribute('role') ?? ''}`;
+              if (seen.has(key) || seen.size >= 14) return;
+              seen.add(key);
+              if (!e.matches(':disabled') && e.getAttribute('aria-disabled') !== 'true')
+                out.push(i);
+            });
+            return out;
+          });
+          for (const index of picks) {
+            // Hovering can re-render the control; read again until the page has settled.
+            await expect(async () => {
+              const el = live.nth(index);
+              await el.scrollIntoViewIfNeeded({ timeout: 2000 });
+              await el.hover({ timeout: 2000 }).catch(() => undefined);
+              await settle(page);
+              const found = (await measure(live.nth(index))).problems;
+              problems.push(...found.map((p) => `hover ${p}`));
+            }).toPass({ timeout: 10_000 });
           }
-          const label = e.outerHTML.slice(0, 140);
-          const outline =
-            cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0
-              ? parse(cs.outlineColor)
-              : null;
-          // The token ring is two shadows: a white gap, then the coloured band.
-          const rings = [
-            ...cs.boxShadow.matchAll(/rgba?\([^)]+\)\s+0px 0px 0px (\d+(?:\.\d+)?)px/g),
-          ];
-          const band = rings.length ? parse(rings[rings.length - 1]![0]) : null;
-          // A control inside a bordered wrapper may show the ring on the wrapper.
-          const wrap = e.parentElement?.closest(':focus-within');
-          const wrapRings =
-            wrap && wrap !== document.body && wrap.tagName !== 'HTML'
-              ? [
-                  ...getComputedStyle(wrap).boxShadow.matchAll(
-                    /rgba?\([^)]+\)\s+0px 0px 0px (\d+(?:\.\d+)?)px/g,
-                  ),
-                ]
-              : [];
-          const wrapBand = wrapRings.length ? parse(wrapRings[wrapRings.length - 1]![0]) : null;
-          const ring = outline ?? band ?? wrapBand;
-          if (!ring) return { label, none: true as const };
-          return { label, ratio: ratio(ring, bg) };
+          expect(problems).toEqual([]);
         });
-        if (!finding) continue;
-        focused++;
-        if ('none' in finding) problems.push(`no focus ring on ${finding.label}`);
-        else if (finding.ratio < 2.995)
-          problems.push(`focus ring ${finding.label} = ${finding.ratio.toFixed(2)} < 3`);
-      }
-      expect(focused).toBeGreaterThan(0);
-      expect(problems).toEqual([]);
-    });
 
-    test('forced colours: controls keep an edge, the focus ring stays', async ({ page }, info) => {
-      test.skip(info.project.name === 'mobile', 'one run is enough');
-      await page.emulateMedia({ forcedColors: 'active' });
-      await page.goto(path);
-      await expect(page.getByText(ready).and(page.locator(':visible')).first()).toBeVisible();
-      const bare = await page.evaluate(() => {
-        const out: string[] = [];
-        const controls = document.querySelectorAll(
-          'input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea, button:not([class*="ghost"])',
+        test('focus-visible: a ring that reaches 3:1 against its surroundings', async ({
+          page,
+        }, info) => {
+          test.skip(info.project.name === 'mobile', 'keyboard focus is a desktop path');
+          await open(page, path, ready);
+          const problems: string[] = [];
+          let focused = 0;
+          for (let i = 0; i < 18; i++) {
+            await page.keyboard.press('Tab');
+            const finding = await page.evaluate(() => {
+              const focused = document.activeElement;
+              // The Next.js dev overlay is not part of the app.
+              if (!focused || focused === document.body || focused.tagName.includes('-'))
+                return null;
+              // A visually hidden control (the strategy radios) shows its ring on its label.
+              const box = focused.getBoundingClientRect();
+              const hostLabel = box.width <= 2 && box.height <= 2 ? focused.closest('label') : null;
+              const labelOutline = hostLabel && getComputedStyle(hostLabel).outlineStyle !== 'none';
+              const e = labelOutline ? hostLabel : focused;
+              const cs = getComputedStyle(e);
+              const parse = (v: string) =>
+                /rgba?\(([^)]+)\)/
+                  .exec(v)?.[1]
+                  ?.split(/[ ,/]+/)
+                  .map(Number) ?? null;
+              const lum = (c: number[]) => {
+                const [r, g, b] = c.slice(0, 3).map((x) => {
+                  const s = x / 255;
+                  return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+                }) as [number, number, number];
+                return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+              };
+              const ratio = (a: number[], b: number[]) => {
+                const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x) as [number, number];
+                return (hi + 0.05) / (lo + 0.05);
+              };
+              let bg = [255, 255, 255];
+              for (let n: Element | null = e.parentElement; n; n = n.parentElement) {
+                const c = parse(getComputedStyle(n).backgroundColor);
+                if (c && (c[3] ?? 1) === 1) {
+                  bg = c;
+                  break;
+                }
+              }
+              const label = e.outerHTML.slice(0, 140);
+              // A transparent outline is only the forced-colours fallback: the ring is the shadow.
+              const outlineColour = parse(cs.outlineColor);
+              const outline =
+                cs.outlineStyle !== 'none' &&
+                parseFloat(cs.outlineWidth) > 0 &&
+                (outlineColour?.[3] ?? 1) > 0
+                  ? outlineColour
+                  : null;
+              // The token ring is two shadows: a white gap, then the coloured band.
+              const rings = [
+                ...cs.boxShadow.matchAll(/rgba?\([^)]+\)\s+0px 0px 0px (\d+(?:\.\d+)?)px/g),
+              ];
+              const band = rings.length ? parse(rings[rings.length - 1]![0]) : null;
+              // A control inside a bordered wrapper may show the ring on the wrapper.
+              const wrap = e.parentElement?.closest(':focus-within');
+              const wrapRings =
+                wrap && wrap !== document.body && wrap.tagName !== 'HTML'
+                  ? [
+                      ...getComputedStyle(wrap).boxShadow.matchAll(
+                        /rgba?\([^)]+\)\s+0px 0px 0px (\d+(?:\.\d+)?)px/g,
+                      ),
+                    ]
+                  : [];
+              const wrapBand = wrapRings.length ? parse(wrapRings[wrapRings.length - 1]![0]) : null;
+              const ring = outline ?? band ?? wrapBand;
+              if (!ring) return { label, none: true as const };
+              return {
+                label,
+                ratio: ratio(ring, bg),
+                ring: ring.slice(0, 3).join(','),
+                bg: bg.slice(0, 3).join(','),
+              };
+            });
+            if (!finding) continue;
+            focused++;
+            if ('none' in finding) problems.push(`no focus ring on ${finding.label}`);
+            else if (finding.ratio < 2.995)
+              problems.push(
+                `focus ring ${finding.label} = ${finding.ratio.toFixed(2)} < 3 (ring ${finding.ring} on ${finding.bg})`,
+              );
+          }
+          expect(focused).toBeGreaterThan(0);
+          expect(problems).toEqual([]);
+        });
+
+        test('forced colours: controls keep an edge, the focus ring stays', async ({
+          page,
+        }, info) => {
+          test.skip(theme === 'dark', 'forced colours replace the palette, so one theme is enough');
+          test.skip(info.project.name === 'mobile', 'one run is enough');
+          await page.emulateMedia({ forcedColors: 'active' });
+          await page.goto(path);
+          await expect(page.getByText(ready).and(page.locator(':visible')).first()).toBeVisible();
+          const bare = await page.evaluate(() => {
+            const out: string[] = [];
+            const controls = document.querySelectorAll(
+              'input:not([type=hidden]):not([type=checkbox]):not([type=radio]), select, textarea, button:not([class*="ghost"])',
+            );
+            for (const e of controls) {
+              const r = e.getBoundingClientRect();
+              if (r.width === 0 || r.height === 0 || (e as HTMLButtonElement).disabled) continue;
+              const cs = getComputedStyle(e);
+              const edge = cs.borderTopStyle !== 'none' && parseFloat(cs.borderTopWidth) > 0;
+              const text = !!(e.textContent ?? '').trim() || !!e.querySelector('svg, img');
+              // An input in a bordered wrapper (search field, date field) shows the wrapper's edge.
+              const wrapped = [e.parentElement, e.parentElement?.parentElement].some(
+                (n) =>
+                  n &&
+                  getComputedStyle(n).borderTopStyle !== 'none' &&
+                  parseFloat(getComputedStyle(n).borderTopWidth) > 0,
+              );
+              // A borderless text or icon button is drawn in ButtonText; an input without an edge is lost.
+              if (!edge && !text && !wrapped) out.push(e.outerHTML.slice(0, 140));
+            }
+            return out;
+          });
+          expect(bare).toEqual([]);
+          await page.keyboard.press('Tab');
+          const ring = await page.evaluate(() => {
+            const e = document.activeElement;
+            if (!e || e === document.body) return 'none-focused';
+            const cs = getComputedStyle(e);
+            return cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0
+              ? 'outline'
+              : 'missing';
+          });
+          expect(['outline', 'none-focused']).toContain(ring);
+        });
+      });
+    }
+
+    test.describe('states that need an action', () => {
+      test('error: invalid fields keep a 3:1 edge and an error message in text', async ({
+        page,
+      }) => {
+        await open(page, '/projects/new', 'สร้างโครงการก่อสร้างใหม่');
+        await page
+          .getByRole('button', { name: /บันทึก|สร้าง/ })
+          .last()
+          .click();
+        const invalid = page.locator(
+          'input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"], [role="combobox"][aria-invalid="true"]',
         );
-        for (const e of controls) {
-          const r = e.getBoundingClientRect();
-          if (r.width === 0 || r.height === 0 || (e as HTMLButtonElement).disabled) continue;
-          const cs = getComputedStyle(e);
-          const edge = cs.borderTopStyle !== 'none' && parseFloat(cs.borderTopWidth) > 0;
-          const text = !!(e.textContent ?? '').trim() || !!e.querySelector('svg, img');
-          // An input in a bordered wrapper (search field, date field) shows the wrapper's edge.
-          const wrapped = [e.parentElement, e.parentElement?.parentElement].some(
-            (n) =>
-              n &&
-              getComputedStyle(n).borderTopStyle !== 'none' &&
-              parseFloat(getComputedStyle(n).borderTopWidth) > 0,
-          );
-          // A borderless text or icon button is drawn in ButtonText; an input without an edge is lost.
-          if (!edge && !text && !wrapped) out.push(e.outerHTML.slice(0, 140));
+        await expect(invalid.first()).toBeVisible();
+        const problems: string[] = [];
+        for (const el of await invalid.all()) {
+          const edge = await el.evaluate((e) => {
+            const cs = getComputedStyle(e);
+            return {
+              width: parseFloat(cs.borderTopWidth),
+              colour: cs.borderTopColor,
+              html: e.outerHTML.slice(0, 160),
+            };
+          });
+          expect(edge.width, edge.html).toBeGreaterThan(0);
+          problems.push(...(await measure(el)).problems);
         }
-        return out;
+        // The message under the field is text, so colour is not the only cue (1.4.1).
+        const alerts = page.locator('[role="alert"], [id$="-error"]');
+        expect(await alerts.count()).toBeGreaterThan(0);
+        problems.push(...(await measure(page.locator('main'))).problems);
+        expect(problems).toEqual([]);
       });
-      expect(bare).toEqual([]);
-      await page.keyboard.press('Tab');
-      const ring = await page.evaluate(() => {
-        const e = document.activeElement;
-        if (!e || e === document.body) return 'none-focused';
-        const cs = getComputedStyle(e);
-        return cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0
-          ? 'outline'
-          : 'missing';
+
+      test('error: the character counter turns red over the limit and keeps 4.5:1', async ({
+        page,
+      }) => {
+        await open(page, '/projects/new', 'สร้างโครงการก่อสร้างใหม่');
+        const name = page.locator('#project-description');
+        await name.fill('ก'.repeat(1001));
+        // 1,001 / 1,000: the counter is in the error colour and the field carries the message.
+        const counter = page.getByText(/^1,001 \/ 1,000$/);
+        await expect(counter).toBeVisible();
+        await expect(name).toHaveAttribute('aria-invalid', 'true');
+        const problems = [
+          ...(await measure(counter)).problems,
+          ...(await measure(name)).problems,
+          ...(await measure(page.locator('main'))).problems,
+        ];
+        expect(problems).toEqual([]);
       });
-      expect(['outline', 'none-focused']).toContain(ring);
+
+      test('selected: tabs, view switch and chosen strategy keep their contrast', async ({
+        page,
+      }) => {
+        await open(page, `/projects/${PROJECT}?tab=versions`, 'แนวโน้มข้ามเวอร์ชัน');
+        const selected = page.locator(
+          '[aria-selected="true"], [aria-checked="true"], [aria-current]',
+        );
+        expect(await selected.count()).toBeGreaterThan(0);
+        const problems: string[] = [];
+        for (const el of await selected.all()) {
+          if (await el.isVisible()) problems.push(...(await measure(el)).problems);
+        }
+        expect(problems).toEqual([]);
+
+        await open(page, `/projects/${PROJECT}/versions/${V3}/plan`, /แผน|กลยุทธ์/);
+        const pressed = page.locator('[aria-checked="true"], [aria-pressed="true"]');
+        for (const el of await pressed.all()) {
+          if (await el.isVisible()) problems.push(...(await measure(el)).problems);
+        }
+        expect(problems).toEqual([]);
+      });
     });
   });
 }
-
-test.describe('states that need an action', () => {
-  test('error: invalid fields keep a 3:1 edge and an error message in text', async ({ page }) => {
-    await open(page, '/projects/new', 'สร้างโครงการก่อสร้างใหม่');
-    await page
-      .getByRole('button', { name: /บันทึก|สร้าง/ })
-      .last()
-      .click();
-    const invalid = page.locator(
-      'input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"], [role="combobox"][aria-invalid="true"]',
-    );
-    await expect(invalid.first()).toBeVisible();
-    const problems: string[] = [];
-    for (const el of await invalid.all()) {
-      const edge = await el.evaluate((e) => {
-        const cs = getComputedStyle(e);
-        return {
-          width: parseFloat(cs.borderTopWidth),
-          colour: cs.borderTopColor,
-          html: e.outerHTML.slice(0, 160),
-        };
-      });
-      expect(edge.width, edge.html).toBeGreaterThan(0);
-      problems.push(...(await measure(el)).problems);
-    }
-    // The message under the field is text, so colour is not the only cue (1.4.1).
-    const alerts = page.locator('[role="alert"], [id$="-error"]');
-    expect(await alerts.count()).toBeGreaterThan(0);
-    problems.push(...(await measure(page.locator('main'))).problems);
-    expect(problems).toEqual([]);
-  });
-
-  test('error: the character counter turns red over the limit and keeps 4.5:1', async ({
-    page,
-  }) => {
-    await open(page, '/projects/new', 'สร้างโครงการก่อสร้างใหม่');
-    const name = page.locator('#project-description');
-    await name.fill('ก'.repeat(1001));
-    // 1,001 / 1,000: the counter is in the error colour and the field carries the message.
-    const counter = page.getByText(/^1,001 \/ 1,000$/);
-    await expect(counter).toBeVisible();
-    await expect(name).toHaveAttribute('aria-invalid', 'true');
-    const problems = [
-      ...(await measure(counter)).problems,
-      ...(await measure(name)).problems,
-      ...(await measure(page.locator('main'))).problems,
-    ];
-    expect(problems).toEqual([]);
-  });
-
-  test('selected: tabs, view switch and chosen strategy keep their contrast', async ({ page }) => {
-    await open(page, `/projects/${PROJECT}?tab=versions`, 'แนวโน้มข้ามเวอร์ชัน');
-    const selected = page.locator('[aria-selected="true"], [aria-checked="true"], [aria-current]');
-    expect(await selected.count()).toBeGreaterThan(0);
-    const problems: string[] = [];
-    for (const el of await selected.all()) {
-      if (await el.isVisible()) problems.push(...(await measure(el)).problems);
-    }
-    expect(problems).toEqual([]);
-
-    await open(page, `/projects/${PROJECT}/versions/${V3}/plan`, /แผน|กลยุทธ์/);
-    const pressed = page.locator('[aria-checked="true"], [aria-pressed="true"]');
-    for (const el of await pressed.all()) {
-      if (await el.isVisible()) problems.push(...(await measure(el)).problems);
-    }
-    expect(problems).toEqual([]);
-  });
-});
 
 // The search field draws its ring on the wrapper with a box-shadow, which forced colours
 // removes, so the wrapper keeps a transparent outline (IO-221).

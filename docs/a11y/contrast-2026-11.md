@@ -10,7 +10,7 @@ Ratios below are WCAG 2.x relative luminance of the token values in `web/src/sty
 - 142 pairs: all 142 pass (18 of them within 0.3 of the limit), none fails, none is waived.
 - Fixed in tokens: `--color-placeholder` `#8a97a8` to `#677689` (2.97:1 to 4.64:1 on white); `--color-blue-400` `#6e9be6` to `#4a80d8` (done progress step 2.28:1 to 3.91:1 on white, KPI hover border 2.80:1 to 3.91:1 on white).
 - IO-226: the risk-scale solids and their `-on` text moved (VL `#10b981` to `#059669`, L `#84cc16` to `#65a30d`, M `#facc15` to `#d97706`, H `#f97316` to `#c2410c`, VH `#dc2626` to `#b91c1c`; `-on` VL `#021a10`, L `#102303`, M `#2b1d00`, H white). Solids reach 3:1 on cards, `-on` text 4.5:1. Tints and chips are unchanged. The destructive hover and pressed colours moved one step darker (`#991b1b`, `#7f1d1d`) so they differ from the new VH.
-- IO-255: `--color-white` is split into `--color-card` (card, input and popup background) and `--color-on-solid` (text and icons on a solid fill). Both stay `#ffffff` in light, so no light ratio changed; the pairs are renamed to say which one they mean. `--color-white` remains a deprecated alias of `--color-card` until IO-261.
+- IO-255: `--color-white` is split into `--color-card` (card, input and popup background) and `--color-on-solid` (text and icons on a solid fill). Both stay `#ffffff` in light, so no light ratio changed; the pairs are renamed to say which one they mean. The `--color-white` alias was removed in IO-261 (see below).
 - Open: dashboard search field focus in forced colours (IO-221).
 
 ## Failures and near misses
@@ -381,3 +381,10 @@ Pages: dashboard, projects, project (overview and versions tab, RM view), new an
 | Disabled | Exempt from 1.4.3 and 1.4.11. Listed only: the submitted assessment has disabled controls. | assessment |
 | Forced colours | Controls keep a border or a text label, the focused element keeps an outline. | every page, desktop |
 | Colour is not the only cue | Level codes (VL to VH), dimension codes (EC, SO, EV) and strategy names are text; each donut level row has a code and a count. | results, dashboard, plan |
+
+## Dark theme: page states and the white alias (IO-261)
+
+- `contrast.spec.ts` now runs every state above (default, hover, focus-visible, error, selected) once with `colorScheme: 'light'` and once with `'dark'`, set through the system setting, as for a visitor who never picked a theme. The forced colours run stays light only: forced colours replace the palette, so the theme makes no difference.
+- The focus-visible check was wrong before: it took the transparent forced-colours outline (`outline: 2px solid transparent`) for the ring and measured black against the page, so it passed in light whatever the ring colour was. It now skips a transparent outline and measures the box-shadow band. Result: the band (`--color-blue-600`) reaches 3:1 on every page in both themes.
+- `--color-white` is gone from `tokens.css`, `globals.css` and the tests. `web/src/styles/no-color-white.test.ts` fails the `web` CI job if `--color-white`, `bg-white`, `text-white` or another white utility returns anywhere in `web/src`.
+- Run: `E2E_MOCK_PORT=<port> pnpm --dir e2e exec playwright test -c playwright.mock.config.ts contrast.spec.ts --workers=1`. Dark only: add `-g "dark theme"`.

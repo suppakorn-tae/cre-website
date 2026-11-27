@@ -1,6 +1,6 @@
 # Dark mode palette (proposed 27 Nov, approved 28 Nov 2026)
 
-Status: **approved by Tae, 28 Nov 2026.** Built in IO-255 (foundation), IO-256 – IO-260 (per area) and IO-261 (clean-up). Theme choice: follows the system by default; switch "ตามระบบ / สว่าง / มืด" in the account menu.
+Status: **approved and shipped** (approved by Tae, 28 Nov 2026; shipped in IO-255 to IO-261). Built in IO-255 (foundation), IO-256 – IO-260 (per area) and IO-261 (clean-up). Theme choice: follows the system by default; switch "ตามระบบ / สว่าง / มืด" in the account menu.
 
 Checked with the same rules as `docs/a11y/contrast-2026-11.md` (WCAG 2.2: 1.4.3 text 4.5:1, large text 3:1, 1.4.11 non-text 3:1) on the same pair list as `web/src/lib/contrast-pairs.ts`, plus the new chart tokens.
 
