@@ -36,9 +36,24 @@ reg=ghcr.io/acme/cre
 sha=0123456789abcdef0123456789abcdef01234567
 digest() { printf 'sha256:%s' "$(printf '%s%s' "$1" "${2:-}" | sha256sum | cut -c1-64)"; }
 
+# A complete .env.prod from init-env.sh; each run appends its own lines,
+# which win because the later assignment overrides the earlier one.
+base="$work/base.env"
+env INIT_IMAGE_REGISTRY=ghcr.io/acme/cre INIT_IMAGE_TAG=$sha \
+  INIT_ACME_EMAIL=ops@example.com INIT_GOOGLE_CLIENT_ID=id.apps.googleusercontent.com \
+  INIT_GOOGLE_CLIENT_SECRET=gs INIT_SMTP_USER=u INIT_SMTP_PASSWORD=p \
+  INIT_BACKUP_S3_ENDPOINT=https://s3.example.net INIT_BACKUP_S3_REGION=eu \
+  INIT_BACKUP_S3_BUCKET=b INIT_BACKUP_LOCK_S3_BUCKET=l INIT_BACKUP_S3_KEY=k \
+  INIT_BACKUP_S3_SECRET=s bash "$here/../../init-env.sh" --non-interactive \
+  --output "$base" >/dev/null 2>&1 || {
+  echo "FAIL could not generate the base env file"
+  exit 1
+}
+
 # ds_run <env-file-lines> <extra env...> -- <deploy.sh args...>
 ds_run() {
-  printf '%s\n' "$1" >"$work/env"
+  { cat "$base"; printf '%s\n' "$1"; } >"$work/env"
+  chmod 600 "$work/env"
   shift
   envs=
   while [ "$1" != -- ]; do
@@ -143,6 +158,37 @@ IMAGE_TAG=v1.4.1" $extra STUB_NO_BUILDX=1 STUB_MISSING=cre-worker -- pull
 check "missing image exit 1" [ "$code" = 1 ]
 check "missing image message" said "cannot resolve the digest of $reg/cre-worker:v1.4.1"
 check "missing image keeps pin" cmp -s "$work/digests" "$work/digests.before"
+
+# A leftover CHANGEME, a loose file mode or a bad secret stops pull and up
+# before any compose call or digest lookup.
+for cmd in pull up; do
+  rm -f "$work/digests"
+  ds_run "$prod
+IMAGE_TAG=v1.4.0
+SMTP_PASSWORD=CHANGEME-smtp" $extra -- $cmd
+  check "$cmd with CHANGEME exit 1" [ "$code" = 1 ]
+  check "$cmd with CHANGEME names the key" said "SMTP_PASSWORD is still CHANGEME"
+  check "$cmd with CHANGEME says deploy stopped" said "failed the check"
+  check "$cmd with CHANGEME no compose" [ ! -s "$work/docker.log" ]
+  check "$cmd with CHANGEME no pin file" [ ! -f "$work/digests" ]
+done
+ds_run "$prod
+IMAGE_TAG=v1.4.0" $extra -- pull
+chmod 644 "$work/env"
+rm -f "$work/digests"
+out=$(env -i PATH="$work/bin:$PATH" HOME="$work" DOCKER_LOG="$work/docker.log" \
+  ENV_FILE="$work/env" DIGEST_FILE="$work/digests" $extra sh "$ds" pull 2>&1)
+code=$?
+check "loose env file mode exit 1" [ "$code" = 1 ]
+check "loose env file mode message" said "want 600 or 400"
+ds_run "$prod
+SESSION_SECRET=short" $extra -- pull
+check "short secret exit 1" [ "$code" = 1 ]
+# Commands other than pull and up do not run the check.
+ds_run "$prod
+IMAGE_TAG=v1.4.0
+SMTP_PASSWORD=CHANGEME-smtp" $extra -- ps
+check "ps skips the env check" [ -z "$(printf '%s' "$out" | grep 'failed the check')" ]
 
 # Without compose.prod.yaml (dev, staging on local builds) nothing is pinned.
 rm -f "$work/digests"

@@ -61,8 +61,10 @@ done
 rm -f "$tmp"
 
 # Every crond job must set PATH itself, with the PostgreSQL bin dir.
+# shellcheck disable=SC2013
 for job in $(sed -n 's|^[0-9*].* \(/opt/backup/[a-z-]*\.sh\).*|\1|p' "$here/../entrypoint.sh"); do
   f="$here/../$(basename "$job")"
+  # shellcheck disable=SC2016
   if grep -q '^export PATH="/usr/lib/postgresql/${PG_MAJOR:-19}/bin:' "$f"; then
     echo "ok   cron PATH $(basename "$f")"
   else

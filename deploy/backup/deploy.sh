@@ -21,6 +21,10 @@
 # ./.env.digests). Every other command reads that file, so `up` runs the
 # digests that were pulled even if the tag moves later. `up` appends the
 # deployed tag, commit and digests to DIGEST_FILE.log.
+#
+# Before `pull` and `up` with compose.prod.yaml, the env file must pass
+# `bash deploy/init-env.sh --check` (no CHANGEME, secrets set, mode 600).
+# That script needs bash, so it is run with bash even though this one is sh.
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
@@ -100,6 +104,18 @@ pin_images() {
     exit 1
   fi
   : "${IMAGE_REGISTRY:?deploy.sh: set IMAGE_REGISTRY}"
+  case "${1:-}" in
+    pull | up)
+      [ -f "$env_file" ] || {
+        echo "deploy.sh: env file not found: $env_file" >&2
+        exit 1
+      }
+      bash "$root/deploy/init-env.sh" --check "$env_file" >&2 || {
+        echo "deploy.sh: $env_file failed the check above; fix it and retry" >&2
+        exit 1
+      }
+      ;;
+  esac
   if [ "${1:-}" = pull ]; then
     pins=
     for i in $images; do
