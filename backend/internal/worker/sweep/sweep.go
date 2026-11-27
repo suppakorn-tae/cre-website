@@ -113,6 +113,9 @@ func NewScheduler(rawURL string) (*Scheduler, error) {
 	if _, err := sch.Register(Spec, asynq.NewTask(TaskType, nil), asynq.Queue(queue.Exports)); err != nil {
 		return nil, fmt.Errorf("sweep: register: %w", err)
 	}
+	if _, err := sch.Register(StuckSpec, asynq.NewTask(StuckTaskType, nil), asynq.Queue(queue.Exports)); err != nil {
+		return nil, fmt.Errorf("sweep: register stuck jobs: %w", err)
+	}
 	return &Scheduler{s: sch}, nil
 }
 

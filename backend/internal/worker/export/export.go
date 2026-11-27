@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"strconv"
@@ -228,26 +229,59 @@ func safeName(s string) string {
 	}, s)
 }
 
+// DefaultTimeout bounds one whole export job. It stays under asynq's own
+// 30 minute task limit, so the job is failed here with a clear message
+// instead of being cancelled and retried by asynq.
+const DefaultTimeout = 25 * time.Minute
+
+// Option customises the runner.
+type Option func(*runner)
+
+// WithTimeout sets the whole-job time-out.
+func WithTimeout(d time.Duration) Option { return func(r *runner) { r.timeout = d } }
+
+type runner struct {
+	src     Source
+	store   Store
+	timeout time.Duration
+}
+
 // NewRunner returns the runtime runner for export jobs. It streams the ZIP
 // to exports/{id}.zip. The runtime's MarkDone sets expires_at (finish + 7
 // days). Running it again overwrites the same object, so it is idempotent.
-func NewRunner(src Source, store Store) runtime.Runner {
-	return func(ctx context.Context, j jobs.Job) error {
-		if j.Kind != jobs.KindExport {
-			return fmt.Errorf("export: job %s is a %s job", j.ID, j.Kind)
-		}
-		pr, pw := io.Pipe()
-		buildErr := make(chan error, 1)
-		go func() {
-			err := Build(ctx, src, j.ID, pw)
-			_ = pw.CloseWithError(err) // nil closes normally
-			buildErr <- err
-		}()
-		putErr := store.Put(ctx, jobs.ObjectKey(jobs.KindExport, j.ID), pr, -1, "application/zip")
-		_ = pr.CloseWithError(putErr) // unblocks the builder if Put stopped early
-		if err := <-buildErr; err != nil {
-			return err
-		}
-		return putErr
+// A job that runs past the time-out fails with a "timed out" error; the
+// runtime then marks it failed.
+func NewRunner(src Source, store Store, opts ...Option) runtime.Runner {
+	r := &runner{src: src, store: store, timeout: DefaultTimeout}
+	for _, o := range opts {
+		o(r)
 	}
+	return r.run
+}
+
+func (r *runner) run(ctx context.Context, j jobs.Job) error {
+	if j.Kind != jobs.KindExport {
+		return fmt.Errorf("export: job %s is a %s job", j.ID, j.Kind)
+	}
+	parent := ctx
+	ctx, cancel := context.WithTimeout(ctx, r.timeout)
+	defer cancel()
+	pr, pw := io.Pipe()
+	buildErr := make(chan error, 1)
+	go func() {
+		err := Build(ctx, r.src, j.ID, pw)
+		_ = pw.CloseWithError(err) // nil closes normally
+		buildErr <- err
+	}()
+	putErr := r.store.Put(ctx, jobs.ObjectKey(jobs.KindExport, j.ID), pr, -1, "application/zip")
+	_ = pr.CloseWithError(putErr) // unblocks the builder if Put stopped early
+	err := <-buildErr
+	if err == nil {
+		err = putErr
+	}
+	// Only our own deadline is a time-out; a cancelled parent is shutdown.
+	if err != nil && parent.Err() == nil && errors.Is(ctx.Err(), context.DeadlineExceeded) {
+		return fmt.Errorf("export: timed out after %s", r.timeout)
+	}
+	return err
 }

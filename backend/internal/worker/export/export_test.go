@@ -168,3 +168,36 @@ func TestRunnerErrors(t *testing.T) {
 		t.Fatal("a report job must be refused")
 	}
 }
+
+// blockingStore waits for its context, like an upload that hangs.
+type blockingStore struct{}
+
+func (blockingStore) Put(ctx context.Context, _ string, r io.Reader, _ int64, _ string) error {
+	go func() { _, _ = io.Copy(io.Discard, r) }()
+	<-ctx.Done()
+	return ctx.Err()
+}
+
+func TestRunnerTimesOut(t *testing.T) {
+	src, _ := fixture()
+	run := export.NewRunner(src, blockingStore{}, export.WithTimeout(50*time.Millisecond))
+	start := time.Now()
+	err := run(context.Background(), jobs.Job{ID: uuid.New(), Kind: jobs.KindExport})
+	if err == nil || !strings.Contains(err.Error(), "timed out after 50ms") {
+		t.Fatalf("err = %v, want a time-out error", err)
+	}
+	if time.Since(start) > 5*time.Second {
+		t.Fatalf("took %s", time.Since(start))
+	}
+}
+
+func TestRunnerShutdownIsNotATimeout(t *testing.T) {
+	src, _ := fixture()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	run := export.NewRunner(src, blockingStore{})
+	err := run(ctx, jobs.Job{ID: uuid.New(), Kind: jobs.KindExport})
+	if err == nil || strings.Contains(err.Error(), "timed out") {
+		t.Fatalf("err = %v, want a plain cancel", err)
+	}
+}
