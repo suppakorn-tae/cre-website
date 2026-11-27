@@ -13,12 +13,15 @@ import (
 const (
 	Reports = "reports"
 	Exports = "exports"
+	// Maintenance runs housekeeping tasks (the stuck-job sweep) so a long
+	// export cannot hold them back.
+	Maintenance = "maintenance"
 )
 
 // ErrUnknownQueue is returned for a queue name that is not configured.
 var ErrUnknownQueue = errors.New("queue: unknown queue")
 
-func knownQueue(q string) bool { return q == Reports || q == Exports }
+func knownQueue(q string) bool { return q == Reports || q == Exports || q == Maintenance }
 
 func redisOpt(rawURL string) (asynq.RedisClientOpt, error) {
 	o, err := asynq.ParseRedisURI(rawURL)
@@ -56,7 +59,7 @@ func NewClient(rawURL string) (*Client, error) {
 // Close releases the connection.
 func (c *Client) Close() error { return c.c.Close() }
 
-// Enqueue adds a job of the given kind to queue (Reports or Exports).
+// Enqueue adds a job of the given kind to queue (Reports, Exports or Maintenance).
 func (c *Client) Enqueue(ctx context.Context, kind string, payload []byte, queue string) error {
 	if kind == "" {
 		return errors.New("queue: empty job kind")
@@ -80,7 +83,7 @@ type ServerConfig struct {
 
 // DefaultConcurrency gives each queue its own small worker budget.
 func DefaultConcurrency() map[string]int {
-	return map[string]int{Reports: 2, Exports: 2}
+	return map[string]int{Reports: 2, Exports: 2, Maintenance: 1}
 }
 
 // Server runs job handlers with per-queue concurrency.

@@ -114,6 +114,10 @@ func LoadAPI(get Getenv) (API, error) {
 	return c, r.err()
 }
 
+// MaxTaskTimeout is the default asynq task timeout; a job time limit must stay
+// under it.
+const MaxTaskTimeout = 30 * time.Minute
+
 // LoadWorker reads the worker configuration and reports every problem at once.
 func LoadWorker(get Getenv) (Worker, error) {
 	r := reader{get: get}
@@ -125,6 +129,16 @@ func LoadWorker(get Getenv) (Worker, error) {
 	c.ReportTimeout = r.duration("REPORT_TIMEOUT", 5*time.Minute)
 	c.StuckMargin = r.duration("JOB_STUCK_MARGIN", 10*time.Minute)
 	c.QueuedMaxAge = r.duration("JOB_QUEUED_MAX_AGE", 6*time.Hour)
+	// asynq ends a task after MaxTaskTimeout, so a longer limit never applies.
+	for _, l := range []struct {
+		key string
+		d   time.Duration
+	}{{"EXPORT_TIMEOUT", c.ExportTimeout}, {"REPORT_TIMEOUT", c.ReportTimeout}} {
+		if l.d >= MaxTaskTimeout {
+			r.errs = append(r.errs, fmt.Errorf("%s: %s must be under %s, the task limit asynq sets when a job is enqueued",
+				l.key, l.d, MaxTaskTimeout))
+		}
+	}
 	return c, r.err()
 }
 
