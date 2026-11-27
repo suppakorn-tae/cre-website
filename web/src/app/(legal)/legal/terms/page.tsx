@@ -9,11 +9,5 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default function TermsPage() {
-  return (
-    <>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/brand/cre-logo-mark.png" width={40} height={40} />
-      <LegalDocument doc="terms" />
-    </>
-  );
+  return <LegalDocument doc="terms" />;
 }
