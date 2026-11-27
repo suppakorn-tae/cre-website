@@ -24,6 +24,7 @@ jobs:
       backend: ${{ steps.filter.outputs.backend }}
       web: ${{ steps.filter.outputs.web }}
       contracts: ${{ steps.filter.outputs.contracts }}
+      deploy: ${{ steps.filter.outputs.deploy }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
@@ -46,6 +47,9 @@ jobs:
               - ".github/workflows/ci.yml"
             contracts:
               - "contracts/**"
+              - ".github/workflows/ci.yml"
+            deploy:
+              - "deploy/**"
               - ".github/workflows/ci.yml"
 
   backend:
@@ -181,13 +185,33 @@ jobs:
             exit 1
           fi
 
+  deploy:
+    name: deploy
+    needs: changes
+    if: needs.changes.outputs.deploy == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck
+        run: |
+          python3 -m venv "$RUNNER_TEMP/sc"
+          "$RUNNER_TEMP/sc/bin/pip" install shellcheck-py==0.11.0.1
+          "$RUNNER_TEMP/sc/bin/shellcheck" --version
+          find deploy -name '*.sh' -print0 | xargs -0 "$RUNNER_TEMP/sc/bin/shellcheck" -x
+      # No docker needed: the tests stub it.
+      - name: Shell tests
+        run: |
+          sh deploy/backup/test/preflight_test.sh
+          sh deploy/backup/test/deploy_test.sh
+          bash deploy/test/init_env_test.sh
+
   # The single check to require for the areas above. It always runs, fails if any
   # needed job failed or was cancelled, and passes when jobs were skipped by the
   # path filter.
   ci-ok:
     name: ci-ok
     if: always()
-    needs: [changes, backend, web, contracts, codegen]
+    needs: [changes, backend, web, contracts, codegen, deploy]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
