@@ -31,6 +31,13 @@
   --color-divider: #edf1f5;
   --color-border: #e3e8ef;
   --chart-grid: #a7b2c1;
+  --factor-rl: #7f8c9e;
+  --factor-ri: #4f5d70;
+  --heat-vh: #7f1d1d;
+  --heat-h: #c2410c;
+  --heat-m: #f6cfb3;
+  --heat-l: #faeadf;
+  --heat-vl: #f7f4f1;
   --color-field-border: #7f8c9e;
   --color-disabled-bg: #eef1f5;
   --color-disabled: #9aa6b6;
@@ -185,6 +192,13 @@
   --color-divider: #1e2a3e;
   --color-border: #28364d;
   --chart-grid: #46566f;
+  --factor-rl: #6f7f96;
+  --factor-ri: #a9b6c8;
+  --heat-vh: #fdba74;
+  --heat-h: #f97316;
+  --heat-m: #7c3f1a;
+  --heat-l: #4a2d1f;
+  --heat-vl: #2a2222;
   --color-field-border: #6f7f96;
   --color-disabled-bg: #1a2537;
   --color-disabled: #55637a;
