@@ -9,6 +9,8 @@
 }
 .page {
   display: grid;
+  /* One column that can shrink: a wide child (the projects panel) must not stretch the page. */
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-6);
   min-width: 0;
 }
@@ -135,6 +137,7 @@
 .chart,
 .panel {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   align-content: start;
   gap: var(--space-4);
   min-width: 0;
