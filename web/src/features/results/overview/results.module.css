@@ -574,15 +574,6 @@
   color: var(--bar-on);
   font-weight: var(--weight-semibold);
 }
-.tip {
-  z-index: 50;
-  max-width: 16rem;
-  padding: var(--space-1) var(--space-2);
-  border-radius: var(--radius-control);
-  background: var(--color-navy-900);
-  color: var(--color-white);
-  font-size: var(--text-caption);
-}
 .factorCode {
   position: absolute;
   top: 100%;

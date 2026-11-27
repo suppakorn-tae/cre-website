@@ -20,7 +20,7 @@ import {
 import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 
-import { Button, Icon } from '@/components/ui';
+import { Button, Icon, TooltipContent } from '@/components/ui';
 
 // One styled example of each Radix primitive, built only from token utilities
 // (see web/README.md, "Styling rules"). Radix handles focus, keyboard and ARIA.
@@ -172,14 +172,7 @@ export function RadixExamples() {
                     <Icon icon={IconInfoCircle} size={18} />
                   </button>
                 </Tooltip.Trigger>
-                <Tooltip.Portal>
-                  <Tooltip.Content
-                    sideOffset={6}
-                    className="z-50 max-w-64 rounded-control bg-navy-900 px-2 py-1 text-caption text-white"
-                  >
-                    {t('dev.radixTooltipText')}
-                  </Tooltip.Content>
-                </Tooltip.Portal>
+                <TooltipContent>{t('dev.radixTooltipText')}</TooltipContent>
               </Tooltip.Root>
             </div>
           </section>

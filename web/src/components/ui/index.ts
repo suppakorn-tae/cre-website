@@ -30,4 +30,5 @@ export { Stepper, type StepItem } from './Stepper';
 export { Tabs, type TabItem } from './Tabs';
 export { Toast, TOAST_ACTION_CLASS } from './Toast';
 export { ToasterProvider, useToaster, type ToastSpec } from './Toaster';
+export { TooltipContent } from './TooltipContent';
 export { UnitPicker, withUnit, type UnitOption, type UnitValue } from './UnitPicker';
