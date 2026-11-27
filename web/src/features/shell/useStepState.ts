@@ -1,7 +1,7 @@
-import { skipToken, useQuery } from '@tanstack/react-query';
+import { skipToken, useQuery, type QueryClient } from '@tanstack/react-query';
 
 import { browserApi } from '@/lib/api/client';
-import { fetchVersions } from '@/features/versions/api';
+import { fetchVersions, versionsKey } from '@/features/versions/api';
 import { newestFirst } from '@/features/versions/rules';
 
 export type StepState = {
@@ -13,45 +13,82 @@ export type StepState = {
   chosen: boolean;
 };
 
+export const stepStateKey = (projectId: string | undefined, versionId: string | undefined) =>
+  ['step-state', projectId, versionId ?? 'latest'] as const;
+
+// The keys the step pages read with, so the step bar shares their cache.
+const versionKey = (projectId: string, versionId: string) =>
+  ['projects', projectId, 'versions', versionId] as const;
+const resultsKey = (projectId: string, versionId: string) =>
+  [...versionKey(projectId, versionId), 'results'] as const;
+
 /**
- * What the step indicator needs to know about the version. It has its own
- * cache entry and is read afresh on every page, so a version that was just
- * submitted never shows as a draft here or on the page that follows.
+ * Call after a version is submitted. The version, the version list, its results
+ * and the step state can all have changed, so they are read afresh the next time
+ * a page or the step bar asks. Until then they are served from the cache.
+ */
+export function invalidateAfterSubmit(client: QueryClient, projectId: string) {
+  void client.invalidateQueries({ queryKey: ['projects', projectId, 'versions'] });
+  void client.invalidateQueries({ queryKey: ['step-state', projectId] });
+}
+
+/**
+ * What the step indicator needs to know about the version. It reads the version,
+ * the version list and the results through the same cache entries as the pages,
+ * so moving between step pages asks the server for nothing the page already has.
+ * `invalidateAfterSubmit` makes a version that was just submitted show as such.
  */
 export function useStepState(projectId: string | undefined, versionId: string | undefined) {
   return useQuery<StepState>({
-    queryKey: ['step-state', projectId, versionId ?? 'latest'],
+    queryKey: stepStateKey(projectId, versionId),
     queryFn:
       projectId === undefined
         ? skipToken
-        : async () => {
+        : async ({ client: qc }) => {
             const api = browserApi();
             let id = versionId;
             let status: string | undefined;
             if (id === undefined) {
-              const latest = newestFirst(await fetchVersions(projectId))[0];
+              const list = await qc.fetchQuery({
+                queryKey: versionsKey(projectId),
+                queryFn: () => fetchVersions(projectId),
+              });
+              const latest = newestFirst(list)[0];
               id = latest?.id;
               status = latest?.status;
             } else {
-              const { data } = await api.GET('/projects/{project_id}/versions/{version_id}', {
-                params: { path: { project_id: projectId, version_id: id } },
+              const vid = id;
+              const data = await qc.fetchQuery({
+                queryKey: versionKey(projectId, vid),
+                queryFn: async () => {
+                  const { data } = await api.GET('/projects/{project_id}/versions/{version_id}', {
+                    params: { path: { project_id: projectId, version_id: vid } },
+                  });
+                  return data!;
+                },
               });
               status = data?.status;
             }
             if (id === undefined || status !== 'submitted') {
               return { versionId: id, submitted: false, chosen: false };
             }
-            const { data } = await api.GET('/projects/{project_id}/versions/{version_id}/results', {
-              params: { path: { project_id: projectId, version_id: id } },
+            const vid = id;
+            const results = await qc.fetchQuery({
+              queryKey: resultsKey(projectId, vid),
+              queryFn: async () => {
+                const { data } = await api.GET(
+                  '/projects/{project_id}/versions/{version_id}/results',
+                  { params: { path: { project_id: projectId, version_id: vid } } },
+                );
+                return data!;
+              },
             });
             return {
               versionId: id,
               submitted: true,
-              chosen: data?.items.some((item) => item.strategy) ?? false,
+              chosen: results?.items.some((item) => item.strategy) ?? false,
             };
           },
-    staleTime: 0,
-    refetchOnMount: 'always',
     gcTime: 30_000,
   });
 }
