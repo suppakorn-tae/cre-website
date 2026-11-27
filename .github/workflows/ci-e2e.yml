@@ -1,10 +1,13 @@
 name: ci-e2e
 
-# Not a required check: nightly, on demand, and on pull requests that touch
-# the harness itself.
+# Nightly, on demand, and on pull requests that touch the harness or the web
+# app. The e2e-mock job holds the axe gate (WCAG 2.2 AA): a web change that adds
+# a violation fails it. ci-ok lives in another workflow and cannot wait for this
+# one, so Tae adds the check name `e2e-mock` to the required checks of main.
 on:
   pull_request:
     paths:
+      - "web/**"
       - "e2e/**"
       - "deploy/compose/compose.test.yaml"
       - ".github/workflows/ci-e2e.yml"
@@ -20,11 +23,28 @@ permissions:
   contents: read
 
 jobs:
+  # The compose stack run below is only for harness changes, not every web change.
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    outputs:
+      stack: ${{ steps.filter.outputs.stack }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        with:
+          filters: |
+            stack:
+              - "e2e/**"
+              - "deploy/compose/compose.test.yaml"
+              - ".github/workflows/ci-e2e.yml"
+
   # The web app alone in mock mode: no compose stack and no api.
   e2e-mock:
     name: e2e-mock
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -36,6 +56,8 @@ jobs:
       - name: Install Playwright browsers
         working-directory: e2e
         run: pnpm exec playwright install --with-deps chromium
+      # Runs the mock smoke specs and the axe gate (e2e/tests/a11y): every page at
+      # 375 and 1280 px against WCAG 2.2 AA. A new violation fails this job.
       - name: Playwright in mock mode
         working-directory: e2e
         env:
@@ -54,6 +76,8 @@ jobs:
 
   e2e:
     name: e2e
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.stack == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
