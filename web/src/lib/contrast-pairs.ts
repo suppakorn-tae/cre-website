@@ -177,8 +177,8 @@ function pairs(): Pair[] {
   add({
     kind: 'ui',
     fg: 'color-blue-400',
-    bg: 'color-border',
-    use: 'done progress step vs its track',
+    bg: 'color-white',
+    use: 'done progress step',
   });
   add({
     kind: 'ui',
@@ -194,18 +194,15 @@ function pairs(): Pair[] {
   });
   add({
     kind: 'ui',
-    fg: 'color-blue-100',
+    fg: 'color-field-border',
     bg: 'color-white',
-    use: 'slider track',
-    waived: 'Component change needed: the track class is bg-blue-100. Tracked in IO-222.',
+    use: 'slider track edge (1 px border on the blue-100 fill)',
   });
   add({
     kind: 'ui',
-    fg: 'color-border',
-    bg: 'color-white',
+    fg: 'color-field-border',
+    bg: 'color-surface',
     use: 'progress track (steps not yet done)',
-    waived:
-      'Component change needed. The step number and label also show the state. Tracked in IO-222.',
   });
   for (const s of ['success', 'error', 'info', 'warning']) {
     add({ kind: 'ui', fg: `color-${s}`, bg: 'color-white', use: `toast ${s} edge and icon` });

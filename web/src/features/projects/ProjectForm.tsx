@@ -386,7 +386,7 @@ export function ProjectForm({ project }: Props) {
                     max={100}
                     step={1}
                   >
-                    <Slider.Track className="relative h-2 grow rounded-pill bg-blue-100">
+                    <Slider.Track className="relative box-border h-2 grow rounded-pill border border-field-border bg-blue-100">
                       <Slider.Range className="absolute h-full rounded-pill bg-primary" />
                     </Slider.Track>
                     {expected && (
@@ -612,7 +612,10 @@ function Preview({
             {expectedPct !== null && <> · {t('expected', { pct: expectedPct })}</>}
           </span>
         </p>
-        <div className="relative h-2 rounded-pill bg-blue-100" aria-hidden="true">
+        <div
+          className="relative box-border h-2 rounded-pill border border-field-border bg-blue-100"
+          aria-hidden="true"
+        >
           <div
             className="h-full rounded-pill bg-primary transition-[width] duration-[600ms] ease-out motion-reduce:transition-none"
             // At least as wide as the bar is high, so the end stays round at 1 %.
