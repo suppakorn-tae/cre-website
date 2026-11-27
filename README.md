@@ -10,7 +10,7 @@
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 
-[Quick start](#-quick-start) · [Commands](#-commands) · [Architecture](#-architecture) · [Repo layout](#-repo-layout) · [Docs](#-docs)
+[Quick start](#-quick-start) · [Commands](#-commands) · [Architecture](#-architecture) · [Standards](#-standards) · [Repo layout](#-repo-layout) · [Docs](#-docs)
 
 </div>
 
@@ -276,6 +276,25 @@ Research exports work the same way, as a ZIP with no e-mails, and expire after 7
 | Other | Gotenberg (PDF), Caddy (proxy and TLS) |
 
 Exact versions live in `backend/go.mod`, `.nvmrc` and `package.json`.
+
+---
+
+## 📏 Standards
+
+What the project follows and what the repo shows. Spec IDs are in the [requirements](docs/specs/requirements/cre-requirements-usecase.tex) (PDF next to it).
+
+| Area | Standard | Status | Proof |
+| --- | --- | --- | --- |
+| Accessibility | WCAG 2.2 AA | Partial: audited Nov 2026, axe gate in CI; open: 2.4.11, 2.5.8, 1.4.10; no screen reader pass | [audit](docs/a11y/audit-2026-11.md) · [contrast](docs/a11y/contrast-2026-11.md) · [axe helper](e2e/helpers/a11y.ts) · [CI job `e2e-mock`](.github/workflows/ci-e2e.yml) |
+| Privacy | Thai PDPA | Partial: privacy by design (pseudonymised export, account deletion, notice at sign-up); no legal review in the repo | NFR-03, BR-14, UC-18 · [export test](backend/internal/service/export/export_integration_test.go) · [deletion test](backend/internal/http/handler/account/handler_integration_test.go) · [deleted accounts in backups](docs/runbooks/restore.md#deleted-accounts) |
+| Passwords | Argon2id, OWASP minimum profile (19 MiB, 2 passes) | Met | NFR-02 · [`register_crypto.go`](backend/internal/service/auth/register_crypto.go) |
+| API contract | OpenAPI 3.1, Spectral lint, contract tests | Met: handler tests validate responses against the spec; stale generated code fails CI | [`openapi.yaml`](contracts/openapi/openapi.yaml) · [contract helper](backend/internal/testutil/contract/contract.go) · [`ci.yml`](.github/workflows/ci.yml) |
+| Commits | Conventional Commits 1.0 | Met: commitlint and PR title check are required checks | [`commitlint.config.js`](commitlint.config.js) · [`pr-lint.yml`](.github/workflows/pr-lint.yml) · [CONTRIBUTING.md](CONTRIBUTING.md#commits) |
+| Transport | HTTPS only, TLS from Caddy | Met | NFR-01 · [`Caddyfile`](deploy/compose/Caddyfile) · [`Caddyfile.prod`](deploy/compose/Caddyfile.prod) |
+| Security headers | HSTS, nosniff, referrer policy | Partial: no CSP or frame header set, HSTS has no `includeSubDomains` | [`Caddyfile.prod`](deploy/compose/Caddyfile.prod) |
+| Application security | OWASP Top 10 / ASVS | Not claimed: no audit or security test cites them | Gap |
+| Performance | p95 under 1 s for interactive requests | Met at 100 virtual users, 2 api replicas, 2 vCPU host | NFR-04 · [`loadtest/RESULTS.md`](loadtest/RESULTS.md) |
+| Backups | RPO 5 min, RTO 4 h | Partial: targets, procedure and automatic restore check exist when `BACKUP_ENABLED=true`; no recorded drill | [architecture decisions](docs/specs/architecture/cre-architecture-decisions.md#backup-and-recovery-optional) · [restore runbook](docs/runbooks/restore.md) · [`restore-check.sh`](deploy/backup/restore-check.sh) |
 
 ---
 
