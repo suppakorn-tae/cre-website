@@ -446,7 +446,7 @@
   position: absolute;
   inset-inline: 0;
   height: 1px;
-  background: var(--color-border);
+  background: var(--chart-grid);
 }
 .factorLine {
   position: absolute;

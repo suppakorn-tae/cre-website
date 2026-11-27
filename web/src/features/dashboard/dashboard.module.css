@@ -257,11 +257,11 @@
 .grid {
   position: absolute;
   inset: 0 var(--value-w) 0 calc(var(--label-w) + var(--space-3));
-  border-inline-end: 1px solid var(--color-divider);
+  border-inline-end: 1px solid var(--chart-grid);
   background: repeating-linear-gradient(
     to right,
-    var(--color-divider) 0,
-    var(--color-divider) 1px,
+    var(--chart-grid) 0,
+    var(--chart-grid) 1px,
     transparent 1px,
     transparent calc(100% / var(--axis-steps, 3))
   );

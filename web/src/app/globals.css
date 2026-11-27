@@ -59,6 +59,7 @@
   --color-white: var(--color-white);
   --color-subtle: var(--color-subtle);
   --color-divider: var(--color-divider);
+  --color-chart-grid: var(--chart-grid);
   --color-border: var(--color-border);
   --color-field-border: var(--color-field-border);
   --color-disabled-bg: var(--color-disabled-bg);
