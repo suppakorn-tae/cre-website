@@ -163,6 +163,30 @@ describe('useLeaving', () => {
     expect(ids(result.current)).toEqual(['a', 'b']);
   });
 
+  it('gives a key that is removed again a full fade, not what is left of the first timer', () => {
+    const { result, rerender } = renderHook(({ items }) => useLeaving(items, keyOf), {
+      initialProps: { items: [{ id: 'a' }, { id: 'b' }] },
+    });
+    rerender({ items: [{ id: 'a' }] });
+    act(() => void vi.advanceTimersByTime(CHANGE_MS - 80));
+    rerender({ items: [{ id: 'a' }, { id: 'b' }] });
+    rerender({ items: [{ id: 'a' }] });
+    act(() => void vi.advanceTimersByTime(150)); // the first timer would have fired by now
+    expect(ids(result.current)).toEqual(['a', 'b*']);
+    act(() => void vi.advanceTimersByTime(CHANGE_MS));
+    expect(ids(result.current)).toEqual(['a']);
+  });
+
+  it('leaves no timer behind when it unmounts', () => {
+    const { rerender, unmount } = renderHook(({ items }) => useLeaving(items, keyOf), {
+      initialProps: { items: [{ id: 'a' }, { id: 'b' }] },
+    });
+    rerender({ items: [{ id: 'a' }] });
+    expect(vi.getTimerCount()).toBeGreaterThan(0);
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
   it('removes at once under reduced motion', () => {
     stubMotion(true);
     const { result, rerender } = renderHook(({ items }) => useLeaving(items, keyOf), {

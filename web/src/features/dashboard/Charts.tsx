@@ -126,7 +126,7 @@ export function ProjectRiskChart({ risks }: { risks: DashboardSummary['project_r
           <ul className={styles.bars}>
             {rows.map(({ item: r, leaving }) => {
               const total = r.h_count + r.vh_count;
-              const width = (100 * total) / max;
+              const width = Math.min(100, (100 * total) / max);
               return (
                 <li
                   key={r.project_id}

@@ -76,6 +76,8 @@ function TrendCard({ points, progress }: Props) {
         ((p.avg_rm ?? RM_BANDS.min) - RM_BANDS.min) / (RM_BANDS.max - RM_BANDS.min),
     );
   const dots = drawn.map((p, i) => (p.avg_rm === null ? undefined : { x: centre(i), y: rmY(p) }));
+  // The line joins the versions that stay; one that is leaving only fades its dot.
+  const lineDots = dots.filter((_, i) => !leaving.has(drawn[i].version_id));
   const rm = (v: number) =>
     formatNumber(v, undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -200,12 +202,13 @@ function TrendCard({ points, progress }: Props) {
               <rect x="0" y="0" width={boxWidth * draw} height={HEIGHT} />
             </clipPath>
             <g clipPath={draw < 1 ? `url(#${clipId})` : undefined}>
-              <path d={linePath(dots)} className={styles.rmLine} fill="none" />
+              <path d={linePath(lineDots)} className={styles.rmLine} fill="none" />
               {dots.map((d, i) =>
                 d ? (
                   <g
                     key={drawn[i].version_id}
                     className={leaving.has(drawn[i].version_id) ? styles.leaving : undefined}
+                    aria-hidden={leaving.has(drawn[i].version_id) ? true : undefined}
                   >
                     <circle cx={d.x} cy={d.y} r="4.5" className={styles.rmDot} />
                     <text x={d.x + 10} y={d.y - 8} className={styles.rmValue}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 /** Same as `--motion-chart` (700 ms): a chart's entrance. The stylesheets read the token. */
 export const CHART_MS = 700;
@@ -151,6 +151,7 @@ export function useLeaving<T>(items: T[], keyOf: (item: T) => string): Leaving<T
   const reduced = useReducedMotion();
   const previous = useRef<T[]>(items);
   const [ghosts, setGhosts] = useState<{ item: T; at: number; key: string }[]>([]);
+  const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
   const keys = items.map(keyOf);
   const sig = keys.join('\u0000');
 
@@ -159,6 +160,11 @@ export function useLeaving<T>(items: T[], keyOf: (item: T) => string): Leaving<T
     previous.current = items;
     if (reduced) return; // nothing is kept; the render below ignores any leftovers
     const present = new Set(keys);
+    // A key that comes back is no longer leaving: its pending removal must not run.
+    for (const key of present) {
+      clearTimeout(timers.current.get(key));
+      timers.current.delete(key);
+    }
     const gone = before
       .map((item, at) => ({ item, at, key: keyOf(item) }))
       .filter((g) => !present.has(g.key));
@@ -166,14 +172,27 @@ export function useLeaving<T>(items: T[], keyOf: (item: T) => string): Leaving<T
       ...now.filter((g) => !present.has(g.key)),
       ...gone.filter((g) => !now.some((n) => n.key === g.key)),
     ]);
-    if (gone.length === 0) return;
-    // Not cleared on the next change: a later removal must not cancel this one.
-    setTimeout(
-      () => setGhosts((now) => now.filter((g) => !gone.some((x) => x.key === g.key))),
-      CHANGE_MS,
-    );
+    // One timer per key, so a key removed again gets a full fade and no old timer cuts it short.
+    for (const { key } of gone) {
+      clearTimeout(timers.current.get(key));
+      timers.current.set(
+        key,
+        setTimeout(() => {
+          timers.current.delete(key);
+          setGhosts((now) => now.filter((g) => g.key !== key));
+        }, CHANGE_MS),
+      );
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig, reduced]);
+
+  useEffect(() => {
+    const pending = timers.current;
+    return () => {
+      for (const id of pending.values()) clearTimeout(id);
+      pending.clear();
+    };
+  }, []);
 
   const present = new Set(keys);
   const out: Leaving<T>[] = items.map((item) => ({ item, leaving: false }));
