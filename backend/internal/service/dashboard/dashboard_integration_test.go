@@ -192,6 +192,16 @@ func TestPanels(t *testing.T) {
 		top[2].IndicatorCode != "EC-HS-1" || top[2].Rank != 3 || top[2].FactorCode != "EC-HS" {
 		t.Fatalf("top = %+v", top)
 	}
+	// Alpha and Beta share EC-MG-1 and EC-MG-2; EC-HS-1 is Beta's alone. The
+	// projects come ordered by nickname; a stranger's projects never appear.
+	if len(top[0].Projects) != 2 || top[0].FoundIn != 2 ||
+		top[0].Projects[0].Nickname != "ALPH" || top[0].Projects[0].ID.String() != a.ID ||
+		top[0].Projects[1].Nickname != "BETA" || top[0].Projects[1].ID.String() != b.ID {
+		t.Fatalf("EC-MG-1 projects = %+v", top[0])
+	}
+	if top[2].FoundIn != 1 || len(top[2].Projects) != 1 || top[2].Projects[0].Nickname != "BETA" {
+		t.Fatalf("EC-HS-1 projects = %+v", top[2])
+	}
 
 	groups, err := svc.Islands(ctx, owner)
 	if err != nil {

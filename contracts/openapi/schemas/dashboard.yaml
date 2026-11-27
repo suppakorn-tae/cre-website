@@ -151,7 +151,7 @@ DashboardTopIndicator:
   description: |
     An indicator ranked by how many projects have it at H or VH in their
     latest submitted version. Ties: more VH first, then indicator code.
-  required: [rank, indicator_code, factor_code, h_count, vh_count]
+  required: [rank, indicator_code, factor_code, h_count, vh_count, found_in, projects]
   properties:
     rank:
       type: integer
@@ -167,6 +167,25 @@ DashboardTopIndicator:
     vh_count:
       type: integer
       minimum: 0
+    found_in:
+      type: integer
+      minimum: 0
+      description: Distinct projects with this indicator at H or VH; the length of `projects`.
+    projects:
+      type: array
+      description: |
+        The caller's projects with this indicator at H or VH in their latest
+        submitted version, ordered by nickname then id.
+      items:
+        $ref: '#/DashboardTopIndicatorProject'
+DashboardTopIndicatorProject:
+  type: object
+  required: [id, nickname]
+  properties:
+    id:
+      $ref: common.yaml#/schemas/Uuid
+    nickname:
+      type: string
 DashboardTopIndicators:
   type: object
   required: [items]

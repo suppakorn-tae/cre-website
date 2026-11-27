@@ -185,9 +185,13 @@ func (h handler) topIndicators(w http.ResponseWriter, r *http.Request) {
 	}
 	out := api.DashboardTopIndicators{Items: make([]api.DashboardTopIndicator, len(rows))}
 	for i, t := range rows {
+		ps := make([]api.DashboardTopIndicatorProject, len(t.Projects))
+		for j, p := range t.Projects {
+			ps[j] = api.DashboardTopIndicatorProject{Id: p.ID, Nickname: p.Nickname}
+		}
 		out.Items[i] = api.DashboardTopIndicator{
 			Rank: t.Rank, IndicatorCode: t.IndicatorCode, FactorCode: t.FactorCode,
-			HCount: t.HCount, VhCount: t.VhCount,
+			HCount: t.HCount, VhCount: t.VhCount, FoundIn: t.FoundIn, Projects: ps,
 		}
 	}
 	writeJSON(w, out)

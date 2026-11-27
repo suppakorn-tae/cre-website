@@ -113,6 +113,9 @@ type Querier interface {
 	DashboardProjectsPanel(ctx context.Context, arg DashboardProjectsPanelParams) ([]DashboardProjectsPanelRow, error)
 	// Indicators ranked by the number of projects with H or VH in the latest
 	// submitted version. Ties: more VH first, then indicator code (BR-26).
+	// project_ids and project_nicknames are parallel arrays of the projects with
+	// H or VH, ordered by nickname then id. A version has one result per
+	// indicator, so their length is the distinct project count (found_in).
 	DashboardTopIndicators(ctx context.Context, ownerID uuid.UUID) ([]DashboardTopIndicatorsRow, error)
 	DeleteAnswerY3(ctx context.Context, arg DeleteAnswerY3Params) error
 	// A strategy only exists for H and VH results.

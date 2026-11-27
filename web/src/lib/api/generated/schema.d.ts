@@ -1808,6 +1808,17 @@ export interface components {
             factor_code: string;
             h_count: number;
             vh_count: number;
+            /** @description Distinct projects with this indicator at H or VH; the length of `projects`. */
+            found_in: number;
+            /**
+             * @description The caller's projects with this indicator at H or VH in their latest
+             *     submitted version, ordered by nickname then id.
+             */
+            projects: components["schemas"]["DashboardTopIndicatorProject"][];
+        };
+        DashboardTopIndicatorProject: {
+            id: components["schemas"]["Uuid"];
+            nickname: string;
         };
         DashboardTopIndicators: {
             items: components["schemas"]["DashboardTopIndicator"][];

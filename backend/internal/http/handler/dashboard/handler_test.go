@@ -60,7 +60,10 @@ func (f *fakeReader) Projects(_ context.Context, o uuid.UUID, _ svc.ProjectsPara
 
 func (f *fakeReader) TopIndicators(_ context.Context, o uuid.UUID) ([]svc.TopIndicator, error) {
 	f.asked = append(f.asked, o)
-	return []svc.TopIndicator{{Rank: 1, IndicatorCode: "EC-HS-1", FactorCode: "EC-HS", HCount: 2, VhCount: 1}}, nil
+	return []svc.TopIndicator{{
+		Rank: 1, IndicatorCode: "EC-HS-1", FactorCode: "EC-HS", HCount: 1, VhCount: 1, FoundIn: 2,
+		Projects: []svc.TopProject{{ID: uuid.New(), Nickname: "ALPH"}, {ID: uuid.New(), Nickname: "BETA"}},
+	}}, nil
 }
 
 func (f *fakeReader) Islands(_ context.Context, o uuid.UUID) ([]svc.IslandGroup, error) {
@@ -169,6 +172,29 @@ func TestProjectsPanelCarriesScoredCounts(t *testing.T) {
 		if got[0] != w[0] || got[1] != w[1] {
 			t.Fatalf("item %d scored/total = %v, want %v", i, got, w)
 		}
+	}
+}
+
+// Two projects share an indicator: the body lists both nicknames and found_in
+// is 2 (the response also passes the contract check inside get).
+func TestTopIndicatorsListTheProjects(t *testing.T) {
+	resp := get(t, &fakeReader{}, owner.String(), "/api/v1/dashboard/panels/top-indicators")
+	var body struct {
+		Items []struct {
+			FoundIn  int `json:"found_in"`
+			Projects []struct {
+				ID       string `json:"id"`
+				Nickname string `json:"nickname"`
+			} `json:"projects"`
+		} `json:"items"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		t.Fatal(err)
+	}
+	if len(body.Items) != 1 || body.Items[0].FoundIn != 2 || len(body.Items[0].Projects) != 2 ||
+		body.Items[0].Projects[0].Nickname != "ALPH" || body.Items[0].Projects[1].Nickname != "BETA" ||
+		body.Items[0].Projects[0].ID == "" {
+		t.Fatalf("items = %+v, want found_in 2 with ALPH and BETA", body.Items)
 	}
 }
 
