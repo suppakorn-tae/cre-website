@@ -30,7 +30,31 @@ read-only token (`docker login ghcr.io`) if the packages are private.
   editing `.env.prod` and re-running the deploy command. Rotating
   `SESSION_SECRET` logs every user out.
 - Compose fails at start with a clear message if a required variable is
-  empty (`IMAGE_TAG`, `SESSION_SECRET`, `SMTP_*`, `GOOGLE_*`, `ACME_EMAIL`).
+  empty (`IMAGE_TAG`, `SESSION_SECRET`, `SMTP_*`, `GOOGLE_*`, `ACME_EMAIL`,
+  `APP_DB_PASSWORD`).
+
+## Database roles
+
+Two roles, two connection strings:
+
+| Role | Used by | Variable | Rights |
+|---|---|---|---|
+| `cre_owner` (`POSTGRES_USER`, superuser in the image) | `migrate` only | `MIGRATE_DATABASE_URL` | owns the schema |
+| `cre_app` | `api`, `worker` | `DATABASE_URL` | SELECT, INSERT, UPDATE, DELETE on tables; only SELECT and INSERT on `audit_log` |
+
+The migration creates `cre_app` without a password. Every start of `migrate`
+(after `up`) runs `ALTER ROLE cre_app WITH LOGIN PASSWORD ...` with the value
+of `APP_DB_PASSWORD`, so the password never sits in a migration or in the
+image.
+
+- Generate it with `openssl rand -hex 24` and put it in `.env.prod` twice:
+  as `APP_DB_PASSWORD` and inside `DATABASE_URL` (`postgres://cre_app:<password>@db:5432/cre?sslmode=disable`).
+  A hex value needs no URL escaping. Keep it different from `POSTGRES_PASSWORD`.
+- Rotate it by changing both values and redeploying: `migrate` sets the new
+  password, then `api` and `worker` restart with the new `DATABASE_URL`.
+- Check: `deploy/backup/deploy.sh exec db psql -U cre_owner -d cre -c "SELECT usename FROM pg_stat_activity WHERE datname = 'cre'"`
+  lists `cre_app` for the api and worker connections, and
+  `... -c "SET ROLE cre_app; DELETE FROM audit_log"` answers `permission denied`.
 
 ## One-time setup
 

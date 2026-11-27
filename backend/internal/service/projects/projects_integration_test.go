@@ -16,6 +16,7 @@ import (
 
 type env struct {
 	db   *pgxpool.Pool
+	own  *pgxpool.Pool // schema owner, for tests that change the schema
 	svc  *projects.Service
 	a, b uuid.UUID // two owners
 }
@@ -25,10 +26,11 @@ func newEnv(t *testing.T) env {
 	if testing.Short() {
 		t.Skip("integration test needs Docker")
 	}
-	db := testutil.NewDB(t)
+	own := testutil.NewOwnerDB(t)
+	db := testutil.NewAppPool(t, own)
 	now := func() time.Time { return time.Date(2027, 7, 1, 12, 0, 0, 0, time.UTC) }
 	return env{
-		db: db, svc: projects.New(db, db, testRounding, now),
+		db: db, own: own, svc: projects.New(db, db, testRounding, now),
 		a: uuid.MustParse(testutil.NewAccount(t, db).ID),
 		b: uuid.MustParse(testutil.NewAccount(t, db).ID),
 	}
@@ -113,11 +115,11 @@ func TestCreateStoresNothingWhenVersionStepFails(t *testing.T) {
 		t.Run(table, func(t *testing.T) {
 			e := newEnv(t)
 			ctx := context.Background()
-			if _, err := e.db.Exec(ctx, `CREATE FUNCTION force_failure() RETURNS trigger LANGUAGE plpgsql
+			if _, err := e.own.Exec(ctx, `CREATE FUNCTION force_failure() RETURNS trigger LANGUAGE plpgsql
 				AS $$ BEGIN RAISE EXCEPTION 'forced failure'; END $$`); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := e.db.Exec(ctx, `CREATE TRIGGER force_failure BEFORE INSERT ON `+table+`
+			if _, err := e.own.Exec(ctx, `CREATE TRIGGER force_failure BEFORE INSERT ON `+table+`
 				FOR EACH ROW EXECUTE FUNCTION force_failure()`); err != nil {
 				t.Fatal(err)
 			}
