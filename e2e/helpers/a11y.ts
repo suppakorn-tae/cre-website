@@ -21,34 +21,20 @@ export type KnownIssue = {
   ready: string;
 };
 
-const PROJECT = '0193a5c2-7b1e-7c3a-9d4f-000000000001';
-
-export const KNOWN_ISSUES: KnownIssue[] = [
-  // IO-219: aria-label does not contain the visible text (WCAG 2.5.3): the brand link, the
-  // account menu button (Radix id), the dashboard row actions, the results factor hit
-  // buttons and the versions level link.
-  {
-    rule: 'label-content-name-mismatch',
-    target: /__brand$|^#radix-_R_\w+_$|__actionText\[aria-label=|__factorHit\[|__levelLink$/,
-    issue: 'IO-219',
-    probe: '/dashboard',
-    ready: '55 / 55 ตัวชี้วัด',
-  },
-  // IO-220: the breadcrumb, back and "nav" links differ from the text around them by
-  // colour only (WCAG 1.4.1).
-  {
-    rule: 'link-in-text-block',
-    target:
-      /__breadcrumb > a\[href\$="(dashboard|users)"\]$|^nav > a\[href\$="dashboard"\]$|^\.hover\\:underline\.text-blue-700(\.no-underline|\[href\$="dashboard"\])$/,
-    issue: 'IO-220',
-    probe: `/projects/${PROJECT}`,
-    ready: 'เวอร์ชันล่าสุด',
-  },
-];
+/**
+ * Empty now: IO-219 (2.5.3) and IO-220 (1.4.1) are fixed. Add an entry only for a real
+ * violation with its own issue; the "known issues" test fails when an entry stops showing.
+ * A probe page and a text that shows once it has loaded are needed for that test, e.g.
+ * `{ rule, target: /selector$/, issue: 'IO-1', probe: '/dashboard', ready: 'text' }`.
+ */
+export const KNOWN_ISSUES: KnownIssue[] = [];
 
 /** True when a KnownIssue covers this axe node (position suffixes like :nth-child are ignored). */
 export function isKnown(rule: string, target: readonly unknown[]): boolean {
-  const selector = target.map(String).join(' ').replace(/:nth-child\(\d+\)/g, '');
+  const selector = target
+    .map(String)
+    .join(' ')
+    .replace(/:nth-child\(\d+\)/g, '');
   return KNOWN_ISSUES.some((k) => k.rule === rule && k.target.test(selector));
 }
 
