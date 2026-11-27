@@ -1,9 +1,10 @@
 'use client';
 
-import { useId, useLayoutEffect, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 
 import { formatNumber } from '@/lib/format/locale';
 
+import { useReducedMotion, useSweep, useTween } from './chartMotion';
 import styles from './display.module.css';
 
 export type DonutSegment = {
@@ -20,8 +21,6 @@ const RADIUS = 15.9155;
 const STROKE = 6;
 /** Gap between neighbouring segments: about 2 degrees of the ring (100 = 360 degrees). */
 export const GAP = (2 / 360) * 100;
-/** Same as `--motion-chart` (IO-192); the CSS reads the token and falls back to this. */
-const DURATION_MS = 700;
 
 /** Arcs on the ring, one per non-empty segment, in the order given. Empty when the total is 0. */
 export function donutArcs(segments: DonutSegment[]): DonutArc[] {
@@ -62,42 +61,6 @@ export function centreCount(centre: ReactNode): number | null {
   return null;
 }
 
-const REDUCED = '(prefers-reduced-motion: reduce)';
-
-function subscribeReduced(onChange: () => void) {
-  const list = window.matchMedia(REDUCED);
-  list.addEventListener('change', onChange);
-  return () => list.removeEventListener('change', onChange);
-}
-
-function useReducedMotion(): boolean {
-  return useSyncExternalStore(
-    subscribeReduced,
-    () => window.matchMedia(REDUCED).matches,
-    () => false,
-  );
-}
-
-/** 0 to 1 over the chart duration with ease-out, once on mount. Stays at 1 when off. */
-function useSweep(on: boolean): number {
-  // Starts at 1 so the server markup and the no-script page show the real number; the first
-  // animation frame, queued from a layout effect so it runs before paint, drops it to 0.
-  const [progress, setProgress] = useState(1);
-  useLayoutEffect(() => {
-    if (!on) return;
-    let frame = 0;
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / DURATION_MS, 1);
-      setProgress(1 - (1 - t) ** 3);
-      if (t < 1) frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, [on]);
-  return on ? progress : 1;
-}
-
 type Props = {
   segments: DonutSegment[];
   /** Text alternative of the ring. The numbers should also be in text next to it (a legend). */
@@ -108,7 +71,7 @@ type Props = {
   caption?: ReactNode;
   /** Id of an element that describes the chart, such as its legend. */
   describedBy?: string;
-  /** Sweep the ring in and count the centre up on mount. No motion under reduced motion. */
+  /** Sweep the ring in on mount and move the slices when values change. None under reduced motion. */
   animate?: boolean;
 };
 
@@ -130,7 +93,11 @@ export function DonutChart({
   const count = centreCount(centre);
   const shownCentre =
     moving && count !== null ? formatNumber(Math.round(count * progress)) : centre;
-  const arcs = donutArcs(segments);
+  // A change of the values moves the slices from where they are; the sweep covers the first draw.
+  const tweened = useTween(Object.fromEntries(segments.map((s) => [s.key, s.value])), {
+    enabled: moving,
+  });
+  const arcs = donutArcs(segments.map((s) => ({ ...s, value: tweened[s.key] ?? s.value })));
   return (
     <div
       className="relative mx-auto w-full shrink-0"

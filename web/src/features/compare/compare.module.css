@@ -673,6 +673,39 @@
   }
 }
 
+/* Chart motion (IO-227), none under reduced motion. The distribution bars grow in from the left
+   on load and move from where they are when the counts change; a level that appears fades in.
+   The trend and RM charts draw from values in script (useTween), so only the fade of a new
+   series is here. */
+@media (prefers-reduced-motion: no-preference) {
+  .distBar {
+    animation: dist-grow var(--motion-chart, 700ms) ease-out both;
+  }
+  .distPart {
+    transition: flex-grow calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out);
+    animation: dist-fade calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out) both;
+  }
+  .series {
+    animation: dist-fade calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out) both;
+  }
+}
+@keyframes dist-grow {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes dist-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (max-width: 767px) {
   .kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
