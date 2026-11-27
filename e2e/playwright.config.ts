@@ -4,6 +4,8 @@ export const BASE_URL = process.env.E2E_BASE_URL ?? 'https://localhost';
 
 export default defineConfig({
   testDir: './tests',
+  // tests/a11y runs in mock mode only (playwright.mock.config.ts).
+  testIgnore: ['a11y/**'],
   globalSetup: './global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,

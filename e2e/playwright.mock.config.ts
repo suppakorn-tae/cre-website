@@ -6,7 +6,9 @@ const PORT = Number(process.env.E2E_MOCK_PORT ?? 3100);
 const BASE_URL = `http://localhost:${PORT}`;
 
 export default defineConfig({
-  testDir: './mock',
+  testDir: '.',
+  // The mock smoke specs, and the axe gate (it runs on the mock app too).
+  testMatch: ['mock/**/*.spec.ts', 'tests/a11y/**/*.spec.ts'],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
