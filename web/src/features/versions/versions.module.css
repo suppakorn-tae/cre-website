@@ -22,7 +22,10 @@
 }
 .crumbs a {
   color: var(--color-blue-700);
-  text-decoration: none;
+  text-decoration: underline;
+}
+.crumbs a:hover {
+  text-decoration-thickness: 2px;
 }
 .titleRow {
   display: flex;
