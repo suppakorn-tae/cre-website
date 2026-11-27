@@ -16,13 +16,14 @@ import (
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/session"
+	"github.com/suppakorn-tae/cre-website/backend/internal/testutil"
 	"github.com/suppakorn-tae/cre-website/backend/migrations"
 )
 
 func startPG(t *testing.T) *pgxpool.Pool {
 	t.Helper()
 	ctx := context.Background()
-	ctr, err := tcpostgres.Run(ctx, "postgres:17-alpine",
+	ctr, err := tcpostgres.Run(ctx, testutil.PostgresImage,
 		tcpostgres.WithDatabase("cre"), tcpostgres.WithUsername("cre"), tcpostgres.WithPassword("cre"),
 		testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2)),
 	)

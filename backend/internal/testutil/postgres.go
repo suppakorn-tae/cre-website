@@ -24,6 +24,10 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/migrations"
 )
 
+// PostgresImage is the image every testcontainers Postgres uses. Keep it
+// equal to the db image in deploy/compose/compose.yaml and in CI.
+const PostgresImage = "postgres:19.0-trixie"
+
 // DB is what the fixture builders need. *pgxpool.Pool, *pgx.Conn and pgx.Tx
 // all satisfy it.
 type DB interface {
@@ -61,7 +65,7 @@ func NewDB(t testing.TB) *pgxpool.Pool {
 func NewEmptyDB(t testing.TB) string {
 	t.Helper()
 	ctx := context.Background()
-	ctr, err := tcpostgres.Run(ctx, "postgres:17-alpine",
+	ctr, err := tcpostgres.Run(ctx, PostgresImage,
 		tcpostgres.WithDatabase("cre"),
 		tcpostgres.WithUsername("cre"),
 		tcpostgres.WithPassword("cre"),
