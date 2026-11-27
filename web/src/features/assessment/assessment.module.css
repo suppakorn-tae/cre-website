@@ -294,6 +294,8 @@
   font: inherit;
   text-align: start;
   cursor: pointer;
+  /* WCAG 2.5.8: at least 24 px high. */
+  min-height: var(--space-6);
 }
 .groupToggle .groupName {
   color: inherit;

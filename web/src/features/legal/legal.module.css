@@ -28,7 +28,9 @@
   padding: var(--space-8) var(--space-4) var(--space-16);
 }
 .back {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--space-6);
   margin-bottom: var(--space-6);
   color: var(--color-blue-700);
   font-weight: var(--weight-medium);

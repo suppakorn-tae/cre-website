@@ -13,6 +13,12 @@
   gap: var(--space-3);
   cursor: pointer;
 }
+/* "Forgot password?" stands on its own, so it needs a 24 px target (WCAG 2.5.8). */
+.forgot {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--space-6);
+}
 .consentRow input {
   width: 20px;
   height: 20px;

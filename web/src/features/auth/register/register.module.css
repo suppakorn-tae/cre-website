@@ -168,6 +168,7 @@
 .backLink {
   display: inline-flex;
   align-items: center;
+  min-height: var(--space-6);
   align-self: flex-start;
   gap: var(--space-1);
 }
