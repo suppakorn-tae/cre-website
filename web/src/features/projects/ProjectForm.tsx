@@ -13,13 +13,7 @@ import { ApiError } from '@/lib/api/errors';
 import { formatDate, formatNumber } from '@/lib/format/locale';
 
 import { useCreateProject, useUpdateProject } from './api';
-import {
-  durationDays,
-  expectedProgress,
-  isoToThaiInput,
-  parseThaiDateInput,
-  todayIso,
-} from './dates';
+import { addDays, durationDays, expectedProgress, parseThaiDateInput, todayIso } from './dates';
 import { useProjectLabels } from './labels';
 import { controlClass, IconField } from './IconField';
 import { afterCreatePath } from './paths';
@@ -39,6 +33,9 @@ import {
 } from './validation';
 
 type Props = { project?: Project };
+
+/** The form keeps the typed text (`onTextChange`), so the ISO value is not needed. */
+const noop = () => {};
 
 const FIELD_ORDER: FieldKey[] = [
   'name',
@@ -248,8 +245,9 @@ export function ProjectForm({ project }: Props) {
                 helper={t('dateHelper')}
                 labels={dateLabels}
                 value={start ?? ''}
-                max={end ?? undefined}
-                onChange={(iso) => set('startDate', iso ? isoToThaiInput(iso) : '')}
+                max={end ? addDays(end, -1) : undefined}
+                onTextChange={(text) => set('startDate', text)}
+                onChange={noop}
                 error={error('startDate')}
                 required
               />
@@ -264,8 +262,9 @@ export function ProjectForm({ project }: Props) {
                 }
                 labels={dateLabels}
                 value={end ?? ''}
-                min={start ?? undefined}
-                onChange={(iso) => set('endDate', iso ? isoToThaiInput(iso) : '')}
+                min={start ? addDays(start, 1) : undefined}
+                onTextChange={(text) => set('endDate', text)}
+                onChange={noop}
                 error={error('endDate')}
                 required
               />

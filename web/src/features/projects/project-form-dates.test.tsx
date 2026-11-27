@@ -68,6 +68,7 @@ describe('ProjectForm dates', () => {
     expect(cell('2026-01-14').getAttribute('aria-disabled')).toBe('true');
     fireEvent.click(cell('2026-01-14'));
     expect(end().value).toBe('20/01/2569');
+    expect(cell('2026-01-15').getAttribute('aria-disabled')).toBe('true');
     expect(cell('2026-01-16').getAttribute('aria-disabled')).toBeNull();
   });
 
@@ -76,7 +77,7 @@ describe('ProjectForm dates', () => {
     fireEvent.change(end(), { target: { value: '15/01/2569' } });
     fireEvent.click(calendarButtons()[0]);
     await opened();
-    expect(cell('2026-01-16').getAttribute('aria-disabled')).toBe('true');
+    expect(cell('2026-01-15').getAttribute('aria-disabled')).toBe('true');
     expect(cell('2026-01-14').getAttribute('aria-disabled')).toBeNull();
   });
 
@@ -86,6 +87,17 @@ describe('ProjectForm dates', () => {
     fireEvent.change(end(), { target: { value: '01/01/2569' } });
     fireEvent.submit(start().closest('form') as HTMLFormElement);
     await waitFor(() => expect(screen.getAllByText('วันสิ้นสุดต้องอยู่หลังวันเริ่ม').length).toBe(1));
+  });
+
+  it('shows the invalid-date message, not required, for a date that does not exist', async () => {
+    renderForm();
+    fireEvent.change(start(), { target: { value: '31/02/2569' } });
+    fireEvent.submit(start().closest('form') as HTMLFormElement);
+    await waitFor(() =>
+      expect(screen.getAllByText('วันที่ไม่ถูกต้อง กรอกเป็น วว/ดด/ปปปป').length).toBe(1),
+    );
+    expect(screen.queryByText('กรอกวันเริ่มโครงการ')).toBeNull();
+    expect(start().value).toBe('31/02/2569');
   });
 
   it('keeps the duration hint under the end date', () => {

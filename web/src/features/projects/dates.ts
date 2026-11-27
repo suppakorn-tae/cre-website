@@ -9,6 +9,11 @@ export function dayNumber(iso: string): number {
   return Math.round(Date.UTC(y, m - 1, d) / MS_PER_DAY);
 }
 
+/** The ISO date `days` calendar days after `iso` (negative for before). */
+export function addDays(iso: string, days: number): string {
+  return new Date((dayNumber(iso) + days) * MS_PER_DAY).toISOString().slice(0, 10);
+}
+
 /** Today's calendar date in Bangkok as an ISO date. */
 export function todayIso(now: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', {
