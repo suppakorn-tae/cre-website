@@ -91,8 +91,13 @@ describe('OverviewPanel', () => {
     const html = panel();
     const links = html.match(/<a [^>]*href="[^"]*\/results\?tab=hvh"[^>]*>/g) ?? [];
     expect(links).toHaveLength(2);
-    expect(html).toContain('title="ดูคำแนะนำของตัวชี้วัดความเสี่ยงสูงมาก');
-    expect(html).toContain('title="ดูคำแนะนำของตัวชี้วัดความเสี่ยงสูง ');
+    expect(html).not.toContain('title="ดูคำแนะนำ');
+    for (const id of html.match(/aria-describedby="([^"]+)"/g) ?? []) {
+      const ref = id.slice(18, -1);
+      expect(html).toMatch(new RegExp(`id="${ref}"[^>]*>ดูคำแนะนำของตัวชี้วัดความเสี่ยงสูง`));
+    }
+    expect(html).toContain('aria-label="VH ความเสี่ยงสูงมาก ');
+    expect(html).toContain('aria-label="H ความเสี่ยงสูง ');
   });
 
   it('shows the project information card', () => {

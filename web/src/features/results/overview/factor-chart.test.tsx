@@ -129,7 +129,7 @@ describe('factor chart', () => {
     expect(html).toMatch(/data-level="H"/); // 3.5
     expect(html).toMatch(/data-level="H"/); // 4.2
     // text alternative: factor, value and level (code and name), not colour alone
-    expect(html).toContain('aria-label="2.78 EC-MG: EC-MG: RM เฉลี่ย 2.78 ระดับ M (ความเสี่ยงปานกลาง)"');
+    expect(html).toContain('aria-label="2.78 EC-MG: RM เฉลี่ย 2.78 ระดับ M (ความเสี่ยงปานกลาง)"');
     expect(html).toContain('ชี้ที่แท่งเพื่อดูค่า RL');
   });
 

@@ -16,10 +16,12 @@
 .crumbs a,
 .link {
   color: var(--color-blue-700);
-  text-decoration: none;
 }
 .crumbs a {
   text-decoration: underline;
+}
+.link {
+  text-decoration: none;
 }
 .crumbs a:hover {
   text-decoration-thickness: 2px;

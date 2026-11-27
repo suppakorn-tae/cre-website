@@ -138,8 +138,8 @@ describe('projects table', () => {
 
   it('splits H and VH into two chips when the counts are known, else shows the total', () => {
     const split = render(<ProjectsTable items={seedProjects.slice(0, 1)} risks={risks} />);
-    expect(split).toContain('aria-label="ความเสี่ยงสูง 6"');
-    expect(split).toContain('aria-label="ความเสี่ยงสูงมาก 3"');
+    expect(split).toContain('aria-label="H ความเสี่ยงสูง 6"');
+    expect(split).toContain('aria-label="VH ความเสี่ยงสูงมาก 3"');
     const total = render(<ProjectsTable items={seedProjects.slice(0, 1)} />);
     expect(total).toContain('aria-label="สูงและสูงมาก 9 ตัวชี้วัด"');
   });
@@ -219,8 +219,8 @@ describe('top 10 panel', () => {
     expect(html).toContain(`<b>${seedTop[0].indicator_code}</b> ชื่อตัวชี้วัด`);
     // Found in 4 of the 4 projects that have a submitted version.
     expect(html).toContain('4 / 4');
-    expect(html).toContain('aria-label="ความเสี่ยงสูงมาก 1"');
-    expect(html).toContain('aria-label="ความเสี่ยงสูง 3"');
+    expect(html).toContain('aria-label="VH ความเสี่ยงสูงมาก 1"');
+    expect(html).toContain('aria-label="H ความเสี่ยงสูง 3"');
   });
 
   it('uses found_in from the api and lists the nickname chips of its projects', () => {
@@ -291,8 +291,8 @@ describe('islands panel', () => {
     for (const text of ['TK2', 'ท่าเรือเกาะเต่า ระยะที่ 2', 'v2', 'ส่งแล้ว']) {
       expect(html).toContain(text);
     }
-    expect(html).toContain('aria-label="ความเสี่ยงสูง 6"');
-    expect(html).toContain('aria-label="ความเสี่ยงสูงมาก 3"');
+    expect(html).toContain('aria-label="H ความเสี่ยงสูง 6"');
+    expect(html).toContain('aria-label="VH ความเสี่ยงสูงมาก 3"');
     expect(html).toContain(`href="/projects/${tk2.project_id}"`);
     expect(html).toContain('aria-label="เปิดโครงการ TK2"');
   });

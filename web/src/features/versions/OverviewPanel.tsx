@@ -3,7 +3,7 @@
 import { IconChartPie, IconEdit, IconEye, IconShieldCheck } from '@tabler/icons-react';
 import Link from 'next/link';
 import { useTranslations } from 'next-intl';
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 
 import {
   Button,
@@ -204,6 +204,19 @@ function LatestVersionCard({
   );
 }
 
+/** A level chip that links to the advice tab. The hint is read as the description, not a tooltip. */
+function AdviceLink({ href, hint, children }: { href: string; hint: string; children: ReactNode }) {
+  const hintId = useId();
+  return (
+    <Link className={styles.levelLink} href={href} aria-describedby={hintId}>
+      {children}
+      <span id={hintId} className={styles.srOnly}>
+        {hint}
+      </span>
+    </Link>
+  );
+}
+
 /** Level chips VL to VH, the stacked bar and "scored/total indicators" from the stored counts. */
 function LevelSummary({ projectId, version }: { projectId: string; version: VersionSummary }) {
   const t = useTranslations('versions.overview.latest');
@@ -228,14 +241,13 @@ function LevelSummary({ projectId, version }: { projectId: string; version: Vers
           );
           // H and VH open the advice tab of the results page.
           return p.level === 'H' || p.level === 'VH' ? (
-            <Link
+            <AdviceLink
               key={p.level}
-              className={styles.levelLink}
               href={`${projectPaths.results(projectId, version.id)}?tab=hvh`}
-              title={t('adviceLink', { level: tUi(`levels.${p.level}`), count: p.count })}
+              hint={t('adviceLink', { level: tUi(`levels.${p.level}`), count: p.count })}
             >
               {badge}
-            </Link>
+            </AdviceLink>
           ) : (
             badge
           );
