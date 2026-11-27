@@ -201,8 +201,9 @@ Without backup (staging only), set `BACKUP_ENABLED=false`.
 
 Run from a clone with push rights, on the commit staging accepted.
 
-1. **Pick the commit and version.** The commit is on `main` and its
-   `release` run succeeded. Bump the version by SemVer: patch for fixes,
+1. **Pick the commit and version.** Tag only commits on `main`: the
+   release run fails for a commit that is not on `main`. The commit's
+   `release` run on `main` succeeded. Bump the version by SemVer: patch for fixes,
    minor for features, major for breaking changes. A pre-release looks
    like `v1.4.0-rc.1`.
 
@@ -308,8 +309,10 @@ After the first deploy, and after changes to mail, Google or backup, also do thi
 
 ## Roll back
 
-1. Find the previous version: the line before the last in
-   `.env.digests.log`, or `gh release list`.
+1. Find the previous version: read `.env.digests.log` from the bottom and
+   take the first `tag=` that differs from the bad one (the same version
+   can appear on several lines after a restart or a retry), or pick it from
+   `gh release list`.
 2. Set `IMAGE_TAG` in `.env.prod` to it and run steps 2 to 7 of
    [Every deploy](#every-deploy) again (check out that version in step 2).
    `pull` pins the version's digests again.
