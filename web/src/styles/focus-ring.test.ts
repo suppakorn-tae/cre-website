@@ -3,6 +3,8 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
+import { contrast } from '@/lib/contrast';
+
 const stylesDir = __dirname;
 const srcDir = path.resolve(stylesDir, '..');
 const tokens = readFileSync(path.join(stylesDir, 'tokens.css'), 'utf8');
@@ -16,20 +18,6 @@ function token(name: string): string {
 function resolveColor(value: string): string {
   const ref = /^var\(--([\w-]+)\)$/.exec(value);
   return ref ? resolveColor(token(ref[1]!)) : value;
-}
-
-function luminance(hex: string): number {
-  const n = parseInt(hex.slice(1), 16);
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => {
-    const c = v / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  }) as [number, number, number];
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-export function contrast(a: string, b: string): number {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
-  return (hi + 0.05) / (lo + 0.05);
 }
 
 // The ring is a white gap followed by the coloured band, so a blue control still shows it.

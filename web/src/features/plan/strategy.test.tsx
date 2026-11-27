@@ -1,13 +1,12 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import plan from '../../../messages/th/plan.json';
 import ui from '../../../messages/th/ui.json';
 
+import { colourOf, contrast, readTokens } from '@/lib/contrast';
 import { dimensionOf } from '@/lib/dimensions';
 import { ApiError } from '@/lib/api/errors';
 
@@ -15,40 +14,13 @@ import type { Strategy } from './api';
 import { STRATEGY_COLOURS } from './strategy';
 import { StrategyPanel } from './StrategyPanel';
 
-const tokens = readFileSync(path.resolve(__dirname, '../../styles/tokens.css'), 'utf8');
-
-/** Value of a token from tokens.css, following `var(--x)` references. */
-function token(name: string): string {
-  const m = new RegExp(`--${name}:\\s*([^;]+);`).exec(tokens);
-  if (!m) throw new Error(`token ${name} not found`);
-  const v = m[1].trim();
-  const ref = /^var\(--([\w-]+)\)$/.exec(v);
-  return ref ? token(ref[1]) : v;
-}
-
-function luminance(hex: string): number {
-  const n = parseInt(hex.slice(1), 16);
-  const [r, g, b] = [n >> 16, (n >> 8) & 255, n & 255].map((c) => {
-    const s = c / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-}
-
-export function contrast(a: string, b: string): number {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
-  return (hi + 0.05) / (lo + 0.05);
-}
+const tokens = readTokens();
+const token = (name: string) => colourOf(tokens, name);
 
 describe('strategy colours', () => {
   const white = token('color-white');
   const surface = token('color-surface');
   const text = token('color-text-secondary');
-
-  it('contrast helper matches known values', () => {
-    expect(contrast('#000000', '#ffffff')).toBeCloseTo(21, 1);
-    expect(contrast('#777777', '#ffffff')).toBeCloseTo(4.48, 1);
-  });
 
   for (const [strategy, { solid, tint }] of Object.entries(STRATEGY_COLOURS)) {
     describe(strategy, () => {
