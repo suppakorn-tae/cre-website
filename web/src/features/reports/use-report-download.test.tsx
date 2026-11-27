@@ -172,8 +172,12 @@ describe('useReportDownload', () => {
       result.current.start();
     });
     await ready(result);
-    act(() => result.current.start()); // ready: this one only saves the file again
     expect(count(reportsPost)).toBe(1);
+    await waitFor(() => expect(clicks).toHaveLength(1));
+    // Ready: the click asks again, gets the same job and saves its file again.
+    act(() => result.current.start());
+    await waitFor(() => expect(clicks).toHaveLength(2));
+    expect(count(reportsPost)).toBe(2);
   });
 
   it('downloads once per job, named after the project and version', async () => {
