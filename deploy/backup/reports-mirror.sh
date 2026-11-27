@@ -4,6 +4,8 @@
 # `copy` not `sync`: a deletion on the app side must not erase the
 # off-site copy.
 set -eu
+# crond may start jobs without the image PATH; the PostgreSQL tools live here on Debian.
+export PATH="/usr/lib/postgresql/${PG_MAJOR:-19}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 : "${S3_ENDPOINT:?}" "${S3_BUCKET:?}" "${S3_ACCESS_KEY:?}" "${S3_SECRET_KEY:?}"
 case "${BACKUP_S3_PATH_STYLE:-true}" in
   true | 1 | yes | on) force=true ;;

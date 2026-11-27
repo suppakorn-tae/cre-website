@@ -9,6 +9,8 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
+
+	"github.com/suppakorn-tae/cre-website/backend/internal/testutil"
 )
 
 const wantEnums = 14
@@ -26,7 +28,7 @@ var wantTables = []string{
 func startPostgres(t *testing.T) (url string, conn *pgx.Conn) {
 	t.Helper()
 	ctx := context.Background()
-	ctr, err := tcpostgres.Run(ctx, "postgres:17-alpine",
+	ctr, err := tcpostgres.Run(ctx, testutil.PostgresImage,
 		tcpostgres.WithDatabase("cre"),
 		tcpostgres.WithUsername("cre"),
 		tcpostgres.WithPassword("cre"),

@@ -39,9 +39,9 @@ Without `BACKUP_CIPHER_PASS` no backup can be read. Keep it outside the server.
 ## Health checks
 
 ```
-deploy/backup/deploy.sh exec backup su-exec postgres pgbackrest --stanza=cre info
-deploy/backup/deploy.sh exec backup su-exec postgres pgbackrest --stanza=cre check
-deploy/backup/deploy.sh exec backup wget -qO- http://localhost:9099/cgi-bin/metrics
+deploy/backup/deploy.sh exec backup gosu postgres pgbackrest --stanza=cre info
+deploy/backup/deploy.sh exec backup gosu postgres pgbackrest --stanza=cre check
+deploy/backup/deploy.sh exec backup busybox wget -qO- http://localhost:9099/cgi-bin/metrics
 ```
 
 Metrics exposed by the backup container (port 9099, private-net only):
@@ -64,12 +64,12 @@ Goal: every change up to the failure, including account deletions.
 
    ```
    docker run --rm --env-file .env --network cre_egress-net \
-     -v cre_pgdata:/var/lib/postgresql/data \
+     -v cre_pgdata:/var/lib/postgresql \
      --entrypoint sh cre-pgbackrest:local -c '
        /opt/backup/render-config.sh /etc/pgbackrest/pgbackrest.conf &&
        chown -R postgres:postgres /etc/pgbackrest &&
-       su-exec postgres pgbackrest --stanza=cre --repo=1 \
-         --pg1-path=/var/lib/postgresql/data --delta restore'
+       gosu postgres pgbackrest --stanza=cre --repo=1 \
+         --pg1-path=/var/lib/postgresql/19/docker --delta restore'
    ```
 
    The default restore replays WAL to the end of the archive.
@@ -89,7 +89,7 @@ Goal: every change up to the failure, including account deletions.
    Check `select pg_is_in_recovery();` returns `f`.
 5. Restore `reports/` if the RustFS volume is lost (see Reports below).
 6. A new timeline starts. Run `pgbackrest check`, then take a new full:
-   `deploy/backup/deploy.sh exec backup su-exec postgres pgbackrest --stanza=cre --type=full backup`.
+   `deploy/backup/deploy.sh exec backup gosu postgres pgbackrest --stanza=cre --type=full backup`.
 7. Record the elapsed time; that is the real RTO.
 
 If repo1 is lost or unreadable, use `--repo=2` (latest monthly full;
@@ -109,12 +109,12 @@ mistake in a separate instance and copy the affected rows back.
    ```
    docker volume create pitr-data
    docker run --rm --env-file .env --network cre_egress-net \
-     -v pitr-data:/var/lib/postgresql/data \
+     -v pitr-data:/var/lib/postgresql \
      --entrypoint sh cre-pgbackrest:local -c '
        /opt/backup/render-config.sh /etc/pgbackrest/pgbackrest.conf &&
        chown -R postgres:postgres /etc/pgbackrest &&
-       su-exec postgres pgbackrest --stanza=cre --repo=1 \
-         --pg1-path=/var/lib/postgresql/data --delta \
+       gosu postgres pgbackrest --stanza=cre --repo=1 \
+         --pg1-path=/var/lib/postgresql/19/docker --delta \
          --type=time "--target=2026-11-24 03:14:00+00" \
          --target-action=promote restore'
    ```
@@ -127,11 +127,11 @@ mistake in a separate instance and copy the affected rows back.
 
    ```
    docker run -d --name pitr --env-file .env --network cre_egress-net \
-     -v pitr-data:/var/lib/postgresql/data \
+     -v pitr-data:/var/lib/postgresql \
      -p 127.0.0.1:55432:5432 --entrypoint sh cre-pgbackrest:local -c '
        /opt/backup/render-config.sh /etc/pgbackrest/pgbackrest.conf &&
        chown -R postgres:postgres /etc/pgbackrest &&
-       exec su-exec postgres postgres -c archive_mode=off \
+       exec gosu postgres postgres -c archive_mode=off \
          -c unix_socket_directories=/tmp'
    ```
 
@@ -157,7 +157,7 @@ If the PITR target is earlier than the oldest backup in repo1 (about
   `/scratch` on the backup container, starts it on a private socket,
   runs smoke queries, and deletes it. It runs after the first full
   and on the 15th at 04:00. Run by hand:
-  `deploy/backup/deploy.sh exec backup su-exec postgres /opt/backup/restore-check.sh`
+  `deploy/backup/deploy.sh exec backup gosu postgres /opt/backup/restore-check.sh`
 - Needs free space in the `backup-scratch` volume of about the database size.
 - Once a quarter run Scenario A on a spare host and write down the time.
 

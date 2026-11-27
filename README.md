@@ -8,7 +8,7 @@
 [![e2e](https://github.com/suppakorn-tae/cre-website/actions/workflows/ci-e2e.yml/badge.svg)](https://github.com/suppakorn-tae/cre-website/actions/workflows/ci-e2e.yml)
 ![Go](https://img.shields.io/badge/Go-1.27-00ADD8?logo=go&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-19-4169E1?logo=postgresql&logoColor=white)
 
 [Quick start](#-quick-start) · [Commands](#-commands) · [Architecture](#-architecture) · [Standards](#-standards) · [Repo layout](#-repo-layout) · [Docs](#-docs)
 
@@ -50,6 +50,9 @@ make up
 
 Open **<https://localhost>**. Caddy uses its own local CA, so accept the browser warning.
 Check health with `curl -k https://localhost/api/v1/healthz`, stop with `make down`.
+
+> [!IMPORTANT]
+> The database runs PostgreSQL 19. Data made by an older major version (16) does not start on 19. If `db` keeps restarting after you pull, reset it: `make down`, then `docker volume rm cre_pgdata` (the name is `<project>_pgdata`; list with `docker volume ls`), then `make up`. This deletes all local data.
 
 > [!NOTE]
 > The api will not start without `SESSION_SECRET` (32+ bytes). Leave `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` empty locally; Google sign-in then answers 503. Never commit `.env`.
@@ -272,7 +275,7 @@ Research exports work the same way, as a ZIP with no e-mails, and expire after 7
 | --- | --- |
 | Backend | Go, chi, oapi-codegen, pgx + sqlc, asynq |
 | Web | Next.js, TypeScript, next-intl, TanStack Query, MSW |
-| Data | PostgreSQL 16, Valkey, RustFS (S3) |
+| Data | PostgreSQL 19, Valkey, RustFS (S3) |
 | Other | Gotenberg (PDF), Caddy (proxy and TLS) |
 
 Exact versions live in `backend/go.mod`, `.nvmrc` and `package.json`.

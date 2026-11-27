@@ -8,7 +8,7 @@
 services:
   db:
     # Wrapper sets DB_IMAGE=cre-pgbackrest:local when backup is on.
-    image: ${DB_IMAGE:-postgres:16-alpine}
+    image: ${DB_IMAGE:-postgres:19.0-trixie}
     # The pgbackrest image sets its own ENTRYPOINT for the backup
     # service; db must keep the stock postgres one.
     entrypoint: ["docker-entrypoint.sh"]
@@ -56,7 +56,7 @@ services:
       S3_ACCESS_KEY: ${S3_ACCESS_KEY}
       S3_SECRET_KEY: ${S3_SECRET_KEY}
     volumes:
-      - pgdata:/var/lib/postgresql/data:ro
+      - pgdata:/var/lib/postgresql:ro
       - pgsock:/var/run/postgresql
       - pgbackrest-tls:/etc/pgbackrest/tls
       - backup-state:/var/lib/backup

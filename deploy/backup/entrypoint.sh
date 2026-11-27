@@ -41,10 +41,10 @@ cat >/etc/crontabs/postgres <<'CRON'
 CRON
 
 log "starting pgbackrest tls server"
-su-exec postgres pgbackrest server &
+gosu postgres pgbackrest server &
 log "starting metrics on :9099/cgi-bin/metrics"
-su-exec postgres httpd -f -p 9099 -h /opt/backup/www &
-su-exec postgres /opt/backup/metrics.sh loop &
-su-exec postgres /opt/backup/bootstrap.sh &
+gosu postgres httpd -f -p 9099 -h /opt/backup/www &
+gosu postgres /opt/backup/metrics.sh loop &
+gosu postgres /opt/backup/bootstrap.sh &
 
 exec crond -f -l 8 -c /etc/crontabs

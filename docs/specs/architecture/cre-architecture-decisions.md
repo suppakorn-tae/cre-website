@@ -9,7 +9,7 @@ Database Design v1.1 was written against v2.10. Its three changes to this set �
 ## Stack
 - Frontend: Next.js (TypeScript)
 - Backend: Go + chi (api) and Go worker — same module, separate binaries (`cmd/api`, `cmd/worker`, `cmd/migrate`)
-- Database: PostgreSQL 16 — schema fixed in **Database Design v1.1** (29 tables; see “Database” below)
+- Database: PostgreSQL 19 (image `postgres:19.0-trixie`, IO-238) — schema fixed in **Database Design v1.1** (29 tables; see “Database” below)
 - Queue + shared short-lived state: Valkey + asynq (compose service renamed `queue` → `valkey`)
 - Object storage: RustFS (S3-compatible; beta — app uses only the S3 API, so MinIO / cloud S3 are drop-in)
 - Reverse proxy: Caddy 2 (automatic HTTPS)

@@ -3,8 +3,8 @@
 ## Setup
 
 - Stack: `deploy/compose/compose.yaml` with `--scale api=2` (Caddy balances
-  the two replicas by DNS), one worker, Postgres 16, Valkey, RustFS,
-  Gotenberg. The `web` service is not started.
+  the two replicas by DNS), one worker, Postgres 16 (see the note
+  below), Valkey, RustFS, Gotenberg. The `web` service is not started.
 - Host: 2 vCPU (i7-9750H), 3.8 GB RAM. k6 (`grafana/k6:1.4.2`), the stack
   and other containers shared this one machine, so these numbers are
   conservative.
@@ -27,6 +27,11 @@
 - Log in and report request limits are lifted for the run
   (`compose.loadtest.yaml`) because all traffic comes from one IP.
 - Run (IO-113 branch, first run): 20 727 requests, 113.9 requests/s, 0 failed.
+
+> [!NOTE]
+> All numbers below were measured on PostgreSQL 16 (`postgres:16-alpine`).
+> The stack moved to PostgreSQL 19 (`postgres:19.0-trixie`) in IO-238. The
+> load test has not been re-run on 19 yet.
 
 ## Results (re-run on main, 2026-11-25, commit c335206)
 

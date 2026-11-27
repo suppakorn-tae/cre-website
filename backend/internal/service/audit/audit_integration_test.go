@@ -19,6 +19,7 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/dal"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/audit"
+	"github.com/suppakorn-tae/cre-website/backend/internal/testutil"
 	"github.com/suppakorn-tae/cre-website/backend/migrations"
 )
 
@@ -27,7 +28,7 @@ import (
 func setup(t *testing.T) (app *pgxpool.Pool, admin uuid.UUID) {
 	t.Helper()
 	ctx := context.Background()
-	ctr, err := tcpostgres.Run(ctx, "postgres:17-alpine",
+	ctr, err := tcpostgres.Run(ctx, testutil.PostgresImage,
 		tcpostgres.WithDatabase("cre"),
 		tcpostgres.WithUsername("cre"),
 		tcpostgres.WithPassword("cre"),

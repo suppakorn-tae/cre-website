@@ -61,7 +61,7 @@ repo2-retention-full-type=count
 repo2-retention-full=12
 
 [cre]
-pg1-path=/var/lib/postgresql/data
+pg1-path=/var/lib/postgresql/19/docker
 pg1-socket-path=/var/run/postgresql
 pg1-user=${POSTGRES_USER:-postgres}
 pg1-database=${POSTGRES_DB:-postgres}

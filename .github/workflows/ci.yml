@@ -55,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:17
+        image: postgres:19.0-trixie
         env:
           POSTGRES_USER: cre
           POSTGRES_PASSWORD: cre
