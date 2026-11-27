@@ -117,10 +117,10 @@ type Querier interface {
 	// H or VH, ordered by nickname then id. A version has one result per
 	// indicator, so their length is the distinct project count (found_in).
 	DashboardTopIndicators(ctx context.Context, ownerID uuid.UUID) ([]DashboardTopIndicatorsRow, error)
-	DeleteAnswerY3(ctx context.Context, arg DeleteAnswerY3Params) error
+	DeleteAnswersY3(ctx context.Context, arg DeleteAnswersY3Params) error
 	// A strategy only exists for H and VH results.
 	DeleteLowRiskStrategies(ctx context.Context, versionID uuid.UUID) error
-	DeleteResultAdvice(ctx context.Context, arg DeleteResultAdviceParams) error
+	DeleteResultsAdvice(ctx context.Context, arg DeleteResultsAdviceParams) error
 	// Results of indicators that are no longer complete; advice lists and
 	// strategies cascade.
 	DeleteStaleResults(ctx context.Context, arg DeleteStaleResultsParams) error
@@ -182,14 +182,17 @@ type Querier interface {
 	// RM of every indicator in the submitted, non-deleted versions of an owned
 	// project, narrowed by factor and indicator codes (empty arrays keep all).
 	IndicatorRmValues(ctx context.Context, arg IndicatorRmValuesParams) ([]IndicatorRmValuesRow, error)
-	InsertAnswerY3(ctx context.Context, arg InsertAnswerY3Params) error
+	// Parallel arrays: one element per (indicator, option) pair. sqlc cannot type a
+	// multi-argument unnest, so rows are picked by index instead.
+	InsertAnswersY3(ctx context.Context, arg InsertAnswersY3Params) error
 	// Append-only: the application role has INSERT and SELECT on audit_log only.
 	InsertAuditLog(ctx context.Context, arg InsertAuditLogParams) error
 	InsertExportJob(ctx context.Context, arg InsertExportJobParams) error
 	InsertExportJobAccounts(ctx context.Context, arg InsertExportJobAccountsParams) error
 	InsertJob(ctx context.Context, arg InsertJobParams) (Job, error)
 	InsertReportJob(ctx context.Context, arg InsertReportJobParams) error
-	InsertResultAdvice(ctx context.Context, arg InsertResultAdviceParams) error
+	// Parallel arrays: one element per (indicator, advice list) pair.
+	InsertResultsAdvice(ctx context.Context, arg InsertResultsAdviceParams) error
 	// The number counts deleted versions too, so it is never reused.
 	InsertVersion(ctx context.Context, arg InsertVersionParams) (uuid.UUID, error)
 	// Stores the Google id on an active account that has none yet. A Google id
@@ -298,10 +301,14 @@ type Querier interface {
 	// Removes the Google id, only while a password remains to sign in with.
 	UnlinkGoogleSub(ctx context.Context, id uuid.UUID) (int64, error)
 	UpdateProject(ctx context.Context, arg UpdateProjectParams) (int64, error)
-	// Replaces the stored answer of one indicator; NULL columns are cleared.
-	UpsertAnswer(ctx context.Context, arg UpsertAnswerParams) error
+	// Replaces the stored answers of many indicators in one statement; NULL
+	// columns are cleared. Arrays are parallel (picked by index, see below); an empty string stands for NULL.
+	// Numbers travel as text so they are stored exactly as entered. Codes must be
+	// distinct (ValidateAnswers rejects duplicates).
+	UpsertAnswers(ctx context.Context, arg UpsertAnswersParams) error
 	// Upserted, not replaced, so a chosen strategy survives a resubmission.
-	UpsertRiskResult(ctx context.Context, arg UpsertRiskResultParams) error
+	// Parallel arrays, one element per scored indicator (codes are distinct).
+	UpsertRiskResults(ctx context.Context, arg UpsertRiskResultsParams) error
 	// Saves the choice only while the version is still the latest and the result
 	// is H or VH, so a concurrent new version cannot slip past the earlier
 	// check. No row back means the version stopped being the latest.

@@ -9,20 +9,19 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const deleteAnswerY3 = `-- name: DeleteAnswerY3 :exec
-DELETE FROM answer_y3 WHERE version_id = $1 AND indicator_code = $2
+const deleteAnswersY3 = `-- name: DeleteAnswersY3 :exec
+DELETE FROM answer_y3 WHERE version_id = $1 AND indicator_code = ANY($2::text[])
 `
 
-type DeleteAnswerY3Params struct {
-	VersionID     uuid.UUID
-	IndicatorCode string
+type DeleteAnswersY3Params struct {
+	VersionID uuid.UUID
+	Codes     []string
 }
 
-func (q *Queries) DeleteAnswerY3(ctx context.Context, arg DeleteAnswerY3Params) error {
-	_, err := q.db.Exec(ctx, deleteAnswerY3, arg.VersionID, arg.IndicatorCode)
+func (q *Queries) DeleteAnswersY3(ctx context.Context, arg DeleteAnswersY3Params) error {
+	_, err := q.db.Exec(ctx, deleteAnswersY3, arg.VersionID, arg.Codes)
 	return err
 }
 
@@ -58,19 +57,22 @@ func (q *Queries) GetAnswerVersionAccess(ctx context.Context, arg GetAnswerVersi
 	return editable, err
 }
 
-const insertAnswerY3 = `-- name: InsertAnswerY3 :exec
+const insertAnswersY3 = `-- name: InsertAnswersY3 :exec
 INSERT INTO answer_y3 (version_id, indicator_code, option_code)
-SELECT $1, $2, unnest($3::text[])
+SELECT $1::uuid, ($2::text[])[g.i], ($3::text[])[g.i]
+FROM generate_series(1, cardinality($2::text[])) AS g(i)
 `
 
-type InsertAnswerY3Params struct {
-	VersionID     uuid.UUID
-	IndicatorCode string
-	Options       []string
+type InsertAnswersY3Params struct {
+	VersionID uuid.UUID
+	Codes     []string
+	Options   []string
 }
 
-func (q *Queries) InsertAnswerY3(ctx context.Context, arg InsertAnswerY3Params) error {
-	_, err := q.db.Exec(ctx, insertAnswerY3, arg.VersionID, arg.IndicatorCode, arg.Options)
+// Parallel arrays: one element per (indicator, option) pair. sqlc cannot type a
+// multi-argument unnest, so rows are picked by index instead.
+func (q *Queries) InsertAnswersY3(ctx context.Context, arg InsertAnswersY3Params) error {
+	_, err := q.db.Exec(ctx, insertAnswersY3, arg.VersionID, arg.Codes, arg.Options)
 	return err
 }
 
@@ -155,9 +157,14 @@ func (q *Queries) ListExistingIndicatorCodes(ctx context.Context, codes []string
 	return items, nil
 }
 
-const upsertAnswer = `-- name: UpsertAnswer :exec
+const upsertAnswers = `-- name: UpsertAnswers :exec
 INSERT INTO answer (version_id, indicator_code, x, y1_value, y1_unit, y2_value, y2_unit)
-VALUES ($1, $2, $3, $4, $5, $6, $7)
+SELECT $1::uuid, ($2::text[])[g.i], NULLIF(($3::text[])[g.i], '')::numeric,
+    NULLIF(($4::text[])[g.i], '')::numeric,
+    NULLIF(($5::text[])[g.i], '')::cost_unit,
+    NULLIF(($6::text[])[g.i], '')::numeric,
+    NULLIF(($7::text[])[g.i], '')::time_unit
+FROM generate_series(1, cardinality($2::text[])) AS g(i)
 ON CONFLICT (version_id, indicator_code) DO UPDATE
 SET x = EXCLUDED.x,
     y1_value = EXCLUDED.y1_value,
@@ -167,26 +174,29 @@ SET x = EXCLUDED.x,
     updated_at = now()
 `
 
-type UpsertAnswerParams struct {
-	VersionID     uuid.UUID
-	IndicatorCode string
-	X             pgtype.Numeric
-	Y1Value       pgtype.Numeric
-	Y1Unit        NullCostUnit
-	Y2Value       pgtype.Numeric
-	Y2Unit        NullTimeUnit
+type UpsertAnswersParams struct {
+	VersionID uuid.UUID
+	Codes     []string
+	X         []string
+	Y1Values  []string
+	Y1Units   []string
+	Y2Values  []string
+	Y2Units   []string
 }
 
-// Replaces the stored answer of one indicator; NULL columns are cleared.
-func (q *Queries) UpsertAnswer(ctx context.Context, arg UpsertAnswerParams) error {
-	_, err := q.db.Exec(ctx, upsertAnswer,
+// Replaces the stored answers of many indicators in one statement; NULL
+// columns are cleared. Arrays are parallel (picked by index, see below); an empty string stands for NULL.
+// Numbers travel as text so they are stored exactly as entered. Codes must be
+// distinct (ValidateAnswers rejects duplicates).
+func (q *Queries) UpsertAnswers(ctx context.Context, arg UpsertAnswersParams) error {
+	_, err := q.db.Exec(ctx, upsertAnswers,
 		arg.VersionID,
-		arg.IndicatorCode,
+		arg.Codes,
 		arg.X,
-		arg.Y1Value,
-		arg.Y1Unit,
-		arg.Y2Value,
-		arg.Y2Unit,
+		arg.Y1Values,
+		arg.Y1Units,
+		arg.Y2Values,
+		arg.Y2Units,
 	)
 	return err
 }

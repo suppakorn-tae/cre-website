@@ -104,3 +104,56 @@ func TestNotOwnedIs404AndOlderVersionIs409(t *testing.T) {
 		t.Fatalf("list = %+v, %v", l, err)
 	}
 }
+
+func TestUpsertEmptyListWritesNothing(t *testing.T) {
+	w := setup(t)
+	l, err := w.upsert()
+	if err != nil || len(l.Items) != 0 || !l.Editable {
+		t.Fatalf("empty upsert = %+v, %v", l, err)
+	}
+}
+
+func TestUpsertManyRemovesY3AndOverwritesInOneCall(t *testing.T) {
+	w := setup(t)
+	ctx := context.Background()
+	codes := []string{"EC-MG-1", "EC-MG-2", "EC-MG-3"}
+	full := func(code string, y3 ...string) svc.AnswerInput {
+		return svc.AnswerInput{
+			IndicatorCode: code, X: f(0.1),
+			Y1: &svc.Impact{Value: 1000, Unit: "baht"}, Y2: &svc.Impact{Value: 5, Unit: "day"}, Y3: y3,
+		}
+	}
+	if _, err := w.upsert(full(codes[0], "A"), full(codes[1], "B", "C"), full(codes[2], "D")); err != nil {
+		t.Fatal(err)
+	}
+	// Second call: one gets different options, one loses its y3, one is
+	// reduced to x only, so units and y3 become NULL / empty.
+	l, err := w.upsert(
+		full(codes[0], "E"),
+		full(codes[1]),
+		svc.AnswerInput{IndicatorCode: codes[2], X: f(2)},
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(l.Items) != 3 {
+		t.Fatalf("items = %+v", l.Items)
+	}
+	by := map[string]svc.Answer{}
+	for _, a := range l.Items {
+		by[a.IndicatorCode] = a
+	}
+	if a := by[codes[0]]; len(a.Y3) != 1 || a.Y3[0] != "E" || !a.Complete {
+		t.Fatalf("%s = %+v", codes[0], a)
+	}
+	if a := by[codes[1]]; len(a.Y3) != 0 || a.Complete || *a.X != 0.1 {
+		t.Fatalf("%s = %+v", codes[1], a)
+	}
+	if a := by[codes[2]]; a.Y1 != nil || a.Y2 != nil || *a.X != 2 || len(a.Y3) != 0 {
+		t.Fatalf("%s = %+v", codes[2], a)
+	}
+	var n int
+	if err := w.pool.QueryRow(ctx, `SELECT count(*) FROM answer_y3 WHERE version_id = $1`, w.v1).Scan(&n); err != nil || n != 1 {
+		t.Fatalf("answer_y3 rows = %d, %v; want 1", n, err)
+	}
+}
