@@ -86,14 +86,14 @@ function EditLoader({ projectId }: { projectId: string }) {
   }
   return (
     <>
+      <div className={styles.steps}>
+        <ProjectSteps current="project" projectId={projectId} />
+      </div>
       <Head
         title={t('editTitle')}
         subtitle={t('editSubtitle')}
         current={`${project.data.nickname} ${project.data.name}`}
       />
-      <div className={styles.steps}>
-        <ProjectSteps current="project" projectId={projectId} />
-      </div>
       <ProjectForm key={`${project.data.id}:${project.data.updated_at}`} project={project.data} />
     </>
   );
