@@ -126,7 +126,7 @@ func (r *runner) run(ctx context.Context, j jobs.Job) error {
 	for name, b := range fonts.Files() {
 		assets[name] = b
 	}
-	out, err := r.render.Render(ctx, html, assets, pdf.Options{})
+	out, err := r.render.Render(ctx, html, assets, pdf.Options{PreferCSSPageSize: true})
 	if err != nil {
 		return fmt.Errorf("report: render pdf: %w", err)
 	}
