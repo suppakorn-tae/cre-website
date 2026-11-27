@@ -53,8 +53,10 @@ function ThemeToggle() {
     <fieldset
       style={{
         display: 'flex',
+        flexWrap: 'wrap',
         gap: 16,
         alignItems: 'center',
+        minWidth: 0,
         border: '1px solid var(--color-border)',
         borderRadius: 'var(--radius-control)',
         padding: '8px 12px',
