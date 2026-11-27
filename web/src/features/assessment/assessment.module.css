@@ -743,8 +743,6 @@
 .stackField .pickerHead {
   min-height: 44px;
   font-size: var(--text-h3);
-  /* A focused field scrolls clear of the sticky headers and the fixed bar. */
-  scroll-margin-block: 160px calc(var(--bar-height) + var(--space-4));
 }
 /* The question of the focused field, in the page above it (no floating bubble on a phone). */
 .inlineHint {
