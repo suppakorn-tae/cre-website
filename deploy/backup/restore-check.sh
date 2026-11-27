@@ -3,6 +3,8 @@
 # private socket and run smoke queries. Never touches production.
 # Needs free space in /scratch about the size of the database.
 set -eu
+# crond may start jobs without the image PATH; the PostgreSQL tools live here on Debian.
+export PATH="/usr/lib/postgresql/${PG_MAJOR:-19}/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 dir=/scratch/restore-check
 sock=/scratch/sock
 rm -rf "$dir" "$sock"

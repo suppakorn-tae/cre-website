@@ -60,6 +60,17 @@ for want in repo1-retention-full=5 repo2-retention-full=12 repo1-cipher-type=aes
 done
 rm -f "$tmp"
 
+# Every crond job must set PATH itself, with the PostgreSQL bin dir.
+for job in $(sed -n 's|^[0-9*].* \(/opt/backup/[a-z-]*\.sh\).*|\1|p' "$here/../entrypoint.sh"); do
+  f="$here/../$(basename "$job")"
+  if grep -q '^export PATH="/usr/lib/postgresql/${PG_MAJOR:-19}/bin:' "$f"; then
+    echo "ok   cron PATH $(basename "$f")"
+  else
+    echo "FAIL cron PATH $(basename "$f") does not set PATH with /usr/lib/postgresql/\$PG_MAJOR/bin"
+    fails=$((fails + 1))
+  fi
+done
+
 # The db side config must point at the same PGDATA (image 18+ layout).
 if grep -q '^pg1-path=/var/lib/postgresql/19/docker$' "$here/../pgbackrest.db.conf"; then
   echo "ok   db conf pg1-path"
