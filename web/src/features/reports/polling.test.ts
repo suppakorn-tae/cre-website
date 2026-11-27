@@ -45,6 +45,14 @@ describe('poll decision', () => {
     expect(pollInterval(job('queued'), 0, REPORT_CAP_MS, resumed + 2 * MIN, resumed)).toBe(false);
   });
 
+  it('does not stall a fresh job when the client clock is 5 minutes ahead of the server', () => {
+    const skewed = { ...job('queued'), created_at: new Date(T0 - 5 * MIN).toISOString() };
+    const firstPollAt = T0; // the client's own clock, when it first saw the job
+    expect(jobPhase(skewed, T0 + 1000, 0, firstPollAt)).toBe('active');
+    expect(pollInterval(skewed, 0, REPORT_CAP_MS, T0 + 119_000, 0, firstPollAt)).toBe(1000);
+    expect(jobPhase(skewed, T0 + QUEUED_STALL_MS, 0, firstPollAt)).toBe('stalled');
+  });
+
   it.each([2 * MIN, 10 * MIN, 60 * MIN])('keeps polling a running job at %i ms', (age) => {
     const running = job('running', 1000);
     expect(pollInterval(running, 50, REPORT_CAP_MS, T0 + age)).toBe(10_000);

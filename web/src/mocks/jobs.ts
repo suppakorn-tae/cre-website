@@ -15,7 +15,7 @@ type Options = {
 
 type Entry = { job: Job; polls: number; willFail: boolean; stuck: boolean };
 
-/** Set to `1` in localStorage to make new report jobs sit in the queue, as if the worker were down. */
+/** Set to `1` in localStorage to make new report jobs sit in the queue, as if the worker were down. The app stops waiting 2 minutes after it first sees it. */
 export const STUCK_JOBS_FLAG = 'cre-mock-stuck-jobs';
 
 function stuckRequested(): boolean {
@@ -69,8 +69,7 @@ export function createJobHandlers({
         id,
         kind: 'report',
         status: 'queued',
-        // A stuck job was created 3 minutes ago, past the point where the app stops waiting.
-        created_at: new Date(Date.now() - (stuck ? 3 * 60_000 : 0)).toISOString(),
+        created_at: new Date().toISOString(),
         started_at: null,
         finished_at: null,
         expires_at: null,

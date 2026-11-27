@@ -66,9 +66,16 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
 
   // When the user last asked to check a stalled job again; the wait counts from then.
   const [resumedAt, setResumedAt] = useState(0);
+  // When this tab first got an answer for the job: the queue wait is also measured on our clock.
+  const [firstPoll, setFirstPoll] = useState<{ id: string; at: number } | null>(null);
+  const firstPollAt = firstPoll?.id === jobId ? firstPoll.at : 0;
   const job = useQuery({
     queryKey: jobKey(jobId ?? ''),
-    queryFn: () => fetchJob(jobId ?? ''),
+    queryFn: async () => {
+      const answer = await fetchJob(jobId ?? '');
+      setFirstPoll((seen) => (seen?.id === jobId ? seen : { id: jobId ?? '', at: Date.now() }));
+      return answer;
+    },
     enabled: jobId !== null,
     // Backoff grows with each answer; polling stops once the job has finished, and
     // on an error too: the state is then "failed" and a retry starts it again.
@@ -81,12 +88,13 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
             REPORT_CAP_MS,
             query.state.dataUpdatedAt,
             resumedAt,
+            firstPollAt,
           ),
   });
   // Judged at the time of the last answer, which also makes this component render on each one.
   const phase: JobPhase = job.isError
     ? 'finished'
-    : jobPhase(job.data, job.dataUpdatedAt, resumedAt);
+    : jobPhase(job.data, job.dataUpdatedAt, resumedAt, firstPollAt);
   const request = useMutation({
     mutationFn: () => requestReport(projectId, versionId),
     onSuccess: (id) => {

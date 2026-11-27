@@ -35,16 +35,23 @@ export function backoffDelay(polls: number, capMs: number): number {
  * - `stalled`: queued for 2 minutes with no start; polling stops until the user asks again.
  * - `longRunning`: running for 10 minutes; polling goes on with no limit.
  * - `active`: anything else, still worth polling.
- * `resumedAt` is when the user last asked to check again; the 2 minutes count from then.
+ * The 2 minutes count from the latest of `created_at` (server clock), `firstPollAt` (when this
+ * tab first got an answer for the job, client clock) and `resumedAt` (the last "check again").
+ * So a job stalls only when it was queued that long on both clocks, whatever their skew.
  */
 export type JobPhase = 'finished' | 'stalled' | 'longRunning' | 'active';
 
-export function jobPhase(job: PollJob | undefined, now: number, resumedAt = 0): JobPhase {
+export function jobPhase(
+  job: PollJob | undefined,
+  now: number,
+  resumedAt = 0,
+  firstPollAt = 0,
+): JobPhase {
   if (!job) return 'active';
   if (isFinished(job.status)) return 'finished';
   const created = Date.parse(job.created_at);
   if (job.status === 'queued') {
-    const since = Math.max(Number.isNaN(created) ? 0 : created, resumedAt);
+    const since = Math.max(Number.isNaN(created) ? 0 : created, resumedAt, firstPollAt);
     return now - since >= QUEUED_STALL_MS ? 'stalled' : 'active';
   }
   const started = job.started_at === null ? created : Date.parse(job.started_at);
@@ -61,7 +68,8 @@ export function pollInterval(
   capMs: number,
   now: number,
   resumedAt = 0,
+  firstPollAt = 0,
 ): number | false {
-  const phase = jobPhase(job, now, resumedAt);
+  const phase = jobPhase(job, now, resumedAt, firstPollAt);
   return phase === 'finished' || phase === 'stalled' ? false : backoffDelay(polls, capMs);
 }

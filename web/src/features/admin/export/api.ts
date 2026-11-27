@@ -24,6 +24,9 @@ export const isFinal = (status: Job['status']) => FINAL_STATUSES.includes(status
 export function useJob(id: string) {
   // When the user last asked to check again; the 2 minutes count from then.
   const [resumedAt, setResumedAt] = useState(0);
+  // When this tab first got an answer for the job: the queue wait is also measured on our clock.
+  const [firstPoll, setFirstPoll] = useState<{ id: string; at: number } | null>(null);
+  const firstPollAt = firstPoll?.id === id ? firstPoll.at : 0;
   const query = useQuery({
     queryKey: ['admin-export', 'job', id],
     refetchInterval: (q) =>
@@ -33,9 +36,11 @@ export function useJob(id: string) {
         EXPORT_CAP_MS,
         q.state.dataUpdatedAt,
         resumedAt,
+        firstPollAt,
       ),
     queryFn: async () => {
       const { data } = await browserApi().GET('/jobs/{id}', { params: { path: { id } } });
+      setFirstPoll((seen) => (seen?.id === id ? seen : { id, at: Date.now() }));
       return data as Job;
     },
   });
@@ -45,7 +50,7 @@ export function useJob(id: string) {
     void refetch();
   }, [refetch]);
   // Judged at the time of the last answer, so it also renders on each one.
-  const phase = jobPhase(query.data, query.dataUpdatedAt, resumedAt);
+  const phase = jobPhase(query.data, query.dataUpdatedAt, resumedAt, firstPollAt);
   return { ...query, phase, checkAgain };
 }
 
