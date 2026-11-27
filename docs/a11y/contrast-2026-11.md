@@ -50,6 +50,7 @@ Design observations, not contrast failures (a decision for the design owner):
 | `--color-blue-200` | Decorative: hover and pressed fills, no text. |
 | `--color-orange-500` | Accent mark, never carries text or a boundary. |
 | `--color-divider` | Decorative row separator. |
+| `--chart-grid` | Decorative chart grid and axis tick lines: every value is printed. Target at least 2:1, not 3:1 (2.15:1 on white, 2.09:1 on surface). |
 | `--color-disabled` | Inactive component text and the stepper connector are exempt (1.4.3, 1.4.11). |
 | `--color-success-border` | Decorative edge of a chip that also has its background and text. |
 | `--color-warning-border` | Decorative edge of a chip that also has its background and text. |

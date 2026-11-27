@@ -193,7 +193,7 @@
   max-width: 100%;
 }
 .grid {
-  stroke: var(--color-divider);
+  stroke: var(--chart-grid);
   stroke-width: 1;
 }
 .axis {
