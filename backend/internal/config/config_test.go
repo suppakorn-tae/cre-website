@@ -175,3 +175,18 @@ func TestLoadWorkerJobLimits(t *testing.T) {
 		t.Fatalf("override: %+v %v", c, err)
 	}
 }
+
+func TestLoadWorkerRejectsTimeoutOverTaskLimit(t *testing.T) {
+	for _, key := range []string{"EXPORT_TIMEOUT", "REPORT_TIMEOUT"} {
+		for _, v := range []string{"30m", "45m", "1h"} {
+			e := map[string]string{"DATABASE_URL": "p", "VALKEY_ADDR": "v", key: v}
+			if _, err := LoadWorker(env(e)); err == nil || !strings.Contains(err.Error(), key) {
+				t.Errorf("%s=%s: want error naming the key, got %v", key, v, err)
+			}
+		}
+		e := map[string]string{"DATABASE_URL": "p", "VALKEY_ADDR": "v", key: "29m"}
+		if _, err := LoadWorker(env(e)); err != nil {
+			t.Errorf("%s=29m: %v", key, err)
+		}
+	}
+}

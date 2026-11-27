@@ -35,6 +35,9 @@ func TestNewServerValidation(t *testing.T) {
 			t.Errorf("%s: want error", name)
 		}
 	}
+	if got := queue.DefaultConcurrency()[queue.Maintenance]; got <= 0 {
+		t.Fatalf("maintenance concurrency %d", got)
+	}
 	if _, err := queue.NewServer(queue.ServerConfig{RedisURL: url, Concurrency: queue.DefaultConcurrency()}); err != nil {
 		t.Fatalf("valid config: %v", err)
 	}

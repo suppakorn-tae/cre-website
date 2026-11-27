@@ -72,6 +72,10 @@ services:
       <<: *app-env
       WORKER_REPORTS_CONCURRENCY: ${WORKER_REPORTS_CONCURRENCY:-}
       WORKER_EXPORTS_CONCURRENCY: ${WORKER_EXPORTS_CONCURRENCY:-}
+      EXPORT_TIMEOUT: ${EXPORT_TIMEOUT:-25m}
+      REPORT_TIMEOUT: ${REPORT_TIMEOUT:-5m}
+      JOB_STUCK_MARGIN: ${JOB_STUCK_MARGIN:-10m}
+      JOB_QUEUED_MAX_AGE: ${JOB_QUEUED_MAX_AGE:-6h}
     networks: [private-net]
     depends_on:
       migrate: { condition: service_completed_successfully }
