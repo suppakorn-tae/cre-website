@@ -14,6 +14,8 @@ function coveredBy(page: Page) {
     const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
     for (let n = hit; n && n !== document.body; n = n.parentElement) {
       const position = getComputedStyle(n).position;
+      // A hint or picker popover (Radix wrapper) is a transient layer for the field, not a bar.
+      if (n.hasAttribute('data-radix-popper-content-wrapper')) return null;
       if ((position === 'sticky' || position === 'fixed') && !n.contains(el)) {
         const name = (el.textContent ?? '').trim().slice(0, 30);
         return `${n.tagName.toLowerCase()}.${n.className} covers ${el.tagName.toLowerCase()} "${name}"`;
