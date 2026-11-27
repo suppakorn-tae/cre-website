@@ -112,7 +112,7 @@ describe('projects table', () => {
     expect(html).toContain('role="progressbar"');
     // The action names say which project they act on.
     expect(html).toContain('aria-label="ประเมินความเสี่ยง TK2"');
-    expect(html).toContain('aria-label="ดูผลการประเมิน TK2"');
+    expect(html).toContain('aria-label="ผลการประเมิน TK2"');
   });
 
   it('renders the table and one card per project, for CSS to pick between', () => {

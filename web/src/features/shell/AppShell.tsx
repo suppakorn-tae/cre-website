@@ -48,7 +48,7 @@ export function AppShell({
         {t('skipToContent')}
       </a>
       <header className={styles.header}>
-        <Link href="/dashboard" className={styles.brand} aria-label={t('brand.homeLabel')}>
+        <Link href="/dashboard" className={styles.brand}>
           <Logo variant="header" />
         </Link>
         {account}
@@ -121,11 +121,15 @@ export function AccountMenu({ user, defaultOpen }: { user: ShellUser; defaultOpe
   return (
     <DropdownMenu.Root defaultOpen={defaultOpen}>
       <DropdownMenu.Trigger asChild>
-        <button type="button" className={styles.accountButton} aria-label={t('menuLabel')}>
-          <span className={styles.avatar} aria-hidden="true">
-            {avatar}
-          </span>
+        <button
+          type="button"
+          className={styles.accountButton}
+          aria-label={`${user.email}${user.isAdmin ? ` ${t('adminBadge')}` : ''} ${t('menuLabel')}`}
+        >
+          {/* The letter is drawn by CSS, so it is not text a voice-control user must say. */}
+          <span className={styles.avatar} data-initial={avatar} aria-hidden="true" />
           <span className={styles.email}>{user.email}</span>
+          {/* A space between the parts, so the visible text reads as the label does. */}{' '}
           {user.isAdmin && (
             <span className={styles.badge} data-testid="admin-badge">
               {t('adminBadge')}
