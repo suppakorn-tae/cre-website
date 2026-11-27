@@ -1,16 +1,37 @@
 name: release
 
-# Builds one image per binary (api, worker, migrate) and one for web, tagged
-# by the full git SHA, and pushes them to GHCR. Deploys pin IMAGE_TAG to that
-# SHA (docs/runbooks/deploy.md). Runs on every push to main and on demand.
+# Builds one image per binary (api, worker, migrate) and one for web and
+# pushes them to GHCR (IO-245, architecture decision 6):
+#   - push to main: tagged by the full git SHA (staging candidates).
+#   - push of a SemVer tag vX.Y.Z: the version tag is added to the image
+#     already pushed for that SHA (no rebuild, so the release is the exact
+#     digest staging ran). If there is none yet, one build pushes both tags.
+#     Either way the version and the SHA name one digest. Then a GitHub
+#     release with notes generated since the previous tag.
+#   - by hand: like a push to main. With dry_run, nothing is pushed or
+#     released: the images are built and the plan (tags, retag or build) is
+#     printed. Set version to rehearse a tag run.
+# Deploys pin IMAGE_TAG to the digest (docs/runbooks/deploy.md).
 
 on:
   push:
     branches: [main]
+    tags: ["v*.*.*"]
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build only; push nothing and create no release
+        type: boolean
+        default: false
+      version:
+        description: With dry_run, act as if this version tag (vX.Y.Z) was pushed
+        type: string
+        default: ""
 
+# One run per commit at a time, so a tag run sees the image its main run
+# pushed and retags it instead of building a second digest.
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ github.sha }}
   cancel-in-progress: false
 
 permissions:
@@ -21,8 +42,44 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  meta:
+    name: meta
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      push: ${{ steps.v.outputs.push }}
+    steps:
+      - name: Resolve version and push mode
+        id: v
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          version=
+          if [ "$REF_TYPE" = tag ]; then
+            version=$REF_NAME
+          elif [ "$DRY_RUN" = true ]; then
+            version=$INPUT_VERSION
+          elif [ -n "$INPUT_VERSION" ]; then
+            echo "::error::version is only for dry runs; push a git tag to release"
+            exit 1
+          fi
+          if [ -n "$version" ] &&
+            ! printf '%s' "$version" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::'$version' is not a SemVer tag like v1.4.0"
+            exit 1
+          fi
+          push=true
+          [ "$DRY_RUN" = true ] && push=false
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "push=$push" >> "$GITHUB_OUTPUT"
+          echo "version='$version' push=$push sha=$GITHUB_SHA"
+
   images:
     name: image-${{ matrix.image }}
+    needs: meta
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -36,21 +93,100 @@ jobs:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
+        if: needs.meta.outputs.push == 'true'
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Lowercase image prefix
-        run: echo "PREFIX=${REGISTRY}/${GITHUB_REPOSITORY,,}" >> "$GITHUB_ENV"
+      - name: Plan
+        id: plan
+        env:
+          VERSION: ${{ needs.meta.outputs.version }}
+          PUSH: ${{ needs.meta.outputs.push }}
+          IMAGE: ${{ matrix.image }}
+        run: |
+          base="${REGISTRY}/${GITHUB_REPOSITORY,,}/${IMAGE}"
+          sha_ref="${base}:${GITHUB_SHA}"
+          existing=
+          if [ "$PUSH" = true ]; then
+            existing=$(docker buildx imagetools inspect --format '{{json .Manifest.Digest}}' \
+              "$sha_ref" 2>/dev/null | tr -d '"') || existing=
+          fi
+          mode=build
+          if [ -n "$existing" ]; then
+            mode=skip
+            [ -z "$VERSION" ] || mode=retag
+          fi
+          {
+            echo "TAGS<<EOF"
+            echo "$sha_ref"
+            [ -z "$VERSION" ] || echo "${base}:${VERSION}"
+            echo "EOF"
+          } >> "$GITHUB_ENV"
+          {
+            echo "mode=$mode"
+            echo "sha_ref=$sha_ref"
+            echo "version_ref=${VERSION:+${base}:${VERSION}}"
+            echo "existing=$existing"
+          } >> "$GITHUB_OUTPUT"
+          echo "${IMAGE}: mode=$mode push=$PUSH tags: $sha_ref ${VERSION:+${base}:${VERSION}}" |
+            tee -a "$GITHUB_STEP_SUMMARY"
+      # One build with every tag: the SHA and the version name one digest.
       - uses: docker/build-push-action@v6
+        if: steps.plan.outputs.mode == 'build'
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
           target: ${{ matrix.target }}
-          push: true
-          tags: ${{ env.PREFIX }}/${{ matrix.image }}:${{ github.sha }}
+          push: ${{ needs.meta.outputs.push == 'true' }}
+          tags: ${{ env.TAGS }}
           labels: |
             org.opencontainers.image.revision=${{ github.sha }}
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
           cache-from: type=gha,scope=${{ matrix.image }}
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+      # The SHA image exists: point the version tag at its digest.
+      - name: Retag
+        if: steps.plan.outputs.mode == 'retag'
+        env:
+          SHA_REF: ${{ steps.plan.outputs.sha_ref }}
+          VERSION_REF: ${{ steps.plan.outputs.version_ref }}
+          EXISTING: ${{ steps.plan.outputs.existing }}
+        run: docker buildx imagetools create --tag "$VERSION_REF" "${SHA_REF%:*}@${EXISTING}"
+      - name: Check digests
+        if: needs.meta.outputs.push == 'true'
+        env:
+          SHA_REF: ${{ steps.plan.outputs.sha_ref }}
+          VERSION_REF: ${{ steps.plan.outputs.version_ref }}
+          IMAGE: ${{ matrix.image }}
+        run: |
+          d() { docker buildx imagetools inspect --format '{{json .Manifest.Digest}}' "$1" | tr -d '"'; }
+          sha_d=$(d "$SHA_REF")
+          echo "${IMAGE} ${SHA_REF} ${sha_d}" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ -n "$VERSION_REF" ]; then
+            ver_d=$(d "$VERSION_REF")
+            echo "${IMAGE} ${VERSION_REF} ${ver_d}" | tee -a "$GITHUB_STEP_SUMMARY"
+            [ "$sha_d" = "$ver_d" ] || {
+              echo "::error::${VERSION_REF} and ${SHA_REF} differ"
+              exit 1
+            }
+          fi
+
+  github-release:
+    name: github-release
+    needs: [meta, images]
+    if: github.ref_type == 'tag' && needs.meta.outputs.push == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      # Notes list the merged PRs (Conventional Commit titles) since the
+      # previous tag.
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          args=(--repo "$GITHUB_REPOSITORY" --verify-tag --title "$TAG" --generate-notes)
+          case "$TAG" in *-*) args+=(--prerelease) ;; esac
+          gh release create "$TAG" "${args[@]}"

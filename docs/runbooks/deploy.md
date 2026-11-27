@@ -14,21 +14,39 @@ A person starts every deploy; nothing deploys by itself.
 
 ```mermaid
 flowchart TD
-    push["Push to main"] --> rel["release.yml<br/>(also runs by hand)"]
+    push["Push to main"] --> rel["release.yml"]
     rel --> img["4 images in GHCR<br/>cre-api, cre-worker, cre-migrate, cre-web<br/>tag = full commit SHA"]
-    img --> tag["You set IMAGE_TAG to that SHA<br/>in .env.prod on the server"]
-    tag --> pull["deploy.sh pull<br/>server pulls the images"]
-    pull --> up["deploy.sh up -d"]
+    img --> stg["Staging: deploy by SHA"]
+    stg --> vtag["Cut a release:<br/>push tag v1.4.0 on that commit"]
+    vtag --> rel2["release.yml adds tag v1.4.0<br/>to the same digest<br/>and creates the GitHub release"]
+    rel2 --> tag["You set IMAGE_TAG=v1.4.0<br/>in .env.prod on the server"]
+    tag --> pull["deploy.sh pull<br/>resolves the tag to digests,<br/>records them, pulls"]
+    pull --> up["deploy.sh up -d<br/>runs image@sha256:...,<br/>logs the deploy"]
     up --> mig["migrate runs to completion"]
     mig --> svc["api, worker and web start"]
     svc --> hc{"Health check<br/>/api/v1/healthz"}
     hc -- "ok" --> done(["Verify, then done"])
-    hc -- "fails" --> rb["Roll back to the previous SHA"]
+    hc -- "fails" --> rb["Roll back to the previous version"]
 ```
 
 Images: `ghcr.io/<owner>/<repo>/cre-api`, `cre-worker`, `cre-migrate`, `cre-web`.
-All four use the same SHA. `IMAGE_REGISTRY` is `ghcr.io/<owner>/<repo>`.
-Never set `IMAGE_TAG` to `latest` or a branch name.
+`IMAGE_REGISTRY` is `ghcr.io/<owner>/<repo>`.
+
+- Every push to `main` builds all four, tagged by the full commit SHA.
+- A release is a SemVer git tag (`v1.4.0`). Its run adds the version tag
+  to the images of that commit, so the version and the SHA name the same
+  digest (if the commit has no images yet, one build pushes both tags).
+  It also creates a GitHub release with notes generated from the merged
+  PRs since the previous tag.
+- Production deploys a version; staging may deploy a SHA. `IMAGE_TAG`
+  takes either. `deploy.sh` refuses `latest`, branch names and short SHAs.
+- A tag in GHCR can be moved; a digest cannot. `deploy.sh pull` resolves
+  `IMAGE_TAG` to each image's digest and writes them to `.env.digests`;
+  compose runs `image@sha256:...` from that file, so what runs never
+  changes behind your back. `deploy.sh up` appends each deploy (time, tag,
+  commit, four digests) to `.env.digests.log`. Both files sit next to
+  `.env.prod` in the repository root and are ignored by git.
+- The first version is `v1.0.0`, cut when production first goes live.
 
 ## One-time setup
 
@@ -179,40 +197,79 @@ different provider or region from the app host). Details, schedule and
 restore steps are in [restore.md](restore.md).
 Without backup (staging only), set `BACKUP_ENABLED=false`.
 
+## Cut a release
+
+Run from a clone with push rights, on the commit staging accepted.
+
+1. **Pick the commit and version.** The commit is on `main` and its
+   `release` run succeeded. Bump the version by SemVer: patch for fixes,
+   minor for features, major for breaking changes. A pre-release looks
+   like `v1.4.0-rc.1`.
+
+   ```sh
+   gh run list --workflow release.yml --branch main --limit 5
+   git tag --sort=-v:refname | head -3
+   ```
+
+2. **Tag and push.**
+
+   ```sh
+   git fetch origin
+   git tag -a v1.4.0 -m "v1.4.0" <sha>
+   git push origin v1.4.0
+   ```
+
+3. **Wait for the run.**
+
+   ```sh
+   gh run list --workflow release.yml --event push --limit 3
+   ```
+
+   Check: the run for `v1.4.0` succeeded. Its summary prints each image
+   with the same digest for the SHA and the version tag, and
+   `gh release view v1.4.0` shows the release with its notes.
+
+Never move or delete a pushed version tag; cut a new version instead.
+
+To rehearse without pushing anything, run the workflow by hand with
+`dry_run` and a `version`:
+`gh workflow run release.yml --ref main -f dry_run=true -f version=v0.0.0-dryrun`.
+It builds the images and prints the tags a release would get.
+
 ## Every deploy
 
 Run on the server, from the repository root. Each step has a check; do not go on if it fails.
 
-1. **Pick the SHA.** Use the full 40-character SHA of a commit on `main` whose `release` run succeeded.
+1. **Pick the version** (production) or the full 40-character SHA (staging).
 
    ```sh
-   gh run list --workflow release.yml --branch main --limit 5
+   gh release list --limit 5
    ```
 
-   Check: the run for your commit shows `completed` and `success`.
+   Check: the version's `release` run succeeded (see [Cut a release](#cut-a-release)).
 
 2. **Match the checkout.** The compose files must come from the same commit as the images.
 
    ```sh
-   git fetch origin && git checkout <sha>
+   git fetch origin --tags && git checkout v1.4.0
    ```
 
-   Check: `git rev-parse HEAD` prints the SHA.
+   Check: `git describe --tags --exact-match` prints the version (for a SHA, `git rev-parse HEAD` prints it).
 
-3. **Set the SHA** in `.env.prod`: edit the line `IMAGE_TAG=<sha>`.
+3. **Set the tag** in `.env.prod`: edit the line `IMAGE_TAG=v1.4.0`.
 
-   Check: `grep ^IMAGE_TAG .env.prod` shows the SHA.
+   Check: `grep ^IMAGE_TAG .env.prod` shows it.
 
-4. **Pull the images.** The wrapper reads `ENV_FILE`, maps `BACKUP_ENABLED` to the `backup` profile, runs preflight, builds the backup image and adds each file in `COMPOSE_EXTRA` (space or comma separated; relative names resolve in `deploy/compose`) after `compose.yaml` and `compose.backup.yaml`. Without `COMPOSE_EXTRA` it behaves as before.
+4. **Pin and pull the images.** The wrapper reads `ENV_FILE`, maps `BACKUP_ENABLED` to the `backup` profile, runs preflight, builds the backup image and adds each file in `COMPOSE_EXTRA` (space or comma separated; relative names resolve in `deploy/compose`) after `compose.yaml` and `compose.backup.yaml`. With `compose.prod.yaml`, `pull` first resolves `IMAGE_TAG` to the four digests and writes them to `.env.digests`.
 
    ```sh
    export ENV_FILE=.env.prod COMPOSE_EXTRA=compose.prod.yaml
    deploy/backup/deploy.sh pull --ignore-buildable
    ```
 
-   Check: the four `cre-*` images show `Pulled`. `denied` means the GHCR login in setup step 2 is missing or expired.
+   Check: the output lists `IMAGE_DIGEST_API`, `_WORKER`, `_MIGRATE` and `_WEB`, and the four `cre-*` images show `Pulled`. `is not a release version` means `IMAGE_TAG` is `latest`, a branch or a short SHA. `cannot resolve the digest` or `denied` means the tag does not exist or the GHCR login in setup step 2 is missing or expired.
 
-5. **Start.** The `migrate` service runs to completion before `api` and `worker` start.
+5. **Start.** The `migrate` service runs to completion before `api` and `worker` start. `up` runs the digests in `.env.digests` and refuses to start if they were pinned for another `IMAGE_TAG` (run step 4 again).
 
    ```sh
    deploy/backup/deploy.sh up -d
@@ -228,13 +285,16 @@ Run on the server, from the repository root. Each step has a check; do not go on
 
    Check: HTTP 200. On failure, [roll back](#roll-back).
 
-7. **Confirm the SHA** of a running container:
+7. **Confirm the digest** that runs:
 
    ```sh
+   tail -1 .env.digests.log
    docker inspect --format '{{.Config.Image}} {{index .Config.Labels "org.opencontainers.image.revision"}}' <container>
    ```
 
-   Check: the label equals the SHA from step 1.
+   Check: the log line shows the version and four digests, and each
+   container's image is `...@sha256:` with the digest from that line. The
+   revision label is the commit the version points to.
 
 After the first deploy, and after changes to mail, Google or backup, also do this:
 
@@ -248,10 +308,14 @@ After the first deploy, and after changes to mail, Google or backup, also do thi
 
 ## Roll back
 
-1. Find the previous SHA (the one that ran before, from your notes or `git log`).
-2. Set `IMAGE_TAG` in `.env.prod` to it and run steps 3 to 7 of [Every deploy](#every-deploy) again (also check out that commit in step 2).
+1. Find the previous version: the line before the last in
+   `.env.digests.log`, or `gh release list`.
+2. Set `IMAGE_TAG` in `.env.prod` to it and run steps 2 to 7 of
+   [Every deploy](#every-deploy) again (check out that version in step 2).
+   `pull` pins the version's digests again.
 
-Check: step 7 shows the previous SHA, and the health check answers 200.
+Check: the new last line of `.env.digests.log` shows the previous version
+with the same digests as its earlier deploy, and the health check answers 200.
 
 Migrations are forward only. If the bad release ran one, restoring the old
 images is not enough: restore from backup instead (see [restore.md](restore.md)),
@@ -266,4 +330,4 @@ Backups, the restore procedure and the automatic restore check are in [restore.m
 - [ ] Real OTP delivered through Brevo
 - [ ] Google sign-in completes
 - [ ] First full backup in the S3-compatible bucket, restore check passes
-- [ ] Running images match the intended commit SHA
+- [ ] Running images match the digests pinned for the intended version or SHA

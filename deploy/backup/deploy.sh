@@ -13,6 +13,14 @@
 #   COMPOSE_EXTRA=compose.prod.yaml deploy/backup/deploy.sh up -d
 #
 # Env comes from ./.env (repo root) unless ENV_FILE is set.
+#
+# With compose.prod.yaml in the file list, images run by digest (IO-245).
+# IMAGE_TAG must be a release version (v1.4.0) or a full git SHA; `latest`
+# and branch names are refused. `pull` resolves IMAGE_TAG to the digest
+# of each image in IMAGE_REGISTRY and writes them to DIGEST_FILE (default
+# ./.env.digests). Every other command reads that file, so `up` runs the
+# digests that were pulled even if the tag moves later. `up` appends the
+# deployed tag, commit and digests to DIGEST_FILE.log.
 set -eu
 here=$(cd "$(dirname "$0")" && pwd)
 root=$(cd "$here/../.." && pwd)
@@ -61,6 +69,82 @@ for f in $(printf '%s' "${COMPOSE_EXTRA:-}" | tr ',' ' '); do
   }
   files="$files -f $f"
 done
+
+# Production images: pin IMAGE_TAG to digests.
+digest_file=${DIGEST_FILE:-$root/.env.digests}
+images="api worker migrate web"
+
+resolve_digest() {
+  ref=$1
+  d=$(docker buildx imagetools inspect --format '{{json .Manifest.Digest}}' "$ref" 2>/dev/null |
+    tr -d '"[:space:]') || d=
+  if [ -z "$d" ]; then
+    # No buildx: pull and read the repo digest instead.
+    if docker pull -q "$ref" >/dev/null; then
+      d=$(docker image inspect --format '{{index .RepoDigests 0}}' "$ref") || d=
+      d=${d#*@}
+    fi
+  fi
+  printf '%s' "$d" | grep -Eq '^sha256:[0-9a-f]{64}$' || {
+    echo "deploy.sh: cannot resolve the digest of $ref" >&2
+    return 1
+  }
+  printf '%s' "$d"
+}
+
+pin_images() {
+  tag=${IMAGE_TAG:-}
+  if ! printf '%s' "$tag" | grep -Eq '^(v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?|[0-9a-f]{40})$'; then
+    echo "deploy.sh: IMAGE_TAG='$tag' is not a release version (v1.4.0) or a full git SHA;" \
+      "latest and branch names are refused" >&2
+    exit 1
+  fi
+  : "${IMAGE_REGISTRY:?deploy.sh: set IMAGE_REGISTRY}"
+  if [ "${1:-}" = pull ]; then
+    pins=
+    for i in $images; do
+      d=$(resolve_digest "$IMAGE_REGISTRY/cre-$i:$tag") || exit 1
+      pins="${pins}IMAGE_DIGEST_$(printf '%s' "$i" | tr '[:lower:]' '[:upper:]')=$d
+"
+    done
+    {
+      echo "# Written by deploy.sh pull at $(date -u +%Y-%m-%dT%H:%M:%SZ). Do not edit."
+      echo "IMAGE_PIN_REGISTRY=$IMAGE_REGISTRY"
+      echo "IMAGE_PIN_TAG=$tag"
+      printf '%s' "$pins"
+    } >"$digest_file.tmp"
+    mv "$digest_file.tmp" "$digest_file"
+    echo "deploy.sh: pinned $tag in $digest_file" >&2
+    grep '^IMAGE_DIGEST_' "$digest_file" >&2
+  fi
+  [ -f "$digest_file" ] || {
+    echo "deploy.sh: no pinned digests in $digest_file; run deploy.sh pull first" >&2
+    exit 1
+  }
+  # Only the pinned digests count, never values from the env file.
+  unset IMAGE_PIN_REGISTRY IMAGE_PIN_TAG IMAGE_DIGEST_API IMAGE_DIGEST_WORKER \
+    IMAGE_DIGEST_MIGRATE IMAGE_DIGEST_WEB
+  set -a
+  # shellcheck disable=SC1090
+  . "$digest_file"
+  set +a
+  if [ "${IMAGE_PIN_TAG:-}" != "$tag" ] || [ "${IMAGE_PIN_REGISTRY:-}" != "$IMAGE_REGISTRY" ]; then
+    echo "deploy.sh: $digest_file pins ${IMAGE_PIN_REGISTRY:-?}:${IMAGE_PIN_TAG:-?}," \
+      "not $IMAGE_REGISTRY:$tag; run deploy.sh pull first" >&2
+    exit 1
+  fi
+  if [ "${1:-}" = up ]; then
+    printf '%s tag=%s commit=%s api=%s worker=%s migrate=%s web=%s\n' \
+      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$tag" \
+      "$(git -C "$root" rev-parse HEAD 2>/dev/null || echo unknown)" \
+      "${IMAGE_DIGEST_API:-}" "${IMAGE_DIGEST_WORKER:-}" \
+      "${IMAGE_DIGEST_MIGRATE:-}" "${IMAGE_DIGEST_WEB:-}" >>"$digest_file.log"
+  fi
+}
+
+case " $files " in
+  *"/compose.prod.yaml "*) pin_images "${1:-}" ;;
+esac
 
 case ",${COMPOSE_PROFILES}," in
   *,backup,*)

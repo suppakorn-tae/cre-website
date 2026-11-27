@@ -153,7 +153,7 @@ Admin Service: manage users (list, search, role, deactivate, delete = anonymise;
 3. Graceful SIGTERM shutdown; worker finishes or re-queues in-flight job
 4. No local disk state — files go to object storage
 5. JSON logs to stdout; `/metrics` for Prometheus, including `backup_enabled`, backup age and last WAL age
-6. One image per binary, tagged by git SHA
+6. One image per binary, tagged by git SHA, and by SemVer version for releases; deploys pin the digest (IO-245)
 7. Idempotent, backward-compatible migrations (runnable as a Job)
 
 Compose → K8s mapping: Caddy → Ingress/Gateway (+ cert-manager); private-net → ClusterIP + NetworkPolicies; egress-net → egress NetworkPolicy for api and backup only (backup when enabled); web/api/worker → Deployments + HPA (worker via KEDA on queue depth); gotenberg → Deployment + ClusterIP (no egress); migrate → Job / Helm hook; db → CloudNativePG; backup → CronJob or Barman Cloud plugin only in backup-enabled environments; valkey/rustfs → StatefulSets; volumes → PVCs (Longhorn for multi-node).
