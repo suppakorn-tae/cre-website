@@ -45,3 +45,9 @@
     display: block;
   }
 }
+
+/* A calm note beside the in-place button: the job is waiting or taking long. */
+.note {
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+}

@@ -31,7 +31,7 @@ type Props = {
 function useReportToast(report: ReportDownload, enabled: boolean) {
   const t = useTranslations('reports.toast');
   const toaster = useToaster();
-  const { state, observed, tooMany } = report;
+  const { state, observed, tooMany, stalled, longRunning } = report;
   // Click handlers read the latest actions without making the toast effect re-run.
   const actions = useRef({ download: report.download, retry: report.retry });
   useEffect(() => {
@@ -41,12 +41,18 @@ function useReportToast(report: ReportDownload, enabled: boolean) {
   useEffect(() => {
     if (!enabled || !observed) return;
     for (const id of REPORT_TOAST_IDS) toaster.dismiss(id);
-    const spec = reportToast(state, tooMany, t, {
-      download: () => void actions.current.download(),
-      retry: () => actions.current.retry(),
-    });
+    const spec = reportToast(
+      state,
+      tooMany,
+      t,
+      {
+        download: () => void actions.current.download(),
+        retry: () => actions.current.retry(),
+      },
+      { stalled, longRunning },
+    );
     if (spec) toaster.show(spec);
-  }, [enabled, observed, state, tooMany, t, toaster]);
+  }, [enabled, observed, state, tooMany, stalled, longRunning, t, toaster]);
 
   // The toasts belong to this page: leave with it, the project page's button takes over.
   useEffect(() => {
@@ -83,7 +89,9 @@ export function ReportButton({
   const reasonId = useId();
   const { state } = report;
 
-  const text = t(`action.${buttonText(state, toast)}`);
+  const text = t(
+    report.stalled && !toast ? 'action.checkAgain' : `action.${buttonText(state, toast)}`,
+  );
   const name =
     versionNo === undefined ? undefined : t('action.forVersion', { action: text, no: versionNo });
 
@@ -125,7 +133,15 @@ export function ReportButton({
 
   const busy = state === 'building';
   // What the live region says; only for a build this page watched.
-  const spoken = !toast && report.observed ? spokenText(state, report.tooMany, t) : '';
+  const spoken = !toast && report.observed ? spokenText(report, t) : '';
+  // In place there is no toast, so the wait notes sit next to the button.
+  const note = toast
+    ? ''
+    : report.stalled
+      ? t('toast.stalled.title')
+      : report.longRunning
+        ? t('toast.building.longText')
+        : '';
 
   return (
     <>
@@ -141,6 +157,7 @@ export function ReportButton({
         <StateIcon state={state} withToast={toast} />
         {text}
       </button>
+      {note && <span className={styles.note}>{note}</span>}
       {!toast && (
         <VisuallyHidden.Root role="status" aria-live="polite">
           {spoken}
@@ -151,10 +168,10 @@ export function ReportButton({
 }
 
 function spokenText(
-  state: ReportState,
-  tooMany: boolean,
+  { state, tooMany, stalled }: ReportDownload,
   t: ReturnType<typeof useTranslations>,
 ): string {
+  if (stalled) return t('toast.stalled.title');
   if (state === 'building') return t('toast.building.title');
   if (state === 'ready') return t('toast.ready.title');
   if (state === 'failed') return tooMany ? t('toast.failed.tooMany') : t('toast.failed.title');

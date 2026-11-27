@@ -25,8 +25,8 @@ vi.mock('./polling', async (importOriginal) => {
   const original = await importOriginal<typeof import('./polling')>();
   return {
     ...original,
-    pollInterval: (status: Parameters<typeof original.pollInterval>[0]) =>
-      original.isFinished(status) ? false : 15,
+    pollInterval: (job: Parameters<typeof original.pollInterval>[0]) =>
+      original.isFinished(job?.status) ? false : 15,
   };
 });
 

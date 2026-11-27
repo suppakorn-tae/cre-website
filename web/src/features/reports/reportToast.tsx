@@ -4,7 +4,12 @@ import { Spinner, TOAST_ACTION_CLASS, type ToastSpec } from '@/components/ui';
 
 import type { ReportState } from './state';
 
-export const REPORT_TOAST_IDS = ['report-building', 'report-ready', 'report-failed'] as const;
+export const REPORT_TOAST_IDS = [
+  'report-building',
+  'report-stalled',
+  'report-ready',
+  'report-failed',
+] as const;
 /** The "ready" toast closes after this long; hovering or focusing it holds it open. */
 export const READY_TOAST_MS = 8000;
 
@@ -19,14 +24,30 @@ export function reportToast(
   tooMany: boolean,
   t: ReturnType<typeof useTranslations>,
   actions: Actions,
+  wait: { stalled: boolean; longRunning: boolean } = { stalled: false, longRunning: false },
 ): ToastSpec | null {
+  if (state === 'building' && wait.stalled) {
+    // `retry` is the same action as "check again": it resumes polling of a stalled job.
+    return {
+      id: 'report-stalled',
+      tone: 'warning',
+      title: t('stalled.title'),
+      description: t('stalled.text'),
+      actionLabel: t('stalled.checkAgain'),
+      action: (
+        <button type="button" className={TOAST_ACTION_CLASS} onClick={actions.retry}>
+          {t('stalled.checkAgain')}
+        </button>
+      ),
+    };
+  }
   if (state === 'building') {
     return {
       id: 'report-building',
       tone: 'info',
       icon: <Spinner />,
       title: t('building.title'),
-      description: t('building.text'),
+      description: wait.longRunning ? t('building.longText') : t('building.text'),
     };
   }
   if (state === 'ready') {

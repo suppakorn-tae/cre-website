@@ -55,8 +55,9 @@ export function ProjectSteps({ current, projectId, versionId }: Props) {
     building: <Spinner size={16} />,
     ready: <Icon icon={IconCheck} size={16} />,
     failed: <Icon icon={IconRefresh} size={16} />,
-  }[report.state];
-  const reportLabel = t(`reportState.${report.state}`);
+  }[report.stalled ? 'failed' : report.state];
+  // A job stuck in the queue is not being built: offer to check again, as the toast does.
+  const reportLabel = t(`reportState.${report.stalled ? 'stalled' : report.state}`);
 
   const steps: StepItem[] = [
     {
@@ -96,7 +97,7 @@ export function ProjectSteps({ current, projectId, versionId }: Props) {
       disabled: !canReport,
       reason: needProject ?? needSubmit,
       icon: canReport ? reportIcon : undefined,
-      busy: report.state === 'building',
+      busy: report.state === 'building' && !report.stalled,
       failed: report.state === 'failed',
       // The PDF of this version's current report is saved; a new report starts again from idle.
       success: canReport && report.state === 'ready',

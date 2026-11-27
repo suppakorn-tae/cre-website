@@ -10,7 +10,7 @@ import { ApiError } from '@/lib/api/errors';
 import exportMessages from '../../../../messages/th/admin-export.json';
 import ui from '../../../../messages/th/ui.json';
 
-import { buildRequest, isFinal, pollInterval, type Job } from './api';
+import { buildRequest, type Job } from './api';
 import { ExportPage } from './ExportPage';
 import { ExportRow } from './ExportRow';
 import { ZipTree, ZIP_TREE } from './ZipTree';
@@ -86,17 +86,6 @@ describe('request and polling rules', () => {
       user_ids: ['a'],
       include_deleted: true,
     });
-  });
-
-  it('polls until the job is done, failed or expired', () => {
-    const job = (status: Job['status']) => ({ status }) as Job;
-    expect(pollInterval(undefined)).toBe(2000);
-    expect(pollInterval(job('queued'))).toBe(2000);
-    expect(pollInterval(job('running'))).toBe(2000);
-    for (const status of ['done', 'failed', 'expired'] as const) {
-      expect(isFinal(status)).toBe(true);
-      expect(pollInterval(job(status))).toBe(false);
-    }
   });
 });
 

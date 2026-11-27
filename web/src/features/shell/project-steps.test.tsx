@@ -24,14 +24,15 @@ vi.mock('@/features/reports/polling', async (importOriginal) => {
   const original = await importOriginal<typeof import('@/features/reports/polling')>();
   return {
     ...original,
-    pollInterval: (status: Parameters<typeof original.pollInterval>[0]) =>
-      original.isFinished(status) ? false : 15,
+    pollInterval: (job: Parameters<typeof original.pollInterval>[0]) =>
+      original.isFinished(job?.status) ? false : 15,
   };
 });
 
 import { createJobHandlers } from '@/mocks/jobs';
 
 import { ProjectSteps, type ProjectStepId } from './ProjectSteps';
+import { invalidateAfterSubmit } from './useStepState';
 
 const P = 'p1';
 const V = 'v1';
@@ -284,5 +285,66 @@ describe('ProjectSteps step 5', () => {
     fireEvent.click(button);
     await waitFor(() => expect(button.textContent).toContain('ดาวน์โหลดแล้ว'), { timeout: 3000 });
     await waitFor(() => expect(clicks).toHaveLength(1));
+  });
+});
+
+describe('step bar and the page cache', () => {
+  const app = () =>
+    new QueryClient({ defaultOptions: { queries: { retry: false, staleTime: 30_000 } } });
+  const view = (client: QueryClient, current: ProjectStepId) =>
+    render(
+      <QueryClientProvider client={client}>
+        <NextIntlClientProvider locale="th" messages={{ shell, reports, ui: uiMessages }}>
+          <ProjectSteps current={current} projectId={P} versionId={V} />
+        </NextIntlClientProvider>
+      </QueryClientProvider>,
+    );
+  const counted = (status: 'draft' | 'submitted') => {
+    const gets = { version: 0, results: 0 };
+    server.use(
+      http.get(`${BASE}/projects/:p/versions/:v`, ({ params }) => {
+        gets.version += 1;
+        return HttpResponse.json(summary(String(params.v), status));
+      }),
+      http.get(`${BASE}/projects/:p/versions/:v/results`, () => {
+        gets.results += 1;
+        return HttpResponse.json({ items: [{ indicator_code: 'EC-MG-1', strategy: 'x' }] });
+      }),
+    );
+    return gets;
+  };
+
+  it('asks for the version and the results once while moving between step pages', async () => {
+    const gets = counted('submitted');
+    const client = app();
+    const first = view(client, 'results');
+    await waitFor(() => expect(within(step('แผนจัดการ')).getByRole('link')).toBeTruthy());
+    first.unmount();
+    view(client, 'strategy');
+    await waitFor(() => expect(within(step('ประเมินความเสี่ยง')).getByRole('link')).toBeTruthy());
+    expect(gets).toEqual({ version: 1, results: 1 });
+  });
+
+  it('shows steps 3 and 4 as reachable at once after a submit', async () => {
+    const draft = counted('draft');
+    const client = app();
+    const first = view(client, 'assessment');
+    await waitFor(() => expect(draft.version).toBe(1));
+    expect(within(step('ผลการประเมิน')).getByRole('link').getAttribute('aria-disabled')).toBe(
+      'true',
+    );
+    first.unmount();
+
+    counted('submitted');
+    invalidateAfterSubmit(client, P);
+    view(client, 'assessment');
+    await waitFor(() =>
+      expect(within(step('แผนจัดการ')).getByRole('link').getAttribute('href')).toBe(
+        `/projects/${P}/versions/${V}/plan`,
+      ),
+    );
+    expect(within(step('ผลการประเมิน')).getByRole('link').getAttribute('href')).toBe(
+      `/projects/${P}/versions/${V}/results`,
+    );
   });
 });

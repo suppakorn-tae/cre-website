@@ -7,7 +7,7 @@ import { fetchProject, fetchVersions, projectKey, versionsKey } from '@/features
 import { ApiError } from '@/lib/api/errors';
 
 import { downloadUrl, fetchJob, jobKey, reportJobKey, requestReport, versionKey } from './api';
-import { pollInterval } from './polling';
+import { jobPhase, pollInterval, REPORT_CAP_MS, type JobPhase } from './polling';
 import { reportFileName, reportState, triggerDownload, type ReportState } from './state';
 
 const downloaded = new WeakMap<QueryClient, Set<string>>();
@@ -36,6 +36,10 @@ export type ReportDownload = {
    * done. Does nothing while building; downloads again when it is ready.
    */
   start: () => void;
+  /** The job has sat in the queue too long: polling has stopped until `start` is called. */
+  stalled: boolean;
+  /** The job has been running a long time; it is still polled, with no limit. */
+  longRunning: boolean;
   /** Same as `start`: a failed report is asked for again. */
   retry: () => void;
   /** Saves the finished PDF again, e.g. when the browser blocked the first download. */
@@ -60,17 +64,37 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
   });
   const jobId = stored.data ?? null;
 
+  // When the user last asked to check a stalled job again; the wait counts from then.
+  const [resumedAt, setResumedAt] = useState(0);
+  // When this tab first got an answer for the job: the queue wait is also measured on our clock.
+  const [firstPoll, setFirstPoll] = useState<{ id: string; at: number } | null>(null);
+  const firstPollAt = firstPoll?.id === jobId ? firstPoll.at : 0;
   const job = useQuery({
     queryKey: jobKey(jobId ?? ''),
-    queryFn: () => fetchJob(jobId ?? ''),
+    queryFn: async () => {
+      const answer = await fetchJob(jobId ?? '');
+      setFirstPoll((seen) => (seen?.id === jobId ? seen : { id: jobId ?? '', at: Date.now() }));
+      return answer;
+    },
     enabled: jobId !== null,
     // Backoff grows with each answer; polling stops once the job has finished, and
     // on an error too: the state is then "failed" and a retry starts it again.
     refetchInterval: (query) =>
       query.state.status === 'error'
         ? false
-        : pollInterval(query.state.data?.status, query.state.dataUpdateCount),
+        : pollInterval(
+            query.state.data,
+            query.state.dataUpdateCount,
+            REPORT_CAP_MS,
+            query.state.dataUpdatedAt,
+            resumedAt,
+            firstPollAt,
+          ),
   });
+  // Judged at the time of the last answer, which also makes this component render on each one.
+  const phase: JobPhase = job.isError
+    ? 'finished'
+    : jobPhase(job.data, job.dataUpdatedAt, resumedAt, firstPollAt);
   const request = useMutation({
     mutationFn: () => requestReport(projectId, versionId),
     onSuccess: (id) => {
@@ -138,7 +162,13 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
   }, [state, building, download, jobId, queryClient]);
 
   const { mutate, reset } = request;
+  const { refetch } = job;
   const start = useCallback(() => {
+    if (phase === 'stalled') {
+      setResumedAt(Date.now());
+      void refetch();
+      return;
+    }
     if (state === 'building' || starting.current) return;
     if (state === 'ready') {
       void download();
@@ -152,7 +182,7 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
       queryClient.removeQueries({ queryKey: jobKey(jobId) });
     }
     mutate();
-  }, [state, download, reset, mutate, jobId, queryClient, storedKey]);
+  }, [phase, refetch, state, download, reset, mutate, jobId, queryClient, storedKey]);
 
   return {
     state,
@@ -160,6 +190,8 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
     downloadUrl: jobId === null ? null : downloadUrl(jobId),
     tooMany,
     observed,
+    stalled: phase === 'stalled',
+    longRunning: phase === 'longRunning',
     start,
     retry: start,
     download,

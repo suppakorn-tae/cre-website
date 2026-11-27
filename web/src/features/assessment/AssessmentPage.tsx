@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { IconArrowLeft } from '@tabler/icons-react';
 import { useFormatter, useTranslations } from 'next-intl';
@@ -7,6 +8,7 @@ import { useCallback, useRef, useState } from 'react';
 
 import { Button, Icon, Skeleton } from '@/components/ui';
 import { ProjectSteps } from '@/features/shell/ProjectSteps';
+import { invalidateAfterSubmit } from '@/features/shell/useStepState';
 
 import {
   saveAnswers,
@@ -54,6 +56,7 @@ function Form({
     Object.fromEntries(answers.items.map((a) => [a.indicator_code, fromAnswer(a)])),
   );
   const router = useRouter();
+  const queryClient = useQueryClient();
   const narrow = useNarrow();
   const pageRef = useRef<HTMLDivElement>(null);
   const barRef = useRef<HTMLElement>(null);
@@ -135,6 +138,8 @@ function Form({
         return;
       }
       await submitVersion(projectId, versionId);
+      // The step bar and the results page must see the version as submitted at once.
+      invalidateAfterSubmit(queryClient, projectId);
       // Close first: Next.js keeps this page (and its state) for the way back.
       setConfirming(false);
       router.push(resultsPath(projectId, versionId));

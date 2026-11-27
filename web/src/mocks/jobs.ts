@@ -13,7 +13,18 @@ type Options = {
   failFirstFor?: (versionId: string) => boolean;
 };
 
-type Entry = { job: Job; polls: number; willFail: boolean };
+type Entry = { job: Job; polls: number; willFail: boolean; stuck: boolean };
+
+/** Set to `1` in localStorage to make new report jobs sit in the queue, as if the worker were down. The app stops waiting 2 minutes after it first sees it. */
+export const STUCK_JOBS_FLAG = 'cre-mock-stuck-jobs';
+
+function stuckRequested(): boolean {
+  try {
+    return globalThis.localStorage?.getItem(STUCK_JOBS_FLAG) === '1';
+  } catch {
+    return false;
+  }
+}
 
 const notFound = () =>
   HttpResponse.json({ error: { code: 'not_found', message: 'not found' } }, { status: 404 });
@@ -34,7 +45,15 @@ export function createJobHandlers({
   let serial = 0;
 
   const statusAt = (e: Entry): JobStatus =>
-    e.polls <= 0 ? 'queued' : e.polls === 1 ? 'running' : e.willFail ? 'failed' : 'done';
+    e.stuck
+      ? 'queued'
+      : e.polls <= 0
+        ? 'queued'
+        : e.polls === 1
+          ? 'running'
+          : e.willFail
+            ? 'failed'
+            : 'done';
 
   return [
     mswHttp.post('*/api/v1/projects/:projectId/versions/:versionId/reports', ({ params }) => {
@@ -45,6 +64,7 @@ export function createJobHandlers({
       }
       serial += 1;
       const id = `0193f6a2-0000-7000-8000-${String(serial).padStart(12, '0')}`;
+      const stuck = stuckRequested();
       const job: Job = {
         id,
         kind: 'report',
@@ -59,6 +79,7 @@ export function createJobHandlers({
         job,
         polls: 0,
         willFail: (failFirst || !!failFirstFor?.(String(params.versionId))) && !byVersion.has(key),
+        stuck,
       });
       byVersion.set(key, id);
       return HttpResponse.json({ job_id: id }, { status: 202 });

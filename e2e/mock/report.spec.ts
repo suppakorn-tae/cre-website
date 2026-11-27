@@ -131,3 +131,33 @@ test('the old report url redirects to the results', async ({ page }) => {
   await expect(page).toHaveURL(new RegExp(`/projects/${PROJECT}/versions/${V3}/results$`));
   await expect(page.getByText('ผลการประเมินความเสี่ยง – v3')).toBeVisible();
 });
+
+test('a report job stuck in the queue stops polling and offers to check again', async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.addInitScript(() => localStorage.setItem('cre-mock-stuck-jobs', '1'));
+  const polls: string[] = [];
+  page.on('request', (request) => {
+    if (/\/api\/v1\/jobs\//.test(request.url())) polls.push(request.url());
+  });
+  await page.goto(`/projects/${PROJECT}/versions/${V3}/results`);
+  await page.getByRole('button', { name: REPORT, exact: true }).click();
+
+  // The app waits 2 minutes for a queued job to start; jump past that on the page's clock.
+  await expect(toasts(page).getByText(BUILDING_TITLE)).toBeVisible(BUILD);
+  await page.clock.fastForward('02:30');
+  await expect(toasts(page).getByText('ระบบยังไม่เริ่มงานนี้')).toBeVisible(BUILD);
+  const checkAgain = toasts(page).getByRole('button', { name: 'ตรวจสอบอีกครั้ง' }).first();
+  await expect(checkAgain).toBeVisible();
+
+  // Polling has stopped: no new request while the longest back-off passes.
+  const before = polls.length;
+  await page.waitForTimeout(3000);
+  expect(polls.length).toBe(before);
+
+  // Pressed with the keyboard: on a phone the dev-only Next badge sits over the toast.
+  await checkAgain.focus();
+  await page.keyboard.press('Enter');
+  await expect.poll(() => polls.length).toBeGreaterThan(before);
+});

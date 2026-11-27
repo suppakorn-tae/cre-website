@@ -51,6 +51,15 @@ export function ExportRow({ entry, onAgain }: Props) {
           {job.isError && status === 'loading' ? t('loadFailed') : null}
           {status === 'loading' ? null : t(status)}
         </span>
+        {job.phase === 'stalled' && (
+          <span className={styles.muted}>
+            {t('stalled')}{' '}
+            <Button size="sm" variant="secondary" onClick={job.checkAgain}>
+              {t('checkAgain')}
+            </Button>
+          </span>
+        )}
+        {job.phase === 'longRunning' && <span className={styles.muted}>{t('longRunning')}</span>}
         {status === 'expired' && <span className={styles.muted}>{t('expiredHelp')}</span>}
         {phase === 'failed' && (
           <span role="alert" className={styles.statusError}>
