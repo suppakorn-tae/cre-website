@@ -190,12 +190,13 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     });
     if ((await trigger.getAttribute('aria-expanded')) !== 'true') await trigger.click();
 
-    // The choice shows at once and is saved on change; wait for the saved line below.
+    // The radio is visually hidden, so click its card. The choice shows at once
+    // and is saved 400 ms after the last click; the saved line below waits for it.
     const group = main.getByRole('radiogroup', {
       name: msg('plan', 'strategy.groupLabel', { code: GOLDEN_VH.code }),
     });
     const reduce = group.getByRole('radio', { name: msg('plan', 'strategy.options.REDUCE') });
-    await reduce.click();
+    await group.locator('label').filter({ hasText: 'REDUCE' }).click();
     await expect(reduce).toBeChecked();
     await expect(
       main.getByText(new RegExp(escapeRe(msg('plan', 'strategy.savedAt', { at: '' })))).first(),
