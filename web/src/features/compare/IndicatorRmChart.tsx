@@ -2,7 +2,9 @@
 
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { useTranslations } from 'next-intl';
+import { useId } from 'react';
 
+import { useSweep, useTween } from '@/components/ui/chartMotion';
 import { formatNumber } from '@/lib/format/locale';
 
 import { useBoxWidth } from './chartBox';
@@ -58,6 +60,21 @@ export function IndicatorRmChart({
   const slot = plotW / Math.max(versions.length, 1);
   const yRm = (rm: number) =>
     M.top + plotH - ((rm - RM_BANDS.min) / (RM_BANDS.max - RM_BANDS.min)) * plotH;
+  // Points move as shares of the RM axis, so a resize never animates and a filter change glides
+  // from what is on screen. On load the lines are drawn left to right and the markers fade in.
+  const share = useTween(
+    Object.fromEntries(
+      series.flatMap((s) =>
+        s.values.map((v, i) => [
+          `${s.code}:${i}`,
+          ((v ?? RM_BANDS.min) - RM_BANDS.min) / (RM_BANDS.max - RM_BANDS.min),
+        ]),
+      ),
+    ),
+  );
+  const draw = useSweep();
+  const clipId = `${useId()}-draw`;
+  const yShare = (value: number) => M.top + plotH - value * plotH;
   const centre = (i: number) => M.left + slot * (i + 0.5);
   const empty = Math.min(88, slot * 0.7);
   const rm = (v: number | null) =>
@@ -159,20 +176,34 @@ export function IndicatorRmChart({
               </text>
             </g>
           ))}
-          {series.map((s) => (
-            <g key={s.code} className={styles.series} data-series={s.index % SERIES_COUNT}>
-              <path
-                d={linePath(
-                  s.values.map((v, i) => (v === null ? undefined : { x: centre(i), y: yRm(v) })),
+          <clipPath id={clipId}>
+            <rect x="0" y="0" width={boxWidth * draw} height={HEIGHT} />
+          </clipPath>
+          <g clipPath={draw < 1 ? `url(#${clipId})` : undefined}>
+            {series.map((s) => (
+              <g key={s.code} className={styles.series} data-series={s.index % SERIES_COUNT}>
+                <path
+                  d={linePath(
+                    s.values.map((v, i) =>
+                      v === null ? undefined : { x: centre(i), y: yShare(share[`${s.code}:${i}`]) },
+                    ),
+                  )}
+                  fill="none"
+                  strokeDasharray={s.dashed ? '6 4' : undefined}
+                />
+                {s.values.map((v, i) =>
+                  v === null ? null : (
+                    <Marker
+                      key={i}
+                      x={centre(i)}
+                      y={yShare(share[`${s.code}:${i}`])}
+                      index={s.index}
+                    />
+                  ),
                 )}
-                fill="none"
-                strokeDasharray={s.dashed ? '6 4' : undefined}
-              />
-              {s.values.map((v, i) =>
-                v === null ? null : <Marker key={i} x={centre(i)} y={yRm(v)} index={s.index} />,
-              )}
-            </g>
-          ))}
+              </g>
+            ))}
+          </g>
         </svg>
       </div>
       <VisuallyHidden.Root asChild>

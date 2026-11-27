@@ -388,6 +388,26 @@
   .panelFade {
     animation: fade-in var(--motion-fast, 150ms) ease-out both;
   }
+  /* A change inside the same view (IO-227): bars move from where they are to the new size,
+     in 0.4 of the chart duration. A new panel mounts new bars, so it gets the entrance above. */
+  .stack,
+  .donutBarFill,
+  .total,
+  .axisTicks span {
+    transition-duration: calc(var(--motion-chart, 700ms) * 0.4);
+    transition-timing-function: var(--motion-ease, ease-out);
+  }
+  .stack,
+  .donutBarFill {
+    transition-property: width;
+  }
+  .total,
+  .axisTicks span {
+    transition-property: left;
+  }
+  .fill {
+    transition: flex-grow calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out);
+  }
 }
 @keyframes grow {
   from {

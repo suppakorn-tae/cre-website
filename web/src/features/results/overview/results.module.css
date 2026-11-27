@@ -657,3 +657,16 @@
     animation: none;
   }
 }
+
+/* A change inside the same view (IO-227), such as another version: bars and values move from
+   where they are, in 0.4 of the chart duration. New bars use the grow-in above. */
+@media (prefers-reduced-motion: no-preference) {
+  .factorBarFill {
+    transition:
+      height calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out),
+      background-color calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out);
+  }
+  .factorValue {
+    transition: bottom calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out);
+  }
+}

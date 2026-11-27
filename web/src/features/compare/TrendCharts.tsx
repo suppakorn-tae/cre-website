@@ -4,6 +4,7 @@ import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { useTranslations } from 'next-intl';
 import { useId, useState } from 'react';
 
+import { useSweep, useTween } from '@/components/ui/chartMotion';
 import { formatNumber } from '@/lib/format/locale';
 
 import type { TrendPoint } from './api';
@@ -46,12 +47,27 @@ function TrendCard({ points, progress }: Props) {
   const slot = plotW / Math.max(shown.length, 1);
   const barW = Math.min(56, slot * 0.5);
   const axis = barAxis(Math.max(0, ...shown.map((p) => p.h_vh_count ?? 0)));
+  // Bars and points move as shares of their axis, so a resize never animates and a change glides
+  // from what is on screen. Bars grow in from the axis on load; the line is drawn left to right.
+  const barShare = useTween(
+    Object.fromEntries(shown.map((p) => [p.version_id, (p.h_vh_count ?? 0) / axis.top])),
+    { enter: 'zero' },
+  );
+  const rmShare = useTween(
+    Object.fromEntries(
+      shown.map((p) => [
+        p.version_id,
+        ((p.avg_rm ?? RM_BANDS.min) - RM_BANDS.min) / (RM_BANDS.max - RM_BANDS.min),
+      ]),
+    ),
+  );
+  const draw = useSweep();
   const yBar = (v: number) => M.top + plotH - (v / axis.top) * plotH;
-  const yRm = (rm: number) =>
-    M.top + plotH - ((rm - RM_BANDS.min) / (RM_BANDS.max - RM_BANDS.min)) * plotH;
+  const yShare = (share: number) => M.top + plotH - share * plotH;
+  const clipId = `${titleId}-draw`;
   const centre = (i: number) => M.left + slot * (i + 0.5);
   const dots = shown.map((p, i) =>
-    p.avg_rm === null ? undefined : { x: centre(i), y: yRm(p.avg_rm) },
+    p.avg_rm === null ? undefined : { x: centre(i), y: yShare(rmShare[p.version_id]) },
   );
   const rm = (v: number) =>
     formatNumber(v, undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -113,24 +129,20 @@ function TrendCard({ points, progress }: Props) {
               const x = centre(i);
               const submitted = p.h_vh_count !== null;
               const share = progress?.[p.version_id];
+              const barTop = yShare(barShare[p.version_id]);
               return (
                 <g key={p.version_id}>
                   {submitted ? (
                     <>
                       <rect
                         x={x - barW / 2}
-                        y={yBar(p.h_vh_count ?? 0)}
+                        y={barTop}
                         width={barW}
-                        height={M.top + plotH - yBar(p.h_vh_count ?? 0)}
+                        height={M.top + plotH - barTop}
                         rx="4"
                         className={styles.bar}
                       />
-                      <text
-                        x={x}
-                        y={yBar(p.h_vh_count ?? 0) - 6}
-                        textAnchor="middle"
-                        className={styles.barValue}
-                      >
+                      <text x={x} y={barTop - 6} textAnchor="middle" className={styles.barValue}>
                         {formatNumber(p.h_vh_count ?? 0)}
                       </text>
                     </>
@@ -173,17 +185,22 @@ function TrendCard({ points, progress }: Props) {
                 </g>
               );
             })}
-            <path d={linePath(dots)} className={styles.rmLine} fill="none" />
-            {dots.map((d, i) =>
-              d ? (
-                <g key={shown[i].version_id}>
-                  <circle cx={d.x} cy={d.y} r="4.5" className={styles.rmDot} />
-                  <text x={d.x + 10} y={d.y - 8} className={styles.rmValue}>
-                    {rm(shown[i].avg_rm ?? 0)}
-                  </text>
-                </g>
-              ) : null,
-            )}
+            <clipPath id={clipId}>
+              <rect x="0" y="0" width={boxWidth * draw} height={HEIGHT} />
+            </clipPath>
+            <g clipPath={draw < 1 ? `url(#${clipId})` : undefined}>
+              <path d={linePath(dots)} className={styles.rmLine} fill="none" />
+              {dots.map((d, i) =>
+                d ? (
+                  <g key={shown[i].version_id}>
+                    <circle cx={d.x} cy={d.y} r="4.5" className={styles.rmDot} />
+                    <text x={d.x + 10} y={d.y - 8} className={styles.rmValue}>
+                      {rm(shown[i].avg_rm ?? 0)}
+                    </text>
+                  </g>
+                ) : null,
+              )}
+            </g>
           </svg>
         </div>
         <VisuallyHidden.Root asChild>
