@@ -7,20 +7,15 @@ Ratios below are WCAG 2.x relative luminance of the token values in `web/src/sty
 
 ## Summary
 
-- 142 pairs: 134 pass (14 of them within 0.3 of the limit), 8 fail and are waived below, 0 fail without a waiver.
+- 142 pairs: all 142 pass (18 of them within 0.3 of the limit), none fails, none is waived.
 - Fixed in tokens: `--color-placeholder` `#8a97a8` to `#677689` (2.97:1 to 4.64:1 on white); `--color-blue-400` `#6e9be6` to `#4a80d8` (done progress step 2.28:1 to 3.91:1 on white, KPI hover border 2.80:1 to 3.91:1 on white).
-- Open: risk-scale solids (design decision), dashboard search field focus in forced colours (IO-221).
+- IO-226: the risk-scale solids and their `-on` text moved (VL `#10b981` to `#059669`, L `#84cc16` to `#65a30d`, M `#facc15` to `#d97706`, H `#f97316` to `#c2410c`, VH `#dc2626` to `#b91c1c`; `-on` VL `#021a10`, L `#102303`, M `#2b1d00`, H white). Solids reach 3:1 on cards, `-on` text 4.5:1. Tints and chips are unchanged. The destructive hover and pressed colours moved one step darker (`#991b1b`, `#7f1d1d`) so they differ from the new VH.
+- Open: dashboard search field focus in forced colours (IO-221).
 
 ## Failures and near misses
 
-- level-vl on color-white, level vl bar, donut segment, legend dot: 2.54:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
-- level-vl on color-surface, level vl bar, donut segment, legend dot: 2.47:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
-- level-l on color-white, level l bar, donut segment, legend dot: 1.98:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
-- level-l on color-surface, level l bar, donut segment, legend dot: 1.92:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
-- level-m on color-white, level m bar, donut segment, legend dot: 1.53:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
-- level-m on color-surface, level m bar, donut segment, legend dot: 1.49:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
-- level-h on color-white, level h bar, donut segment, legend dot: 2.80:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
-- level-h on color-surface, level h bar, donut segment, legend dot: 2.73:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
+No pair fails and none is waived.
+
 
 Near misses (pass, within 0.3 of the limit):
 
@@ -31,6 +26,10 @@ Near misses (pass, within 0.3 of the limit):
 - color-success on color-success-bg, success chip and alert: 4.54:1 (needs 4.5:1)
 - color-warning on color-warning-bg, warning chip and alert: 4.60:1 (needs 4.5:1)
 - color-warning on color-orange-50, orange KPI icon: 4.54:1 (needs 4.5:1)
+- level-l on color-white, level l bar, donut segment, legend dot: 3.09:1 (needs 3:1)
+- level-l on color-surface, level l bar, donut segment, legend dot: 3.01:1 (needs 3:1)
+- level-m on color-white, level m bar, donut segment, legend dot: 3.19:1 (needs 3:1)
+- level-m on color-surface, level m bar, donut segment, legend dot: 3.10:1 (needs 3:1)
 - level-vl-text on level-vl-tint, level vl chip: 4.80:1 (needs 4.5:1)
 - level-l-text on level-l-tint, level l chip: 4.52:1 (needs 4.5:1)
 - level-h-text on level-h-tint, level h chip: 4.68:1 (needs 4.5:1)
@@ -92,9 +91,9 @@ Design observations, not contrast failures (a decision for the design owner):
 | Text 4.5:1 | `color-white` #ffffff | `color-blue-800` #133b77 | primary button, chosen chip, step number | 10.94 | pass |
 | Text 4.5:1 | `color-white` #ffffff | `color-navy-900` #0f2a4a | tooltip | 14.48 | pass |
 | Text 4.5:1 | `color-white` #ffffff | `color-success` #15803d | step "ดาวน์โหลดแล้ว" number | 5.02 | pass |
-| Text 4.5:1 | `color-white` #ffffff | `level-vh` #dc2626 | destructive button | 4.83 | pass |
-| Text 4.5:1 | `color-white` #ffffff | `color-danger-hover` #b91c1c | destructive hover | 6.47 | pass |
-| Text 4.5:1 | `color-white` #ffffff | `color-danger-pressed` #991b1b | destructive pressed | 8.31 | pass |
+| Text 4.5:1 | `color-white` #ffffff | `level-vh` #b91c1c | destructive button | 6.47 | pass |
+| Text 4.5:1 | `color-white` #ffffff | `color-danger-hover` #991b1b | destructive hover | 8.31 | pass |
+| Text 4.5:1 | `color-white` #ffffff | `color-danger-pressed` #7f1d1d | destructive pressed | 10.02 | pass |
 | Text 4.5:1 | `color-white` #ffffff | `color-error` #b91c1c | filled error mark | 6.47 | pass |
 | Text 4.5:1 | `color-placeholder` #677689 | `color-white` #ffffff | input and select placeholder | 4.64 | pass (near) |
 | Text 4.5:1 | `color-placeholder` #677689 | `color-surface` #fbfcfe | input and select placeholder | 4.52 | pass (near) |
@@ -119,19 +118,19 @@ Design observations, not contrast failures (a decision for the design owner):
 | Text 4.5:1 | `color-text-secondary` #475569 | `color-warning-bg` #fef4e2 | warning body | 6.95 | pass |
 | Text 4.5:1 | `level-vl-text` #0e7a4f | `level-vl-tint` #e6f6ee | level vl chip | 4.80 | pass (near) |
 | Text 4.5:1 | `level-vl-text` #0e7a4f | `color-white` #ffffff | level vl text on a card | 5.36 | pass |
-| Text 4.5:1 | `level-vl-on` #0f1e33 | `level-vl` #10b981 | label inside a level vl bar | 6.60 | pass |
+| Text 4.5:1 | `level-vl-on` #021a10 | `level-vl` #059669 | label inside a level vl bar | 4.81 | pass |
 | Text 4.5:1 | `level-l-text` #4d7c0f | `level-l-tint` #eef7e0 | level l chip | 4.52 | pass (near) |
 | Text 4.5:1 | `level-l-text` #4d7c0f | `color-white` #ffffff | level l text on a card | 4.99 | pass |
-| Text 4.5:1 | `level-l-on` #1f3305 | `level-l` #84cc16 | label inside a level l bar | 6.93 | pass |
+| Text 4.5:1 | `level-l-on` #102303 | `level-l` #65a30d | label inside a level l bar | 5.38 | pass |
 | Text 4.5:1 | `level-m-text` #8a6100 | `level-m-tint` #fdf6d8 | level m chip | 5.10 | pass |
 | Text 4.5:1 | `level-m-text` #8a6100 | `color-white` #ffffff | level m text on a card | 5.54 | pass |
-| Text 4.5:1 | `level-m-on` #4a3500 | `level-m` #facc15 | label inside a level m bar | 7.62 | pass |
+| Text 4.5:1 | `level-m-on` #2b1d00 | `level-m` #d97706 | label inside a level m bar | 5.16 | pass |
 | Text 4.5:1 | `level-h-text` #c2410c | `level-h-tint` #fff1e6 | level h chip | 4.68 | pass (near) |
 | Text 4.5:1 | `level-h-text` #c2410c | `color-white` #ffffff | level h text on a card | 5.18 | pass |
-| Text 4.5:1 | `level-h-on` #0f1e33 | `level-h` #f97316 | label inside a level h bar | 5.98 | pass |
+| Text 4.5:1 | `level-h-on` #ffffff | `level-h` #c2410c | label inside a level h bar | 5.18 | pass |
 | Text 4.5:1 | `level-vh-text` #b42318 | `level-vh-tint` #fde7e5 | level vh chip | 5.55 | pass |
 | Text 4.5:1 | `level-vh-text` #b42318 | `color-white` #ffffff | level vh text on a card | 6.57 | pass |
-| Text 4.5:1 | `level-vh-on` #ffffff | `level-vh` #dc2626 | label inside a level vh bar | 4.83 | pass |
+| Text 4.5:1 | `level-vh-on` #ffffff | `level-vh` #b91c1c | label inside a level vh bar | 6.47 | pass |
 | Text 4.5:1 | `dim-ec` #4c2a92 | `color-white` #ffffff | dimension ec text | 10.23 | pass |
 | Text 4.5:1 | `dim-ec` #4c2a92 | `color-surface` #fbfcfe | dimension ec text | 9.96 | pass |
 | Text 4.5:1 | `dim-ec` #4c2a92 | `dim-ec-tint` #edeaf4 | dimension ec chip | 8.61 | pass |
@@ -193,16 +192,16 @@ Design observations, not contrast failures (a decision for the design owner):
 | Non-text 3:1 | `color-error` #b91c1c | `color-white` #ffffff | toast error edge and icon | 6.47 | pass |
 | Non-text 3:1 | `color-info` #1e5bc6 | `color-white` #ffffff | toast info edge and icon | 6.24 | pass |
 | Non-text 3:1 | `color-warning` #b45309 | `color-white` #ffffff | toast warning edge and icon | 5.02 | pass |
-| Non-text 3:1 | `level-vl` #10b981 | `color-white` #ffffff | level vl bar, donut segment, legend dot | 2.54 | FAIL (waived) |
-| Non-text 3:1 | `level-vl` #10b981 | `color-surface` #fbfcfe | level vl bar, donut segment, legend dot | 2.47 | FAIL (waived) |
-| Non-text 3:1 | `level-l` #84cc16 | `color-white` #ffffff | level l bar, donut segment, legend dot | 1.98 | FAIL (waived) |
-| Non-text 3:1 | `level-l` #84cc16 | `color-surface` #fbfcfe | level l bar, donut segment, legend dot | 1.92 | FAIL (waived) |
-| Non-text 3:1 | `level-m` #facc15 | `color-white` #ffffff | level m bar, donut segment, legend dot | 1.53 | FAIL (waived) |
-| Non-text 3:1 | `level-m` #facc15 | `color-surface` #fbfcfe | level m bar, donut segment, legend dot | 1.49 | FAIL (waived) |
-| Non-text 3:1 | `level-h` #f97316 | `color-white` #ffffff | level h bar, donut segment, legend dot | 2.80 | FAIL (waived) |
-| Non-text 3:1 | `level-h` #f97316 | `color-surface` #fbfcfe | level h bar, donut segment, legend dot | 2.73 | FAIL (waived) |
-| Non-text 3:1 | `level-vh` #dc2626 | `color-white` #ffffff | level vh bar, donut segment, legend dot | 4.83 | pass |
-| Non-text 3:1 | `level-vh` #dc2626 | `color-surface` #fbfcfe | level vh bar, donut segment, legend dot | 4.70 | pass |
+| Non-text 3:1 | `level-vl` #059669 | `color-white` #ffffff | level vl bar, donut segment, legend dot | 3.77 | pass |
+| Non-text 3:1 | `level-vl` #059669 | `color-surface` #fbfcfe | level vl bar, donut segment, legend dot | 3.67 | pass |
+| Non-text 3:1 | `level-l` #65a30d | `color-white` #ffffff | level l bar, donut segment, legend dot | 3.09 | pass (near) |
+| Non-text 3:1 | `level-l` #65a30d | `color-surface` #fbfcfe | level l bar, donut segment, legend dot | 3.01 | pass (near) |
+| Non-text 3:1 | `level-m` #d97706 | `color-white` #ffffff | level m bar, donut segment, legend dot | 3.19 | pass (near) |
+| Non-text 3:1 | `level-m` #d97706 | `color-surface` #fbfcfe | level m bar, donut segment, legend dot | 3.10 | pass (near) |
+| Non-text 3:1 | `level-h` #c2410c | `color-white` #ffffff | level h bar, donut segment, legend dot | 5.18 | pass |
+| Non-text 3:1 | `level-h` #c2410c | `color-surface` #fbfcfe | level h bar, donut segment, legend dot | 5.04 | pass |
+| Non-text 3:1 | `level-vh` #b91c1c | `color-white` #ffffff | level vh bar, donut segment, legend dot | 6.47 | pass |
+| Non-text 3:1 | `level-vh` #b91c1c | `color-surface` #fbfcfe | level vh bar, donut segment, legend dot | 6.30 | pass |
 
 ## Page states checked (Playwright, mock mode)
 

@@ -50,6 +50,19 @@ describe('text and non-text pairs (WCAG 1.4.3 and 1.4.11)', () => {
     }
   });
 
+  it('enforces 3:1 for every risk solid on a card and 4.5:1 for its -on text, with no waiver', () => {
+    for (const l of ['vl', 'l', 'm', 'h', 'vh']) {
+      const solids = PAIRS.filter((p) => p.fg === `level-${l}`);
+      expect(solids.length, l).toBeGreaterThan(0);
+      const on = PAIRS.filter((p) => p.fg === `level-${l}-on` && p.bg === `level-${l}`);
+      expect(on, l).toHaveLength(1);
+      for (const p of [...solids, ...on]) {
+        expect(p.waived, label(p)).toBeUndefined();
+        expect(ratioOf(tokens, p), label(p)).toBeGreaterThanOrEqual(p.kind === 'ui' ? 3 : 4.5);
+      }
+    }
+  });
+
   it('fails when a token is changed below its ratio', () => {
     expect(failures({ ...tokens, 'color-placeholder': '#9aa6b6' })).not.toEqual([]);
     expect(failures({ ...tokens, 'color-field-border': '#c8d0dc' })).not.toEqual([]);

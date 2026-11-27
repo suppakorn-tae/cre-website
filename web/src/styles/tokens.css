@@ -40,27 +40,27 @@
   --color-info: #1e5bc6;
   --color-info-bg: #eaf1fd;
   --color-info-border: #c9dbfa;
-  --color-danger-hover: #b91c1c;
-  --color-danger-pressed: #991b1b;
+  --color-danger-hover: #991b1b;
+  --color-danger-pressed: #7f1d1d;
 
   /* One-hue risk scale VL to VH: solid for charts, tint and text for chips */
-  --level-vl: #10b981;
-  --level-vl-on: #0f1e33;
+  --level-vl: #059669;
+  --level-vl-on: #021a10;
   --level-vl-tint: #e6f6ee;
   --level-vl-text: #0e7a4f;
-  --level-l: #84cc16;
-  --level-l-on: #1f3305;
+  --level-l: #65a30d;
+  --level-l-on: #102303;
   --level-l-tint: #eef7e0;
   --level-l-text: #4d7c0f;
-  --level-m: #facc15;
-  --level-m-on: #4a3500;
+  --level-m: #d97706;
+  --level-m-on: #2b1d00;
   --level-m-tint: #fdf6d8;
   --level-m-text: #8a6100;
-  --level-h: #f97316;
-  --level-h-on: #0f1e33;
+  --level-h: #c2410c;
+  --level-h-on: #ffffff;
   --level-h-tint: #fff1e6;
   --level-h-text: #c2410c;
-  --level-vh: #dc2626;
+  --level-vh: #b91c1c;
   --level-vh-on: #ffffff;
   --level-vh-tint: #fde7e5;
   --level-vh-text: #b42318;
