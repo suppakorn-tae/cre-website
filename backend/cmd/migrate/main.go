@@ -2,10 +2,13 @@
 //
 // Usage: migrate up | down | version
 //
-// The database is read from DATABASE_URL (postgres:// or postgresql://).
+// The database is read from DATABASE_URL (postgres:// or postgresql://), as
+// the schema owner. After "up", when APP_DB_PASSWORD is set, the password of
+// the application role cre_app is set to it.
 package main
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -20,10 +23,22 @@ import (
 )
 
 func main() {
-	if err := runAndSeed(os.Args[1:], os.Getenv("DATABASE_URL")); err != nil {
+	if err := runAll(os.Args[1:], os.Getenv("DATABASE_URL"), os.Getenv("APP_DB_PASSWORD")); err != nil {
 		slog.Error("migrate failed", "err", err)
 		os.Exit(1)
 	}
+}
+
+// runAll runs the command, seeds after "up" and then sets the application
+// role password.
+func runAll(args []string, databaseURL, appPassword string) error {
+	if err := runAndSeed(args, databaseURL); err != nil {
+		return err
+	}
+	if len(args) == 1 && args[0] == "up" {
+		return setAppPassword(context.Background(), databaseURL, appPassword)
+	}
+	return nil
 }
 
 func run(args []string, databaseURL string) error {
