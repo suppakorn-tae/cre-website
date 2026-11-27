@@ -61,7 +61,7 @@
 }
 .line[data-checked] .badge {
   background: var(--color-blue-600);
-  color: var(--color-white);
+  color: var(--color-on-solid);
 }
 .line[data-invalid] .badge {
   border-color: var(--color-error);

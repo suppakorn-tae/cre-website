@@ -84,7 +84,7 @@ export function PlanItem({ row, meta, editable, onStrategy }: Props) {
                 ))}
                 <li className="flex items-center gap-1">
                   <Icon icon={IconArrowRight} size={16} className="shrink-0 text-text-muted" />
-                  <span className={cx(CHIP, 'border-navy-900 bg-navy-900 text-white')}>
+                  <span className={cx(CHIP, 'border-navy-900 bg-navy-900 text-on-solid')}>
                     {t('item.rmChip', { rm: formatRm(row.rm), level: row.level })}
                   </span>
                 </li>

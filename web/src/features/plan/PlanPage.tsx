@@ -21,7 +21,7 @@ import { chosenCount, highRisks, PLAN_VISIBLE } from './rules';
 
 /** The report button is the primary action; a failed build turns it to a tint so the red text stays legible. */
 const REPORT_BUTTON =
-  'focus-ring min-h-10 rounded-control border border-primary bg-primary px-4 text-body font-medium text-white no-underline hover:bg-primary-hover data-[report=failed]:bg-error-bg';
+  'focus-ring min-h-10 rounded-control border border-primary bg-primary px-4 text-body font-medium text-on-solid no-underline hover:bg-primary-hover data-[report=failed]:bg-error-bg';
 const LINK = 'text-blue-700 underline hover:decoration-2';
 
 /**

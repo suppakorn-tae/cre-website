@@ -188,7 +188,7 @@ function Y3Popover({
           sideOffset={8}
           collisionPadding={{ top, right: 16, bottom: 16, left: 16 }}
           aria-label={name}
-          className="z-50 box-border max-h-[var(--radix-popover-content-available-height)] w-88 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-card border border-border bg-white p-4 shadow-floating"
+          className="z-50 box-border max-h-[var(--radix-popover-content-available-height)] w-88 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-card border border-border bg-card p-4 shadow-floating"
           onCloseAutoFocus={() => {
             // Radix puts focus back on the trigger right after this; keep the hint closed.
             if (quietRef) {

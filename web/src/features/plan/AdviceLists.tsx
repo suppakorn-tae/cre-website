@@ -43,7 +43,7 @@ export function AdviceLists({ advice }: { advice?: Advice }) {
                 >
                   <span
                     aria-hidden="true"
-                    className="box-border grid size-6 shrink-0 place-items-center rounded-pill bg-blue-700 text-caption font-semibold text-white"
+                    className="box-border grid size-6 shrink-0 place-items-center rounded-pill bg-blue-700 text-caption font-semibold text-on-solid"
                   >
                     {i + 1}
                   </span>
