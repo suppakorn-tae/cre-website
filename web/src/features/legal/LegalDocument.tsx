@@ -36,7 +36,7 @@ export function LegalDocument({ doc }: { doc: LegalDocumentKey }) {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link href="/" className={styles.brand} aria-label={t('nav.home')}>
+        <Link href="/" className={styles.brand}>
           <Logo variant="header" />
         </Link>
       </header>

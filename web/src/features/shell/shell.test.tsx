@@ -26,7 +26,7 @@ describe('AccountMenu', () => {
   it('renders the closed trigger with the e-mail, a chevron and a name', () => {
     const html = wrap(<AccountMenu user={{ email: 'a@b.th', isAdmin: false }} />);
     expect(html).toContain('a@b.th');
-    expect(html).toContain('aria-label="เมนูบัญชี"');
+    expect(html).toContain('aria-label="a@b.th เมนูบัญชี"');
     expect(html).toContain('tabler-icon-chevron-down');
     expect(html).not.toContain('role="menu"');
   });
@@ -43,7 +43,6 @@ describe('AppShell', () => {
       </AppShell>,
     );
     expect(html).toContain('href="/dashboard"');
-    expect(html).toContain('aria-label="Construction Risk Expert – ไปหน้าแดชบอร์ด"');
     expect(html).toContain('%2Fbrand%2Fcre-logo-mark.png');
     expect(html).not.toContain('<nav');
     expect(html).toContain('somchai@example.co.th');

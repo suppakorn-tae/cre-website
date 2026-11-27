@@ -232,7 +232,7 @@ function LevelSummary({ projectId, version }: { projectId: string; version: Vers
               key={p.level}
               className={styles.levelLink}
               href={`${projectPaths.results(projectId, version.id)}?tab=hvh`}
-              aria-label={t('adviceLink', { level: tUi(`levels.${p.level}`), count: p.count })}
+              title={t('adviceLink', { level: tUi(`levels.${p.level}`), count: p.count })}
             >
               {badge}
             </Link>

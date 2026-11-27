@@ -79,6 +79,9 @@
   color: var(--color-blue-800);
   font-weight: 600;
 }
+.avatar[data-initial]::before {
+  content: attr(data-initial);
+}
 .email {
   display: none;
 }

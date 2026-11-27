@@ -120,7 +120,15 @@ export function FactorChart({ averages, items, names, cutoffs }: Props) {
                     >
                       <Tooltip.Root>
                         <Tooltip.Trigger asChild>
-                          <button type="button" className={styles.factorHit} aria-label={summary}>
+                          <button
+                            type="button"
+                            className={styles.factorHit}
+                            aria-label={t('hitLabel', {
+                              rm: values.rm,
+                              code: a.factorCode,
+                              summary,
+                            })}
+                          >
                             {hasInputs && (
                               <>
                                 <span className={styles.factorSlot} data-series="rl">
@@ -152,7 +160,7 @@ export function FactorChart({ averages, items, names, cutoffs }: Props) {
                                 data-high={reachesH(rm, hLine)}
                                 aria-hidden="true"
                               />
-                            </span>
+                            </span>{' '}
                             <span className={styles.factorCode} aria-hidden="true">
                               {a.factorCode}
                             </span>

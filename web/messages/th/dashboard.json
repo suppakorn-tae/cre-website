@@ -87,8 +87,8 @@
     "tableLabel": "รายการโครงการ",
     "summary": "แสดง {shown} จาก {total} โครงการ",
     "assessLabel": "ประเมินความเสี่ยง {nickname}",
-    "resultsLabel": "ดูผลการประเมิน {nickname}",
-    "versionsLabel": "ดูเวอร์ชันทั้งหมดของ {nickname}",
+    "resultsLabel": "ผลการประเมิน {nickname}",
+    "versionsLabel": "เวอร์ชัน {nickname}",
     "progressTitle": "ความก้าวหน้าโครงการ",
     "islandAndType": "{island} · {type}",
     "noVersion": "ยังไม่มีเวอร์ชัน"

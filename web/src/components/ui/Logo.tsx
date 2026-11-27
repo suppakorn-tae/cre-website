@@ -46,9 +46,7 @@ export function Logo({ variant, className }: Props) {
       <span className={styles.text}>
         <span className={styles.name}>
           <span className={styles.nameLong}>{t('name')}</span>
-          <span className={styles.nameShort} aria-hidden="true">
-            {t('short')}
-          </span>
+          <span className={styles.nameShort}>{t('short')}</span>
         </span>
         <span className={styles.tagline}>{t('tagline')}</span>
       </span>
