@@ -6,7 +6,7 @@ body { font-family: "Sarabun", sans-serif; font-size: 11pt; line-height: 1.45; c
 @page {
   @top-left { font-family: "Sarabun", sans-serif; font-size: 9pt; color: #475569; vertical-align: bottom;
     padding: 0 0 5mm 7mm; border-bottom: 0.5pt solid #94a3b8; white-space: nowrap; width: 75%;
-    background-image: url("cre-logo-mark.png"); background-repeat: no-repeat; background-size: auto 5mm;    background-position: 0 calc(100% - 4.4mm); }
+    background-image: url("cre-logo-mark.png"); background-repeat: no-repeat; background-size: auto 5mm; background-position: 0 calc(100% - 4.4mm); }
   @top-right { font-family: "Sarabun", sans-serif; font-size: 9pt; color: #475569; vertical-align: bottom;
     padding: 0 0 5mm; border-bottom: 0.5pt solid #94a3b8; white-space: nowrap; width: 25%; text-align: right; }
 }
