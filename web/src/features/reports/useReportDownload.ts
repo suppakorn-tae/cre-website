@@ -1,6 +1,12 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import {
+  skipToken,
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from '@tanstack/react-query';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { fetchProject, fetchVersions, projectKey, versionsKey } from '@/features/versions/api';
@@ -13,10 +19,18 @@ import {
   jobWaitKey,
   reportJobKey,
   requestReport,
+  resultsKey,
   versionKey,
+  type Job,
 } from './api';
 import { jobPhase, pollInterval, REPORT_CAP_MS, type JobPhase } from './polling';
-import { reportFileName, reportState, triggerDownload, type ReportState } from './state';
+import {
+  inputsChangedSince,
+  reportFileName,
+  reportState,
+  triggerDownload,
+  type ReportState,
+} from './state';
 
 const downloaded = new WeakMap<QueryClient, Set<string>>();
 
@@ -27,6 +41,49 @@ function claimDownload(client: QueryClient, jobId: string): boolean {
   if (ids.has(jobId)) return false;
   ids.add(jobId);
   return true;
+}
+
+/** The newest of some server times; null when none is known. */
+function latest(times: readonly (string | null | undefined)[]): string | null {
+  let best: string | null = null;
+  for (const at of times) {
+    if (at && (best === null || Date.parse(at) > Date.parse(best))) best = at;
+  }
+  return best;
+}
+
+type Submitted = { id?: string; submitted_at?: string | null };
+type Results = { submitted_at?: string; items?: { strategy_updated_at?: string }[] };
+
+/**
+ * The latest change to what this version's PDF shows, as far as the cache knows: the last
+ * submission (version, version list or results), the chosen strategies (results) and the
+ * project fields. The pages that change them update or invalidate these entries (a submit, a
+ * strategy save, a project edit), so this follows them without asking the server; nothing here
+ * is fetched.
+ */
+function useInputTimes(projectId: string, versionId: string): (string | null | undefined)[] {
+  const version = useQuery<Submitted, Error, string | null>({
+    queryKey: versionKey(projectId, versionId),
+    queryFn: skipToken,
+    select: (v) => v.submitted_at ?? null,
+  });
+  const list = useQuery<Submitted[], Error, string | null>({
+    queryKey: versionsKey(projectId),
+    queryFn: skipToken,
+    select: (vs) => vs.find((v) => v.id === versionId)?.submitted_at ?? null,
+  });
+  const results = useQuery<Results, Error, string | null>({
+    queryKey: resultsKey(projectId, versionId),
+    queryFn: skipToken,
+    select: (r) => latest([r.submitted_at, ...(r.items ?? []).map((i) => i.strategy_updated_at)]),
+  });
+  const project = useQuery<{ updated_at?: string }, Error, string | null>({
+    queryKey: projectKey(projectId),
+    queryFn: skipToken,
+    select: (p) => p.updated_at ?? null,
+  });
+  return [version.data, list.data, results.data, project.data];
 }
 
 /**
@@ -57,8 +114,9 @@ export type ReportDownload = {
   /** This component has seen a report being built, so a result is news worth announcing. */
   observed: boolean;
   /**
-   * Asks for the report, polls the job and downloads the PDF once when it is
-   * done. Does nothing while building; downloads again when it is ready.
+   * Asks for the report and downloads the PDF when it is done. Every click asks the server:
+   * the same job (nothing changed) is saved at once, a new one is polled and saved once.
+   * Does nothing while building.
    */
   start: () => void;
   /** The job has sat in the queue too long: polling has stopped until `start` is called. */
@@ -73,7 +131,7 @@ export type ReportDownload = {
 
 /**
  * The report of one submitted version, built in place: request it (the server
- * returns the existing job for the same submission), poll the job with the
+ * returns its current job when nothing the PDF shows has changed), poll the job with the
  * usual back-off, then click a hidden download link once. The page does not
  * change. The caller decides whether the version may have a report.
  */
@@ -129,14 +187,65 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
   const phase: JobPhase = job.isError
     ? 'finished'
     : jobPhase(job.data, job.dataUpdatedAt, wait.resumedAt, wait.firstPollAt);
+  // True from a click (or a build seen below) until the download.
+  const awaiting = useRef(false);
+  // True from a click until the server answers, so two clicks in a row start one request.
+  const starting = useRef(false);
+
+  const saveFile = useCallback(
+    async (id: string) => {
+      // Usually cached already; a failure only costs the nice file name.
+      const project = await queryClient
+        .ensureQueryData({
+          queryKey: projectKey(projectId),
+          queryFn: () => fetchProject(projectId),
+        })
+        .catch(() => undefined);
+      // The results page holds this one version; any other page holds the list.
+      const cached = queryClient.getQueryData<{ version_no: number }>(
+        versionKey(projectId, versionId),
+      );
+      const versionNo =
+        cached?.version_no ??
+        (
+          await queryClient
+            .ensureQueryData({
+              queryKey: versionsKey(projectId),
+              queryFn: () => fetchVersions(projectId),
+            })
+            .catch(() => undefined)
+        )?.find((v) => v.id === versionId)?.version_no;
+      triggerDownload(downloadUrl(id), reportFileName(project?.nickname, versionNo));
+    },
+    [projectId, versionId, queryClient],
+  );
+
+  // Every click asks the server, which compares the last submission, the chosen strategies and
+  // the project fields with its current job: the same id means that PDF is still current.
   const request = useMutation({
     mutationFn: () => requestReport(projectId, versionId),
     onSuccess: (id) => {
       queryClient.setQueryData(storedKey, id);
-      // The same id can come back after a failure; read its status afresh.
+      if (queryClient.getQueryData<Job>(jobKey(id))?.status === 'done') {
+        // A job we know is done (done never changes): save it for this click now, even when it
+        // was saved before. The server only returns a live job, so it was not replaced since.
+        awaiting.current = false;
+        claimDownload(queryClient, id);
+        void saveFile(id);
+        return;
+      }
+      // Not known to be done: poll it and save it once it is, for this click too.
+      downloaded.get(queryClient)?.delete(id);
       void queryClient.invalidateQueries({ queryKey: jobKey(id) });
     },
+    onSettled: () => {
+      starting.current = false;
+    },
   });
+
+  // A finished job made before the version last changed is not this version's report any more.
+  const inputTimes = useInputTimes(projectId, versionId);
+  const outdated = inputsChangedSince(job.data?.created_at, inputTimes);
 
   const state = reportState({
     requesting: request.isPending,
@@ -144,6 +253,7 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
     jobId,
     jobStatus: job.data?.status,
     pollFailed: job.isError,
+    outdated,
   });
   const tooMany = request.error instanceof ApiError && request.error.status === 429;
   // A build this tab is waiting for: the request is on its way, or a fresh answer (not data left
@@ -157,34 +267,10 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
   if (building && !observed) setObserved(true);
 
   const download = useCallback(async () => {
-    if (jobId === null) return;
-    // Usually cached already; a failure only costs the nice file name.
-    const project = await queryClient
-      .ensureQueryData({ queryKey: projectKey(projectId), queryFn: () => fetchProject(projectId) })
-      .catch(() => undefined);
-    // The results page holds this one version; any other page holds the list.
-    const cached = queryClient.getQueryData<{ version_no: number }>(
-      versionKey(projectId, versionId),
-    );
-    const versionNo =
-      cached?.version_no ??
-      (
-        await queryClient
-          .ensureQueryData({
-            queryKey: versionsKey(projectId),
-            queryFn: () => fetchVersions(projectId),
-          })
-          .catch(() => undefined)
-      )?.find((v) => v.id === versionId)?.version_no;
-    triggerDownload(downloadUrl(jobId), reportFileName(project?.nickname, versionNo));
-  }, [jobId, projectId, versionId, queryClient]);
+    if (jobId !== null) await saveFile(jobId);
+  }, [jobId, saveFile]);
 
-  // True from a click (or a build seen above) until the download.
-  const awaiting = useRef(false);
-  // True between a click and the first render that shows it, so two clicks in a row start one job.
-  const starting = useRef(false);
   useEffect(() => {
-    if (state !== 'idle') starting.current = false;
     if (building) awaiting.current = true;
     if (state === 'ready' && awaiting.current) {
       awaiting.current = false;
@@ -205,19 +291,12 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
       return;
     }
     if (state === 'building' || starting.current) return;
-    if (state === 'ready') {
-      void download();
-      return;
-    }
+    // Ready or not, ask again: the answer says whether the cached job is still current.
     awaiting.current = true;
     starting.current = true;
     reset();
-    if (jobId !== null) {
-      queryClient.setQueryData(storedKey, null);
-      queryClient.removeQueries({ queryKey: jobKey(jobId) });
-    }
     mutate();
-  }, [phase, refetch, state, download, reset, mutate, jobId, queryClient, storedKey]);
+  }, [phase, refetch, state, reset, mutate, jobId, queryClient]);
 
   return {
     state,
