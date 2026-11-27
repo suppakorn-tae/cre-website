@@ -57,10 +57,10 @@
 }
 .actionPrimary {
   background: var(--color-blue-600);
-  color: var(--color-white);
+  color: var(--color-on-solid);
 }
 .actionSecondary {
-  background: var(--color-white);
+  background: var(--color-card);
   color: var(--color-blue-700);
 }
 .actionPrimary:focus-visible,
@@ -415,11 +415,6 @@
 }
 
 /* Average RM per factor (hi-fi 3.3a). */
-.factorHead,
-.factorChart {
-  --factor-rl: #7f8c9e;
-  --factor-ri: #4f5d70;
-}
 .factorChart {
   display: flex;
   gap: var(--space-2);
@@ -571,8 +566,7 @@
   position: absolute;
   inset-inline-start: 50%;
   z-index: 2;
-  translate: -50% 0;
-  transform: translateY(-2px);
+  transform: translate(-50%, -2px);
   color: var(--color-text-secondary);
   font-size: var(--text-caption);
   font-variant-numeric: tabular-nums;
@@ -580,7 +574,7 @@
   animation: factor-fade 300ms ease-out 700ms both;
 }
 .factorValue[data-placement='inside'] {
-  transform: none;
+  transform: translateX(-50%);
   color: var(--bar-on);
   font-weight: var(--weight-semibold);
 }

@@ -64,6 +64,13 @@
   --color-subtle: var(--color-subtle);
   --color-divider: var(--color-divider);
   --color-chart-grid: var(--chart-grid);
+  --color-factor-rl: var(--factor-rl);
+  --color-factor-ri: var(--factor-ri);
+  --color-heat-vh: var(--heat-vh);
+  --color-heat-h: var(--heat-h);
+  --color-heat-m: var(--heat-m);
+  --color-heat-l: var(--heat-l);
+  --color-heat-vl: var(--heat-vl);
   --color-border: var(--color-border);
   --color-field-border: var(--color-field-border);
   --color-disabled-bg: var(--color-disabled-bg);

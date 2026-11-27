@@ -241,6 +241,27 @@ function pairs(): Pair[] {
     }
   }
 
+  // Factor chart bars and legend swatches (RL, RI_max) against the card.
+  for (const f of ['rl', 'ri']) {
+    for (const bg of CARDS) {
+      add({
+        kind: 'ui',
+        fg: `factor-${f}`,
+        bg,
+        use: `${f === 'rl' ? 'RL' : 'RI_max'} factor bar and legend swatch`,
+      });
+    }
+  }
+
+  // Heat map cells: text on the fill. The two top levels carry on-solid text, the
+  // three low levels carry the navy text token (light in dark mode).
+  for (const l of ['vh', 'h']) {
+    add({ kind: 'text', fg: 'color-on-solid', bg: `heat-${l}`, use: `heat map ${l} cell text` });
+  }
+  for (const l of ['m', 'l', 'vl']) {
+    add({ kind: 'text', fg: 'color-navy-900', bg: `heat-${l}`, use: `heat map ${l} cell text` });
+  }
+
   return out;
 }
 

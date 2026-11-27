@@ -252,8 +252,10 @@ describe('factor chart legend swatches', () => {
     }
   });
 
-  it('keeps both greys visible on the chips and on the bars', () => {
-    expect(css).toMatch(/\.factorHead,\s*\.factorChart \{[^}]*--factor-rl: #7f8c9e;/);
-    expect(css).toMatch(/\.factorHead,\s*\.factorChart \{[^}]*--factor-ri: #4f5d70;/);
+  it('takes both greys from the theme tokens, not from the chart', () => {
+    expect(css).not.toMatch(/--factor-r[li]:/);
+    const tokens = readFileSync(join(process.cwd(), 'src/styles/tokens.css'), 'utf8');
+    expect(tokens).toMatch(/--factor-rl: #7f8c9e;/);
+    expect(tokens).toMatch(/--factor-ri: #4f5d70;/);
   });
 });
