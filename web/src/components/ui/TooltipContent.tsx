@@ -17,6 +17,7 @@ export function TooltipContent({ inline, className, sideOffset = 6, ...rest }: P
   const content = (
     <Tooltip.Content
       sideOffset={sideOffset}
+      collisionPadding={16}
       className={className ? `${styles.tooltip} ${className}` : styles.tooltip}
       {...rest}
     />
