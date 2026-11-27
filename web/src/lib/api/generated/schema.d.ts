@@ -2038,6 +2038,16 @@ export interface components {
             scored_count?: number | null;
             /** @description Stored indicators per level at the last submission; null while `draft`. */
             level_counts?: components["schemas"]["LevelCounts"] | null;
+            /**
+             * @description Stored strategy choices for H and VH indicators of this version; null
+             *     while `draft`.
+             */
+            strategies_chosen?: number | null;
+            /**
+             * @description Stored H and VH indicators of this version, each needing a strategy
+             *     (BR-19); null while `draft`.
+             */
+            strategies_needed?: number | null;
         };
         Version: components["schemas"]["VersionSummary"] & {
             /** @description Number of submissions, 0 when never submitted. */

@@ -183,6 +183,10 @@ func TestSubmittedVersionStats(t *testing.T) {
 	if got.ScoredCount == nil || got.LevelCounts == nil {
 		t.Fatalf("submitted version lacks level counts: %+v", got)
 	}
+	if got.StrategiesChosen == nil || got.StrategiesNeeded == nil ||
+		*got.StrategiesNeeded != *got.HighCount+*got.VeryHighCount {
+		t.Fatalf("strategy count = %v of %v, want needed = H + VH", got.StrategiesChosen, got.StrategiesNeeded)
+	}
 	sum := 0
 	for _, n := range got.LevelCounts {
 		sum += n
