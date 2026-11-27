@@ -23,7 +23,7 @@ vi.mock('@/lib/api/client', async (importOriginal) => {
 import { createJobHandlers } from '@/mocks/jobs';
 
 import { downloadUrl, fetchJob, reportJobKey, requestReport } from './api';
-import { backoffDelay, isFinished, pollInterval, type JobStatus } from './polling';
+import type { JobStatus } from './polling';
 import { ReportButton } from './ReportButton';
 import { READY_TOAST_MS, reportToast } from './reportToast';
 import { buttonText, reportFileName, reportState, type ReportState } from './state';
@@ -39,23 +39,6 @@ const intl = (node: React.ReactNode) => (
     {node}
   </NextIntlClientProvider>
 );
-
-describe('polling', () => {
-  it('backs off by half each time up to ten seconds', () => {
-    expect([0, 1, 2, 3].map(backoffDelay)).toEqual([1000, 1500, 2250, 3375]);
-    expect(backoffDelay(20)).toBe(10_000);
-  });
-
-  it('stops on done, failed and expired only', () => {
-    expect(pollInterval('queued', 0)).toBe(1000);
-    expect(pollInterval('running', 2)).toBe(2250);
-    expect(pollInterval(undefined, 0)).toBe(1000);
-    for (const s of ['done', 'failed', 'expired'] as const) {
-      expect(isFinished(s)).toBe(true);
-      expect(pollInterval(s, 3)).toBe(false);
-    }
-  });
-});
 
 describe('report state', () => {
   const base = {

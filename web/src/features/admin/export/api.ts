@@ -1,13 +1,14 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
 
 import { browserApi } from '@/lib/api/client';
+import { EXPORT_CAP_MS, jobPhase, pollInterval } from '@/features/reports/polling';
 import type { components } from '@/lib/api/generated/schema';
 
 export type Job = components['schemas']['Job'];
 export type ExportRequest = components['schemas']['AdminExportRequest'];
 export type AdminUser = components['schemas']['AdminUser'];
 
-export const POLL_MS = 2000;
 export const USER_PAGE_SIZE = 20;
 
 /** Statuses after which the job never changes again. */
@@ -15,21 +16,37 @@ export const FINAL_STATUSES: ReadonlyArray<Job['status']> = ['done', 'failed', '
 
 export const isFinal = (status: Job['status']) => FINAL_STATUSES.includes(status);
 
-/** Interval for `refetchInterval`: poll until the job reaches a final status. */
-export function pollInterval(job: Job | undefined): number | false {
-  return job && isFinal(job.status) ? false : POLL_MS;
-}
-
-/** Polls one job until it is done, failed or expired. */
+/**
+ * Polls one job, backing off to 30 s. It stops when the job is done, failed or expired, or
+ * when it sat in the queue for 2 minutes (`phase` is then `stalled`; `checkAgain` resumes).
+ * A running job is polled with no time limit.
+ */
 export function useJob(id: string) {
-  return useQuery({
+  // When the user last asked to check again; the 2 minutes count from then.
+  const [resumedAt, setResumedAt] = useState(0);
+  const query = useQuery({
     queryKey: ['admin-export', 'job', id],
-    refetchInterval: (query) => pollInterval(query.state.data),
+    refetchInterval: (q) =>
+      pollInterval(
+        q.state.data,
+        q.state.dataUpdateCount,
+        EXPORT_CAP_MS,
+        q.state.dataUpdatedAt,
+        resumedAt,
+      ),
     queryFn: async () => {
       const { data } = await browserApi().GET('/jobs/{id}', { params: { path: { id } } });
       return data as Job;
     },
   });
+  const { refetch } = query;
+  const checkAgain = useCallback(() => {
+    setResumedAt(Date.now());
+    void refetch();
+  }, [refetch]);
+  // Judged at the time of the last answer, so it also renders on each one.
+  const phase = jobPhase(query.data, query.dataUpdatedAt, resumedAt);
+  return { ...query, phase, checkAgain };
 }
 
 /** Users to pick from; `q` matches e-mail or organisation. */
