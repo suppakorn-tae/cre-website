@@ -402,10 +402,10 @@ test.describe('states that need an action', () => {
     page,
   }) => {
     await open(page, '/projects/new', 'สร้างโครงการก่อสร้างใหม่');
-    const name = page.locator('#project-name');
-    await name.fill('ก'.repeat(121));
-    // 121 / 120: the counter is in the error colour and the field carries the message.
-    const counter = page.getByText(/^121 \/ 120$/);
+    const name = page.locator('#project-description');
+    await name.fill('ก'.repeat(1001));
+    // 1,001 / 1,000: the counter is in the error colour and the field carries the message.
+    const counter = page.getByText(/^1,001 \/ 1,000$/);
     await expect(counter).toBeVisible();
     await expect(name).toHaveAttribute('aria-invalid', 'true');
     const problems = [
