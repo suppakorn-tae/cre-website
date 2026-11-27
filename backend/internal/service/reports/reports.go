@@ -27,6 +27,8 @@ var (
 	ErrNotSubmitted = errors.New("reports: version is not submitted")
 	// ErrNotReady means the report job is not done yet (or failed).
 	ErrNotReady = errors.New("reports: report is not ready")
+	// ErrExpired means a newer report replaced this one and its file is gone.
+	ErrExpired = errors.New("reports: report was replaced")
 	// ErrFileMissing means the job is done but the file is gone from storage.
 	ErrFileMissing = errors.New("reports: report file is missing")
 )
@@ -141,8 +143,8 @@ type File struct {
 
 // Download opens the finished report of a job the requester owns. It returns
 // ErrNotFound for another account's job (admins included), a job that is not
-// a report, or a deleted version; ErrNotReady when the job is not done;
-// ErrFileMissing when storage has no file.
+// a report, or a deleted version; ErrExpired when a newer report replaced it;
+// ErrNotReady when the job is not done; ErrFileMissing when storage has no file.
 func (s *Service) Download(ctx context.Context, requester, jobID uuid.UUID) (File, error) {
 	row, err := sqlc.New(s.db).GetReportForDownload(ctx, sqlc.GetReportForDownloadParams{
 		JobID: jobID, RequestedBy: requester,
@@ -152,6 +154,9 @@ func (s *Service) Download(ctx context.Context, requester, jobID uuid.UUID) (Fil
 	}
 	if err != nil {
 		return File{}, fmt.Errorf("reports: get report: %w", err)
+	}
+	if row.Status == sqlc.JobStatusExpired {
+		return File{}, ErrExpired
 	}
 	if row.Status != sqlc.JobStatusDone {
 		return File{}, ErrNotReady

@@ -239,8 +239,8 @@ func (q *Queries) ListStoredResults(ctx context.Context, versionID uuid.UUID) ([
 }
 
 const upsertStrategy = `-- name: UpsertStrategy :one
-INSERT INTO strategy_choice (version_id, indicator_code, strategy)
-SELECT r.version_id, r.indicator_code, $1::risk_strategy
+INSERT INTO strategy_choice (version_id, indicator_code, strategy, updated_at)
+SELECT r.version_id, r.indicator_code, $1::risk_strategy, clock_timestamp()
 FROM risk_result r
 JOIN assessment_version v ON v.id = r.version_id
 WHERE r.version_id = $2 AND r.indicator_code = $3
@@ -248,7 +248,7 @@ WHERE r.version_id = $2 AND r.indicator_code = $3
     AND v.version_no = (SELECT max(m.version_no) FROM assessment_version m
                         WHERE m.project_id = v.project_id)
 ON CONFLICT (version_id, indicator_code)
-DO UPDATE SET strategy = EXCLUDED.strategy, updated_at = now()
+DO UPDATE SET strategy = EXCLUDED.strategy, updated_at = clock_timestamp()
 RETURNING indicator_code, strategy, updated_at
 `
 

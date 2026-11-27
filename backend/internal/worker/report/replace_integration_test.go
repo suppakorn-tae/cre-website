@@ -180,8 +180,8 @@ func TestOneCurrentReportPerVersion(t *testing.T) {
 	if got := status(first); got != "expired" {
 		t.Fatalf("replaced job status = %s, want expired (row kept)", got)
 	}
-	if err := downloads(first); !errors.Is(err, reports.ErrNotReady) {
-		t.Fatalf("replaced job download err = %v, want ErrNotReady", err)
+	if err := downloads(first); !errors.Is(err, reports.ErrExpired) {
+		t.Fatalf("replaced job download err = %v, want ErrExpired", err)
 	}
 
 	// A project edit needs a new render; when it fails, the previous file

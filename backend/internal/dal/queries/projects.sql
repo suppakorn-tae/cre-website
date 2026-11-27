@@ -60,7 +60,7 @@ SET name = @name, nickname = @nickname, island_code = @island_code,
     island_other = @island_other, type_code = @type_code,
     type_other = @type_other, start_date = @start_date, end_date = @end_date,
     value_baht = CAST(CAST(@value_baht AS text) AS numeric), progress_pct = @progress_pct,
-    description = @description, updated_at = now()
+    description = @description, updated_at = clock_timestamp()
 WHERE id = @id AND owner_id = @owner_id AND deleted_at IS NULL;
 
 -- name: SoftDeleteProject :one
@@ -68,7 +68,7 @@ WHERE id = @id AND owner_id = @owner_id AND deleted_at IS NULL;
 -- No row means not found (missing, not owned or already deleted).
 WITH p AS (
     UPDATE project
-    SET deleted_at = now(), updated_at = now()
+    SET deleted_at = now(), updated_at = clock_timestamp()
     WHERE project.id = @id AND project.owner_id = @owner_id AND project.deleted_at IS NULL
     RETURNING id
 ), v AS (
