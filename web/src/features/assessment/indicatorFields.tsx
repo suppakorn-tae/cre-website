@@ -1,9 +1,16 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { useId, useRef, useState } from 'react';
+import { useId, useLayoutEffect, useRef, useState } from 'react';
 
 import type { CheckboxOption } from '@/components/ui';
+import {
+  caretAfterFormat,
+  deleteAcrossComma,
+  formatBahtInput,
+  hasTooManyDecimals,
+  stripGrouping,
+} from '@/lib/format/baht';
 
 import type { Catalogue } from './api';
 import styles from './assessment.module.css';
@@ -31,6 +38,8 @@ type FieldProps = {
   suffix?: string;
   /** Set in a card: a visible label above the field and the question inline, not a bubble. */
   label?: string;
+  /** Group the number in thousands with commas while typing (y1 in baht). The saved value has none. */
+  grouped?: boolean;
   onChange: (value: string) => void;
 };
 
@@ -49,18 +58,34 @@ export function NumberField({
   unit,
   suffix,
   label,
+  grouped = false,
   onChange,
 }: FieldProps) {
   // The text being typed, or null when the field shows the saved value.
   const [typed, setTyped] = useState<string | null>(null);
-  const text = typed ?? value;
+  const show = (v: string) => (grouped ? formatBahtInput(v) : v);
+  const plain = (v: string) => (grouped ? stripGrouping(v) : v);
+  const text = typed ?? show(value);
   const error = validate(text) ?? (typed === null ? serverError : undefined);
+  const inputRef = useRef<HTMLInputElement>(null);
+  // Where the caret goes after the next render, set when the text was regrouped.
+  const caretRef = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    if (caretRef.current === null) return;
+    inputRef.current?.setSelectionRange(caretRef.current, caretRef.current);
+    caretRef.current = null;
+  });
+  const edit = (raw: string, caret: number | null) => {
+    const next = show(raw);
+    if (grouped && caret !== null) caretRef.current = caretAfterFormat(raw, caret, next);
+    setTyped(next);
+  };
   const commit = () => {
     if (typed === null) return;
-    if (typed === value) setTyped(null);
+    if (plain(typed) === value) setTyped(null);
     else if (validate(typed) === undefined) {
       setTyped(null);
-      onChange(typed);
+      onChange(plain(typed));
     }
   };
   const id = useId();
@@ -80,6 +105,7 @@ export function NumberField({
         <div className={styles.inputWrap}>
           <input
             id={inputId}
+            ref={inputRef}
             type="text"
             inputMode="decimal"
             className={styles.input}
@@ -89,10 +115,19 @@ export function NumberField({
             aria-describedby={described || undefined}
             value={text}
             disabled={disabled}
-            onChange={(e) => setTyped(e.target.value)}
+            onChange={(e) => edit(e.target.value, e.target.selectionStart)}
             onBlur={commit}
             onKeyDown={(e) => {
               if (e.key === 'Enter') commit();
+              if (grouped && (e.key === 'Backspace' || e.key === 'Delete')) {
+                const el = e.currentTarget;
+                if (el.selectionStart !== el.selectionEnd || el.selectionStart === null) return;
+                const done = deleteAcrossComma(el.value, el.selectionStart, e.key === 'Delete');
+                if (!done) return;
+                e.preventDefault();
+                caretRef.current = done.caret;
+                setTyped(done.text);
+              }
             }}
           />
           {suffix && <span className={styles.suffix}>{suffix}</span>}
@@ -233,7 +268,11 @@ export function useIndicatorFields({ indicator, draft, serverErrors, onChange }:
       value: draft.y1.amount,
       suffix: tUnits(draft.y1.unit),
       error: serverError('y1'),
-      validate: (text: string) => numberError(text, maxFor(draft.y1.unit)),
+      grouped: draft.y1.unit === 'baht',
+      validate: (text: string) =>
+        draft.y1.unit === 'baht' && hasTooManyDecimals(text)
+          ? t('errors.satang')
+          : numberError(text, maxFor(draft.y1.unit)),
       hint: hint('y1', indicator.question_y1),
       onChange: (amount: string) => onChange({ ...draft, y1: { ...draft.y1, amount } }),
     },

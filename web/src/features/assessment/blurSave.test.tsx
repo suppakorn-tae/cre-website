@@ -123,6 +123,63 @@ describe('number fields save on blur', () => {
   });
 });
 
+describe('y1 in baht is grouped with commas', () => {
+  const y1Input = () => screen.getByLabelText('y1 ผลกระทบด้านต้นทุน EC-MG-1') as HTMLInputElement;
+
+  it('groups while typing and saves a plain number on blur', async () => {
+    const save = vi.fn(() => Promise.resolve());
+    render(<Row save={save} />);
+    type(y1Input(), '1250000.50');
+    expect(y1Input().value).toBe('1,250,000.50');
+    await settle(1000);
+    expect(save).not.toHaveBeenCalled();
+    fireEvent.blur(y1Input());
+    await waitFor(() => expect(save).toHaveBeenCalledTimes(1));
+    expect(save).toHaveBeenCalledWith([
+      { indicator_code: 'EC-MG-1', y1: { value: 1250000.5, unit: 'baht' } },
+    ]);
+  });
+  it('keeps the caret after a digit typed in the middle', () => {
+    render(<Row save={vi.fn(() => Promise.resolve())} />);
+    type(y1Input(), '1250000');
+    const input = y1Input();
+    // The user types 9 after "1,2": the browser reports the new text and caret 4.
+    fireEvent.change(input, {
+      target: { value: '1,2950,000', selectionStart: 4, selectionEnd: 4 },
+    });
+    expect(y1Input().value).toBe('12,950,000');
+    expect(y1Input().selectionStart).toBe(4);
+  });
+  it('backspace over a comma deletes the digit before it', () => {
+    render(<Row save={vi.fn(() => Promise.resolve())} />);
+    type(y1Input(), '1250000');
+    y1Input().setSelectionRange(2, 2);
+    fireEvent.keyDown(y1Input(), { key: 'Backspace' });
+    expect(y1Input().value).toBe('250,000');
+    expect(y1Input().selectionStart).toBe(0);
+  });
+  it('opens a saved answer already grouped', () => {
+    const start = { ...emptyDraft(), y1: { amount: '1250000', unit: 'baht' } };
+    render(<Row save={vi.fn(() => Promise.resolve())} start={start} />);
+    expect(y1Input().value).toBe('1,250,000');
+  });
+  it('shows an error for more than 2 decimals and saves nothing', async () => {
+    const save = vi.fn(() => Promise.resolve());
+    render(<Row save={save} />);
+    type(y1Input(), '10.555');
+    fireEvent.blur(y1Input());
+    await settle();
+    expect(save).not.toHaveBeenCalled();
+    expect(screen.getByText('กรอกจำนวนเงินไม่เกิน 2 ตำแหน่งทศนิยม')).toBeTruthy();
+  });
+  it('does not group y1 in percent', () => {
+    const start = { ...emptyDraft(), y1: { amount: '', unit: 'percent' } };
+    render(<Row save={vi.fn(() => Promise.resolve())} start={start} />);
+    type(y1Input(), '1234');
+    expect(y1Input().value).toBe('1234');
+  });
+});
+
 describe('useAutosave', () => {
   it('keeps one request in flight and sends the latest value after it', async () => {
     let release = () => {};
