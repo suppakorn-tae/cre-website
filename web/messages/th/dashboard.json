@@ -98,7 +98,8 @@
     "indicator": "ตัวชี้วัด",
     "foundIn": "พบใน (โครงการ)",
     "foundOf": "{found} / {total}",
-    "levels": "VH / H"
+    "levels": "VH / H",
+    "projects": "โครงการ"
   },
   "islandsPanel": {
     "summary": "{count} โครงการ · มูลค่า {value}M",

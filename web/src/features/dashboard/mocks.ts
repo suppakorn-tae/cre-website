@@ -109,6 +109,9 @@ const topCodes = mockCatalogue.dimensions
   .slice(0, 10)
   .map((i) => i.code);
 
+// The projects with a submitted version, in nickname order.
+const submitted = seedProjects.filter((_, i) => risk[i]);
+
 export const seedTop: TopIndicator[] = topCodes.map((code, i) => ({
   rank: i + 1,
   indicator_code: code,
@@ -116,6 +119,10 @@ export const seedTop: TopIndicator[] = topCodes.map((code, i) => ({
   // Found in 4, 4, 4, 3, 3, 3, 2, 2, 2, 1 of the 4 projects with a submitted version.
   vh_count: i % 3 === 0 ? 1 : 0,
   h_count: 4 - Math.floor(i / 3) - (i % 3 === 0 ? 1 : 0),
+  found_in: 4 - Math.floor(i / 3),
+  projects: submitted
+    .slice(0, 4 - Math.floor(i / 3))
+    .map((p) => ({ id: p.project_id, nickname: p.nickname })),
 }));
 
 export const dashboardHandlers: HttpHandler[] = [

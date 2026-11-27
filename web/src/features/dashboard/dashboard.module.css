@@ -479,6 +479,11 @@
   flex-wrap: nowrap;
   white-space: nowrap;
 }
+.topProjects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
 .rank {
   width: 2.5em;
   color: var(--color-text-secondary);
