@@ -58,8 +58,6 @@
   --color-surface: var(--color-surface);
   --color-card: var(--color-card);
   --color-on-solid: var(--color-on-solid);
-  /* Deprecated alias of card, removed in IO-261: use bg-card. */
-  --color-white: var(--color-white);
   --color-scrim: var(--color-scrim);
   --color-subtle: var(--color-subtle);
   --color-divider: var(--color-divider);

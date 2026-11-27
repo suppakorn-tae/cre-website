@@ -33,7 +33,6 @@ describe('contrast maths', () => {
 
   it('reads tokens and follows var() references', () => {
     expect(colourOf(tokens, 'color-card')).toBe('#ffffff');
-    expect(colourOf(tokens, 'color-white')).toBe('#ffffff');
     expect(colourOf({ a: '#123456', b: 'var(--a)' }, 'b')).toBe('#123456');
     expect(() => colourOf(tokens, 'no-such-token')).toThrow();
   });
@@ -141,11 +140,10 @@ describe('dark theme (dark-palette.md, approved 28 Nov 2026)', () => {
     for (const name of Object.keys(overrides)) expect(tokens, name).toHaveProperty(name);
   });
 
-  it('splits card and on-solid, and keeps color-white as an alias of the card', () => {
+  it('splits card and on-solid, and has no color-white', () => {
     expect(colourOf(dark, 'color-card')).toBe('#141f31');
     expect(colourOf(dark, 'color-on-solid')).toBe('#0b1320');
-    expect(colourOf(dark, 'color-white')).toBe('#141f31');
-    expect(overrides).not.toHaveProperty('color-white');
+    expect(tokens).not.toHaveProperty('color-white');
   });
 
   it('gives the floating shadow and the scrim their own dark value', () => {

@@ -13,6 +13,7 @@ const V1 = '0193a5c2-0000-7000-8000-000000000101';
 const ASSESS = `/projects/${PROJECT}/versions/${V3}/assess`;
 
 const WIDTHS = [375, 1280] as const;
+const THEMES = ['light', 'dark'] as const;
 
 type Route = {
   name: string;
@@ -222,19 +223,24 @@ test.describe('axe, WCAG 2.2 AA', () => {
   // Pages with many states (assessment) scan up to ten times.
   test.setTimeout(90_000);
 
-  for (const width of WIDTHS) {
-    for (const route of ROUTES) {
-      test(`${route.name} at ${width}px`, async ({ page }) => {
-        await page.setViewportSize({ width, height: 900 });
-        await page.goto(route.path);
-        await expect(visible(page, route.ready)).toBeVisible();
-        await expect(page.locator('[role="status"][aria-label]')).toHaveCount(0);
-        await expectNoViolations(page, route.name);
-        for (const [state, open] of Object.entries(route.states ?? {})) {
-          await open(page);
-          await expectNoViolations(page, `${route.name}, ${state}`);
-        }
-      });
+  // Both themes (IO-261): the system setting picks dark, as for a visitor who never chose one.
+  for (const theme of THEMES) {
+    for (const width of WIDTHS) {
+      for (const route of ROUTES) {
+        test(`${route.name} at ${width}px, ${theme} theme`, async ({ page }) => {
+          await page.emulateMedia({ colorScheme: theme });
+          await page.setViewportSize({ width, height: 900 });
+          await page.goto(route.path);
+          await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+          await expect(visible(page, route.ready)).toBeVisible();
+          await expect(page.locator('[role="status"][aria-label]')).toHaveCount(0);
+          await expectNoViolations(page, route.name);
+          for (const [state, open] of Object.entries(route.states ?? {})) {
+            await open(page);
+            await expectNoViolations(page, `${route.name}, ${state}`);
+          }
+        });
+      }
     }
   }
 });
