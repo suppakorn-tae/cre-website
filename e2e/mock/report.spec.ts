@@ -138,9 +138,18 @@ test('a report job stuck in the queue stops polling and offers to check again', 
   await page.clock.install();
   await page.addInitScript(() => localStorage.setItem('cre-mock-stuck-jobs', '1'));
   const polls: string[] = [];
+  let inFlight = 0;
+  const isPoll = (url: string) => /\/api\/v1\/jobs\//.test(url);
   page.on('request', (request) => {
-    if (/\/api\/v1\/jobs\//.test(request.url())) polls.push(request.url());
+    if (!isPoll(request.url())) return;
+    polls.push(request.url());
+    inFlight += 1;
   });
+  const settled = (request: import('@playwright/test').Request) => {
+    if (isPoll(request.url())) inFlight -= 1;
+  };
+  page.on('requestfinished', settled);
+  page.on('requestfailed', settled);
   await page.goto(`/projects/${PROJECT}/versions/${V3}/results`);
   await page.getByRole('button', { name: REPORT, exact: true }).click();
 
@@ -152,8 +161,24 @@ test('a report job stuck in the queue stops polling and offers to check again', 
   await expect(checkAgain).toBeVisible();
 
   // Polling has stopped: no new request while the longest back-off passes.
+  // A timer set before the stall may still fire once, so run the page's clock until a
+  // round adds no request, then once more to prove it.
+  let last = -1;
+  await expect
+    .poll(
+      async () => {
+        await expect.poll(() => inFlight).toBe(0);
+        const quiet = polls.length === last;
+        last = polls.length;
+        if (!quiet) await page.clock.fastForward('01:00');
+        return quiet;
+      },
+      { timeout: 20_000 },
+    )
+    .toBe(true);
   const before = polls.length;
-  await page.waitForTimeout(3000);
+  await page.clock.fastForward('01:00');
+  await expect.poll(() => inFlight).toBe(0);
   expect(polls.length).toBe(before);
 
   // Pressed with the keyboard: on a phone the dev-only Next badge sits over the toast.

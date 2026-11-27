@@ -179,7 +179,35 @@ async function open(page: Page, path: string, ready: string | RegExp) {
   await expect(page.getByText(ready).and(page.locator(':visible')).first()).toBeVisible();
   // Charts and counters animate for 700 ms; read the end colours.
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.waitForTimeout(300);
+  await settle(page);
+}
+
+/** Resolves once the DOM has been quiet for 12 frames and no animation is running. */
+async function settle(page: Page) {
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        let quiet = 0;
+        let changed = false;
+        const observer = new MutationObserver(() => (changed = true));
+        observer.observe(document.documentElement, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          characterData: true,
+        });
+        const frame = () => {
+          if (changed || document.getAnimations().length > 0) quiet = 0;
+          else quiet += 1;
+          changed = false;
+          if (quiet >= 12) {
+            observer.disconnect();
+            resolve();
+          } else requestAnimationFrame(frame);
+        };
+        requestAnimationFrame(frame);
+      }),
+  );
 }
 
 for (const { name, path, ready } of PAGES) {
@@ -194,19 +222,31 @@ for (const { name, path, ready } of PAGES) {
     test('hover state: one of each interactive kind', async ({ page }, info) => {
       test.skip(info.project.name === 'mobile', 'hover needs a pointer');
       await open(page, path, ready);
-      const seen = new Set<string>();
       const problems: string[] = [];
-      const all = await page.locator(INTERACTIVE).and(page.locator(':visible')).all();
-      for (const el of all) {
-        const key = await el.evaluate(
-          (e) => `${e.tagName}.${e.className}|${e.getAttribute('role') ?? ''}`,
-        );
-        if (seen.has(key) || seen.size >= 14) continue;
-        seen.add(key);
-        if (!(await el.isEnabled())) continue;
-        await el.scrollIntoViewIfNeeded();
-        await el.hover({ timeout: 2000 }).catch(() => undefined);
-        problems.push(...(await measure(el)).problems.map((p) => `hover ${p}`));
+      // Pick the first enabled element of each kind in one atomic read, as indexes into the
+      // live query; each is then re-resolved from the page, never held as a handle.
+      const live = page.locator(INTERACTIVE).and(page.locator(':visible'));
+      const picks = await live.evaluateAll((els) => {
+        const seen = new Set<string>();
+        const out: number[] = [];
+        els.forEach((e, i) => {
+          const key = `${e.tagName}.${e.className}|${e.getAttribute('role') ?? ''}`;
+          if (seen.has(key) || seen.size >= 14) return;
+          seen.add(key);
+          if (!e.matches(':disabled') && e.getAttribute('aria-disabled') !== 'true') out.push(i);
+        });
+        return out;
+      });
+      for (const index of picks) {
+        // Hovering can re-render the control; read again until the page has settled.
+        await expect(async () => {
+          const el = live.nth(index);
+          await el.scrollIntoViewIfNeeded({ timeout: 2000 });
+          await el.hover({ timeout: 2000 }).catch(() => undefined);
+          await settle(page);
+          const found = (await measure(live.nth(index))).problems;
+          problems.push(...found.map((p) => `hover ${p}`));
+        }).toPass({ timeout: 10_000 });
       }
       expect(problems).toEqual([]);
     });
