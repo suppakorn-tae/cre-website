@@ -395,12 +395,10 @@ test.describe('states that need an action', () => {
   });
 });
 
-// IO-221: the search field draws its ring on the wrapper with a box-shadow, which forced
-// colours removes. Marked as an expected failure so CI stays green; remove `test.fail`
-// once the wrapper has a transparent outline.
+// The search field draws its ring on the wrapper with a box-shadow, which forced colours
+// removes, so the wrapper keeps a transparent outline (IO-221).
 test('search field keeps a focus indicator in forced colours', async ({ page }, info) => {
   test.skip(info.project.name === 'mobile', 'keyboard focus is a desktop path');
-  test.fail(true, 'IO-221');
   await page.emulateMedia({ forcedColors: 'active' });
   await page.goto('/dashboard');
   const search = page.getByPlaceholder('ค้นหาโครงการหรือเกาะ');

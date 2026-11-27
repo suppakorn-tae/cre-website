@@ -192,6 +192,8 @@
   color: var(--color-text-muted);
 }
 .search:focus-within {
+  /* Forced colours drops box-shadow but keeps a transparent outline */
+  outline: 2px solid transparent;
   border-color: var(--color-blue-600);
   box-shadow: var(--focus-ring);
 }
