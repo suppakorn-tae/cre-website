@@ -153,10 +153,15 @@ test('a report job stuck in the queue stops polling and offers to check again', 
   await page.goto(`/projects/${PROJECT}/versions/${V3}/results`);
   await page.getByRole('button', { name: REPORT, exact: true }).click();
 
-  // The app waits 2 minutes for a queued job to start; jump past that on the page's clock.
+  // The app waits 2 minutes for a queued job to start, counted from its first answer for the
+  // job. That answer can land before or after a jump of the page's clock, so run the clock on
+  // in steps until the app gives up, rather than guess how far one jump must go.
   await expect(toasts(page).getByText(BUILDING_TITLE)).toBeVisible(BUILD);
-  await page.clock.fastForward('02:30');
-  await expect(toasts(page).getByText('ระบบยังไม่เริ่มงานนี้')).toBeVisible(BUILD);
+  const stalled = toasts(page).getByText('ระบบยังไม่เริ่มงานนี้');
+  await expect(async () => {
+    await page.clock.fastForward('00:30');
+    await expect(stalled).toBeVisible({ timeout: 1_000 });
+  }).toPass(BUILD);
   const checkAgain = toasts(page).getByRole('button', { name: 'ตรวจสอบอีกครั้ง' }).first();
   await expect(checkAgain).toBeVisible();
 
