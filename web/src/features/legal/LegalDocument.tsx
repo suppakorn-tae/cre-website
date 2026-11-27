@@ -3,6 +3,7 @@ import { useTranslations } from 'next-intl';
 import { Fragment, type ReactNode } from 'react';
 
 import { Logo } from '@/components/ui/Logo';
+import { ThemeSync } from '@/features/shell/ThemeSync';
 import '@/styles/tokens.css';
 
 import { REGISTER_PATH } from '../auth/register/google';
@@ -35,6 +36,7 @@ export function LegalDocument({ doc }: { doc: LegalDocumentKey }) {
 
   return (
     <div className={styles.page}>
+      <ThemeSync />
       <header className={styles.header}>
         <Link href="/" className={styles.brand}>
           <Logo variant="header" />

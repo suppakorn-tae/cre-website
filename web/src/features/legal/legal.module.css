@@ -11,7 +11,7 @@
   align-items: center;
   padding: var(--space-3) var(--space-4);
   border-bottom: 1px solid var(--color-border);
-  background: var(--color-white);
+  background: var(--color-card);
 }
 .brand {
   display: inline-flex;
@@ -102,4 +102,14 @@
   .link {
     color: inherit;
   }
+}
+
+/* The logo files are for light backgrounds: in dark mode they sit on a light chip. */
+:root[data-theme='dark'] .brand {
+  padding-inline: var(--space-3);
+  border-radius: var(--radius-control);
+  background: #ffffff;
+  /* The chip is light, so the logo text takes the light-theme colours. */
+  --color-navy-900: #0f2a4a;
+  --color-text-muted: #57677d;
 }

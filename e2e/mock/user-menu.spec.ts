@@ -21,8 +21,9 @@ test('the user menu opens, moves with the arrow keys and closes with Esc', async
   await expect(items.nth(1)).toBeFocused();
   await page.keyboard.press('End');
   await expect(items.last()).toBeFocused();
+  // The theme radios sit between the links and the log-out item.
   await page.keyboard.press('ArrowUp');
-  await expect(items.nth(1)).toBeFocused();
+  await expect(page.getByRole('menuitemradio', { name: 'มืด' })).toBeFocused();
 
   await page.keyboard.press('Escape');
   await expect(page.getByRole('menu')).toHaveCount(0);

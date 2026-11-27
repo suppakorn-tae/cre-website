@@ -2,8 +2,10 @@ import { useTranslations } from 'next-intl';
 import type { ReactNode } from 'react';
 
 import { Logo } from '@/components/ui/Logo';
+import { ThemeSync } from '@/features/shell/ThemeSync';
 import '@/styles/tokens.css';
 
+import { AuthThemeButton } from './AuthThemeButton';
 import styles from './register.module.css';
 
 /** Two-column frame of the sign-up and log-in pages: brand panel and form. */
@@ -12,6 +14,8 @@ export function AuthShell({ children }: { children: ReactNode }) {
   const steps = [1, 2, 3] as const;
   return (
     <div className={styles.page}>
+      <ThemeSync />
+      <AuthThemeButton />
       <aside className={styles.brand}>
         <Logo variant="full" className={styles.logo} />
         <div className={styles.brandBody}>
