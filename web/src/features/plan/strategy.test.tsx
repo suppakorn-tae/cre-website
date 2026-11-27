@@ -14,11 +14,10 @@ import type { Strategy } from './api';
 import { STRATEGY_COLOURS } from './strategy';
 import { StrategyPanel } from './StrategyPanel';
 
-const tokens = readTokens();
-const token = (name: string) => colourOf(tokens, name);
-
-describe('strategy colours', () => {
-  const white = token('color-white');
+describe.each(['light', 'dark'] as const)('strategy colours (%s)', (theme) => {
+  const tokens = readTokens(theme);
+  const token = (name: string) => colourOf(tokens, name);
+  const onSolid = token('color-on-solid');
   const surface = token('color-surface');
   const text = token('color-text-secondary');
 
@@ -32,8 +31,8 @@ describe('strategy colours', () => {
       it('idle: the description text on its tint is at least 4.5:1', () => {
         expect(contrast(text, ti)).toBeGreaterThanOrEqual(4.5);
       });
-      it('chosen: white text on the solid is at least 4.5:1', () => {
-        expect(contrast(white, s)).toBeGreaterThanOrEqual(4.5);
+      it('chosen: on-solid text on the solid is at least 4.5:1', () => {
+        expect(contrast(onSolid, s)).toBeGreaterThanOrEqual(4.5);
       });
       it('the border (solid) against the card surface is at least 3:1', () => {
         expect(contrast(s, surface)).toBeGreaterThanOrEqual(3);

@@ -86,7 +86,7 @@ export function StrategyPanel({ code, value, updatedAt, editable, onChange }: Pr
                   'transition-[color,background-color,scale] duration-(--motion-fast) ease-(--motion-ease) has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary',
                   busy ? 'cursor-wait' : 'cursor-pointer',
                   chosen
-                    ? 'bg-(--strategy-solid) text-white'
+                    ? 'bg-(--strategy-solid) text-on-solid'
                     : 'bg-(--strategy-tint) text-(--strategy-solid)',
                 )}
               >
@@ -108,7 +108,9 @@ export function StrategyPanel({ code, value, updatedAt, editable, onChange }: Pr
                   />
                 </span>
                 <span className="text-small font-semibold">{t(`options.${s}`)}</span>
-                <span className={cx('text-caption', chosen ? 'text-white' : 'text-text-secondary')}>
+                <span
+                  className={cx('text-caption', chosen ? 'text-on-solid' : 'text-text-secondary')}
+                >
                   {t(`descriptions.${s}`)}
                 </span>
               </label>
