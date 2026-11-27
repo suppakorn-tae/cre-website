@@ -104,9 +104,13 @@ Tick each item. Do them in this order.
 - Rotate `SMTP_PASSWORD`, `GOOGLE_CLIENT_SECRET`, `BACKUP_S3_SECRET` by
   editing `.env.prod` and re-running the deploy command. Rotating
   `SESSION_SECRET` logs every user out.
-- Compose fails at start with a clear message if a required variable is
-  empty (`IMAGE_TAG`, `SESSION_SECRET`, `SMTP_*`, `GOOGLE_*`, `ACME_EMAIL`,
-  `APP_DB_PASSWORD`).
+- `deploy.sh` runs `init-env.sh --check` on the env file before `pull` and
+  `up` with `compose.prod.yaml` and stops on any problem (a leftover
+  `CHANGEME`, a bad `IMAGE_TAG`, a short secret, a loose file mode). It also
+  refuses an `IMAGE_TAG` that is not a release version or a full SHA.
+  Compose then fails at start if a required variable is empty
+  (`IMAGE_DIGEST_*`, which `deploy.sh pull` writes, `SESSION_SECRET`,
+  `SMTP_*`, `GOOGLE_*`, `ACME_EMAIL`, `APP_DB_PASSWORD`).
 - Database settings (such as `DATABASE_URL`) come from the same file; the
   example shows the shape.
 

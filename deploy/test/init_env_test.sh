@@ -112,6 +112,33 @@ bash "$script" --check r_equal.env >chk3.txt 2>&1
 t "check fails on loose mode" grep -q "want 600 or 400" chk3.txt
 t "check output shows no password" bash -c '! grep -qF -- "$1" chk3.txt r_*.txt' _ "$apw"
 
+# 7a. IMAGE_TAG: the rule deploy.sh applies (version, pre-release, 40-char SHA)
+good_sha=0123456789abcdef0123456789abcdef01234567
+for tag in v1.4.0 v2.0.0-rc.1 "$good_sha"; do
+  mk r_tag_ok.env "s/^IMAGE_TAG=.*/IMAGE_TAG=$tag/"
+  bash "$script" --check r_tag_ok.env >/dev/null 2>&1
+  t "check accepts IMAGE_TAG=$tag" test $? -eq 0
+  rm -rf tg && mkdir tg
+  bash "$script" --non-interactive --image-tag "$tag" --output tg/o.env >/dev/null 2>&1
+  t "--image-tag accepts $tag" test $? -eq 0
+  t "--image-tag writes $tag" test "$(get IMAGE_TAG tg/o.env)" = "$tag"
+done
+for tag in latest main feature/x 0123456 v1.4 1.4.0 "$good_sha-dirty" "${good_sha}0"; do
+  safe=${tag//\//_}
+  mk "r_tag_$safe.env" "s|^IMAGE_TAG=.*|IMAGE_TAG=$tag|"
+  bash "$script" --check "r_tag_$safe.env" >"r_tag_$safe.txt" 2>&1
+  t "check refuses IMAGE_TAG=$tag" test $? -eq 1
+  t "check names IMAGE_TAG for $tag" grep -q "IMAGE_TAG is not" "r_tag_$safe.txt"
+  rm -rf tg && mkdir tg
+  bash "$script" --non-interactive --image-tag "$tag" --output tg/o.env >tg/out.txt 2>&1
+  t "--image-tag refuses $tag" test $? -eq 2
+  t "--image-tag refuses $tag: writes no file" test -z "$(find tg -name 'o.env*')"
+  rm -rf tg && mkdir tg
+  env "INIT_IMAGE_TAG=$tag" bash "$script" --non-interactive --output tg/o.env >tg/out.txt 2>&1
+  t "INIT_IMAGE_TAG refuses $tag" test $? -eq 2
+done
+rule tag-empty "s/^IMAGE_TAG=.*/IMAGE_TAG=/" "IMAGE_TAG is missing"
+
 # 7b. unsafe values: LF, CR, and what the shell would change
 reject() { # reject <name> <key> <value> [flag]: init must fail, name the key, write nothing
   rm -rf rej && mkdir rej

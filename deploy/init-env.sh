@@ -33,6 +33,12 @@ die() {
 
 need() { [ "$1" -gt 1 ] || die "$2 needs a value"; }
 
+# The same rule as pin_images in deploy/backup/deploy.sh (keep them identical):
+# a release version (v1.4.0, pre-release allowed) or a full 40-character git SHA.
+tag_re='^(v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?|[0-9a-f]{40})$'
+valid_tag() { [[ $1 =~ $tag_re ]]; }
+tag_hint="a release version such as v1.4.0 or a full 40-character git SHA; latest and branch names are refused"
+
 while [ $# -gt 0 ]; do
   case $1 in
     --check)
@@ -47,7 +53,12 @@ while [ $# -gt 0 ]; do
     --domain) need $# "$1"; domain=$2; shift ;;
     --acme-email) need $# "$1"; export INIT_ACME_EMAIL=$2; shift ;;
     --registry) need $# "$1"; export INIT_IMAGE_REGISTRY=$2; shift ;;
-    --image-tag) need $# "$1"; export INIT_IMAGE_TAG=$2; shift ;;
+    --image-tag)
+      need $# "$1"
+      valid_tag "$2" || die "IMAGE_TAG must be $tag_hint"
+      export INIT_IMAGE_TAG=$2
+      shift
+      ;;
     --output) need $# "$1"; output=$2; shift ;;
     --example) need $# "$1"; example=$2; shift ;;
     -h | --help)
@@ -127,6 +138,11 @@ do_check() {
       *) fail "MIGRATE_DATABASE_URL does not use POSTGRES_USER with POSTGRES_PASSWORD" ;;
     esac
   fi
+  case ${v[IMAGE_TAG]:-} in
+    '') fail "IMAGE_TAG is missing or empty" ;;
+    *CHANGEME*) ;;
+    *) valid_tag "${v[IMAGE_TAG]}" || fail "IMAGE_TAG is not $tag_hint" ;;
+  esac
   n=${#v[SESSION_SECRET]}
   if [ "$n" -gt 0 ] && [ "$n" -lt 32 ]; then fail "SESSION_SECRET is shorter than 32 characters"; fi
   n=${#v[BACKUP_CIPHER_PASS]}
@@ -239,6 +255,9 @@ while IFS= read -r line || [ -n "$line" ]; do
           secret=0
           if is_secret "$key"; then secret=1; fi
           ask "$key" "$secret"
+          if [ "$key" = IMAGE_TAG ] && [ -n "$REPLY" ]; then
+            valid_tag "$REPLY" || die "IMAGE_TAG must be $tag_hint"
+          fi
           if [ -n "$REPLY" ]; then val=$REPLY; else pending+=("$key"); fi
           ;;
       esac

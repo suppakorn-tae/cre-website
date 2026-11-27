@@ -74,6 +74,7 @@ Area jobs behind `ci-ok`:
 | `web` | `web/**`, `contracts/**`, `Makefile`, root package files, `.nvmrc` | ESLint, Prettier, typecheck, Vitest, build |
 | `contracts` | `contracts/**` | Spectral lint of the OpenAPI files |
 | `codegen` | any backend or web trigger | `make gen`, then fails if `git status --porcelain` is not empty (stale or untracked generated code) |
+| `deploy` | `deploy/**` | shellcheck on every `deploy/**/*.sh`, then the deploy shell tests (preflight, deploy, init-env) |
 
 Toolchain versions come from the repo: `backend/go.mod`, `.nvmrc` and `packageManager` in `package.json`.
 
