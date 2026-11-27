@@ -32,15 +32,51 @@ import {
   UnitPicker,
   type UnitValue,
 } from '@/components/ui';
+import { THEME_CHOICES, useTheme, type ThemeChoice } from '@/lib/theme';
 import '@/styles/tokens.css';
 
 import { RadixExamples } from './radix-examples';
 
-const MUTED_SWATCHES = [
-  { bg: 'white', name: '#FFFFFF' },
-  { bg: 'canvas', name: '#F1F4F8' },
-  { bg: 'blue-50', name: '#EAF1FD' },
-];
+const MUTED_SWATCHES = ['card', 'canvas', 'blue-50'];
+
+const THEME_LABEL: Record<ThemeChoice, 'themeSystem' | 'themeLight' | 'themeDark'> = {
+  system: 'themeSystem',
+  light: 'themeLight',
+  dark: 'themeDark',
+};
+
+/** Lets a reviewer see the kit in both themes. The real switch is in the account menu. */
+function ThemeToggle() {
+  const t = useTranslations('ui');
+  const { theme, setTheme } = useTheme();
+  return (
+    <fieldset
+      style={{
+        display: 'flex',
+        gap: 16,
+        alignItems: 'center',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-control)',
+        padding: '8px 12px',
+        margin: '0 0 16px',
+      }}
+    >
+      <legend style={{ padding: '0 4px' }}>{t('dev.theme')}</legend>
+      {THEME_CHOICES.map((choice) => (
+        <label key={choice} style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+          <input
+            type="radio"
+            name="dev-theme"
+            value={choice}
+            checked={theme === choice}
+            onChange={() => setTheme(choice)}
+          />
+          {t(`dev.${THEME_LABEL[choice]}`)}
+        </label>
+      ))}
+    </fieldset>
+  );
+}
 
 type Row = { id: string; name: string; value: string; progress: string };
 
@@ -83,10 +119,11 @@ export default function ComponentsPage() {
     >
       <h1>{t('dev.title')}</h1>
       <p>{t('dev.intro')}</p>
+      <ThemeToggle />
 
       <h2>{t('dev.colours')}</h2>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        {MUTED_SWATCHES.map(({ bg, name }) => (
+        {MUTED_SWATCHES.map((bg) => (
           <div
             key={bg}
             style={{
@@ -96,12 +133,12 @@ export default function ComponentsPage() {
               borderRadius: 'var(--radius-control)',
             }}
           >
-            {t('dev.mutedText')} {name}
+            {t('dev.mutedText')} --color-{bg}
           </div>
         ))}
         <div
           style={{
-            background: 'var(--color-white)',
+            background: 'var(--color-card)',
             border: '1px solid var(--color-field-border)',
             padding: '8px 12px',
             borderRadius: 'var(--radius-control)',
