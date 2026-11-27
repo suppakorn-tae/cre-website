@@ -41,9 +41,6 @@ const LEVELS = ['vl', 'l', 'm', 'h', 'vh'] as const;
 const DIMS = ['ec', 'so', 'ev'] as const;
 const CARDS = ['color-white', 'color-surface'] as const;
 
-const SOLID_WAIVER =
-  'Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).';
-
 function pairs(): Pair[] {
   const out: Pair[] = [];
   const add = (p: Pair) => out.push(p);
@@ -211,13 +208,11 @@ function pairs(): Pair[] {
   // Chart bars, donut segments and legend dots against the card.
   for (const l of LEVELS) {
     for (const bg of CARDS) {
-      const ratioKnownLow = l !== 'vh';
       add({
         kind: 'ui',
         fg: `level-${l}`,
         bg,
         use: `level ${l} bar, donut segment, legend dot`,
-        ...(ratioKnownLow ? { waived: SOLID_WAIVER } : {}),
       });
     }
   }
