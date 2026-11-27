@@ -7,12 +7,15 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/queue"
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/s3"
+	"github.com/suppakorn-tae/cre-website/backend/internal/dal/sqlc"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/jobs"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/reports"
 	"github.com/suppakorn-tae/cre-website/backend/internal/testutil"
@@ -200,5 +203,107 @@ func TestRequestNewJobAfterResubmitOrFailure(t *testing.T) {
 	}
 	if again, err := e.svc.Request(ctx, e.owner, e.project, v); err != nil || again != third {
 		t.Fatalf("repeat: id = %v err = %v, want %v", again, err, third)
+	}
+}
+
+// finish takes a report job through running to done, the way the worker does.
+func (e env) finish(t *testing.T, id uuid.UUID) {
+	t.Helper()
+	js := jobs.New(e.pool, enq{e.rec})
+	j, err := js.MarkRunning(context.Background(), id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := js.MarkDone(context.Background(), j); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// projectCode reads a code column of the test project.
+func (e env) projectCode(t *testing.T, column string) string {
+	t.Helper()
+	var c string
+	if err := e.pool.QueryRow(context.Background(), `SELECT `+column+` FROM project WHERE id = $1`, e.project).Scan(&c); err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
+
+// A project edit whose transaction began before the report request but
+// commits after the worker read the data is not in that PDF. The statement
+// stamps updated_at when it runs (clock_timestamp), not when the transaction
+// began (now), so the stamp falls after the job and the next request renders.
+func TestRequestRendersAgainWhenEditCommitsAfterWorkerStarted(t *testing.T) {
+	ctx := context.Background()
+	e := setup(t)
+	v := e.submitted(t)
+
+	edit, err := e.pool.Begin(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = edit.Rollback(ctx) }()
+	// The transaction starts (now() is fixed here) before the request.
+	if _, err := edit.Exec(ctx, `SELECT 1`); err != nil {
+		t.Fatal(err)
+	}
+
+	first, err := e.svc.Request(ctx, e.owner, e.project, v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.finish(t, first) // the worker has read the data by now
+
+	n, err := sqlc.New(edit).UpdateProject(ctx, sqlc.UpdateProjectParams{
+		Name: "Edited", Nickname: "EDT1", IslandCode: e.projectCode(t, "island_code"),
+		TypeCode: e.projectCode(t, "type_code"), ValueBaht: "1000", ProgressPct: 10,
+		StartDate: pgtype.Date{Time: time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), Valid: true},
+		EndDate:   pgtype.Date{Time: time.Date(2027, 1, 1, 0, 0, 0, 0, time.UTC), Valid: true},
+		ID:        e.project, OwnerID: e.owner,
+	})
+	if err != nil || n != 1 {
+		t.Fatalf("update project: rows = %d err = %v", n, err)
+	}
+	if err := edit.Commit(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	second, err := e.svc.Request(ctx, e.owner, e.project, v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if second == first {
+		t.Fatal("the edit committed after the worker started, but the old PDF was reused")
+	}
+}
+
+func TestRequestReusesDoneReportWhenNothingChanged(t *testing.T) {
+	ctx := context.Background()
+	e := setup(t)
+	v := e.submitted(t)
+	first, err := e.svc.Request(ctx, e.owner, e.project, v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.finish(t, first)
+	if again, err := e.svc.Request(ctx, e.owner, e.project, v); err != nil || again != first {
+		t.Fatalf("repeat: id = %v err = %v, want %v", again, err, first)
+	}
+}
+
+func TestDownloadReplacedReportIsExpired(t *testing.T) {
+	ctx := context.Background()
+	e := setup(t)
+	v := e.submitted(t)
+	id, err := e.svc.Request(ctx, e.owner, e.project, v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e.finish(t, id)
+	if _, err := e.pool.Exec(ctx, `UPDATE job SET status = 'expired' WHERE id = $1`, id); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.svc.Download(ctx, e.owner, id); !errors.Is(err, reports.ErrExpired) {
+		t.Fatalf("err = %v, want ErrExpired", err)
 	}
 }

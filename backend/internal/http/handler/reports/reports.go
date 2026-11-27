@@ -78,6 +78,8 @@ func Download(s Service) http.HandlerFunc {
 		switch {
 		case errors.Is(err, svc.ErrNotFound):
 			middleware.WriteError(w, r, http.StatusNotFound, "not_found", "report not found")
+		case errors.Is(err, svc.ErrExpired):
+			middleware.WriteError(w, r, http.StatusConflict, "report_expired", "a newer report replaced this one; request it again")
 		case errors.Is(err, svc.ErrNotReady):
 			middleware.WriteError(w, r, http.StatusConflict, "report_not_ready", "the report is not ready")
 		case errors.Is(err, svc.ErrFileMissing):

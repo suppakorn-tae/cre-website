@@ -605,9 +605,9 @@ error & text & yes &  & Set iff \texttt{failed}. \\
 created\_at & timestamptz &  &  & Default \texttt{now()}. \\
 started\_at & timestamptz & yes &  &  \\
 finished\_at & timestamptz & yes &  &  \\
-expires\_at & timestamptz & yes &  & Exports only: finish time + 7 days. \\
+expires\_at & timestamptz & yes &  & Exports only: finish time + 7 days (reports expire when replaced). \\
 \bottomrule\end{tabularx}}
-{\footnotesize\noindent\textit{Table checks:} \textsc{unique} (\texttt{id, kind}) as target of the subtype FKs. \texttt{queued}: no times; \texttt{running}: \texttt{started\_at}; \texttt{done}/\texttt{failed}/\texttt{expired}: \texttt{finished\_at}. \texttt{expires\_at} set iff an export is \texttt{done} or \texttt{expired}; only exports expire.\par}
+{\footnotesize\noindent\textit{Table checks:} \textsc{unique} (\texttt{id, kind}) as target of the subtype FKs. \texttt{queued}: no times; \texttt{running}: \texttt{started\_at}; \texttt{done}/\texttt{failed}/\texttt{expired}: \texttt{finished\_at}. \texttt{expires\_at} set iff an export is \texttt{done} or \texttt{expired}. Exports expire after 7 days; a report becomes \texttt{expired} when a newer report of the same version replaces it (it has no \texttt{expires\_at}).\par}
 
 \needspace{10\baselineskip}
 \subsubsection*{\texttt{report\_job}}

@@ -234,7 +234,7 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]L
 const softDeleteProject = `-- name: SoftDeleteProject :one
 WITH p AS (
     UPDATE project
-    SET deleted_at = now(), updated_at = now()
+    SET deleted_at = now(), updated_at = clock_timestamp()
     WHERE project.id = $1 AND project.owner_id = $2 AND project.deleted_at IS NULL
     RETURNING id
 ), v AS (
@@ -265,7 +265,7 @@ SET name = $1, nickname = $2, island_code = $3,
     island_other = $4, type_code = $5,
     type_other = $6, start_date = $7, end_date = $8,
     value_baht = CAST(CAST($9 AS text) AS numeric), progress_pct = $10,
-    description = $11, updated_at = now()
+    description = $11, updated_at = clock_timestamp()
 WHERE id = $12 AND owner_id = $13 AND deleted_at IS NULL
 `
 

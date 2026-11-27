@@ -31,6 +31,7 @@ var (
 	doneJob   = uuid.MustParse("cccccccc-cccc-4ccc-8ccc-cccccccccccc")
 	queueJob  = uuid.MustParse("dddddddd-dddd-4ddd-8ddd-dddddddddddd")
 	lostJob   = uuid.MustParse("eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee")
+	oldJob    = uuid.MustParse("ffffffff-ffff-4fff-8fff-ffffffffffff")
 )
 
 const adminID = "22222222-2222-4222-8222-222222222222"
@@ -63,6 +64,8 @@ func (fake) Download(_ context.Context, requester, id uuid.UUID) (svc.File, erro
 		return svc.File{}, svc.ErrNotReady
 	case id == lostJob:
 		return svc.File{}, svc.ErrFileMissing
+	case id == oldJob:
+		return svc.File{}, svc.ErrExpired
 	}
 	return svc.File{}, svc.ErrNotFound
 }
@@ -239,6 +242,13 @@ func TestDownloadConflicts(t *testing.T) {
 		if resp.StatusCode != http.StatusConflict {
 			t.Fatalf("job %s: status = %d, want 409", id, resp.StatusCode)
 		}
+	}
+}
+
+func TestDownloadReplacedReportIsConflictWithOwnCode(t *testing.T) {
+	resp, body := call(t, owner.String(), http.MethodGet, "/api/v1/reports/"+oldJob.String()+"/download")
+	if resp.StatusCode != http.StatusConflict || !strings.Contains(string(body), "report_expired") {
+		t.Fatalf("status = %d body = %s, want 409 report_expired", resp.StatusCode, body)
 	}
 }
 
