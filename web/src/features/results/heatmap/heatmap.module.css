@@ -22,28 +22,28 @@
   border-radius: var(--radius-control);
 }
 .VH {
-  background: #7f1d1d;
-  color: #fff;
+  background: var(--heat-vh);
+  color: var(--color-on-solid);
 }
 .H {
-  background: #c2410c;
-  color: #fff;
+  background: var(--heat-h);
+  color: var(--color-on-solid);
 }
 .M {
-  background: #f6cfb3;
+  background: var(--heat-m);
   color: var(--color-navy-900);
 }
 .L {
-  background: #faeadf;
+  background: var(--heat-l);
   color: var(--color-navy-900);
 }
 .VL {
-  background: #f7f4f1;
+  background: var(--heat-vl);
   color: var(--color-navy-900);
 }
 .none {
   border: 1px dashed var(--color-border);
-  background: #fff;
+  background: var(--color-card);
   color: var(--color-text-muted);
 }
 

@@ -14,7 +14,7 @@ export type FactorOption = { code: string; name: string };
 export type IndicatorOption = { code: string; name: string; factor: string };
 
 const floating =
-  'z-50 rounded-card border border-border bg-white text-body text-text shadow-floating';
+  'z-50 rounded-card border border-border bg-card text-body text-text shadow-floating';
 
 type FactorProps = {
   /** Every factor of the catalogue, in catalogue order. */

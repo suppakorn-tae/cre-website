@@ -148,7 +148,7 @@
   box-sizing: border-box;
   border-radius: var(--radius-control);
   background: var(--color-blue-600);
-  color: var(--color-white);
+  color: var(--color-on-solid);
   font-size: var(--text-small);
   font-weight: var(--weight-semibold);
   text-decoration: none;
