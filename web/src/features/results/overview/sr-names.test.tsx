@@ -9,6 +9,8 @@ import { LevelBadge } from '@/components/ui';
 import results from '../../../../messages/th/results.json';
 import ui from '../../../../messages/th/ui.json';
 
+import { AdviceLink } from '@/features/versions/OverviewPanel';
+
 import { FactorChart } from './FactorChart';
 
 afterEach(cleanup);
@@ -40,6 +42,18 @@ describe('screen-reader names (WCAG 2.5.3)', () => {
         name: '2.78 EC-MG การบริหาร: RM เฉลี่ย 2.78 ระดับ M (ความเสี่ยงปานกลาง)',
       }),
     ).toBeTruthy();
+  });
+
+  it('a level link is named by its chip only; the advice hint is its description', () => {
+    render(
+      <AdviceLink href="/x" hint="ดูคำแนะนำของตัวชี้วัดความเสี่ยงสูง 11 ตัว">
+        <LevelBadge level="H" count={11} label="ความเสี่ยงสูง" />
+      </AdviceLink>,
+    );
+    const link = screen.getByRole('link', { name: 'H ความเสี่ยงสูง 11' });
+    const id = link.getAttribute('aria-describedby') ?? '';
+    expect(document.getElementById(id)?.textContent).toBe('ดูคำแนะนำของตัวชี้วัดความเสี่ยงสูง 11 ตัว');
+    expect(link.contains(document.getElementById(id))).toBe(false);
   });
 
   it('a level badge starts with the printed code', () => {

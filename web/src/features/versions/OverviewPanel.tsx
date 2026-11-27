@@ -205,15 +205,25 @@ function LatestVersionCard({
 }
 
 /** A level chip that links to the advice tab. The hint is read as the description, not a tooltip. */
-function AdviceLink({ href, hint, children }: { href: string; hint: string; children: ReactNode }) {
+export function AdviceLink({
+  href,
+  hint,
+  children,
+}: {
+  href: string;
+  hint: string;
+  children: ReactNode;
+}) {
   const hintId = useId();
   return (
-    <Link className={styles.levelLink} href={href} aria-describedby={hintId}>
-      {children}
+    <>
+      <Link className={styles.levelLink} href={href} aria-describedby={hintId}>
+        {children}
+      </Link>
       <span id={hintId} className={styles.srOnly}>
         {hint}
       </span>
-    </Link>
+    </>
   );
 }
 
