@@ -88,3 +88,22 @@ test('the plan page fits a phone and a tablet without sideways scroll', async ({
     expect(overflow, `${width}px`).toBe(false);
   }
 });
+
+test.describe('strategy card hover', () => {
+  test.use({ reducedMotion: 'no-preference' });
+
+  test('hovering one card grows it and leaves the others alone', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'there is no hover on touch');
+    await page.goto(plan(V3));
+    const cards = page.getByRole('radiogroup').locator('label');
+    await expect(cards).toHaveCount(4);
+    const boxes = async () => Promise.all([0, 1, 2, 3].map((i) => cards.nth(i).boundingBox()));
+    const before = await boxes();
+    await cards.nth(1).hover();
+    await expect
+      .poll(async () => ((await cards.nth(1).boundingBox())?.width ?? 0) > before[1]!.width)
+      .toBe(true);
+    const after = await boxes();
+    for (const i of [0, 2, 3]) expect(after[i]).toEqual(before[i]);
+  });
+});
