@@ -186,6 +186,27 @@ describe('strategy clicks', () => {
     unmount();
     await tick(0);
     expect(onChange).toHaveBeenCalledWith('AVOID');
+    // The timer that was waiting must not send it a second time.
+    await tick(1000);
+    expect(onChange).toHaveBeenCalledTimes(1);
     expect(within(document.body).queryAllByRole('radio')).toHaveLength(0);
+  });
+
+  it('puts the focus back on the chosen radio after the save', async () => {
+    let done!: () => void;
+    const onChange = vi.fn(() => new Promise<void>((r) => (done = r)));
+    const { rerender } = render(
+      wrap(<StrategyPanel code="EC-HS-2" editable onChange={onChange} />),
+    );
+    radio('AVOID').focus();
+    fireEvent.click(radio('AVOID'));
+    await tick(400);
+    // A browser drops the focus from a radio that becomes disabled.
+    radio('AVOID').blur();
+    expect(document.activeElement).toBe(document.body);
+    // The save updates the stored choice (the real page does it in the cache).
+    rerender(wrap(<StrategyPanel code="EC-HS-2" value="AVOID" editable onChange={onChange} />));
+    await act(async () => done());
+    expect(document.activeElement).toBe(radio('AVOID'));
   });
 });

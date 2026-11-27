@@ -40,7 +40,7 @@ export function PlanItem({ row, meta, editable, onStrategy }: Props) {
       data-dimension={dimension}
       style={dimension ? { borderLeftColor: dimensionStyle(dimension).color } : undefined}
       className={cx(
-        'overflow-hidden rounded-card border border-border bg-surface data-[state=open]:border-blue-200',
+        'rounded-card border border-border bg-surface data-[state=open]:border-blue-200',
         dimension && 'border-l-4',
       )}
     >
