@@ -38,6 +38,8 @@ for (const { name, path, ready } of PAGES) {
     const white = await page.evaluate(() =>
       [...document.body.querySelectorAll<HTMLElement>('*')]
         .filter((el) => {
+          // The logo sits on a light chip on purpose in dark mode (IO-256).
+          if (el.closest('[class*="__brand"]')) return false;
           const r = el.getBoundingClientRect();
           return r.width > 0 && r.height > 0;
         })
