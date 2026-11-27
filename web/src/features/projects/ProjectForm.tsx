@@ -211,7 +211,7 @@ export function ProjectForm({ project }: Props) {
           </p>
         )}
         <section
-          className="box-border rounded-card border border-border bg-white"
+          className="box-border rounded-card border border-border bg-card"
           aria-labelledby="project-basic"
         >
           <div className="grid gap-5 p-5 md:gap-6 md:p-8">
@@ -406,7 +406,7 @@ export function ProjectForm({ project }: Props) {
                     <Slider.Thumb
                       aria-label={t('progressSlider')}
                       aria-valuetext={t('progressValueText', { pct: sliderValue })}
-                      className="focus-ring block size-5 rounded-pill border-2 border-primary bg-white"
+                      className="focus-ring block size-5 rounded-pill border-2 border-primary bg-card"
                     />
                   </Slider.Root>
                 </div>
@@ -475,7 +475,7 @@ export function ProjectForm({ project }: Props) {
             </Button>
             <Link
               href={project ? `/projects/${project.id}` : '/dashboard'}
-              className="focus-ring box-border inline-flex min-h-control-lg w-full items-center justify-center rounded-control border border-field-border bg-white px-4 text-body font-medium text-text no-underline hover:bg-subtle md:w-auto"
+              className="focus-ring box-border inline-flex min-h-control-lg w-full items-center justify-center rounded-control border border-field-border bg-card px-4 text-body font-medium text-text no-underline hover:bg-subtle md:w-auto"
             >
               {t('cancel')}
             </Link>
@@ -599,7 +599,7 @@ function Preview({
   ];
 
   return (
-    <div className="grid min-w-0 gap-3 rounded-card border border-border bg-white p-5 [overflow-wrap:anywhere]">
+    <div className="grid min-w-0 gap-3 rounded-card border border-border bg-card p-5 [overflow-wrap:anywhere]">
       <p className="m-0 flex items-center justify-between text-small text-text-muted">
         <span>{t('title')}</span>
         <span className="rounded-pill bg-blue-50 px-3 py-0.5 text-caption text-blue-700">
@@ -607,7 +607,7 @@ function Preview({
         </span>
       </p>
       <div className="flex min-w-0 items-start gap-3">
-        <span className="shrink-0 whitespace-nowrap rounded-pill bg-navy-900 px-3 py-0.5 text-small font-bold text-white">
+        <span className="shrink-0 whitespace-nowrap rounded-pill bg-navy-900 px-3 py-0.5 text-small font-bold text-on-solid">
           {values.nickname.trim() || t('placeholderNickname')}
         </span>
         <div className="min-w-0">
@@ -719,7 +719,7 @@ function ChipGroup({
                 className={`box-border flex min-h-control-lg items-center justify-center gap-2 rounded-pill border px-4 text-center text-body peer-focus-visible:shadow-[var(--focus-ring)] ${
                   selected
                     ? 'border-primary bg-blue-50 font-semibold text-blue-700'
-                    : 'border-field-border bg-white text-text'
+                    : 'border-field-border bg-card text-text'
                 }`}
               >
                 {selected && <Icon icon={IconCheck} size={16} />}

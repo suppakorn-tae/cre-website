@@ -83,7 +83,7 @@ export function ProjectHeader({ project, onDelete }: Props) {
                 align="end"
                 sideOffset={6}
                 collisionPadding={16}
-                className="z-50 min-w-52 rounded-card border border-border bg-white p-2 text-body shadow-floating"
+                className="z-50 min-w-52 rounded-card border border-border bg-card p-2 text-body shadow-floating"
               >
                 <DropdownMenu.Item
                   className="flex h-control-md cursor-pointer select-none items-center gap-3 rounded-control px-3 text-body text-error outline-none data-[highlighted]:bg-error-bg"

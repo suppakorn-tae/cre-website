@@ -5,7 +5,7 @@ import { Icon } from '@/components/ui';
 import { FieldMessage, LabelText, messageIds } from '@/components/ui/Field';
 
 export const controlClass =
-  'box-border min-h-field w-full rounded-control border border-field-border bg-white px-3 py-2 font-sans text-body text-text placeholder:text-placeholder hover:border-text-muted focus-ring focus-visible:border-primary aria-[invalid=true]:border-error';
+  'box-border min-h-field w-full rounded-control border border-field-border bg-card px-3 py-2 font-sans text-body text-text placeholder:text-placeholder hover:border-text-muted focus-ring focus-visible:border-primary aria-[invalid=true]:border-error';
 
 type Props = Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> & {
   label: ReactNode;

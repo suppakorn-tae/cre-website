@@ -64,7 +64,7 @@ export function VersionMenu({ projectId, version, onDelete }: Props) {
           align="end"
           sideOffset={4}
           collisionPadding={16}
-          className="z-50 min-w-56 max-w-80 rounded-card border border-border bg-white p-2 text-body shadow-floating"
+          className="z-50 min-w-56 max-w-80 rounded-card border border-border bg-card p-2 text-body shadow-floating"
         >
           <DropdownMenu.Item asChild>
             <Link href={projectPaths.assessment(projectId, version.id)} className={menuItem}>
