@@ -51,60 +51,10 @@ make up
 Open **<https://localhost>**. Caddy uses its own local CA, so accept the browser warning.
 Check health with `curl -k https://localhost/api/v1/healthz`, stop with `make down`.
 
-> [!IMPORTANT]
-> The database runs PostgreSQL 19. Data made by an older major version (16) does not start on 19. If `db` keeps restarting after you pull, reset it: `make down`, then `docker volume rm cre_pgdata` (the name is `<project>_pgdata`; list with `docker volume ls`), then `make up`. This deletes all local data.
-
 > [!NOTE]
-> The api will not start without `SESSION_SECRET` (32+ bytes). Leave `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` empty locally; Google sign-in then answers 503. Never commit `.env`.
+> The api will not start without `SESSION_SECRET` (32+ bytes). Never commit `.env`. If `db` keeps restarting after you pull (PostgreSQL 19 does not read older data), see [Reset the database](docs/runbooks/dev.md#reset-the-database).
 
-<details>
-<summary><b>👤 Get a local admin account</b> (dev only)</summary>
-
-<br>
-
-There is no admin sign-up. Sign up as a normal user, then promote the account. **Never do this on a real deployment.**
-
-1. Sign up at <https://localhost> as, for example, `admin@example.com`.
-2. Read the OTP from Mailpit (not published on the host, so ask from inside the network). It is in the `Subject` of the newest message:
-
-   ```sh
-   docker compose -f deploy/compose/compose.yaml exec caddy \
-     wget -qO- http://mailpit:8025/api/v1/messages
-   ```
-
-3. Promote the account:
-
-   ```sh
-   docker compose -f deploy/compose/compose.yaml exec -T db psql -U cre_owner -d cre \
-     -c "UPDATE account SET role = 'admin' WHERE email = 'admin@example.com'"
-   ```
-
-Change the user and database names if you changed `POSTGRES_USER` / `POSTGRES_DB`. The e2e suite does the same in `e2e/global-setup.ts`.
-
-</details>
-
-<details>
-<summary><b>🎨 Work on the web only, with mocks</b></summary>
-
-<br>
-
-No backend needed. The browser answers every API call from `web/src/mocks`:
-
-```sh
-NEXT_PUBLIC_API_MOCKS=1 corepack pnpm --dir web dev
-```
-
-Then open <http://localhost:3000>. You are signed in as a sample user; the server uses the mock session too, so no api container is needed.
-
-To open the admin area, start with the admin role (an admin can open every other page as well):
-
-```sh
-NEXT_PUBLIC_API_MOCKS=1 CRE_MOCK_ROLE=admin corepack pnpm --dir web dev
-```
-
-Then open <http://localhost:3000/admin/users>. Mock mode skips the sign-in check, so a production build or server refuses to start with `NEXT_PUBLIC_API_MOCKS=1`. To check every page in mock mode, run `corepack pnpm --dir e2e test:mock`.
-
-</details>
+All the ways to run it (full stack, web only with mocks, backend on the host, tests, load test), a local admin account and troubleshooting are in the **[dev runbook](docs/runbooks/dev.md)**. To deploy, see the **[deploy runbook](docs/runbooks/deploy.md)**.
 
 ---
 
@@ -124,40 +74,7 @@ Run from the repo root.
 > [!IMPORTANT]
 > Run `make gen lint test` before you push. Generated code is committed, and CI fails when it is stale.
 
-<details>
-<summary><b>🧪 End-to-end tests</b> (Playwright)</summary>
-
-<br>
-
-The suite runs on its own stack with throw-away secrets (`e2e/compose.env`). It also uses ports 80 and 443, so stop the dev stack first.
-
-```sh
-corepack pnpm --dir e2e exec playwright install chromium
-corepack pnpm --dir e2e run stack:up
-corepack pnpm --dir e2e test
-corepack pnpm --dir e2e run stack:down
-```
-
-CI runs it nightly and on pull requests that touch `e2e/` ([`ci-e2e.yml`](.github/workflows/ci-e2e.yml)).
-
-</details>
-
-<details>
-<summary><b>⚡ Load test</b> (k6)</summary>
-
-<br>
-
-Needs only Docker. It builds its own stack with two api replicas and seeds 500 users × 10 projects × 5 versions.
-
-```sh
-loadtest/run.sh up     # build, start and seed
-loadtest/run.sh test   # run k6, 3 min by default (DURATION=1m to shorten)
-loadtest/run.sh down   # stop and clean up
-```
-
-Latest numbers: every interactive endpoint is under 1 s at p95. See [`loadtest/RESULTS.md`](loadtest/RESULTS.md).
-
-</details>
+See [dev runbook](docs/runbooks/dev.md#d-end-to-end-tests) for the end-to-end tests (Playwright, with or without Docker) and the [load test](docs/runbooks/dev.md#e-load-test) (k6). CI runs e2e nightly and on pull requests that touch `e2e/` ([`ci-e2e.yml`](.github/workflows/ci-e2e.yml)). Latest load test numbers: [`loadtest/RESULTS.md`](loadtest/RESULTS.md).
 
 ---
 
@@ -321,6 +238,7 @@ docs/        Specs (specs/) and runbooks (runbooks/)
 | --- | --- |
 | 📐 [Specs](docs/specs/README.md) | Requirements, risk engine, architecture, database, UX/UI. **The source of truth.** |
 | 🧩 Diagrams | [Use cases](docs/specs/requirements/cre-usecase-diagram.pdf) · [User flow](docs/specs/user-flow/cre-userflow.drawio) · [ER overview](docs/specs/database/figures/er-overview.pdf) · [Wireframes](docs/specs/ux-ui/CRE-wireframes.drawio) · [Hi-fi UI](docs/specs/ux-ui/CRE-hifi-ui.drawio) (open `.drawio` files at [app.diagrams.net](https://app.diagrams.net)) |
+| 💻 [Dev runbook](docs/runbooks/dev.md) | Run the app on your machine, five ways, with admin account and troubleshooting |
 | 🚢 [Deploy runbook](docs/runbooks/deploy.md) | Production deploy, including [Google sign-in setup](docs/runbooks/deploy.md#google-sign-in) |
 | 💾 [Restore runbook](docs/runbooks/restore.md) | Backups and restore |
 | 🤝 [CONTRIBUTING.md](CONTRIBUTING.md) | Branches, commits, pull requests, required checks |
