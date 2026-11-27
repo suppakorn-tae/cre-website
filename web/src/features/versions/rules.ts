@@ -70,11 +70,13 @@ const hvh = (v: VersionSummary): number | null =>
   v.high_count === null || v.very_high_count === null ? null : v.high_count + v.very_high_count;
 
 /** Change of H+VH between the latest submitted version and the submitted one before it. */
-export function hvhDelta(versions: VersionSummary[]): number | null {
+export function hvhDelta(versions: VersionSummary[]): { delta: number; fromNo: number } | null {
   const submitted = newestFirst(versions).filter((v) => v.status === 'submitted');
   if (submitted.length < 2) return null;
   const [now, before] = [hvh(submitted[0]), hvh(submitted[1])];
-  return now === null || before === null ? null : now - before;
+  return now === null || before === null
+    ? null
+    : { delta: now - before, fromNo: submitted[1].version_no };
 }
 
 /** The newest `count` versions. */

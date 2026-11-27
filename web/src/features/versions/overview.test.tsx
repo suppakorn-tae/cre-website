@@ -40,7 +40,7 @@ describe('overview rules', () => {
   });
 
   it('compares H+VH of the latest submitted version with the one before', () => {
-    expect(hvhDelta(mockVersions())).toBe(13 - 18);
+    expect(hvhDelta(mockVersions())).toEqual({ delta: 13 - 18, fromNo: 2 });
     expect(hvhDelta(mockVersions().slice(1))).toBeNull();
     expect(hvhDelta([])).toBeNull();
   });
@@ -70,7 +70,7 @@ describe('OverviewPanel', () => {
     expect(html).toContain('VH');
     expect(html).toContain('RM เฉลี่ย');
     expect(html).toContain('2.71');
-    expect(html).toContain('ลดลง 5 จากเวอร์ชันก่อน');
+    expect(html).toContain('▼ 5 จาก v2');
     expect(html).toContain(`${v3}/results`);
     expect(html).toContain(`${v3}/assess`);
     // The report is built in place: a button, not a page.
@@ -137,9 +137,9 @@ describe('OverviewPanel', () => {
 });
 
 describe('latest version card levels', () => {
-  it('shows chips VL to VH with their stored counts and the stacked bar', () => {
+  it('shows chips VH to VL with their stored counts and the stacked bar', () => {
     const html = panel(mockVersions(), 55);
-    const chips = ['VL<span>8<', 'L<span>14<', 'M<span>20<', 'H<span>11<', 'VH<span>2<'].map((c) =>
+    const chips = ['VH<span>2<', 'H<span>11<', 'M<span>20<', 'L<span>14<', 'VL<span>8<'].map((c) =>
       html.indexOf(c),
     );
     expect(chips.every((i) => i >= 0)).toBe(true);
@@ -147,23 +147,39 @@ describe('latest version card levels', () => {
     expect(html).toContain('role="img"');
     expect(html.match(/data-level="/g)).toHaveLength(5);
     expect(html).toContain('flex-grow:20');
+    // The bar starts with the highest level, like the chips.
+    expect(html.indexOf('data-level="VH"')).toBeLessThan(html.indexOf('data-level="VL"'));
   });
 
-  it('prints scored/total with the total taken from the catalogue', () => {
-    expect(panel(mockVersions(), 55)).toContain('55/55 ตัวชี้วัด');
-    expect(panel(mockVersions(), 60)).toContain('55/60 ตัวชี้วัด');
+  it('skips the levels without a count', () => {
+    const [first, ...rest] = mockVersions();
+    const html = panel([{ ...first, level_counts: { VL: 0, L: 14, M: 41, H: 0, VH: 0 } }, ...rest]);
+    expect(html.match(/data-level="/g)).toHaveLength(2);
+    expect(html).not.toContain('VL<span>0<');
+  });
+
+  it('prints the submit time with a short year and the scored count in one line', () => {
+    expect(panel(mockVersions(), 55)).toContain('ส่งล่าสุด 14 พ.ย. 69 16:40 · 55 / 55 ตัวชี้วัดที่ประเมิน');
+    expect(panel(mockVersions(), 60)).toContain('55 / 60 ตัวชี้วัดที่ประเมิน');
+  });
+
+  it('prints the average RM and H+VH with the change from the earlier version', () => {
+    const html = panel(mockVersions(), 55);
+    expect(html).toMatch(/RM เฉลี่ย[\s\S]*<strong>2\.71<\/strong>/);
+    expect(html).toMatch(/H\+VH[\s\S]*<strong>13<\/strong>/);
+    expect(html).toContain('▼ 5 จาก v2');
   });
 
   it('prints only the scored count while the catalogue total is unknown', () => {
     const html = panel(mockVersions());
-    expect(html).toContain('55 ตัวชี้วัด');
-    expect(html).not.toContain('55/');
+    expect(html).toContain('55 ตัวชี้วัดที่ประเมิน');
+    expect(html).not.toContain('55 / ');
   });
 
   it('shows the draft state and no chips or bar while level_counts is null', () => {
     const html = panel(mockVersions().slice(2), 55);
     expect(html).toContain('ยังเป็นฉบับร่าง');
     expect(html).not.toContain('data-level="');
-    expect(html).not.toContain('/55');
+    expect(html).not.toContain(' / 55');
   });
 });
