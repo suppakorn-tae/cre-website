@@ -60,6 +60,7 @@ func TestRenderSendsHTMLAssetsAndLayout(t *testing.T) {
 		"marginTop":         "0.5906",
 		"printBackground":   "true",
 		"landscape":         "false",
+		"preferCssPageSize": "false",
 		"waitForExpression": "document.fonts.status === 'loaded'",
 	}
 	for k, v := range want {

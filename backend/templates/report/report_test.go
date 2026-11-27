@@ -179,16 +179,57 @@ func TestRenderSectionOrderAndNotes(t *testing.T) {
 	if strings.Index(s, disclaimer) > strings.Index(s, "<h2>6. การลงนาม") {
 		t.Error("disclaimer is after the signatures")
 	}
-	if !strings.Contains(s, `<p class="subtitle">TST1 &middot; อาคารพักอาศัย &middot; เวอร์ชัน 2</p>`) {
-		t.Error("subtitle under the title is missing")
-	}
 	if strings.Count(s, `<img class="logo" src="cre-logo-full.png"`) != 1 {
 		t.Error("logo must be referenced once by its relative asset name")
 	}
 	if strings.Contains(s, "http://") || strings.Contains(s, "https://") {
 		t.Error("report must not reference external URLs")
 	}
-	if !strings.Contains(s, "<h1>รายงานการประเมินความเสี่ยงโครงการก่อสร้างบนเกาะ</h1>") {
-		t.Error("header title missing")
+	if !strings.Contains(s, `<p class="report-title">รายงานการประเมินความเสี่ยงโครงการก่อสร้างบนเกาะ</p>`) {
+		t.Error("report title in the letterhead is missing")
+	}
+}
+
+func TestRenderLetterheadAndRunningHeader(t *testing.T) {
+	d := sample()
+	d.ProjectName = strings.Repeat("ท่าเรือเกาะเต่า ", 8) // long name: it is the H1 and is cut in the running header
+	html, assets, err := report.Render(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(html)
+	if !strings.Contains(s, `<h1 class="project">`+d.ProjectName+`</h1>`) {
+		t.Error("the project name is not the H1")
+	}
+	if strings.Count(s, "<h1") != 1 {
+		t.Error("the page must have one H1")
+	}
+	for _, want := range []string{
+		// generated 03:00 UTC on the 25th is 10:00 in Thailand
+		`<p class="issued">ออกรายงาน 25 พฤศจิกายน พ.ศ. 2569 เวลา 10:00 น.</p>`,
+		// submitted 18:00 UTC on the 24th is 01:00 on the 25th in Thailand
+		`<span class="code">TST1</span> &middot; เวอร์ชัน 2 &middot; ส่งประเมิน 25 พฤศจิกายน พ.ศ. 2569 เวลา 01:00 น.`,
+		`<td>25 พฤศจิกายน พ.ศ. 2569 เวลา 01:00 น.</td>`,
+		`<td>25 พฤศจิกายน พ.ศ. 2569 เวลา 10:00 น.</td>`,
+		// running header: not on the first page, page number on the others
+		`@page :first { @top-left { content: none;`,
+		`@top-right { content: "หน้า " counter(page) " / " counter(pages); }`,
+		`content: "TST1 · ท่าเรือเกาะเต่า `,
+	} {
+		if !strings.Contains(s, want) {
+			t.Errorf("html lacks %q", want)
+		}
+	}
+	if strings.Contains(s, strings.TrimSpace(d.ProjectName)+" · เวอร์ชัน") {
+		t.Error("the running header must cut a long project name")
+	}
+	if !strings.Contains(s, "…") {
+		t.Error("a cut project name should end with an ellipsis")
+	}
+	if !bytes.HasPrefix(assets["cre-logo-mark.png"], []byte("\x89PNG")) {
+		t.Error("logo mark asset missing or not a PNG")
+	}
+	if !strings.Contains(string(assets["style.css"]), `url("cre-logo-mark.png")`) {
+		t.Error("style sheet does not use the logo mark")
 	}
 }

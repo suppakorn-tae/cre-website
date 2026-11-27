@@ -1,14 +1,20 @@
 <!doctype html>
 <html lang="th"><head><meta charset="utf-8"><title>{{t "title"}}</title>
-<link rel="stylesheet" href="style.css"></head>
+<link rel="stylesheet" href="style.css">
+<style>
+@page { @top-left { content: "{{.RunningTitle}}"; } @top-right { content: "{{t "header.page"}} " counter(page) " / " counter(pages); } }
+@page :first { @top-left { content: none; } @top-right { content: none; } }
+</style></head>
 <body>
-<header class="doc-header">
+<header class="letterhead">
 <img class="logo" src="cre-logo-full.png" alt="{{t "logo.alt"}}">
-<div class="doc-title">
-<h1>{{t "title"}}</h1>
-<p class="subtitle">{{.Nickname}} &middot; {{.ProjectName}} &middot; {{t "subtitle.version"}} {{.VersionNo}}</p>
+<div class="issue">
+<p class="report-title">{{t "title"}}</p>
+<p class="issued">{{t "header.generated"}} {{.Generated}}</p>
 </div>
 </header>
+<h1 class="project">{{.ProjectName}}</h1>
+<p class="meta-line"><span class="code">{{.Nickname}}</span> &middot; {{t "subtitle.version"}} {{.VersionNo}} &middot; {{t "header.submitted"}} {{.Submitted}}</p>
 <h2>1. {{t "section.project"}}</h2>
 <table class="meta">
 <tr><th>{{t "project.name"}}</th><td>{{.ProjectName}}</td></tr>

@@ -27,6 +27,9 @@ var styleCSS []byte
 //go:embed cre-logo-full.png
 var logoPNG []byte
 
+//go:embed cre-logo-mark.png
+var markPNG []byte
+
 // Levels in display order.
 var Levels = []string{"VL", "L", "M", "H", "VH"}
 
@@ -115,6 +118,7 @@ type view struct {
 	Progress                                               int
 	VersionNo                                              int
 	Submitted, Generated                                   string
+	RunningTitle                                           string // text of the running header from page 2
 	Counts                                                 []levelCount
 	Total                                                  int
 	AverageRM                                              string
@@ -155,7 +159,7 @@ func Render(d Data) (html []byte, assets map[string][]byte, err error) {
 	if terr != nil {
 		return nil, nil, terr
 	}
-	return buf.Bytes(), map[string][]byte{"style.css": styleCSS, "cre-logo-full.png": logoPNG}, nil
+	return buf.Bytes(), map[string][]byte{"style.css": styleCSS, "cre-logo-full.png": logoPNG, "cre-logo-mark.png": markPNG}, nil
 }
 
 func buildView(d Data) (view, error) {
@@ -174,9 +178,10 @@ func buildView(d Data) (view, error) {
 		Value:  baht(d.ValueBaht),
 		Start:  beDate(m, d.StartDate, time.UTC), End: beDate(m, d.EndDate, time.UTC),
 		Progress: d.ProgressPct, VersionNo: d.VersionNo,
-		Submitted: beDate(m, d.SubmittedAt, thai), Generated: beDate(m, d.GeneratedAt, thai),
-		Total: len(d.Indicators),
-		Slots: []string{m("signature.assessor"), m("signature.reviewer"), m("signature.approver")},
+		Submitted: beDateTime(m, d.SubmittedAt, thai), Generated: beDateTime(m, d.GeneratedAt, thai),
+		RunningTitle: runningTitle(m, d),
+		Total:        len(d.Indicators),
+		Slots:        []string{m("signature.assessor"), m("signature.reviewer"), m("signature.approver")},
 	}
 	counts := map[string]int{}
 	var sum float64
@@ -230,6 +235,29 @@ func beDate(m func(string) string, t time.Time, loc *time.Location) string {
 	}
 	t = t.In(loc)
 	return fmt.Sprintf(m("date.format"), t.Day(), m("month."+strconv.Itoa(int(t.Month()))), t.Year()+543)
+}
+
+// beDateTime formats a date and time as "24 พฤศจิกายน พ.ศ. 2569 เวลา 18:53 น.",
+// in loc; zero time gives "-".
+func beDateTime(m func(string) string, t time.Time, loc *time.Location) string {
+	if t.IsZero() {
+		return "-"
+	}
+	t = t.In(loc)
+	return fmt.Sprintf(m("datetime.format"), beDate(m, t, loc), t.Hour(), t.Minute())
+}
+
+// maxRunningName is the longest project name (in characters) the one-line
+// running header shows; a longer name is cut with an ellipsis.
+const maxRunningName = 60
+
+// runningTitle is the left text of the running header: "KT2 · project · version 1".
+func runningTitle(m func(string) string, d Data) string {
+	name := []rune(d.ProjectName)
+	if len(name) > maxRunningName {
+		name = append(name[:maxRunningName-1], '…')
+	}
+	return fmt.Sprintf("%s · %s · %s %d", d.Nickname, string(name), m("subtitle.version"), d.VersionNo)
 }
 
 // baht formats an amount with thousands separators and two decimals.

@@ -47,6 +47,11 @@ type Options struct {
 	NoPrintBackground bool
 	// Landscape prints in landscape orientation.
 	Landscape bool
+	// PreferCSSPageSize makes Chromium take the page size and margins from
+	// the document's @page rules (needed for page margin boxes such as a
+	// running header that skips the first page); the margin fields are
+	// then ignored.
+	PreferCSSPageSize bool
 }
 
 // Client talks to one Gotenberg instance.
@@ -214,6 +219,7 @@ func buildForm(html []byte, assets map[string][]byte, opts Options) ([]byte, str
 		{"marginLeft", margin(opts.MarginLeftMM)},
 		{"printBackground", strconv.FormatBool(!opts.NoPrintBackground)},
 		{"landscape", strconv.FormatBool(opts.Landscape)},
+		{"preferCssPageSize", strconv.FormatBool(opts.PreferCSSPageSize)},
 		{"waitForExpression", waitForFonts},
 	}
 	for _, f := range fields {

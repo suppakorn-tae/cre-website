@@ -7,6 +7,9 @@
   "section.advice": "คำแนะนำและกลยุทธ์ (%d ตัวชี้วัด H / VH)",
   "section.notes": "หมายเหตุ",
   "subtitle.version": "เวอร์ชัน",
+  "header.generated": "ออกรายงาน",
+  "header.submitted": "ส่งประเมิน",
+  "header.page": "หน้า",
   "section.signatures": "การลงนาม",
   "project.name": "ชื่อโครงการ",
   "project.nickname": "ชื่อเล่นโครงการ",
@@ -70,5 +73,6 @@
   "month.10": "ตุลาคม",
   "month.11": "พฤศจิกายน",
   "month.12": "ธันวาคม",
-  "date.format": "%d %s พ.ศ. %d"
+  "date.format": "%d %s พ.ศ. %d",
+  "datetime.format": "%s เวลา %02d:%02d น."
 }
