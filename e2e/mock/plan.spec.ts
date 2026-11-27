@@ -17,7 +17,9 @@ test('the plan opens the first item and saves a strategy on change', async ({ pa
   await expect(page.locator('button[aria-expanded="true"]')).toHaveCount(1);
 
   const reduce = group.getByRole('radio', { name: /REDUCE/ });
-  await reduce.click();
+  // The radio is visually hidden: people click its card. The choice shows at
+  // once and is saved 400 ms after the last click.
+  await group.locator('label').filter({ hasText: 'REDUCE' }).click();
   await expect(reduce).toBeChecked();
   await expect(page.getByText(/^บันทึกแล้ว/)).toBeVisible();
   // The header counts the saved choice.

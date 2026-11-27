@@ -112,7 +112,7 @@ describe('advice lists', () => {
     for (const row of lists) {
       const html = wrap(<AdviceLists advice={row.advice} />);
       expect(html.match(/<li /g)).toHaveLength(row.advice!.reduce((n, a) => n + a.items.length, 0));
-      expect(html.match(/<h4/g)).toHaveLength(row.advice!.length);
+      expect(html.match(/<h5/g)).toHaveLength(row.advice!.length);
       for (const list of row.advice!) {
         expect(html).toContain(`${list.items.length} ข้อ`);
         for (const text of list.items) expect(html).toContain(text);

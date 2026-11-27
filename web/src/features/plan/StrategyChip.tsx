@@ -4,6 +4,7 @@ import { Icon } from '@/components/ui';
 import { cx } from '@/components/ui/cx';
 
 import type { Strategy } from './api';
+import { strategyStyle } from './strategy';
 
 /** One icon per strategy; the codes stay untranslated. */
 export const STRATEGY_ICONS = {
@@ -22,13 +23,16 @@ type Props = {
   className?: string;
 };
 
-/** The chosen strategy with its icon, or a grey "not chosen" chip. */
+/** The chosen strategy with its icon in its own colour, or a grey "not chosen" chip. */
 export function StrategyChip({ value, unsetLabel, prefix, className }: Props) {
   return (
     <span
+      style={value ? strategyStyle(value) : undefined}
       className={cx(
         'inline-flex shrink-0 items-center gap-1 rounded-badge px-2 py-1 text-small font-semibold',
-        value ? 'bg-blue-50 text-blue-700' : 'bg-subtle font-normal text-text-secondary',
+        value
+          ? 'bg-(--strategy-tint) text-(--strategy-solid)'
+          : 'bg-subtle font-normal text-text-secondary',
         className,
       )}
     >
