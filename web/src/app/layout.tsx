@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server';
 
 import { MockGate } from '@/lib/mocks/mock-gate';
 import { QueryProvider } from '@/lib/query/provider';
+import { ThemeScript } from '@/lib/theme/theme-script';
 
 // IBM Plex Sans Thai, self-hosted by @fontsource (no request to Google Fonts
 // at build or run time). Thai and Latin come as separate files with a
@@ -23,7 +24,12 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="th">
+    // The theme script sets data-theme on <html> before React hydrates, so the
+    // attribute differs from the server HTML on purpose.
+    <html lang="th" suppressHydrationWarning>
+      <head>
+        <ThemeScript />
+      </head>
       <body>
         <NextIntlClientProvider>
           <MockGate>

@@ -56,7 +56,7 @@ function posOf(i: number, current: number): Pos {
 }
 
 /**
- * Flow bar: project, assessment, results, plan and report. A white card with
+ * Flow bar: project, assessment, results, plan and report. A card with
  * one segment per step and chevrons between them (hi-fi). Steps can link to
  * their page, act in place, or be unreachable text with a reason. Phones show
  * one row: previous, "step n of m · name", next, and a thin progress line.

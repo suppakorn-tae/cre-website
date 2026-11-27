@@ -25,11 +25,11 @@ import { Button, Icon, TooltipContent } from '@/components/ui';
 // One styled example of each Radix primitive, built only from token utilities
 // (see web/README.md, "Styling rules"). Radix handles focus, keyboard and ARIA.
 const floating =
-  'z-50 rounded-card border border-border bg-white text-body text-text shadow-floating';
+  'z-50 rounded-card border border-border bg-card text-body text-text shadow-floating';
 const menuItem =
   'flex h-control-sm cursor-default select-none items-center gap-2 rounded-control px-3 outline-none data-[highlighted]:bg-blue-50 data-[highlighted]:text-primary';
 const iconButton =
-  'focus-ring inline-flex size-control-sm items-center justify-center rounded-control border border-field-border bg-white text-text-secondary hover:bg-subtle';
+  'focus-ring inline-flex size-control-sm items-center justify-center rounded-control border border-field-border bg-card text-text-secondary hover:bg-subtle';
 
 export function RadixExamples() {
   const t = useTranslations('ui');
@@ -57,7 +57,7 @@ export function RadixExamples() {
               </Slider.Track>
               <Slider.Thumb
                 aria-labelledby="dev-slider-label"
-                className="focus-ring block size-5 rounded-pill border-2 border-primary bg-white"
+                className="focus-ring block size-5 rounded-pill border-2 border-primary bg-card"
               />
             </Slider.Root>
           </section>
@@ -133,7 +133,7 @@ export function RadixExamples() {
               type="single"
               collapsible
               defaultValue="one"
-              className="overflow-hidden rounded-card border border-border bg-white"
+              className="overflow-hidden rounded-card border border-border bg-card"
             >
               {(['one', 'two'] as const).map((id) => (
                 <Accordion.Item
@@ -142,7 +142,7 @@ export function RadixExamples() {
                   className="border-b border-divider last:border-b-0"
                 >
                   <Accordion.Header className="m-0 text-body">
-                    <Accordion.Trigger className="focus-ring group flex min-h-control-md w-full items-center justify-between gap-2 border-0 bg-white px-4 py-2 text-start font-medium text-text hover:bg-subtle">
+                    <Accordion.Trigger className="focus-ring group flex min-h-control-md w-full items-center justify-between gap-2 border-0 bg-card px-4 py-2 text-start font-medium text-text hover:bg-subtle">
                       {t(`dev.radixAccordion_${id}_title`)}
                       <Icon
                         icon={IconChevronDown}

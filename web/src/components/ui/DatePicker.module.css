@@ -145,7 +145,7 @@
 .choice.selected {
   border-color: var(--color-blue-600);
   background: var(--color-blue-600);
-  color: var(--color-white);
+  color: var(--color-on-solid);
   font-weight: var(--weight-semibold);
 }
 
