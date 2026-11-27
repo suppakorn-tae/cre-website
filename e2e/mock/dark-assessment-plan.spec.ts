@@ -18,7 +18,11 @@ test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => window.localStorage.setItem('cre-theme', 'dark'));
 });
 
-async function shot(page: import('@playwright/test').Page, name: string, info: { project: { name: string } }) {
+async function shot(
+  page: import('@playwright/test').Page,
+  name: string,
+  info: { project: { name: string } },
+) {
   const dir = process.env.SHOTS_DIR;
   if (dir) await page.screenshot({ path: `${dir}/${name}-${info.project.name}.png` });
 }
@@ -32,10 +36,18 @@ test('the assessment page is dark and passes axe colour contrast', async ({ page
 });
 
 test('the y3 picker is dark and passes axe colour contrast', async ({ page, isMobile }, info) => {
-  test.skip(isMobile, 'on a phone the y3 cards are collapsed; the sheet is checked on desktop');
   await page.goto(assess);
   await expect(page.getByText('ตอบครบ 55 จาก 55 ตัวชี้วัด')).toBeVisible();
-  await page.locator('button[aria-haspopup="dialog"]:visible').first().click();
+  const trigger = page.locator('button[aria-haspopup="dialog"]:visible').first();
+  if (isMobile) {
+    // On a phone the groups are collapsed cards: open them until a y3 button shows.
+    const closed = page.locator('button[aria-expanded="false"]:not([aria-haspopup]):visible');
+    for (let i = 0; i < 12 && !(await trigger.isVisible()); i++) {
+      await closed.first().click();
+    }
+  }
+  await trigger.click();
+  // On a phone this is the modal bottom sheet with a scrim backdrop.
   await expect(page.getByRole('dialog')).toBeVisible();
   await expectNoViolations(page, 'y3 picker dark');
   await shot(page, 'assessment-y3', info);
