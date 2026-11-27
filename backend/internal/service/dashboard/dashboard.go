@@ -184,6 +184,14 @@ type TopIndicator struct {
 	Rank                      int
 	IndicatorCode, FactorCode string
 	HCount, VhCount           int
+	FoundIn                   int
+	Projects                  []TopProject
+}
+
+// TopProject is a project with an indicator at H or VH.
+type TopProject struct {
+	ID       uuid.UUID
+	Nickname string
 }
 
 // TopIndicators returns the Top 10 indicators most often H or VH. Ties: more
@@ -195,9 +203,14 @@ func (s *Service) TopIndicators(ctx context.Context, owner uuid.UUID) ([]TopIndi
 	}
 	out := make([]TopIndicator, len(rows))
 	for i, r := range rows {
+		ps := make([]TopProject, len(r.ProjectIds))
+		for j, id := range r.ProjectIds {
+			ps[j] = TopProject{ID: id, Nickname: r.ProjectNicknames[j]}
+		}
 		out[i] = TopIndicator{
 			Rank: i + 1, IndicatorCode: r.IndicatorCode, FactorCode: r.FactorCode,
 			HCount: int(r.HCount), VhCount: int(r.VhCount),
+			FoundIn: len(ps), Projects: ps,
 		}
 	}
 	return out, nil

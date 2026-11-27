@@ -227,11 +227,12 @@ export function TopIndicatorsPanel() {
               <th scope="col">{t('indicator')}</th>
               <th scope="col">{t('foundIn')}</th>
               <th scope="col">{t('levels')}</th>
+              <th scope="col">{t('projects')}</th>
             </tr>
           </thead>
           <tbody>
             {top.data?.map((i) => {
-              const found = i.h_count + i.vh_count;
+              const found = i.found_in;
               const of = Math.max(projectTotal, found);
               return (
                 <tr key={i.indicator_code}>
@@ -260,6 +261,15 @@ export function TopIndicatorsPanel() {
                       {i.h_count > 0 && (
                         <LevelBadge level="H" count={i.h_count} label={tLevels('H')} />
                       )}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={styles.topProjects}>
+                      {i.projects.map((p) => (
+                        <span key={p.id} className={styles.nicknameChip}>
+                          {p.nickname}
+                        </span>
+                      ))}
                     </span>
                   </td>
                 </tr>

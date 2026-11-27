@@ -351,7 +351,7 @@ func (q *Queries) DashboardProjectsPanel(ctx context.Context, arg DashboardProje
 
 const dashboardTopIndicators = `-- name: DashboardTopIndicators :many
 WITH latest AS (
-    SELECT DISTINCT ON (v.project_id) v.id
+    SELECT DISTINCT ON (v.project_id) v.id, v.project_id
     FROM assessment_version v
     JOIN project p ON p.id = v.project_id
     WHERE p.owner_id = $1 AND p.deleted_at IS NULL
@@ -360,8 +360,11 @@ WITH latest AS (
 )
 SELECT r.indicator_code, i.factor_code,
        (count(*) FILTER (WHERE r.level = 'H'))::int AS h_count,
-       (count(*) FILTER (WHERE r.level = 'VH'))::int AS vh_count
+       (count(*) FILTER (WHERE r.level = 'VH'))::int AS vh_count,
+       array_agg(p.id ORDER BY p.nickname, p.id)::uuid[] AS project_ids,
+       array_agg(p.nickname ORDER BY p.nickname, p.id)::text[] AS project_nicknames
 FROM latest l
+JOIN project p ON p.id = l.project_id
 JOIN risk_result r ON r.version_id = l.id AND r.level IN ('H', 'VH')
 JOIN indicator i ON i.code = r.indicator_code
 GROUP BY r.indicator_code, i.factor_code
@@ -370,14 +373,19 @@ LIMIT 10
 `
 
 type DashboardTopIndicatorsRow struct {
-	IndicatorCode string
-	FactorCode    string
-	HCount        int32
-	VhCount       int32
+	IndicatorCode    string
+	FactorCode       string
+	HCount           int32
+	VhCount          int32
+	ProjectIds       []uuid.UUID
+	ProjectNicknames []string
 }
 
 // Indicators ranked by the number of projects with H or VH in the latest
 // submitted version. Ties: more VH first, then indicator code (BR-26).
+// project_ids and project_nicknames are parallel arrays of the projects with
+// H or VH, ordered by nickname then id. A version has one result per
+// indicator, so their length is the distinct project count (found_in).
 func (q *Queries) DashboardTopIndicators(ctx context.Context, ownerID uuid.UUID) ([]DashboardTopIndicatorsRow, error) {
 	rows, err := q.db.Query(ctx, dashboardTopIndicators, ownerID)
 	if err != nil {
@@ -392,6 +400,8 @@ func (q *Queries) DashboardTopIndicators(ctx context.Context, ownerID uuid.UUID)
 			&i.FactorCode,
 			&i.HCount,
 			&i.VhCount,
+			&i.ProjectIds,
+			&i.ProjectNicknames,
 		); err != nil {
 			return nil, err
 		}

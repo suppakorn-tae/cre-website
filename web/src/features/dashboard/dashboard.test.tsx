@@ -206,10 +206,10 @@ describe('top 10 panel', () => {
     });
   });
 
-  it('is a table with the title, its caption and the four columns', () => {
+  it('is a table with the title, its caption and the five columns', () => {
     expect(html).toContain('Top 10 ตัวชี้วัดที่เป็น H / VH บ่อยที่สุด');
     expect(html).toContain('เรียงตามจำนวนโครงการ แล้วตาม VH');
-    for (const col of ['#', 'ตัวชี้วัด', 'พบใน (โครงการ)', 'VH / H']) {
+    for (const col of ['#', 'ตัวชี้วัด', 'พบใน (โครงการ)', 'VH / H', 'โครงการ']) {
       expect(html).toContain(`>${col}</th>`);
     }
     expect(html.match(/<tbody>[\s\S]*<\/tbody>/)![0].match(/<tr/g)).toHaveLength(10);
@@ -221,6 +221,16 @@ describe('top 10 panel', () => {
     expect(html).toContain('4 / 4');
     expect(html).toContain('aria-label="ความเสี่ยงสูงมาก 1"');
     expect(html).toContain('aria-label="ความเสี่ยงสูง 3"');
+  });
+
+  it('uses found_in from the api and lists the nickname chips of its projects', () => {
+    const row = html.match(/<tbody>[\s\S]*?<\/tr>/)![0];
+    for (const p of seedTop[0].projects) expect(row).toContain(`>${p.nickname}</span>`);
+    expect(seedTop[0].projects).toHaveLength(seedTop[0].found_in);
+    // The last row is found in 1 project only: one chip.
+    const last = html.split('<tr').at(-1)!;
+    expect(last).toContain('1 / 4');
+    expect(last.match(/nicknameChip/g)).toHaveLength(1);
   });
 });
 
