@@ -64,3 +64,17 @@ test('step 5 builds the report in place and the PDF downloads', async ({ page })
   await expect(stepper(page).getByRole('button', { name: 'ดาวน์โหลดแล้ว' })).toBeVisible();
   expect(new URL(page.url()).pathname).toBe(path);
 });
+
+test('the project form puts the step bar before the page title, like the other steps', async ({
+  page,
+}) => {
+  await page.goto(`/projects/${PROJECT}/edit`);
+  const title = page.getByRole('heading', { level: 1, name: 'แก้ไขโครงการ' });
+  await expect(title).toBeVisible();
+  const handle = await title.elementHandle();
+  const before = await stepper(page).evaluate(
+    (nav, h1) => !!(nav.compareDocumentPosition(h1 as Node) & Node.DOCUMENT_POSITION_FOLLOWING),
+    handle,
+  );
+  expect(before).toBe(true);
+});
