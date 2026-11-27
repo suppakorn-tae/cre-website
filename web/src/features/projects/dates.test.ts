@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  addDays,
   durationDays,
   expectedProgress,
   isoToThaiInput,
@@ -51,5 +52,13 @@ describe('expectedProgress (BR-24)', () => {
 describe('todayIso', () => {
   it('uses the Bangkok calendar day', () => {
     expect(todayIso(new Date('2026-11-23T18:30:00Z'))).toBe('2026-11-24');
+  });
+});
+
+describe('addDays', () => {
+  it('moves across month and year ends', () => {
+    expect(addDays('2026-01-31', 1)).toBe('2026-02-01');
+    expect(addDays('2026-01-01', -1)).toBe('2025-12-31');
+    expect(addDays('2028-02-28', 1)).toBe('2028-02-29');
   });
 });
