@@ -146,3 +146,29 @@ test('the results level counts match the versions tab', async ({ page }) => {
     );
   }
 });
+
+// WCAG 1.4.10 Reflow: at 320 px the page must not scroll sideways. Wide data may scroll inside its
+// own card.
+test.describe('reflow at 320 px', () => {
+  test.use({ viewport: { width: 320, height: 640 } });
+
+  for (const { name, path, texts } of PAGES) {
+    test(`${name} is not wider than the viewport`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByText(texts[0]).and(page.locator(':visible')).first()).toBeVisible();
+      const width = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(width).toBeLessThanOrEqual(320);
+    });
+  }
+
+  for (const card of ['kpi-projects', 'kpi-indicators', 'kpi-islands']) {
+    test(`the dashboard fits with the ${card} panel open`, async ({ page }) => {
+      await page.goto('/dashboard');
+      await expect(page.getByText('การกระจายระดับความเสี่ยง').first()).toBeVisible();
+      const index = ['kpi-projects', 'kpi-indicators', 'kpi-islands'].indexOf(card);
+      await page.locator('[aria-pressed]').nth(index).click();
+      const width = await page.evaluate(() => document.documentElement.scrollWidth);
+      expect(width).toBeLessThanOrEqual(320);
+    });
+  }
+});

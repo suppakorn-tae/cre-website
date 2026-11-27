@@ -42,6 +42,13 @@ describe('dashboard project table', () => {
     expect(css).not.toMatch(/\.kpis\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\);/);
   });
 
+  it('keeps the page grid to one shrinkable column so a wide panel cannot widen it', () => {
+    const block = /\.page\s*\{([^}]*)\}/.exec(read('dashboard.module.css'))?.[1] ?? '';
+    expect(block).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\)/);
+    const card = /\.chart,\s*\.panel\s*\{([^}]*)\}/.exec(read('dashboard.module.css'))?.[1] ?? '';
+    expect(card).toMatch(/grid-template-columns:\s*minmax\(0, 1fr\)/);
+  });
+
   it('gives the card actions a 44px tap target', () => {
     expect(read('dashboard.module.css')).toMatch(/\.cardActions > a\s*\{[^}]*min-height: 44px/);
   });
