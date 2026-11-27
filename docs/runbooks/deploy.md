@@ -39,17 +39,42 @@ Tick each item. Do them in this order.
 - [ ] **3. DNS and TLS.** See [DNS and TLS](#dns-and-tls).
 - [ ] **4. Brevo.** See [Brevo](#brevo-otp-e-mail).
 - [ ] **5. Google sign-in.** See [Google sign-in](#google-sign-in).
-- [ ] **6. `.env.prod`.** See [Secrets](#secrets).
-- [ ] **7. Database roles.** Generate `APP_DB_PASSWORD` and set it twice. See [Database roles](#database-roles).
+- [ ] **6. `.env.prod`.** Run `deploy/init-env.sh`. See [Secrets](#secrets).
+- [ ] **7. Database roles.** `init-env.sh` sets `APP_DB_PASSWORD` in both places. See [Database roles](#database-roles).
 - [ ] **8. Backups.** See [Backup](#backup).
 - [ ] **9. First deploy** with [Every deploy](#every-deploy), then the [staging acceptance checklist](#staging-acceptance-checklist-io-80).
 
 ### Secrets
 
 - The server keeps one file, `.env.prod`, mode 600, owned by the deploy
-  user. Create it from `deploy/compose/env.prod.example` and fill every
-  `CHANGEME`. It is ignored by git (`.env.*` in `.gitignore`); never commit
+  user. It is ignored by git (`.env.*` in `.gitignore`); never commit
   it, never paste it in tickets or chat.
+- Create it with the script, from the repository root on the server:
+
+  ```sh
+  deploy/init-env.sh --domain conriskexpert.com
+  ```
+
+  It generates `SESSION_SECRET`, `POSTGRES_PASSWORD`, `APP_DB_PASSWORD`,
+  `S3_ACCESS_KEY`, `S3_SECRET_KEY` and `BACKUP_CIPHER_PASS`, and writes the
+  passwords into `DATABASE_URL` and `MIGRATE_DATABASE_URL` so they match. It
+  asks for the values it cannot make (ACME e-mail, image registry and tag,
+  Google, Brevo, off-site backup). Secret answers are read without echo.
+  Give answers ahead of time with flags (`--acme-email`, `--registry`,
+  `--image-tag`) or `INIT_<KEY>` variables such as `INIT_SMTP_PASSWORD`; with
+  `--non-interactive` the rest stays `CHANGEME`. It never prints a secret.
+- It refuses to overwrite an existing `.env.prod`. `--force` replaces it and
+  keeps the old file as `.env.prod.bak.<timestamp>` (mode 600); delete the
+  backup once you have copied the secrets to the team secret store.
+- `deploy/init-env.sh --check [file]` lists every `CHANGEME` left and every
+  broken rule (equal database passwords, a password that needs URL escaping,
+  a `DATABASE_URL` that does not match `APP_DB_PASSWORD`, a short secret, a
+  file mode other than 600). It prints key names only and exits 1 if it finds
+  a problem, so a deploy step can call it first.
+- Manual fallback: copy `deploy/compose/env.prod.example` to `.env.prod`,
+  `chmod 600` it, and replace every `CHANGEME` by hand, using
+  `openssl rand -hex 32` for `SESSION_SECRET` and `openssl rand -hex 24` for
+  the database passwords and `BACKUP_CIPHER_PASS`. Then run `--check`.
 - A copy of every secret also lives in the team secret store, with
   `BACKUP_CIPHER_PASS` kept off the server's own backup bucket.
 - Rotate `SMTP_PASSWORD`, `GOOGLE_CLIENT_SECRET`, `BACKUP_S3_SECRET` by
@@ -61,7 +86,7 @@ Tick each item. Do them in this order.
 - Database settings (such as `DATABASE_URL`) come from the same file; the
   example shows the shape.
 
-Check: `ls -l .env.prod` shows `-rw-------`, and `grep -c CHANGEME .env.prod` prints `0`.
+Check: `deploy/init-env.sh --check` prints `.env.prod ok`.
 
 ### Database roles
 
@@ -77,9 +102,11 @@ The migration creates `cre_app` without a password. Every start of `migrate`
 of `APP_DB_PASSWORD`, so the password never sits in a migration or in the
 image.
 
-- Generate it with `openssl rand -hex 24` and put it in `.env.prod` twice:
-  as `APP_DB_PASSWORD` and inside `DATABASE_URL` (`postgres://cre_app:<password>@db:5432/cre?sslmode=disable`).
-  A hex value needs no URL escaping. Keep it different from `POSTGRES_PASSWORD`.
+- `deploy/init-env.sh` generates it (`openssl rand -hex 24`) and puts it in
+  `.env.prod` twice: as `APP_DB_PASSWORD` and inside `DATABASE_URL`
+  (`postgres://cre_app:<password>@db:5432/cre?sslmode=disable`). By hand, use
+  the same command. A hex value needs no URL escaping. Keep it different from
+  `POSTGRES_PASSWORD`; `--check` tests both.
 - Rotate it by changing both values and redeploying: `migrate` sets the new
   password, then `api` and `worker` restart with the new `DATABASE_URL`.
 - Check, after the first deploy: `deploy/backup/deploy.sh exec db psql -U cre_owner -d cre -c "SELECT usename FROM pg_stat_activity WHERE datname = 'cre'"`
