@@ -37,7 +37,8 @@ var (
 type fake struct{}
 
 func (fake) versions() []svc.Version {
-	one, two, four, scored, avg := 12, 3, 80, 55, 3.25
+	one, two, four, scored, avg := 11, 2, 80, 55, 3.25
+	chosen, needed := 2, 13
 	return []svc.Version{
 		{
 			ID: newID, ProjectID: project, No: 2, Status: svc.StatusDraft, Editable: true,
@@ -47,7 +48,8 @@ func (fake) versions() []svc.Version {
 			ID: oldID, ProjectID: project, No: 1, Status: svc.StatusSubmitted, SubmissionNo: 1,
 			ValueBaht: 1e8, StartDate: at, EndDate: at.AddDate(1, 0, 0), CreatedAt: at, SubmittedAt: &at,
 			ProgressAtSubmit: &four, HighCount: &one, VeryHighCount: &two, AverageRM: &avg,
-			ScoredCount: &scored, LevelCounts: map[string]int{"VL": 5, "L": 10, "M": 25, "H": 12, "VH": 3},
+			ScoredCount: &scored, LevelCounts: map[string]int{"VL": 5, "L": 10, "M": 25, "H": 11, "VH": 2},
+			StrategiesChosen: &chosen, StrategiesNeeded: &needed,
 		},
 	}
 }
@@ -212,5 +214,32 @@ func TestDeleteLastVersionIsA409WithItsOwnCode(t *testing.T) {
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil || body.Error.Code != "last_version" {
 		t.Fatalf("body code = %q, err %v, want last_version", body.Error.Code, err)
+	}
+}
+
+func TestListCarriesTheStoredStrategyCount(t *testing.T) {
+	base := "/api/v1/projects/" + project.String() + "/versions"
+	resp := call(t, owner.String(), http.MethodGet, base)
+	var body struct {
+		Items []struct {
+			ID     uuid.UUID `json:"id"`
+			Chosen *int      `json:"strategies_chosen"`
+			Needed *int      `json:"strategies_needed"`
+		} `json:"items"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
+		t.Fatal(err)
+	}
+	for _, it := range body.Items {
+		switch it.ID {
+		case oldID:
+			if it.Chosen == nil || *it.Chosen != 2 || it.Needed == nil || *it.Needed != 13 {
+				t.Fatalf("submitted: chosen/needed = %v/%v, want 2/13", it.Chosen, it.Needed)
+			}
+		case newID:
+			if it.Chosen != nil || it.Needed != nil {
+				t.Fatalf("draft: chosen/needed = %v/%v, want null", it.Chosen, it.Needed)
+			}
+		}
 	}
 }

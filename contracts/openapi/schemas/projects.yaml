@@ -225,6 +225,18 @@ VersionSummary:
       oneOf:
         - $ref: assessments.yaml#/LevelCounts
         - type: 'null'
+    strategies_chosen:
+      type: [integer, 'null']
+      minimum: 0
+      description: |
+        Stored strategy choices for H and VH indicators of this version; null
+        while `draft`.
+    strategies_needed:
+      type: [integer, 'null']
+      minimum: 0
+      description: |
+        Stored H and VH indicators of this version, each needing a strategy
+        (BR-19); null while `draft`.
 Version:
   allOf:
     - $ref: '#/VersionSummary'

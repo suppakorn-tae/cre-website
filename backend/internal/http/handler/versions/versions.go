@@ -154,6 +154,7 @@ func toSummary(v svc.Version) api.VersionSummary {
 		Editable: v.Editable, CreatedAt: v.CreatedAt, SubmittedAt: v.SubmittedAt,
 		ProgressAtSubmit: v.ProgressAtSubmit, HighCount: v.HighCount, VeryHighCount: v.VeryHighCount,
 		AverageRm: f32(v.AverageRM), ScoredCount: v.ScoredCount, LevelCounts: levelCounts(v.LevelCounts),
+		StrategiesChosen: v.StrategiesChosen, StrategiesNeeded: v.StrategiesNeeded,
 	}
 }
 
@@ -171,6 +172,7 @@ func toAPI(v svc.Version) api.Version {
 		Editable: v.Editable, CreatedAt: v.CreatedAt, SubmittedAt: v.SubmittedAt,
 		ProgressAtSubmit: v.ProgressAtSubmit, HighCount: v.HighCount, VeryHighCount: v.VeryHighCount,
 		AverageRm: f32(v.AverageRM), ScoredCount: v.ScoredCount, LevelCounts: levelCounts(v.LevelCounts),
+		StrategiesChosen: v.StrategiesChosen, StrategiesNeeded: v.StrategiesNeeded,
 		SubmissionNo: v.SubmissionNo, ValueBaht: float32(v.ValueBaht),
 		StartDate: openapi_types.Date{Time: v.StartDate}, EndDate: openapi_types.Date{Time: v.EndDate},
 	}

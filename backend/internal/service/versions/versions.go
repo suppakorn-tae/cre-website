@@ -56,6 +56,10 @@ type Version struct {
 	ScoredCount      *int
 	// LevelCounts holds VL, L, M, H and VH for a submitted version.
 	LevelCounts map[string]int
+	// StrategiesChosen counts stored strategy choices; StrategiesNeeded is the
+	// number of stored H and VH results. Both nil for a draft.
+	StrategiesChosen *int
+	StrategiesNeeded *int
 }
 
 // Rounding is the scoring precision copied into each new version.
@@ -213,6 +217,8 @@ func fromRow(r sqlc.ListVersionsRow) Version {
 		v.HighCount, v.VeryHighCount, v.AverageRM = &high, &veryHigh, &avg
 		scored := int(r.ScoredCount)
 		v.ScoredCount = &scored
+		chosen, needed := int(r.StrategiesChosen), high+veryHigh
+		v.StrategiesChosen, v.StrategiesNeeded = &chosen, &needed
 		v.LevelCounts = map[string]int{
 			"VL": int(r.VlCount), "L": int(r.LCount), "M": int(r.MCount), "H": high, "VH": veryHigh,
 		}

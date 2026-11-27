@@ -70,7 +70,8 @@ SELECT v.id, v.project_id, v.version_no, v.status, v.submission_no,
     COALESCE(s.scored_count, 0)::int AS scored_count,
     COALESCE(s.vl_count, 0)::int AS vl_count,
     COALESCE(s.l_count, 0)::int AS l_count,
-    COALESCE(s.m_count, 0)::int AS m_count
+    COALESCE(s.m_count, 0)::int AS m_count,
+    COALESCE(s.strategies_chosen, 0)::int AS strategies_chosen
 FROM assessment_version v
 JOIN project p ON p.id = v.project_id
 LEFT JOIN LATERAL (
@@ -80,8 +81,11 @@ LEFT JOIN LATERAL (
         count(*) FILTER (WHERE r.level = 'VL') AS vl_count,
         count(*) FILTER (WHERE r.level = 'L') AS l_count,
         count(*) FILTER (WHERE r.level = 'M') AS m_count,
+        count(c.indicator_code) FILTER (WHERE r.level IN ('H', 'VH')) AS strategies_chosen,
         round(avg(r.rm), v.snap_rm_decimals::int) AS average_rm
-    FROM risk_result r WHERE r.version_id = v.id
+    FROM risk_result r
+    LEFT JOIN strategy_choice c ON c.version_id = r.version_id AND c.indicator_code = r.indicator_code
+    WHERE r.version_id = v.id
 ) s ON v.status = 'submitted'
 WHERE v.project_id = $1 AND p.owner_id = $2
     AND p.deleted_at IS NULL AND v.deleted_at IS NULL
@@ -115,6 +119,7 @@ type ListVersionsRow struct {
 	VlCount          int32
 	LCount           int32
 	MCount           int32
+	StrategiesChosen int32
 }
 
 // Non-deleted versions of an owned project, newest first; version_id narrows
@@ -149,6 +154,7 @@ func (q *Queries) ListVersions(ctx context.Context, arg ListVersionsParams) ([]L
 			&i.VlCount,
 			&i.LCount,
 			&i.MCount,
+			&i.StrategiesChosen,
 		); err != nil {
 			return nil, err
 		}

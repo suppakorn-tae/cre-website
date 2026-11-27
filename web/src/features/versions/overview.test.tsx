@@ -170,6 +170,16 @@ describe('latest version card levels', () => {
     expect(html).toContain('▼ 5 จาก v2');
   });
 
+  it('prints the stored strategy count and hides it when the api sends none', () => {
+    const [first, ...rest] = mockVersions();
+    expect(panel(mockVersions(), 55)).toMatch(/เลือกกลยุทธ์แล้ว[\s\S]*<strong>2 \/ 13<\/strong>/);
+    const html = panel(
+      [{ ...first, strategies_chosen: null, strategies_needed: null }, ...rest],
+      55,
+    );
+    expect(html).not.toContain('เลือกกลยุทธ์แล้ว');
+  });
+
   it('prints only the scored count while the catalogue total is unknown', () => {
     const html = panel(mockVersions());
     expect(html).toContain('55 ตัวชี้วัดที่ประเมิน');

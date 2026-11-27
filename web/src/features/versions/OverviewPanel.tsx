@@ -154,6 +154,16 @@ function LatestVersionCard({
                 )}
               </>
             )}
+            {latest.strategies_chosen != null && latest.strategies_needed != null && (
+              <>
+                {' · '}
+                {t('latest.strategies')}{' '}
+                <strong>
+                  {formatNumber(latest.strategies_chosen)} /{' '}
+                  {formatNumber(latest.strategies_needed)}
+                </strong>
+              </>
+            )}
           </p>
         </>
       ) : (
