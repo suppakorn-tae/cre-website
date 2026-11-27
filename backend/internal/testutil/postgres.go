@@ -32,9 +32,20 @@ type DB interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-// NewDB starts Postgres, applies every migration and loads the catalogue
-// seed. The container is removed when the test ends.
+// NewDB starts Postgres, applies every migration, loads the catalogue seed
+// and returns a pool connected as the application role cre_app, the role api
+// and worker use in production. A query that needs more than cre_app has
+// fails the test. The container is removed when the test ends.
+//
+// Use NewOwnerDB when a test must change the schema or touch audit_log.
 func NewDB(t testing.TB) *pgxpool.Pool {
+	t.Helper()
+	return NewAppPool(t, NewOwnerDB(t))
+}
+
+// NewOwnerDB is NewDB with a pool connected as the schema owner (a
+// superuser in the test container).
+func NewOwnerDB(t testing.TB) *pgxpool.Pool {
 	t.Helper()
 	url := NewEmptyDB(t)
 	ctx := context.Background()
@@ -54,6 +65,31 @@ func NewDB(t testing.TB) *pgxpool.Pool {
 	if err := seed.Apply(ctx, pool, cat); err != nil {
 		t.Fatalf("apply seed: %v", err)
 	}
+	return pool
+}
+
+// AppRole is the application role (cre_app) that api and worker connect as.
+const AppRole = "cre_app"
+
+// NewAppPool returns a pool connected as the application role to the same
+// database as owner, a pool made by NewDB. Use it for tests that must run
+// with the grants of production: a query that needs more than cre_app has
+// fails here with SQLSTATE 42501 instead of in the deployed stack.
+func NewAppPool(t testing.TB, owner *pgxpool.Pool) *pgxpool.Pool {
+	t.Helper()
+	ctx := context.Background()
+	const password = "cre-app-test-password"
+	// ALTER ROLE takes no bind parameters; the password is a constant here.
+	if _, err := owner.Exec(ctx, `ALTER ROLE `+AppRole+` WITH LOGIN PASSWORD '`+password+`'`); err != nil {
+		t.Fatalf("set %s password: %v", AppRole, err)
+	}
+	cfg := owner.Config()
+	cfg.ConnConfig.User, cfg.ConnConfig.Password = AppRole, password
+	pool, err := pgxpool.NewWithConfig(ctx, cfg)
+	if err != nil {
+		t.Fatalf("connect as %s: %v", AppRole, err)
+	}
+	t.Cleanup(pool.Close)
 	return pool
 }
 

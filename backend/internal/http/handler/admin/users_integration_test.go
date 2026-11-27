@@ -63,6 +63,7 @@ func (*memCache) SetNX(context.Context, string, []byte, time.Duration) (bool, er
 
 type env struct {
 	db   *pgxpool.Pool
+	own  *pgxpool.Pool // schema owner, for tests that change the schema
 	sess *session.Service
 	h    http.Handler
 	spec *openapi3.T
@@ -70,7 +71,8 @@ type env struct {
 
 func setup(t *testing.T) env {
 	t.Helper()
-	db := testutil.NewDB(t)
+	own := testutil.NewOwnerDB(t)
+	db := testutil.NewAppPool(t, own)
 	cache := &memCache{m: map[string][]byte{}}
 	sess, err := session.New(session.Config{Secret: bytes.Repeat([]byte("k"), 32)}, session.PGStore{DB: db}, cache)
 	if err != nil {
@@ -83,7 +85,7 @@ func setup(t *testing.T) env {
 		Route("/api/v1/admin", func(r chi.Router) { admin.Routes(r, d) })
 
 	spec := loadSpec(t)
-	return env{db: db, sess: sess, h: r, spec: spec}
+	return env{db: db, own: own, sess: sess, h: r, spec: spec}
 }
 
 // loadSpec loads the bundled OpenAPI file, bundling it first when make gen has
@@ -330,7 +332,7 @@ func TestActionRollsBackWithAudit(t *testing.T) {
 	// Make the audit insert fail by dropping the admin's row reference: a
 	// token for an admin id that no longer exists cannot pass Session, so
 	// instead break audit_log itself.
-	if _, err := e.db.Exec(context.Background(), `ALTER TABLE audit_log RENAME TO audit_log_x`); err != nil {
+	if _, err := e.own.Exec(context.Background(), `ALTER TABLE audit_log RENAME TO audit_log_x`); err != nil {
 		t.Fatal(err)
 	}
 	if got := e.do(t, a, http.MethodPost, "/users/"+u.ID+"/deactivate", "").StatusCode; got != 500 {
