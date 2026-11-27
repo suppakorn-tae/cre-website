@@ -83,7 +83,7 @@
   padding: var(--space-2) calc(var(--space-3) + 24px) var(--space-2) 40px;
   border: 1px solid var(--color-field-border);
   border-radius: var(--radius-control);
-  background: var(--color-white);
+  background: var(--color-card);
   color: var(--color-text);
   font: inherit;
   font-size: var(--text-body);
@@ -127,7 +127,7 @@
   z-index: 20;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  background: var(--color-white);
+  background: var(--color-card);
   box-shadow: var(--shadow-floating);
 }
 .options {
@@ -206,7 +206,7 @@
 }
 .segment[data-state='on'] {
   border-color: var(--color-border);
-  background: var(--color-white);
+  background: var(--color-card);
   color: var(--color-text);
   font-weight: var(--weight-medium);
 }
@@ -299,7 +299,7 @@
   padding: var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  background: var(--color-white);
+  background: var(--color-card);
 }
 .item:has([aria-invalid='true']) {
   border-color: var(--color-error-border);
@@ -339,7 +339,7 @@
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--color-field-border);
   border-radius: var(--radius-control);
-  background: var(--color-white);
+  background: var(--color-card);
   color: var(--color-text);
   font: inherit;
   font-size: var(--text-body);
