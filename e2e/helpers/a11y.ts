@@ -41,6 +41,10 @@ export const KNOWN_ISSUES: KnownIssue[] = [
  * through.
  */
 export async function expectNoViolations(page: Page, label: string) {
+  // Scan the settled page: axe reads colours, which are wrong halfway through a fade-in.
+  await page.evaluate(() =>
+    Promise.allSettled(document.getAnimations().map((animation) => animation.finished)),
+  );
   const { violations } = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   const lines = violations.flatMap((v) =>
     v.nodes

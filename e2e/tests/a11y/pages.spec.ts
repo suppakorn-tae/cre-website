@@ -105,10 +105,16 @@ const ROUTES: Route[] = [
     ready: 'EC-MG-1',
     states: {
       'question popup open': async (page) => {
-        await page
-          .getByRole('textbox', { name: /^X .*EC-MG-1/ })
-          .first()
-          .focus();
+        const x = page.getByRole('textbox', { name: /^X .*EC-MG-1/ }).first();
+        if (!(await x.isVisible())) {
+          // Phone: the cards are collapsed, open the first one.
+          await page
+            .locator('button[aria-expanded="false"]:visible')
+            .filter({ hasText: 'EC-MG-1' })
+            .first()
+            .click();
+        }
+        await x.focus();
         await expect(page.locator('[data-radix-popper-content-wrapper]')).toBeVisible();
       },
       'y3 picker open': async (page) => {
@@ -182,6 +188,8 @@ const ROUTES: Route[] = [
 test.describe('axe, WCAG 2.2 AA', () => {
   // The width is set by the test; one Chrome project is enough.
   test.skip(({ isMobile }) => isMobile, 'sets its own widths');
+  // Pages with many states (assessment) scan up to ten times.
+  test.setTimeout(90_000);
 
   for (const width of WIDTHS) {
     for (const route of ROUTES) {
