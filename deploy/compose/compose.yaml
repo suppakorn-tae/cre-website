@@ -90,6 +90,9 @@ services:
     restart: "no"
     environment:
       DATABASE_URL: ${MIGRATE_DATABASE_URL}
+      # migrate sets the password of the application role cre_app (the role
+      # the api and worker connect as) to this value.
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?set APP_DB_PASSWORD, the password of the cre_app database role}
     networks: [private-net]
     depends_on:
       db: { condition: service_healthy }
