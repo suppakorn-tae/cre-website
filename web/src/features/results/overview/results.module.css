@@ -415,9 +415,12 @@
 }
 
 /* Average RM per factor (hi-fi 3.3a). */
+.factorHead,
 .factorChart {
-  --factor-rl: #d9dde3;
-  --factor-ri: #9aa3af;
+  --factor-rl: #7f8c9e;
+  --factor-ri: #4f5d70;
+}
+.factorChart {
   display: flex;
   gap: var(--space-2);
 }
@@ -617,16 +620,45 @@
   font-size: var(--text-caption);
   font-weight: var(--weight-semibold);
 }
-.factorChip[data-chip='rl'] {
+.factorChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.factorSwatch {
+  display: inline-flex;
+  flex: none;
+  width: 0.75rem;
+  height: 0.75rem;
+  overflow: hidden;
+  border-radius: 2px;
+}
+.factorSwatch[data-swatch='rl'] {
   background: var(--factor-rl);
 }
-.factorChip[data-chip='ri'] {
+.factorSwatch[data-swatch='ri'] {
   background: var(--factor-ri);
 }
-.factorChip[data-chip='rm'] {
-  border-color: var(--color-navy-900);
-  background: var(--color-navy-900);
-  color: var(--color-white);
+.factorSwatch[data-swatch='rm'] {
+  width: 1.75rem;
+}
+.factorSwatch[data-swatch='rm'] > span {
+  flex: 1;
+}
+.factorSwatch[data-swatch='rm'] > [data-level='VL'] {
+  background: var(--level-vl);
+}
+.factorSwatch[data-swatch='rm'] > [data-level='L'] {
+  background: var(--level-l);
+}
+.factorSwatch[data-swatch='rm'] > [data-level='M'] {
+  background: var(--level-m);
+}
+.factorSwatch[data-swatch='rm'] > [data-level='H'] {
+  background: var(--level-h);
+}
+.factorSwatch[data-swatch='rm'] > [data-level='VH'] {
+  background: var(--level-vh);
 }
 /* The chart scrolls inside its card on narrow screens; the page never does. */
 .factorScroll {

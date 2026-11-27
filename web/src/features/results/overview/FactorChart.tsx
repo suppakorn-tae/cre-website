@@ -29,6 +29,7 @@ type Props = {
   cutoffs?: ResultsResponse['level_cutoffs'];
 };
 
+const LEVELS = ['VL', 'L', 'M', 'H', 'VH'] as const;
 const TICKS = [5, 4, 3, 2, 1];
 const fmt = (value: number) =>
   formatNumber(value, undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -55,12 +56,19 @@ export function FactorChart({ averages, items, names, cutoffs }: Props) {
         </h2>
         <ul className={styles.factorChips} aria-hidden="true">
           <li className={styles.factorChip} data-chip="rl">
+            <span className={styles.factorSwatch} data-swatch="rl" aria-hidden="true" />
             {t('chipRl')}
           </li>
           <li className={styles.factorChip} data-chip="ri">
+            <span className={styles.factorSwatch} data-swatch="ri" aria-hidden="true" />
             {t.rich('chipRi', subscript)}
           </li>
           <li className={styles.factorChip} data-chip="rm">
+            <span className={styles.factorSwatch} data-swatch="rm" aria-hidden="true">
+              {LEVELS.map((level) => (
+                <span key={level} data-level={level} />
+              ))}
+            </span>
             {t('chipRm')}
           </li>
         </ul>

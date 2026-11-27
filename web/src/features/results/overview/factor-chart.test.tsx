@@ -223,3 +223,37 @@ describe('factor chart (wireframe)', () => {
     );
   });
 });
+
+describe('factor chart legend swatches', () => {
+  const html = render([{ factor_code: 'EC-MG', scored_count: 5, average_rm: 2.78 }]);
+  const css = readFileSync(join(__dirname, 'results.module.css'), 'utf8');
+  const rule = (selector: string) =>
+    new RegExp(`${selector.replace(/[[\]'.>]/g, '\\$&')}\\s*\\{([^}]*)\\}`).exec(css)?.[1] ?? '';
+
+  it('gives each chip a decorative swatch', () => {
+    for (const key of ['rl', 'ri', 'rm']) {
+      expect(html).toMatch(new RegExp(`data-swatch="${key}"[^>]*aria-hidden="true"`));
+    }
+    expect(html.match(/<span data-level="(VL|L|M|H|VH)"><\/span>/g)).toHaveLength(5);
+  });
+
+  it('paints the RL and RI_max swatches with their bar properties', () => {
+    expect(rule(".factorSwatch[data-swatch='rl']")).toContain('background: var(--factor-rl)');
+    expect(rule(".factorSwatch[data-swatch='ri']")).toContain('background: var(--factor-ri)');
+    expect(rule(".factorSlot[data-series='rl'] .factorBarFill")).toContain('var(--factor-rl)');
+    expect(rule(".factorSlot[data-series='ri'] .factorBarFill")).toContain('var(--factor-ri)');
+  });
+
+  it('paints the RM swatch with the five level colours', () => {
+    for (const l of ['vl', 'l', 'm', 'h', 'vh']) {
+      expect(rule(`.factorSwatch[data-swatch='rm'] > [data-level='${l.toUpperCase()}']`)).toContain(
+        `background: var(--level-${l})`,
+      );
+    }
+  });
+
+  it('keeps both greys visible on the chips and on the bars', () => {
+    expect(css).toMatch(/\.factorHead,\s*\.factorChart \{[^}]*--factor-rl: #7f8c9e;/);
+    expect(css).toMatch(/\.factorHead,\s*\.factorChart \{[^}]*--factor-ri: #4f5d70;/);
+  });
+});
