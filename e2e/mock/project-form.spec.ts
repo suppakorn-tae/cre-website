@@ -78,9 +78,11 @@ test.describe('project form', () => {
 
   test('shows the counters and the error while typing', async ({ page }) => {
     await page.goto('/projects/new');
-    await page.locator('#project-name').fill('ก'.repeat(121));
-    await expect(page.getByText('121 / 120')).toBeVisible();
-    await expect(page.getByText('ชื่อโครงการยาวได้ไม่เกิน 120 ตัวอักษร')).toBeVisible();
+    await page.locator('#project-name').fill('ก'.repeat(120));
+    await expect(page.getByText('120 / 120')).toBeVisible();
+    await page.locator('#project-description').fill('ก'.repeat(1001));
+    await expect(page.getByText('1,001 / 1,000')).toBeVisible();
+    await expect(page.getByText('รายละเอียดยาวได้ไม่เกิน 1,000 ตัวอักษร')).toBeVisible();
     await page.locator('#project-progress').fill('12.3');
     await expect(page.getByText(/ต้องเป็นจำนวนเต็มระหว่าง 0–100 %/)).toBeVisible();
   });
@@ -113,6 +115,54 @@ test.describe('project form', () => {
         () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
       );
       expect(overflow).toBeLessThanOrEqual(0);
+    }
+  });
+  test('stops typing at the limits and keeps the page inside the viewport', async ({ page }) => {
+    const long = 'ก'.repeat(200);
+    const numbers = '1'.repeat(200);
+    for (const path of ['/projects/new', `/projects/${PROJECT}/edit`]) {
+      await page.goto(path);
+      await expect(page.getByRole('slider', { name: 'ความก้าวหน้าปัจจุบัน' })).toBeVisible();
+      await page.getByRole('radio', { name: 'อื่น ๆ' }).first().check({ force: true });
+      await page.getByRole('radio', { name: 'อื่น ๆ' }).last().check({ force: true });
+      const fields = [
+        { id: '#project-name', max: 120 },
+        { id: '#project-islandOther', max: 60 },
+        { id: '#project-typeOther', max: 60 },
+      ];
+      for (const { id, max } of fields) {
+        const input = page.locator(id);
+        await input.fill('');
+        await input.focus();
+        // Typing and an insert (what a paste does) both stop at the limit.
+        await page.keyboard.insertText(long);
+        expect((await input.inputValue()).length).toBe(max);
+        await input.fill('');
+        await page.keyboard.insertText(numbers.slice(0, max + 20));
+        expect((await input.inputValue()).length).toBe(max);
+        await expect(page.getByText(`${max} / ${max}`).first()).toBeVisible();
+      }
+      for (const width of [320, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        expect(overflow).toBeLessThanOrEqual(0);
+      }
+    }
+  });
+
+  test('the nickname chip in the preview stays on one line', async ({ page }) => {
+    await page.goto('/projects/new');
+    const chip = page.getByRole('complementary').getByText('ชื่อเล่น', { exact: true });
+    await expect(chip).toBeVisible();
+    for (const width of [320, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      const lines = await chip.evaluate((el) => {
+        const lineHeight = parseFloat(getComputedStyle(el).lineHeight);
+        return Math.round(el.getBoundingClientRect().height / lineHeight);
+      });
+      expect(lines).toBe(1);
     }
   });
 });

@@ -228,7 +228,8 @@ export function ProjectForm({ project }: Props) {
                   value={values.name}
                   onChange={(e) => set('name', e.target.value)}
                   onBlur={onBlurCheck('name')}
-                  helper={<Counter text={values.name} max={NAME_MAX} />}
+                  maxLength={NAME_MAX}
+                  helper={<Counter text={values.name} max={NAME_MAX} units />}
                   error={error('name')}
                   required
                 />
@@ -238,7 +239,12 @@ export function ProjectForm({ project }: Props) {
                 label={t('nickname')}
                 placeholder={t('nicknamePlaceholder')}
                 helper={
-                  <Counter text={values.nickname} max={NICKNAME_MAX} note={t('nicknameHelper')} />
+                  <Counter
+                    text={values.nickname}
+                    max={NICKNAME_MAX}
+                    note={t('nicknameHelper')}
+                    units
+                  />
                 }
                 maxLength={NICKNAME_MAX}
                 value={values.nickname}
@@ -267,7 +273,8 @@ export function ProjectForm({ project }: Props) {
                 value={values.islandOther}
                 onChange={(e) => set('islandOther', e.target.value)}
                 onBlur={onBlurCheck('islandOther')}
-                helper={<Counter text={values.islandOther} max={OTHER_MAX} />}
+                maxLength={OTHER_MAX}
+                helper={<Counter text={values.islandOther} max={OTHER_MAX} units />}
                 error={error('islandOther')}
                 required
               />
@@ -291,7 +298,8 @@ export function ProjectForm({ project }: Props) {
                 value={values.typeOther}
                 onChange={(e) => set('typeOther', e.target.value)}
                 onBlur={onBlurCheck('typeOther')}
-                helper={<Counter text={values.typeOther} max={OTHER_MAX} />}
+                maxLength={OTHER_MAX}
+                helper={<Counter text={values.typeOther} max={OTHER_MAX} units />}
                 error={error('typeOther')}
                 required
               />
@@ -489,9 +497,14 @@ export function ProjectForm({ project }: Props) {
   );
 }
 
-/** "n / max" for a text field; red once over the limit. */
-function CounterText({ text, max }: { text: string; max: number }) {
-  const count = typedLength(text);
+/**
+ * "n / max" for a text field; red once over the limit. A field with `maxLength` counts UTF-16
+ * code units (`units`), the way the browser cuts typing and pasting, so the counter reaches
+ * max / max exactly when the input stops. A Thai tone mark or vowel is one unit, like the server's
+ * code point; an emoji is two units, which only makes the client stricter.
+ */
+function CounterText({ text, max, units }: { text: string; max: number; units?: boolean }) {
+  const count = units ? text.length : typedLength(text);
   return (
     <span className={`ms-auto tabular-nums ${count > max ? 'text-error' : 'text-text-muted'}`}>
       {formatNumber(count)} / {formatNumber(max)}
@@ -500,11 +513,21 @@ function CounterText({ text, max }: { text: string; max: number }) {
 }
 
 /** Helper line under a field: an optional note on the left, the counter on the right. */
-function Counter({ text, max, note }: { text: string; max: number; note?: string }) {
+function Counter({
+  text,
+  max,
+  note,
+  units,
+}: {
+  text: string;
+  max: number;
+  note?: string;
+  units?: boolean;
+}) {
   return (
     <span className="flex flex-wrap justify-between gap-x-3">
       {note && <span>{note}</span>}
-      <CounterText text={text} max={max} />
+      <CounterText text={text} max={max} units={units} />
     </span>
   );
 }
@@ -576,19 +599,19 @@ function Preview({
   ];
 
   return (
-    <div className="grid gap-3 rounded-card border border-border bg-white p-5">
+    <div className="grid min-w-0 gap-3 rounded-card border border-border bg-white p-5 [overflow-wrap:anywhere]">
       <p className="m-0 flex items-center justify-between text-small text-text-muted">
         <span>{t('title')}</span>
         <span className="rounded-pill bg-blue-50 px-3 py-0.5 text-caption text-blue-700">
           {t('live')}
         </span>
       </p>
-      <div className="flex items-start gap-3">
-        <span className="rounded-pill bg-navy-900 px-3 py-0.5 text-small font-bold text-white">
+      <div className="flex min-w-0 items-start gap-3">
+        <span className="shrink-0 whitespace-nowrap rounded-pill bg-navy-900 px-3 py-0.5 text-small font-bold text-white">
           {values.nickname.trim() || t('placeholderNickname')}
         </span>
         <div className="min-w-0">
-          <p className="m-0 break-words font-semibold text-text">
+          <p className="m-0 font-semibold text-text [overflow-wrap:anywhere]">
             {values.name.trim() || t('placeholderName')}
           </p>
           <p className="m-0 text-small text-text-muted">
@@ -600,7 +623,9 @@ function Preview({
         {rows.map(([term, detail]) => (
           <div key={term} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 text-small">
             <dt className="text-text-muted">{term}</dt>
-            <dd className="m-0 break-words text-end font-semibold text-text">{detail}</dd>
+            <dd className="m-0 min-w-0 text-end [overflow-wrap:anywhere] font-semibold text-text">
+              {detail}
+            </dd>
           </div>
         ))}
       </dl>

@@ -57,7 +57,7 @@ describe('text limits', () => {
     expect(screen.getByText('4 / 4')).toBeTruthy();
   });
 
-  it('counts code points like the server', () => {
+  it('counts a Thai mark as one character, like the server', () => {
     render(wrap(<ProjectForm />));
     change(field(/^ชื่อโครงการ/), 'ก่ก่');
     expect(screen.getByText('4 / 120')).toBeTruthy();
@@ -68,23 +68,32 @@ describe('text limits', () => {
     expect(field(/^ชื่อเล่นโครงการ/).maxLength).toBe(4);
   });
 
-  it('counts the other island field to 60', () => {
+  it('stops the name, island other and type other inputs at their limits', () => {
     render(wrap(<ProjectForm />));
+    expect(field(/^ชื่อโครงการ/).maxLength).toBe(120);
     fireEvent.click(screen.getAllByRole('radio', { name: 'อื่น ๆ' })[0]);
-    expect(screen.getByText('0 / 60')).toBeTruthy();
-    change(field(/^ระบุเกาะ/), 'ก'.repeat(61));
-    expect(screen.getByText('61 / 60')).toBeTruthy();
-    expect(screen.getByText('เกาะ / สถานที่ยาวได้ไม่เกิน 60 ตัวอักษร')).toBeTruthy();
+    fireEvent.click(screen.getAllByRole('radio', { name: 'อื่น ๆ' })[1]);
+    expect(field(/^ระบุเกาะ/).maxLength).toBe(60);
+    expect(field(/^ระบุประเภท/).maxLength).toBe(60);
+    expect(screen.getAllByText('0 / 60')).toHaveLength(2);
   });
 
-  it('shows the length error at once when the name or description is too long', () => {
+  it('shows max / max on a full field, in the same units the input cuts at', () => {
     render(wrap(<ProjectForm />));
-    change(field(/^ชื่อโครงการ/), 'ก'.repeat(121));
-    expect(screen.getByText('121 / 120')).toBeTruthy();
-    expect(screen.getByText('ชื่อโครงการยาวได้ไม่เกิน 120 ตัวอักษร')).toBeTruthy();
-    change(field(/^ชื่อโครงการ/), 'ก'.repeat(120));
+    // The browser cuts at maxLength (UTF-16 units); a Thai mark is one unit.
+    change(field(/^ชื่อโครงการ/), 'ก่'.repeat(60));
+    expect(screen.getByText('120 / 120')).toBeTruthy();
     expect(screen.queryByText('ชื่อโครงการยาวได้ไม่เกิน 120 ตัวอักษร')).toBeNull();
+    fireEvent.click(screen.getAllByRole('radio', { name: 'อื่น ๆ' })[0]);
+    change(field(/^ระบุเกาะ/), 'ก'.repeat(60));
+    expect(screen.getByText('60 / 60')).toBeTruthy();
+    // An emoji is two units: the counter and the cut agree, so it shows 2 per emoji.
+    change(field(/^ระบุเกาะ/), '😀'.repeat(30));
+    expect(screen.getByText('60 / 60')).toBeTruthy();
+  });
 
+  it('still flags the description, which has no hard stop, when over its limit', () => {
+    render(wrap(<ProjectForm />));
     const description = screen.getByLabelText(/^รายละเอียดโครงการ/);
     change(description, 'ก'.repeat(1001));
     expect(screen.getByText('1,001 / 1,000')).toBeTruthy();
