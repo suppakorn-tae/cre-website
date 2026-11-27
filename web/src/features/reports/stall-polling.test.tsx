@@ -55,4 +55,58 @@ describe('a job stuck in the queue', () => {
     await act(() => vi.advanceTimersByTimeAsync(10 * MIN));
     expect(api.fetchJob.mock.calls.length).toBe(before);
   });
+
+  // The results page has two views of one job: its report button and step 5 of the step bar.
+  it('stalls in every view at once when the first answer comes late', async () => {
+    // The first answer takes 3 minutes (a slow network, or a tab put to sleep).
+    api.fetchJob.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          setTimeout(
+            () =>
+              resolve({
+                id: 'j1',
+                status: 'queued',
+                created_at: new Date(START).toISOString(),
+                started_at: null,
+              }),
+            3 * MIN,
+          );
+        }),
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    client.setQueryData(reportJobKey(P, V), 'j1');
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(
+      () => ({ button: useReportDownload(P, V), steps: useReportDownload(P, V) }),
+      { wrapper },
+    );
+
+    // The 2 minutes count from that first answer, so neither view stalls on it.
+    await act(() => vi.advanceTimersByTimeAsync(3 * MIN));
+    expect(api.fetchJob).toHaveBeenCalledTimes(1);
+    expect(result.current.button.stalled).toBe(false);
+    expect(result.current.steps.stalled).toBe(false);
+
+    for (let i = 0; i < 300 && !result.current.button.stalled; i += 1) {
+      await act(() => vi.advanceTimersByTimeAsync(1000));
+      expect(result.current.steps.stalled).toBe(result.current.button.stalled);
+    }
+    expect(result.current.button.stalled).toBe(true);
+    expect(result.current.steps.stalled).toBe(true);
+
+    // Neither view polls once the stall is shown.
+    const before = api.fetchJob.mock.calls.length;
+    await act(() => vi.advanceTimersByTimeAsync(10 * MIN));
+    expect(api.fetchJob.mock.calls.length).toBe(before);
+
+    // "Check again" from one view resumes the wait for both.
+    act(() => result.current.steps.start());
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+    expect(api.fetchJob.mock.calls.length).toBeGreaterThan(before);
+    expect(result.current.button.stalled).toBe(false);
+    expect(result.current.steps.stalled).toBe(false);
+  });
 });
