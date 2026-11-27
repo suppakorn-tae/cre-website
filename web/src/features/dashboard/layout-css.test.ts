@@ -16,6 +16,15 @@ describe('dashboard level names', () => {
   });
 });
 
+describe('dashboard search field', () => {
+  it('keeps a transparent outline on focus so forced colours still draws it', () => {
+    const css = read('dashboard.module.css');
+    const block = /\.search:focus-within\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(block).toMatch(/outline:\s*2px solid transparent/);
+    expect(block).toMatch(/box-shadow:\s*var\(--focus-ring\)/);
+  });
+});
+
 describe('dashboard project table', () => {
   const ui = read('..', '..', 'components', 'ui', 'display.module.css');
 
