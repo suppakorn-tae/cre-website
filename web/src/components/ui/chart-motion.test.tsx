@@ -5,7 +5,7 @@ import path from 'node:path';
 import { act, cleanup, renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CHANGE_MS, CHART_MS, useSweep, useTween } from './chartMotion';
+import { CHANGE_MS, CHART_MS, useLeaving, useSweep, useTween } from './chartMotion';
 
 function stubMotion(reduced: boolean) {
   vi.stubGlobal('matchMedia', () => ({
@@ -16,7 +16,15 @@ function stubMotion(reduced: boolean) {
 }
 
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+  vi.useFakeTimers({
+    toFake: [
+      'requestAnimationFrame',
+      'cancelAnimationFrame',
+      'performance',
+      'setTimeout',
+      'clearTimeout',
+    ],
+  });
   stubMotion(false);
 });
 afterEach(() => {
@@ -106,6 +114,65 @@ describe('useTween', () => {
   });
 });
 
+describe('useTween during the entrance', () => {
+  it('moves on from the current value when the data changes mid-entrance, not from zero', () => {
+    const { result, rerender } = renderHook(({ v }) => useTween({ a: v }, { enter: 'zero' }), {
+      initialProps: { v: 10 },
+    });
+    advance(CHART_MS / 2);
+    const mid = result.current.a;
+    expect(mid).toBeGreaterThan(0);
+    rerender({ v: 20 });
+    expect(result.current.a).toBeCloseTo(mid, 5);
+    advance(CHANGE_MS / 2);
+    expect(result.current.a).toBeGreaterThan(mid);
+    expect(result.current.a).toBeLessThan(20);
+    advance(CHANGE_MS);
+    expect(result.current.a).toBe(20);
+  });
+});
+
+describe('useLeaving', () => {
+  type Item = { id: string };
+  const keyOf = (i: Item) => i.id;
+  const ids = (rows: { item: Item; leaving: boolean }[]) =>
+    rows.map((r) => (r.leaving ? `${r.item.id}*` : r.item.id));
+
+  it('keeps a removed item in its place, flagged, for the change time', () => {
+    const { result, rerender } = renderHook(({ items }) => useLeaving(items, keyOf), {
+      initialProps: { items: [{ id: 'a' }, { id: 'b' }, { id: 'c' }] },
+    });
+    expect(ids(result.current)).toEqual(['a', 'b', 'c']);
+    rerender({ items: [{ id: 'a' }, { id: 'c' }] });
+    expect(ids(result.current)).toEqual(['a', 'b*', 'c']);
+    advance(CHANGE_MS / 2);
+    expect(ids(result.current)).toEqual(['a', 'b*', 'c']);
+    advance(CHANGE_MS);
+    expect(ids(result.current)).toEqual(['a', 'c']);
+  });
+
+  it('drops a leaving item that comes back, and ignores a new draw of the same items', () => {
+    const { result, rerender } = renderHook(({ items }) => useLeaving(items, keyOf), {
+      initialProps: { items: [{ id: 'a' }, { id: 'b' }] },
+    });
+    rerender({ items: [{ id: 'a' }, { id: 'b' }] });
+    expect(ids(result.current)).toEqual(['a', 'b']);
+    rerender({ items: [{ id: 'a' }] });
+    expect(ids(result.current)).toEqual(['a', 'b*']);
+    rerender({ items: [{ id: 'a' }, { id: 'b' }] });
+    expect(ids(result.current)).toEqual(['a', 'b']);
+  });
+
+  it('removes at once under reduced motion', () => {
+    stubMotion(true);
+    const { result, rerender } = renderHook(({ items }) => useLeaving(items, keyOf), {
+      initialProps: { items: [{ id: 'a' }, { id: 'b' }] },
+    });
+    rerender({ items: [{ id: 'a' }] });
+    expect(ids(result.current)).toEqual(['a']);
+  });
+});
+
 describe('useSweep', () => {
   it('runs 0 to 1 once, and stays at 1 under reduced motion', () => {
     const { result } = renderHook(() => useSweep());
@@ -128,6 +195,9 @@ describe('stylesheets', () => {
     ['features/dashboard/dashboard.module.css', 'transition-property: width'],
     ['features/results/overview/results.module.css', 'height calc(var(--motion-chart'],
     ['features/compare/compare.module.css', 'transition: flex-grow'],
+    ['features/compare/compare.module.css', 'animation: leave-fade'],
+    ['features/dashboard/dashboard.module.css', 'transition: --axis-steps'],
+    ['features/dashboard/dashboard.module.css', 'animation: leave-fade'],
   ])('%s moves bars only when motion is allowed', (file, rule) => {
     const text = css(file);
     const at = text.indexOf(rule);

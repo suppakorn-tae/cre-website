@@ -82,12 +82,17 @@ export function useTween(target: Values, { enter = 'target', enabled = true }: T
   const [shown, setShown] = useState<Values>(target);
   const shownRef = useRef<Values>(target);
   const entered = useRef(false);
+  // The targets whose entrance was cut short, to tell a remount from a real change of data.
+  const cutShort = useRef<string | null>(null);
   const sig = JSON.stringify(Object.entries(target).sort(([a], [b]) => (a < b ? -1 : 1)));
 
   useLayoutEffect(() => {
     const to = JSON.parse(sig) as [string, number][];
     const goal = Object.fromEntries(to);
-    const first = !entered.current;
+    // A change of data during the entrance moves on from where the bars are; the same data again
+    // (Strict Mode in development mounts twice) plays the entrance in full.
+    const first = !entered.current && (cutShort.current === null || cutShort.current === sig);
+    cutShort.current = null;
     entered.current = true;
     const put = (values: Values) => {
       shownRef.current = values;
@@ -120,8 +125,10 @@ export function useTween(target: Values, { enter = 'target', enabled = true }: T
     });
     return () => {
       stop();
-      // An entrance cut short (Strict Mode in development) must play again in full.
-      if (first && !done) entered.current = false;
+      if (first && !done) {
+        entered.current = false;
+        cutShort.current = sig;
+      }
     };
   }, [sig, on, enter]);
 
@@ -131,4 +138,48 @@ export function useTween(target: Values, { enter = 'target', enabled = true }: T
       on ? (shown[key] ?? (enter === 'zero' ? 0 : value)) : value,
     ]),
   ) as Values;
+}
+
+export type Leaving<T> = { item: T; leaving: boolean };
+
+/**
+ * `items` with the ones that were just removed kept for `CHANGE_MS`, flagged `leaving`, at the
+ * place they had; the caller fades them out (and hides them from assistive technology). Under
+ * reduced motion, and on the first draw, nothing is kept.
+ */
+export function useLeaving<T>(items: T[], keyOf: (item: T) => string): Leaving<T>[] {
+  const reduced = useReducedMotion();
+  const previous = useRef<T[]>(items);
+  const [ghosts, setGhosts] = useState<{ item: T; at: number; key: string }[]>([]);
+  const keys = items.map(keyOf);
+  const sig = keys.join('\u0000');
+
+  useLayoutEffect(() => {
+    const before = previous.current;
+    previous.current = items;
+    if (reduced) return; // nothing is kept; the render below ignores any leftovers
+    const present = new Set(keys);
+    const gone = before
+      .map((item, at) => ({ item, at, key: keyOf(item) }))
+      .filter((g) => !present.has(g.key));
+    setGhosts((now) => [
+      ...now.filter((g) => !present.has(g.key)),
+      ...gone.filter((g) => !now.some((n) => n.key === g.key)),
+    ]);
+    if (gone.length === 0) return;
+    // Not cleared on the next change: a later removal must not cancel this one.
+    setTimeout(
+      () => setGhosts((now) => now.filter((g) => !gone.some((x) => x.key === g.key))),
+      CHANGE_MS,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sig, reduced]);
+
+  const present = new Set(keys);
+  const out: Leaving<T>[] = items.map((item) => ({ item, leaving: false }));
+  const left = reduced ? [] : ghosts.filter((g) => !present.has(g.key));
+  for (const g of [...left].sort((a, b) => a.at - b.at)) {
+    out.splice(Math.min(g.at, out.length), 0, { item: g.item, leaving: true });
+  }
+  return out;
 }

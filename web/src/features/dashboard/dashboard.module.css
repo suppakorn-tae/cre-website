@@ -405,6 +405,20 @@
   .axisTicks span {
     transition-property: left;
   }
+  /* The grid is drawn from --axis-steps, so a registered number lets its lines glide with the
+     bars when the axis maximum changes. Tick labels move with their lines and show their final
+     text at once. */
+  .plot {
+    transition: --axis-steps calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out);
+  }
+  .axisTicks span {
+    animation: fade-in calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out) both;
+  }
+  .barRow[data-leaving],
+  .axisTicks span[data-leaving] {
+    pointer-events: none;
+    animation: leave-fade calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out) both;
+  }
   .fill {
     transition: flex-grow calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out);
   }
@@ -415,6 +429,16 @@
   }
   to {
     clip-path: inset(0 0 0 0);
+  }
+}
+@property --axis-steps {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 3;
+}
+@keyframes leave-fade {
+  to {
+    opacity: 0;
   }
 }
 @keyframes fade-in {
