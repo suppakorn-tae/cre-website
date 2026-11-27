@@ -1,5 +1,6 @@
 /* Sign-up screens. Values come from styles/tokens.css. */
 .page {
+  position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   min-height: 100vh;
@@ -58,7 +59,7 @@
   height: var(--control-md);
   border-radius: var(--radius-pill);
   background: var(--color-blue-600);
-  color: var(--color-white);
+  color: var(--color-on-solid);
   font-size: var(--text-h3);
   font-weight: var(--weight-semibold);
 }
@@ -287,7 +288,7 @@
   height: 56px;
   border: 1px solid var(--color-field-border);
   border-radius: var(--radius-control);
-  background: var(--color-white);
+  background: var(--color-card);
   color: var(--color-text);
   font: inherit;
   font-size: var(--text-h1);
@@ -320,7 +321,7 @@
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
-  background: var(--color-white);
+  background: var(--color-card);
 }
 .accountMark {
   display: grid;
@@ -329,7 +330,8 @@
   width: var(--control-sm);
   height: var(--control-sm);
   border-radius: var(--radius-pill);
-  background: var(--color-white);
+  /* The Google mark stays on a light chip in dark mode. */
+  background: #ffffff;
 }
 .accountText {
   display: flex;
@@ -385,7 +387,7 @@
   padding: var(--space-2) var(--space-4);
   border: 1px solid var(--color-field-border);
   border-radius: var(--radius-control);
-  background: var(--color-white);
+  background: var(--color-card);
   color: var(--color-text);
   font-weight: var(--weight-medium);
   text-decoration: none;
@@ -394,6 +396,44 @@
   background: var(--color-subtle);
 }
 .cancel:focus-visible {
+  outline: 2px solid transparent;
+  box-shadow: var(--focus-ring);
+}
+
+/* The logo files are for light backgrounds: in dark mode they sit on a light chip. */
+:root[data-theme='dark'] .logo,
+:root[data-theme='dark'] .logoMobile {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: #ffffff;
+  box-sizing: content-box;
+}
+
+/* Theme switch in the top corner of the auth pages */
+.themeCorner {
+  position: absolute;
+  top: var(--space-3);
+  inset-inline-end: var(--space-3);
+  z-index: 10;
+}
+.themeButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--control-md);
+  height: var(--control-md);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.themeButton:hover {
+  background: var(--color-subtle);
+  color: var(--color-text);
+}
+.themeButton:focus-visible {
   outline: 2px solid transparent;
   box-shadow: var(--focus-ring);
 }

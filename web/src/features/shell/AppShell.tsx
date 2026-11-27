@@ -17,6 +17,8 @@ import { accountMenuLinks, roleKey } from './account-menu';
 import { LOGGED_OUT_PATH } from './login-path';
 import { signOut } from './logout';
 import styles from './shell.module.css';
+import { ThemeMenuGroup } from './ThemeSwitch';
+import { ThemeSync } from './ThemeSync';
 
 export type ShellVariant = 'app' | 'admin';
 export type ShellUser = { email: string; isAdmin: boolean };
@@ -44,6 +46,7 @@ export function AppShell({
 
   return (
     <div className={styles.shell}>
+      <ThemeSync />
       <a href="#main" className={styles.skip}>
         {t('skipToContent')}
       </a>
@@ -141,7 +144,7 @@ export function AccountMenu({ user, defaultOpen }: { user: ShellUser; defaultOpe
       <DropdownMenu.Content
         align="end"
         sideOffset={8}
-        className="z-50 min-w-60 max-w-80 rounded-card border border-border bg-white p-2 shadow-floating"
+        className="z-50 min-w-60 max-w-80 rounded-card border border-border bg-card p-2 shadow-floating"
       >
         <div className="flex items-center gap-3 px-3 py-2">
           <span className={styles.avatar} aria-hidden="true">
@@ -165,6 +168,8 @@ export function AccountMenu({ user, defaultOpen }: { user: ShellUser; defaultOpe
             </Link>
           </DropdownMenu.Item>
         ))}
+        <DropdownMenu.Separator className="my-1 h-px bg-divider" />
+        <ThemeMenuGroup />
         <DropdownMenu.Separator className="my-1 h-px bg-divider" />
         <DropdownMenu.Item
           disabled={busy}

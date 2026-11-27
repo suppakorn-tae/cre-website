@@ -63,5 +63,5 @@
 .stepItem[aria-current='step'] .stepDot,
 .stepItem[data-done='true'] .stepDot {
   background: var(--color-blue-600);
-  color: var(--color-white);
+  color: var(--color-on-solid);
 }

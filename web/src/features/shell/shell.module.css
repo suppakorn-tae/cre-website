@@ -8,7 +8,7 @@
   left: var(--space-2);
   top: -48px;
   padding: var(--space-2) var(--space-3);
-  background: var(--color-white);
+  background: var(--color-card);
   border-radius: var(--radius-control);
   z-index: 60;
 }
@@ -25,7 +25,7 @@
   gap: var(--space-4);
   height: 64px;
   padding: 0 var(--space-4);
-  background: var(--color-white);
+  background: var(--color-card);
   border-bottom: 1px solid var(--color-border);
 }
 .brand {
@@ -100,7 +100,7 @@
   padding: 0 var(--space-2);
   border-radius: var(--radius-pill);
   background: var(--color-navy-900);
-  color: var(--color-white);
+  color: var(--color-on-solid);
   font-size: var(--text-caption);
   font-weight: 600;
   white-space: nowrap;
@@ -173,4 +173,13 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+/* The logo files are for light backgrounds: in dark mode they sit on a light chip. */
+:root[data-theme='dark'] .brand {
+  padding-inline: var(--space-3);
+  background: #ffffff;
+  /* The chip is light, so the logo text takes the light-theme colours. */
+  --color-navy-900: #0f2a4a;
+  --color-text-muted: #57677d;
 }
