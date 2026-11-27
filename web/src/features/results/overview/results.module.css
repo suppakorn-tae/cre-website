@@ -18,7 +18,12 @@
   color: var(--color-blue-700);
   text-decoration: none;
 }
-.crumbs a:hover,
+.crumbs a {
+  text-decoration: underline;
+}
+.crumbs a:hover {
+  text-decoration-thickness: 2px;
+}
 .link:hover {
   text-decoration: underline;
 }

@@ -438,4 +438,27 @@ test.describe('colour is never the only cue (1.4.1)', () => {
       expect(body.toUpperCase()).toContain(name);
     }
   });
+
+  test('breadcrumb links are underlined at rest', async ({ page }) => {
+    // The links sit in a line of muted text and differ from it by less than 3:1, so
+    // colour alone would not mark them (axe link-in-text-block).
+    const crumbs: [string, string | RegExp][] = [
+      ['/projects/new', 'สร้างโครงการก่อสร้างใหม่'],
+      [`/projects/${PROJECT}/edit`, 'แก้ไขโครงการ'],
+      [`/admin/users/${PROJECT}`, 'ข้อมูลบัญชี'],
+      [`/projects/${PROJECT}`, 'เวอร์ชันล่าสุด'],
+      [`/projects/${PROJECT}?tab=versions`, 'แนวโน้มข้ามเวอร์ชัน'],
+      [`/projects/${PROJECT}/versions/${V3}/results`, 'Heat Map'],
+      [`/projects/${PROJECT}/versions/${V3}/plan`, /แผน|กลยุทธ์/],
+    ];
+    for (const [path, ready] of crumbs) {
+      await open(page, path, ready);
+      const links = page.locator('nav[aria-label="เส้นทางหน้า"] a, p[class*="breadcrumb"] a');
+      expect(await links.count(), path).toBeGreaterThan(0);
+      for (const link of await links.all()) {
+        const line = await link.evaluate((e) => getComputedStyle(e).textDecorationLine);
+        expect(line, `${path} ${await link.innerText()}`).toContain('underline');
+      }
+    }
+  });
 });

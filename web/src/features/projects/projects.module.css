@@ -26,10 +26,10 @@
 }
 .breadcrumb a {
   color: var(--color-blue-700);
-  text-decoration: none;
+  text-decoration: underline;
 }
 .breadcrumb a:hover {
-  text-decoration: underline;
+  text-decoration-thickness: 2px;
 }
 .createLink {
   display: inline-flex;
