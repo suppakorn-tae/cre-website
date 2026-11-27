@@ -5,7 +5,7 @@ import * as Slider from '@radix-ui/react-slider';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { useId, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react';
 
 import { Button, DatePicker, Icon, Input } from '@/components/ui';
 import { planState } from '@/features/versions/rules';
@@ -18,11 +18,17 @@ import { useProjectLabels } from './labels';
 import { controlClass, IconField } from './IconField';
 import { afterCreatePath } from './paths';
 import {
+  DESCRIPTION_MAX,
   emptyForm,
   fromProject,
   ISLAND_CODES,
+  NAME_MAX,
+  NICKNAME_MAX,
+  OTHER_MAX,
   parseBaht,
   parseProgress,
+  snapProgress,
+  typedLength,
   TYPE_CODES,
   toPayload,
   validateForm,
@@ -33,6 +39,14 @@ import {
 } from './validation';
 
 type Props = { project?: Project };
+
+/** Pause after the last keystroke before the number fields show their error. */
+const LIVE_DELAY_MS = 300;
+
+/** Fields whose error shows while typing (after a pause); the others check on blur and submit. */
+const DEBOUNCED: FieldKey[] = ['value', 'progress'];
+/** Text fields whose length error shows at once: the counter already tells the user. */
+const COUNTED: FieldKey[] = ['name', 'islandOther', 'typeOther', 'description'];
 
 /** The form keeps the typed text (`onTextChange`), so the ISO value is not needed. */
 const noop = () => {};
@@ -72,9 +86,24 @@ export function ProjectForm({ project }: Props) {
   const [values, setValues] = useState<FormValues>(project ? fromProject(project) : emptyForm);
   const [errors, setErrors] = useState<FormErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
+  const timers = useRef<Partial<Record<FieldKey, ReturnType<typeof setTimeout>>>>({});
+  // True while the last input on the slider was the keyboard: arrows move by 1, never snap.
+  const keyboardSlide = useRef(false);
 
   const create = useCreateProject();
   const update = useUpdateProject(project?.id ?? '');
+  const resetCreate = create.reset;
+  const resetUpdate = update.reset;
+  // A form kept alive by the router (hidden, then shown again) must not keep the
+  // "saving" state of an earlier save. Effects re-run when it is shown again.
+  useEffect(() => {
+    resetCreate();
+    resetUpdate();
+  }, [resetCreate, resetUpdate]);
+  useEffect(() => {
+    const pending = timers.current;
+    return () => Object.values(pending).forEach((id) => clearTimeout(id));
+  }, []);
   // Stay disabled after success: the page is about to change.
   const saving = create.isPending || update.isPending || create.isSuccess || update.isSuccess;
 
@@ -84,15 +113,47 @@ export function ProjectForm({ project }: Props) {
   const expected = expectedProgress(start, end, today);
   const actual = parseProgress(values.progress);
 
-  function set<K extends FieldKey>(key: K, value: FormValues[K]) {
-    setValues((prev) => ({ ...prev, [key]: value }));
+  function setFieldError(key: FieldKey, code: string | undefined) {
     setErrors((prev) => {
-      if (!prev[key]) return prev;
+      if (prev[key] === code) return prev;
       const next = { ...prev };
-      delete next[key];
+      if (code) next[key] = code;
+      else delete next[key];
       return next;
     });
+  }
+
+  function set<K extends FieldKey>(key: K, value: FormValues[K]) {
+    const next = { ...values, [key]: value };
+    setValues(next);
     setFormError(null);
+    clearTimeout(timers.current[key]);
+    if (COUNTED.includes(key)) {
+      // Only the length error shows while typing; "required" waits for blur or submit.
+      const code = validateForm(next)[key];
+      setFieldError(key, code?.endsWith('Length') ? code : undefined);
+    } else if (DEBOUNCED.includes(key)) {
+      // Clear the old error at once, show the new one after a pause. An empty
+      // field is not an error until the user leaves it.
+      setFieldError(key, undefined);
+      if (String(value).trim() !== '') {
+        timers.current[key] = setTimeout(
+          () => setFieldError(key, validateForm(next)[key]),
+          LIVE_DELAY_MS,
+        );
+      }
+    } else {
+      setFieldError(key, undefined);
+    }
+  }
+
+  /** Check one field when the user leaves it. */
+  function onBlurCheck(key: FieldKey) {
+    return () => {
+      clearTimeout(timers.current[key]);
+      if (key === 'progress' && values.progress.trim() === '') return;
+      setFieldError(key, validateForm(values)[key]);
+    };
   }
 
   const error = (key: FieldKey): string | undefined =>
@@ -166,6 +227,8 @@ export function ProjectForm({ project }: Props) {
                   placeholder={t('namePlaceholder')}
                   value={values.name}
                   onChange={(e) => set('name', e.target.value)}
+                  onBlur={onBlurCheck('name')}
+                  helper={<Counter text={values.name} max={NAME_MAX} />}
                   error={error('name')}
                   required
                 />
@@ -174,9 +237,13 @@ export function ProjectForm({ project }: Props) {
                 id="project-nickname"
                 label={t('nickname')}
                 placeholder={t('nicknamePlaceholder')}
-                helper={t('nicknameHelper')}
+                helper={
+                  <Counter text={values.nickname} max={NICKNAME_MAX} note={t('nicknameHelper')} />
+                }
+                maxLength={NICKNAME_MAX}
                 value={values.nickname}
                 onChange={(e) => set('nickname', e.target.value)}
+                onBlur={onBlurCheck('nickname')}
                 error={error('nickname')}
                 required
               />
@@ -199,6 +266,8 @@ export function ProjectForm({ project }: Props) {
                 placeholder={t('islandOtherPlaceholder')}
                 value={values.islandOther}
                 onChange={(e) => set('islandOther', e.target.value)}
+                onBlur={onBlurCheck('islandOther')}
+                helper={<Counter text={values.islandOther} max={OTHER_MAX} />}
                 error={error('islandOther')}
                 required
               />
@@ -221,6 +290,8 @@ export function ProjectForm({ project }: Props) {
                 placeholder={t('typeOtherPlaceholder')}
                 value={values.typeOther}
                 onChange={(e) => set('typeOther', e.target.value)}
+                onBlur={onBlurCheck('typeOther')}
+                helper={<Counter text={values.typeOther} max={OTHER_MAX} />}
                 error={error('typeOther')}
                 required
               />
@@ -235,6 +306,7 @@ export function ProjectForm({ project }: Props) {
                 icon={IconCurrencyBaht}
                 value={values.value}
                 onChange={(e) => set('value', e.target.value)}
+                onBlur={onBlurCheck('value')}
                 error={error('value')}
                 required
               />
@@ -286,6 +358,7 @@ export function ProjectForm({ project }: Props) {
                     className={`${controlClass} pe-10`}
                     value={values.progress}
                     onChange={(e) => set('progress', e.target.value)}
+                    onBlur={onBlurCheck('progress')}
                     aria-invalid={errors.progress ? true : undefined}
                     aria-describedby={errors.progress ? progressErrorId : undefined}
                   />
@@ -297,7 +370,18 @@ export function ProjectForm({ project }: Props) {
                   <Slider.Root
                     className="relative flex h-hit w-full touch-none select-none items-center"
                     value={[sliderValue]}
-                    onValueChange={([v]) => set('progress', String(v))}
+                    onKeyDown={() => {
+                      keyboardSlide.current = true;
+                    }}
+                    onPointerDown={() => {
+                      keyboardSlide.current = false;
+                    }}
+                    onValueChange={([v]) =>
+                      set(
+                        'progress',
+                        String(keyboardSlide.current ? v : snapProgress(v, expected?.pct ?? null)),
+                      )
+                    }
                     min={0}
                     max={100}
                     step={1}
@@ -350,7 +434,23 @@ export function ProjectForm({ project }: Props) {
                 placeholder={t('descriptionPlaceholder')}
                 value={values.description}
                 onChange={(e) => set('description', e.target.value)}
+                onBlur={onBlurCheck('description')}
+                aria-invalid={errors.description ? true : undefined}
+                aria-describedby="project-description-note"
               />
+              <p
+                id="project-description-note"
+                className="m-0 flex flex-wrap justify-between gap-x-3 text-caption"
+              >
+                {errors.description ? (
+                  <span className="text-error" role="alert">
+                    {error('description')}
+                  </span>
+                ) : (
+                  <span />
+                )}
+                <CounterText text={values.description} max={DESCRIPTION_MAX} />
+              </p>
             </div>
           </div>
 
@@ -386,6 +486,26 @@ export function ProjectForm({ project }: Props) {
         </div>
       </aside>
     </form>
+  );
+}
+
+/** "n / max" for a text field; red once over the limit. */
+function CounterText({ text, max }: { text: string; max: number }) {
+  const count = typedLength(text);
+  return (
+    <span className={`ms-auto tabular-nums ${count > max ? 'text-error' : 'text-text-muted'}`}>
+      {formatNumber(count)} / {formatNumber(max)}
+    </span>
+  );
+}
+
+/** Helper line under a field: an optional note on the left, the counter on the right. */
+function Counter({ text, max, note }: { text: string; max: number; note?: string }) {
+  return (
+    <span className="flex flex-wrap justify-between gap-x-3">
+      {note && <span>{note}</span>}
+      <CounterText text={text} max={max} />
+    </span>
   );
 }
 
@@ -432,6 +552,12 @@ function Preview({
   const baht = parseBaht(values.value);
   const plan = actual !== null && expectedPct !== null ? planState(actual, expectedPct) : null;
   const barPct = Math.min(100, Math.max(0, actual ?? 0));
+  // Start at 0 on first show so the bar grows to the value; later changes slide from the old width.
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setShown(barPct));
+    return () => cancelAnimationFrame(frame);
+  }, [barPct]);
 
   const rows: [string, ReactNode][] = [
     [
@@ -487,7 +613,11 @@ function Preview({
           </span>
         </p>
         <div className="relative h-2 rounded-pill bg-blue-100" aria-hidden="true">
-          <div className="h-full rounded-pill bg-primary" style={{ width: `${barPct}%` }} />
+          <div
+            className="h-full rounded-pill bg-primary transition-[width] duration-[600ms] ease-out motion-reduce:transition-none"
+            // At least as wide as the bar is high, so the end stays round at 1 %.
+            style={{ width: `${shown}%`, minWidth: shown > 0 ? '0.5rem' : undefined }}
+          />
           {expectedPct !== null && (
             <span
               className="absolute top-1/2 h-4 w-0.5 -translate-y-1/2 bg-navy-900"

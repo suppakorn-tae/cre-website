@@ -94,7 +94,7 @@ function EditLoader({ projectId }: { projectId: string }) {
       <div className={styles.steps}>
         <ProjectSteps current="project" projectId={projectId} />
       </div>
-      <ProjectForm project={project.data} />
+      <ProjectForm key={`${project.data.id}:${project.data.updated_at}`} project={project.data} />
     </>
   );
 }
