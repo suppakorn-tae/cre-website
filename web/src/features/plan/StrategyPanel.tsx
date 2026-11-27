@@ -80,8 +80,10 @@ export function StrategyPanel({ code, value, updatedAt, editable, onChange }: Pr
                 style={strategyStyle(s)}
                 data-chosen={chosen}
                 className={cx(
-                  'box-border flex min-w-0 flex-col gap-2 rounded-card border border-(--strategy-solid) p-3',
-                  'transition-colors duration-(--motion-fast) has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary',
+                  'relative box-border flex min-w-0 flex-col gap-2 rounded-card border border-(--strategy-solid) p-3',
+                  // Hover and keyboard focus grow the card; transform only, so nothing shifts.
+                  'hover:z-10 hover:scale-[1.03] has-focus-visible:z-10 has-focus-visible:scale-[1.03]',
+                  'transition-[color,background-color,scale] duration-(--motion-fast) ease-(--motion-ease) has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-primary',
                   busy ? 'cursor-wait' : 'cursor-pointer',
                   chosen
                     ? 'bg-(--strategy-solid) text-white'

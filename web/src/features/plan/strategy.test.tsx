@@ -182,3 +182,26 @@ describe('strategy clicks', () => {
     expect(document.activeElement).toBe(radio('AVOID'));
   });
 });
+
+describe('strategy card hover', () => {
+  it('grows on hover and focus-visible with the fast motion token, above its neighbours', () => {
+    render(
+      wrap(
+        <StrategyPanel code="EC-HS-2" editable onChange={vi.fn().mockResolvedValue(undefined)} />,
+      ),
+    );
+    const cards = screen.getAllByRole('radio').map((r) => r.closest('label')!);
+    expect(cards).toHaveLength(4);
+    for (const card of cards) {
+      const c = card.className.split(/\s+/);
+      expect(c).toContain('hover:scale-[1.03]');
+      expect(c).toContain('has-focus-visible:scale-[1.03]');
+      expect(c).toContain('hover:z-10');
+      expect(c).toContain('has-focus-visible:z-10');
+      expect(c).toContain('relative');
+      expect(c).toContain('duration-(--motion-fast)');
+      expect(c).toContain('ease-(--motion-ease)');
+      expect(c.some((x) => x.startsWith('transition-[') && x.includes('scale'))).toBe(true);
+    }
+  });
+});
