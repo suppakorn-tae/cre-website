@@ -115,7 +115,10 @@ const ROUTES: Route[] = [
             .click();
         }
         await x.focus();
-        await expect(page.locator('[data-radix-popper-content-wrapper]')).toBeVisible();
+        // The bubble is a desktop and tablet thing; the phone card shows the question differently.
+        if (page.viewportSize()!.width >= 768) {
+          await expect(page.locator('[data-radix-popper-content-wrapper]')).toBeVisible();
+        }
       },
       'y3 picker open': async (page) => {
         await page.keyboard.press('Escape');
