@@ -4,6 +4,8 @@ import type { components } from '@/lib/api/generated/schema';
 export type Job = components['schemas']['Job'];
 
 export const jobKey = (jobId: string) => ['jobs', jobId] as const;
+/** When this tab started waiting for a job; under the job's key, so it goes with the job. */
+export const jobWaitKey = (jobId: string) => [...jobKey(jobId), 'wait'] as const;
 /** One version, under the key the results page reads it with, so its cache is shared. */
 export const versionKey = (projectId: string, versionId: string) =>
   ['projects', projectId, 'versions', versionId] as const;

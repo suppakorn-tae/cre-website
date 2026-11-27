@@ -6,7 +6,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchProject, fetchVersions, projectKey, versionsKey } from '@/features/versions/api';
 import { ApiError } from '@/lib/api/errors';
 
-import { downloadUrl, fetchJob, jobKey, reportJobKey, requestReport, versionKey } from './api';
+import {
+  downloadUrl,
+  fetchJob,
+  jobKey,
+  jobWaitKey,
+  reportJobKey,
+  requestReport,
+  versionKey,
+} from './api';
 import { jobPhase, pollInterval, REPORT_CAP_MS, type JobPhase } from './polling';
 import { reportFileName, reportState, triggerDownload, type ReportState } from './state';
 
@@ -19,6 +27,23 @@ function claimDownload(client: QueryClient, jobId: string): boolean {
   if (ids.has(jobId)) return false;
   ids.add(jobId);
   return true;
+}
+
+/**
+ * When this tab started waiting for a job: its first answer, and the last "check again".
+ * Kept in the query cache, not in a component, so every view of the job (the report button,
+ * step 5 of the step bar, a version menu) judges a stall from the same moments, and stops
+ * polling together.
+ */
+type JobWait = { firstPollAt: number; resumedAt: number };
+const NO_WAIT: JobWait = { firstPollAt: 0, resumedAt: 0 };
+
+function readWait(client: QueryClient, jobId: string | null): JobWait {
+  return jobId === null ? NO_WAIT : (client.getQueryData<JobWait>(jobWaitKey(jobId)) ?? NO_WAIT);
+}
+
+function updateWait(client: QueryClient, jobId: string, change: (wait: JobWait) => JobWait) {
+  client.setQueryData<JobWait>(jobWaitKey(jobId), (wait) => change(wait ?? NO_WAIT));
 }
 
 export type ReportDownload = {
@@ -64,37 +89,46 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
   });
   const jobId = stored.data ?? null;
 
-  // When the user last asked to check a stalled job again; the wait counts from then.
-  const [resumedAt, setResumedAt] = useState(0);
-  // When this tab first got an answer for the job: the queue wait is also measured on our clock.
-  const [firstPoll, setFirstPoll] = useState<{ id: string; at: number } | null>(null);
-  const firstPollAt = firstPoll?.id === jobId ? firstPoll.at : 0;
+  // When this tab first got an answer for the job (the queue wait is also measured on our
+  // clock) and when the user last asked to check a stalled job again; shared by every view.
+  const waitQuery = useQuery<JobWait>({
+    queryKey: jobWaitKey(jobId ?? ''),
+    queryFn: () => NO_WAIT,
+    enabled: false,
+    gcTime: Infinity,
+  });
+  const wait = jobId === null ? NO_WAIT : (waitQuery.data ?? NO_WAIT);
   const job = useQuery({
     queryKey: jobKey(jobId ?? ''),
     queryFn: async () => {
       const answer = await fetchJob(jobId ?? '');
-      setFirstPoll((seen) => (seen?.id === jobId ? seen : { id: jobId ?? '', at: Date.now() }));
+      if (jobId !== null) {
+        const at = Date.now();
+        updateWait(queryClient, jobId, (w) => (w.firstPollAt ? w : { ...w, firstPollAt: at }));
+      }
       return answer;
     },
     enabled: jobId !== null,
     // Backoff grows with each answer; polling stops once the job has finished, and
     // on an error too: the state is then "failed" and a retry starts it again.
-    refetchInterval: (query) =>
-      query.state.status === 'error'
-        ? false
-        : pollInterval(
-            query.state.data,
-            query.state.dataUpdateCount,
-            REPORT_CAP_MS,
-            query.state.dataUpdatedAt,
-            resumedAt,
-            firstPollAt,
-          ),
+    // The wait is read from the cache here, not from this render, so it is never stale.
+    refetchInterval: (query) => {
+      if (query.state.status === 'error') return false;
+      const { resumedAt, firstPollAt } = readWait(queryClient, jobId);
+      return pollInterval(
+        query.state.data,
+        query.state.dataUpdateCount,
+        REPORT_CAP_MS,
+        query.state.dataUpdatedAt,
+        resumedAt,
+        firstPollAt,
+      );
+    },
   });
   // Judged at the time of the last answer, which also makes this component render on each one.
   const phase: JobPhase = job.isError
     ? 'finished'
-    : jobPhase(job.data, job.dataUpdatedAt, resumedAt, firstPollAt);
+    : jobPhase(job.data, job.dataUpdatedAt, wait.resumedAt, wait.firstPollAt);
   const request = useMutation({
     mutationFn: () => requestReport(projectId, versionId),
     onSuccess: (id) => {
@@ -164,8 +198,9 @@ export function useReportDownload(projectId: string, versionId: string): ReportD
   const { mutate, reset } = request;
   const { refetch } = job;
   const start = useCallback(() => {
-    if (phase === 'stalled') {
-      setResumedAt(Date.now());
+    if (phase === 'stalled' && jobId !== null) {
+      const at = Date.now();
+      updateWait(queryClient, jobId, (w) => ({ ...w, resumedAt: at }));
       void refetch();
       return;
     }
