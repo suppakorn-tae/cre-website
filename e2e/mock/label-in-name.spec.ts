@@ -35,10 +35,22 @@ const PAGES: { name: string; path: string; ready: string | RegExp; must: string[
   { name: 'terms', path: '/legal/terms', ready: 'เงื่อนไขการใช้งาน', must: ['brand'] },
 ];
 
+// The part of axe's API used below. axe-core is not a direct dependency of e2e/, so its types
+// are not importable.
+interface Axe {
+  run(
+    context: Document,
+    options: {
+      runOnly: { type: 'rule'; values: string[] };
+      rules: Record<string, { enabled: boolean }>;
+    },
+  ): Promise<{ violations: { nodes: { html: string }[] }[] }>;
+}
+
 async function mismatches(page: Page) {
   await page.evaluate(axeSource);
   return page.evaluate(async () => {
-    const axe = (window as unknown as { axe: typeof import('axe-core') }).axe;
+    const axe = (window as unknown as { axe: Axe }).axe;
     const r = await axe.run(document, {
       runOnly: { type: 'rule', values: ['label-content-name-mismatch'] },
       rules: { 'label-content-name-mismatch': { enabled: true } },

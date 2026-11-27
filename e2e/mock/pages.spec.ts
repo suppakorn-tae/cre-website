@@ -154,8 +154,10 @@ test.describe('reflow at 320 px', () => {
 
   for (const { name, path, texts } of PAGES) {
     test(`${name} is not wider than the viewport`, async ({ page }) => {
+      const [ready] = texts;
+      if (ready === undefined) throw new Error(`${name} has no ready text`);
       await page.goto(path);
-      await expect(page.getByText(texts[0]).and(page.locator(':visible')).first()).toBeVisible();
+      await expect(page.getByText(ready).and(page.locator(':visible')).first()).toBeVisible();
       const width = await page.evaluate(() => document.documentElement.scrollWidth);
       expect(width).toBeLessThanOrEqual(320);
     });
