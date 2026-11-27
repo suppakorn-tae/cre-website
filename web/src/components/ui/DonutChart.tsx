@@ -118,6 +118,7 @@ export function DonutChart({
           stroke="var(--color-subtle)"
           strokeWidth={STROKE}
         />
+        {/* A mask, not a paint: white means "show". It stays white in dark mode. */}
         <mask id={maskId}>
           <circle
             cx="20"

@@ -76,12 +76,12 @@
   background: var(--color-blue-50);
 }
 
-/* Stepper: a white card, one segment per step, chevrons between (hi-fi) */
+/* Stepper: a card, one segment per step, chevrons between (hi-fi) */
 .stepper {
   padding: var(--space-1);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  background: var(--color-white);
+  background: var(--color-card);
 }
 .steps {
   display: flex;
@@ -165,7 +165,7 @@ button.stepInner:hover:not([aria-disabled='true']) {
   height: 20px;
   border: 1.5px solid var(--color-disabled);
   border-radius: var(--radius-pill);
-  background: var(--color-white);
+  background: var(--color-card);
   color: var(--color-text-muted);
   font-size: var(--text-overline);
   font-weight: var(--weight-bold);
@@ -175,7 +175,7 @@ button.stepInner:hover:not([aria-disabled='true']) {
 .stepInner[aria-current='step'] .stepNum {
   border-color: var(--color-blue-600);
   background: var(--color-blue-600);
-  color: var(--color-white);
+  color: var(--color-on-solid);
 }
 .stepInner[data-failed] .stepNum {
   border-color: var(--color-error);
@@ -184,7 +184,7 @@ button.stepInner:hover:not([aria-disabled='true']) {
 .stepInner[data-success] .stepNum {
   border-color: var(--color-success);
   background: var(--color-success);
-  color: var(--color-white);
+  color: var(--color-on-solid);
 }
 .stepLabel {
   overflow: hidden;
@@ -222,7 +222,7 @@ button.stepInner:hover:not([aria-disabled='true']) {
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-control);
   background: var(--color-navy-900);
-  color: var(--color-white);
+  color: var(--color-on-solid);
   font-size: var(--text-caption);
   line-height: var(--leading-caption);
   animation: popup-in var(--motion-fast) var(--motion-ease);
@@ -525,7 +525,7 @@ button.kpiSelected:hover {
   padding: calc(var(--space-5) - 1px);
   border-width: 2px;
   border-color: var(--color-blue-600);
-  background: var(--color-white);
+  background: var(--color-card);
 }
 .kpiHead {
   display: flex;
