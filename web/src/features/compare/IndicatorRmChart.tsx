@@ -4,7 +4,7 @@ import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { useTranslations } from 'next-intl';
 import { useId } from 'react';
 
-import { useSweep, useTween } from '@/components/ui/chartMotion';
+import { useLeaving, useSweep, useTween } from '@/components/ui/chartMotion';
 import { formatNumber } from '@/lib/format/locale';
 
 import { useBoxWidth } from './chartBox';
@@ -73,6 +73,10 @@ export function IndicatorRmChart({
     ),
   );
   const draw = useSweep();
+  // An indicator taken out by a filter stays for a moment and fades out where it was.
+  const rows = useLeaving(series, (s) => s.code);
+  const norm = (v: number | null) =>
+    ((v ?? RM_BANDS.min) - RM_BANDS.min) / (RM_BANDS.max - RM_BANDS.min);
   const clipId = `${useId()}-draw`;
   const yShare = (value: number) => M.top + plotH - value * plotH;
   const centre = (i: number) => M.left + slot * (i + 0.5);
@@ -180,29 +184,32 @@ export function IndicatorRmChart({
             <rect x="0" y="0" width={boxWidth * draw} height={HEIGHT} />
           </clipPath>
           <g clipPath={draw < 1 ? `url(#${clipId})` : undefined}>
-            {series.map((s) => (
-              <g key={s.code} className={styles.series} data-series={s.index % SERIES_COUNT}>
-                <path
-                  d={linePath(
-                    s.values.map((v, i) =>
-                      v === null ? undefined : { x: centre(i), y: yShare(share[`${s.code}:${i}`]) },
+            {rows.map(({ item: s, leaving }) => {
+              const y = (v: number | null, i: number) => yShare(share[`${s.code}:${i}`] ?? norm(v));
+              return (
+                <g
+                  key={s.code}
+                  className={leaving ? `${styles.series} ${styles.leaving}` : styles.series}
+                  data-series={s.index % SERIES_COUNT}
+                  aria-hidden={leaving ? true : undefined}
+                >
+                  <path
+                    d={linePath(
+                      s.values.map((v, i) =>
+                        v === null ? undefined : { x: centre(i), y: y(v, i) },
+                      ),
+                    )}
+                    fill="none"
+                    strokeDasharray={s.dashed ? '6 4' : undefined}
+                  />
+                  {s.values.map((v, i) =>
+                    v === null ? null : (
+                      <Marker key={i} x={centre(i)} y={y(v, i)} index={s.index} />
                     ),
                   )}
-                  fill="none"
-                  strokeDasharray={s.dashed ? '6 4' : undefined}
-                />
-                {s.values.map((v, i) =>
-                  v === null ? null : (
-                    <Marker
-                      key={i}
-                      x={centre(i)}
-                      y={yShare(share[`${s.code}:${i}`])}
-                      index={s.index}
-                    />
-                  ),
-                )}
-              </g>
-            ))}
+                </g>
+              );
+            })}
           </g>
         </svg>
       </div>

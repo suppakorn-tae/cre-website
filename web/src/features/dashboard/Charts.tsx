@@ -1,7 +1,10 @@
+'use client';
+
 import { useTranslations } from 'next-intl';
 import type { CSSProperties } from 'react';
 
 import { DonutChart, LEVELS } from '@/components/ui';
+import { useLeaving } from '@/components/ui/chartMotion';
 import { formatNumber } from '@/lib/format/locale';
 
 import type { DashboardSummary } from './api';
@@ -92,6 +95,9 @@ export function ProjectRiskChart({ risks }: { risks: DashboardSummary['project_r
   const t = useTranslations('dashboard.riskChart');
   const max = axisMax(Math.max(0, ...risks.map((r) => r.h_count + r.vh_count)));
   const ticks = Array.from({ length: max / 5 + 1 }, (_, i) => i * 5);
+  // A project or tick that goes away stays for a moment and fades out where it was.
+  const rows = useLeaving(risks, (r) => r.project_id);
+  const tickRows = useLeaving(ticks, String);
   return (
     <section className={styles.chart} aria-labelledby="risk-chart-title">
       <div className={styles.chartHead}>
@@ -118,11 +124,16 @@ export function ProjectRiskChart({ risks }: { risks: DashboardSummary['project_r
         <div className={styles.plot} style={{ '--axis-steps': max / 5 } as CSSProperties}>
           <span className={styles.grid} aria-hidden="true" />
           <ul className={styles.bars}>
-            {risks.map((r) => {
+            {rows.map(({ item: r, leaving }) => {
               const total = r.h_count + r.vh_count;
-              const width = (100 * total) / max;
+              const width = Math.min(100, (100 * total) / max);
               return (
-                <li key={r.project_id} className={styles.barRow}>
+                <li
+                  key={r.project_id}
+                  className={styles.barRow}
+                  data-leaving={leaving ? '' : undefined}
+                  aria-hidden={leaving ? true : undefined}
+                >
                   <span className={styles.barLabel}>
                     <span className={styles.nicknameChip}>{r.nickname}</span>
                     <span className={styles.barProject}>{r.name}</span>
@@ -155,8 +166,12 @@ export function ProjectRiskChart({ risks }: { risks: DashboardSummary['project_r
           </ul>
           <div className={styles.axis} aria-hidden="true">
             <span className={styles.axisTicks}>
-              {ticks.map((tick) => (
-                <span key={tick} style={{ left: `${(100 * tick) / max}%` }}>
+              {tickRows.map(({ item: tick, leaving }) => (
+                <span
+                  key={tick}
+                  data-leaving={leaving ? '' : undefined}
+                  style={{ left: `${Math.min(100, (100 * tick) / max)}%` }}
+                >
                   {tick}
                 </span>
               ))}

@@ -688,6 +688,28 @@
   .series {
     animation: dist-fade calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out) both;
   }
+  /* Taken out by a filter or a count that fell to zero (IO-236): kept for 0.4 of the chart
+     duration, which is what useLeaving waits, and faded out. A segment also shrinks away. */
+  .leaving {
+    pointer-events: none;
+    animation: leave-fade calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out) both;
+  }
+  .distPart[data-leaving] {
+    pointer-events: none;
+    animation: leave-shrink calc(var(--motion-chart, 700ms) * 0.4) var(--motion-ease, ease-out) both;
+  }
+}
+@keyframes leave-fade {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes leave-shrink {
+  to {
+    flex-grow: 0;
+    min-width: 0;
+    opacity: 0;
+  }
 }
 @keyframes dist-grow {
   from {

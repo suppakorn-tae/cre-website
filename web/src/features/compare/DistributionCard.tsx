@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl';
 import { useId } from 'react';
 
 import { LEVELS } from '@/components/ui';
+import { useLeaving } from '@/components/ui/chartMotion';
 import { formatNumber } from '@/lib/format/locale';
 
 import type { TrendPoint } from './api';
@@ -52,17 +53,7 @@ export function DistributionCard({ points }: { points: TrendPoint[] }) {
                   className={styles.distBar}
                   aria-label={`${name}: ${HIGH_TO_LOW.map((l) => `${tl(l)} ${counts[l]}`).join(', ')}`}
                 >
-                  {HIGH_TO_LOW.filter((l) => counts[l] > 0).map((l) => (
-                    <span
-                      key={l}
-                      className={styles.distPart}
-                      data-level={l}
-                      style={{ flexGrow: counts[l] }}
-                      title={`${tl(l)} ${counts[l]}`}
-                    >
-                      {formatNumber(counts[l])}
-                    </span>
-                  ))}
+                  <Parts counts={counts} />
                 </span>
               ) : (
                 <span className={styles.distEmpty}>{t('notSent')}</span>
@@ -77,4 +68,26 @@ export function DistributionCard({ points }: { points: TrendPoint[] }) {
 
 function sum(counts: Record<(typeof LEVELS)[number], number>): number {
   return LEVELS.reduce((total, level) => total + counts[level], 0);
+}
+
+/** The segments of one bar; a level that drops to zero shrinks and fades out in its place. */
+function Parts({ counts }: { counts: Record<(typeof LEVELS)[number], number> }) {
+  const tl = useTranslations('compare.levels');
+  const parts = useLeaving(
+    HIGH_TO_LOW.filter((l) => counts[l] > 0).map((level) => ({ level, count: counts[level] })),
+    (p) => p.level,
+  );
+  return parts.map(({ item, leaving }) => (
+    <span
+      key={item.level}
+      className={styles.distPart}
+      data-level={item.level}
+      data-leaving={leaving ? '' : undefined}
+      aria-hidden={leaving ? true : undefined}
+      style={{ flexGrow: item.count }}
+      title={`${tl(item.level)} ${item.count}`}
+    >
+      {formatNumber(item.count)}
+    </span>
+  ));
 }
