@@ -160,23 +160,10 @@ test('a report job stuck in the queue stops polling and offers to check again', 
   const checkAgain = toasts(page).getByRole('button', { name: 'ตรวจสอบอีกครั้ง' }).first();
   await expect(checkAgain).toBeVisible();
 
-  // Polling has stopped: no new request while the longest back-off passes.
-  // A timer set before the stall may still fire once, so run the page's clock until a
-  // round adds no request, then once more to prove it.
-  let last = -1;
-  await expect
-    .poll(
-      async () => {
-        await expect.poll(() => inFlight).toBe(0);
-        const quiet = polls.length === last;
-        last = polls.length;
-        if (!quiet) await page.clock.fastForward('01:00');
-        return quiet;
-      },
-      { timeout: 20_000 },
-    )
-    .toBe(true);
+  // Polling has stopped: no request after the toast, however long the page's clock runs.
+  await expect.poll(() => inFlight).toBe(0);
   const before = polls.length;
+  await page.clock.fastForward('01:00');
   await page.clock.fastForward('01:00');
   await expect.poll(() => inFlight).toBe(0);
   expect(polls.length).toBe(before);
