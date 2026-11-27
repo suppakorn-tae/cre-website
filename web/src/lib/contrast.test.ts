@@ -1,9 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { colourOf, contrast, readTokens, type TokenMap } from './contrast';
+import {
+  colourOf,
+  contrast,
+  readDarkOverrides,
+  readTokens,
+  THEMES,
+  type TokenMap,
+} from './contrast';
 import { NOT_CHECKED, PAIRS, REQUIRED, type Pair } from './contrast-pairs';
 
 const tokens = readTokens();
+const dark = readTokens('dark');
+const byTheme = { light: tokens, dark } as const;
 
 const ratioOf = (map: TokenMap, p: Pair) => contrast(colourOf(map, p.fg), colourOf(map, p.bg));
 const label = (p: Pair) => `${p.fg} on ${p.bg} (${p.use})`;
@@ -23,13 +32,16 @@ describe('contrast maths', () => {
   });
 
   it('reads tokens and follows var() references', () => {
+    expect(colourOf(tokens, 'color-card')).toBe('#ffffff');
     expect(colourOf(tokens, 'color-white')).toBe('#ffffff');
     expect(colourOf({ a: '#123456', b: 'var(--a)' }, 'b')).toBe('#123456');
     expect(() => colourOf(tokens, 'no-such-token')).toThrow();
   });
 });
 
-describe('text and non-text pairs (WCAG 1.4.3 and 1.4.11)', () => {
+describe.each(THEMES)('%s theme: text and non-text pairs (WCAG 1.4.3 and 1.4.11)', (theme) => {
+  const tokens = byTheme[theme];
+
   it('lists pairs for every kind', () => {
     for (const kind of ['text', 'large', 'ui'] as const) {
       expect(PAIRS.some((p) => p.kind === kind)).toBe(true);
@@ -50,6 +62,16 @@ describe('text and non-text pairs (WCAG 1.4.3 and 1.4.11)', () => {
     }
   });
 
+  if (theme === 'dark') {
+    it('has no near miss (within 0.3 of the limit), as in the approved palette', () => {
+      const near = PAIRS.filter((p) => {
+        const r = ratioOf(tokens, p);
+        return r >= REQUIRED[p.kind] && r < REQUIRED[p.kind] + 0.3;
+      }).map(label);
+      expect(near).toEqual([]);
+    });
+  }
+
   it('enforces 3:1 for every risk solid on a card and 4.5:1 for its -on text, with no waiver', () => {
     for (const l of ['vl', 'l', 'm', 'h', 'vh']) {
       const solids = PAIRS.filter((p) => p.fg === `level-${l}`);
@@ -62,7 +84,9 @@ describe('text and non-text pairs (WCAG 1.4.3 and 1.4.11)', () => {
       }
     }
   });
+});
 
+describe('light theme: the check itself', () => {
   it('fails when a token is changed below its ratio', () => {
     expect(failures({ ...tokens, 'color-placeholder': '#9aa6b6' })).not.toEqual([]);
     expect(failures({ ...tokens, 'color-field-border': '#c8d0dc' })).not.toEqual([]);
@@ -91,7 +115,8 @@ describe('every colour token is checked', () => {
   });
 });
 
-describe('dimension colours (hi-fi 00 Foundations, 26 Nov)', () => {
+describe.each(THEMES)('%s theme: dimension colours (hi-fi 00 Foundations, 26 Nov)', (theme) => {
+  const tokens = byTheme[theme];
   it('are not the primary blue, the accent orange or a risk level colour', () => {
     const taken = [
       'color-blue-600',
@@ -99,5 +124,41 @@ describe('dimension colours (hi-fi 00 Foundations, 26 Nov)', () => {
       ...['vl', 'l', 'm', 'h', 'vh'].map((l) => `level-${l}`),
     ].map((n) => colourOf(tokens, n));
     for (const d of ['ec', 'so', 'ev']) expect(taken).not.toContain(colourOf(tokens, `dim-${d}`));
+  });
+});
+
+describe('dark theme (dark-palette.md, approved 28 Nov 2026)', () => {
+  const overrides = readDarkOverrides();
+  const lightColours = Object.entries(tokens)
+    .filter(([, v]) => /^#[0-9a-f]{6}$/i.test(v))
+    .map(([k]) => k);
+
+  it.each(lightColours)('gives --%s a dark value', (name) => {
+    expect(overrides[name], `add --${name} to :root[data-theme='dark']`).toMatch(/^#[0-9a-f]{6}$/i);
+  });
+
+  it('only overrides tokens that exist in light', () => {
+    for (const name of Object.keys(overrides)) expect(tokens, name).toHaveProperty(name);
+  });
+
+  it('splits card and on-solid, and keeps color-white as an alias of the card', () => {
+    expect(colourOf(dark, 'color-card')).toBe('#141f31');
+    expect(colourOf(dark, 'color-on-solid')).toBe('#0b1320');
+    expect(colourOf(dark, 'color-white')).toBe('#141f31');
+    expect(overrides).not.toHaveProperty('color-white');
+  });
+
+  it('gives the floating shadow and the scrim their own dark value', () => {
+    expect(overrides['shadow-floating']).toBeDefined();
+    expect(overrides['shadow-floating']).not.toBe(tokens['shadow-floating']);
+    expect(overrides['color-scrim']).toBeDefined();
+  });
+
+  it('keeps the decorative chart grid at 2:1 on the card and the surface', () => {
+    for (const bg of ['color-card', 'color-surface']) {
+      expect(contrast(colourOf(dark, 'chart-grid'), colourOf(dark, bg)), bg).toBeGreaterThanOrEqual(
+        2,
+      );
+    }
   });
 });

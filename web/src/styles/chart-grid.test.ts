@@ -3,7 +3,7 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { colourOf, contrast, readTokens } from '../lib/contrast';
+import { colourOf, contrast, readTokens, THEMES } from '../lib/contrast';
 
 const css = (...p: string[]) => readFileSync(path.join(__dirname, '..', ...p), 'utf8');
 
@@ -38,9 +38,9 @@ describe('chart grid lines use --chart-grid', () => {
     expect(src).toMatch(/@property --axis-steps/);
   });
 
-  it('reaches 2:1 on the card and the surface', () => {
-    const tokens = readTokens();
-    for (const bg of ['color-white', 'color-surface']) {
+  it.each(THEMES)('reaches 2:1 on the card and the surface (%s theme)', (theme) => {
+    const tokens = readTokens(theme);
+    for (const bg of ['color-card', 'color-surface']) {
       expect(
         contrast(colourOf(tokens, 'chart-grid'), colourOf(tokens, bg)),
         bg,

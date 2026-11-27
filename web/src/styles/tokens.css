@@ -1,5 +1,10 @@
-/* Design tokens from hi-fi page "00 Foundations". Import once at the app root. */
+/* Design tokens from hi-fi page "00 Foundations". Import once at the app root.
+   Light values here; the dark theme (docs/specs/ux-ui/feedback/2026-11-27/
+   dark-palette.md) overrides the colours below in :root[data-theme='dark'].
+   lib/theme sets data-theme on <html> before the first paint. */
 :root {
+  color-scheme: light;
+
   /* Brand */
   --color-blue-50: #eaf1fd;
   --color-blue-100: #dce8fc;
@@ -15,7 +20,13 @@
   /* Neutrals */
   --color-canvas: #f1f4f8;
   --color-surface: #fbfcfe;
-  --color-white: #ffffff;
+  /* Card, input and popup background. */
+  --color-card: #ffffff;
+  /* Text and icons on a solid fill (primary, chosen chip, tooltip, destructive). */
+  --color-on-solid: #ffffff;
+  /* Deprecated alias of --color-card for features not yet moved (IO-256 to
+     IO-260). IO-261 removes it. Never use it for text on a solid fill. */
+  --color-white: var(--color-card);
   --color-subtle: #f6f8fb;
   --color-divider: #edf1f5;
   --color-border: #e3e8ef;
@@ -124,6 +135,8 @@
   /* Elevation: cards are flat with a border, floating layers get a shadow */
   --shadow-card: none;
   --shadow-floating: 0 8px 24px rgba(15, 42, 74, 0.1);
+  /* Backdrop behind a modal dialog or sheet. */
+  --color-scrim: rgba(15, 42, 74, 0.45);
 
   /* Controls */
   --control-sm: 30px;
@@ -131,7 +144,7 @@
   --control-lg: 44px;
   --field-height: var(--control-md);
   --hit-area: 40px;
-  --focus-ring: 0 0 0 2px var(--color-white), 0 0 0 4px var(--color-blue-600);
+  --focus-ring: 0 0 0 2px var(--color-card), 0 0 0 4px var(--color-blue-600);
 
   /* Motion: popups 150 ms, charts 700 ms. Zero under prefers-reduced-motion. */
   --motion-fast: 150ms;
@@ -143,6 +156,93 @@
   --gutter: 24px;
   --margin-page: 48px;
   --nav-height: 64px;
+}
+
+/* Dark theme, approved 28 Nov 2026 (dark-palette.md). Same token names, only
+   colours and elevation change. Every colour token of :root has a value here
+   (lib/contrast.test.ts checks it). */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Brand */
+  --color-blue-50: #15284a;
+  --color-blue-100: #1c3463;
+  --color-blue-200: #244079;
+  --color-blue-400: #5f8fe0;
+  --color-blue-600: #7eaaf5;
+  --color-blue-700: #a6c5fa;
+  --color-blue-800: #c4d9fc;
+  --color-navy-900: #dbe4ef;
+  --color-orange-50: #2e1d0e;
+  --color-orange-500: #f5a04d;
+
+  /* Neutrals: elevation goes up by lightness, canvas < surface < card < subtle */
+  --color-canvas: #0b1320;
+  --color-surface: #111b2b;
+  --color-card: #141f31;
+  --color-on-solid: #0b1320;
+  --color-subtle: #172336;
+  --color-divider: #1e2a3e;
+  --color-border: #28364d;
+  --chart-grid: #46566f;
+  --color-field-border: #6f7f96;
+  --color-disabled-bg: #1a2537;
+  --color-disabled: #55637a;
+  --color-placeholder: #8d9bb0;
+  --color-text-muted: #9dabbf;
+  --color-text-secondary: #b8c3d2;
+  --color-text: #e7edf5;
+
+  /* Status. The palette has no chip borders: these sit between the dark tint
+     and the solid, decorative only. */
+  --color-success: #4ade80;
+  --color-success-bg: #0f2a1c;
+  --color-success-border: #1d5136;
+  --color-warning: #fbbf24;
+  --color-warning-bg: #2d2110;
+  --color-warning-border: #5c4415;
+  --color-error: #f87171;
+  --color-error-bg: #331619;
+  --color-error-border: #5e2529;
+  --color-info: #7eaaf5;
+  --color-info-bg: #15284a;
+  --color-info-border: #244079;
+  --color-danger-hover: #fca5a5;
+  --color-danger-pressed: #fecaca;
+
+  /* Risk scale: brighter solids with dark labels, dark tints with light text */
+  --level-vl: #10b981;
+  --level-vl-on: #02140c;
+  --level-vl-tint: #0e2a20;
+  --level-vl-text: #6ee7b7;
+  --level-l: #84cc16;
+  --level-l-on: #111d02;
+  --level-l-tint: #1c2a0c;
+  --level-l-text: #a3e635;
+  --level-m: #f59e0b;
+  --level-m-on: #231700;
+  --level-m-tint: #2d2410;
+  --level-m-text: #fcd34d;
+  --level-h: #f97316;
+  --level-h-on: #1f0c02;
+  --level-h-tint: #33190b;
+  --level-h-text: #fdba74;
+  --level-vh: #ef4444;
+  --level-vh-on: #1f0505;
+  --level-vh-tint: #361416;
+  --level-vh-text: #fca5a5;
+
+  /* Dimensions */
+  --dim-ec: #b9a4f0;
+  --dim-ec-tint: #241d3d;
+  --dim-so: #f19acb;
+  --dim-so-tint: #331a2b;
+  --dim-ev: #5ccde6;
+  --dim-ev-tint: #0f2a33;
+
+  /* Elevation: a lighter border carries the edge, so the shadow is deeper */
+  --shadow-floating: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --color-scrim: rgba(2, 6, 12, 0.7);
 }
 
 @media (max-width: 1279px) {

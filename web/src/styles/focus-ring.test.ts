@@ -3,26 +3,16 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 
-import { contrast } from '@/lib/contrast';
+import { colourOf, contrast, readTokens, THEMES } from '@/lib/contrast';
 
 const stylesDir = __dirname;
 const srcDir = path.resolve(stylesDir, '..');
 const tokens = readFileSync(path.join(stylesDir, 'tokens.css'), 'utf8');
 
-function token(name: string): string {
-  const m = new RegExp(`--${name}:\\s*([^;]+);`).exec(tokens);
-  if (!m) throw new Error(`token --${name} not found`);
-  return m[1]!.trim();
-}
-
-function resolveColor(value: string): string {
-  const ref = /^var\(--([\w-]+)\)$/.exec(value);
-  return ref ? resolveColor(token(ref[1]!)) : value;
-}
-
-// The ring is a white gap followed by the coloured band, so a blue control still shows it.
+// The ring is a card-coloured gap followed by the coloured band, so a blue control
+// still shows it. The gap follows the theme (white in light, the dark card in dark).
 const ring =
-  /--focus-ring:\s*0 0 0 \d+px (?:var\(--color-white\)|#fff(?:fff)?),\s*0 0 0 (\d+)px (var\(--[\w-]+\)|#[0-9a-f]{6})\s*;/i.exec(
+  /--focus-ring:\s*0 0 0 \d+px var\(--color-card\),\s*0 0 0 (\d+)px var\(--([\w-]+)\)\s*;/i.exec(
     tokens,
   );
 
@@ -34,18 +24,20 @@ function cssFiles(dir: string): string[] {
 }
 
 describe('focus ring token', () => {
-  it('is a white-gapped ring at least 2px thick', () => {
+  it('is a card-gapped ring at least 2px thick', () => {
     expect(ring).not.toBeNull();
     expect(Number(ring![1])).toBeGreaterThanOrEqual(2);
   });
 
-  it.each(['color-white', 'color-canvas', 'color-surface', 'color-subtle'])(
-    'has at least 3:1 contrast against %s',
-    (bg) => {
-      const color = resolveColor(ring![2]);
-      expect(contrast(color, resolveColor(token(bg)))).toBeGreaterThanOrEqual(3);
-    },
-  );
+  describe.each(THEMES)('%s theme', (theme) => {
+    const map = readTokens(theme);
+    it.each(['color-card', 'color-canvas', 'color-surface', 'color-subtle'])(
+      'has at least 3:1 contrast against %s',
+      (bg) => {
+        expect(contrast(colourOf(map, ring![2]!), colourOf(map, bg))).toBeGreaterThanOrEqual(3);
+      },
+    );
+  });
 });
 
 describe('rules that use the focus ring', () => {
