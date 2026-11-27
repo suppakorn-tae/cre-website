@@ -223,6 +223,13 @@
   text-decoration: none;
   cursor: pointer;
 }
+/* Link buttons that stand alone or end a sentence get a 24 px target (WCAG 2.5.8). */
+.cardHead .link,
+.newVersion .link {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--space-6);
+}
 .link:hover,
 .dangerLink:hover {
   text-decoration: underline;

@@ -165,7 +165,7 @@ export function LoginForm() {
             <input type="checkbox" checked={keep} onChange={(e) => setKeep(e.target.checked)} />
             <span>{t('keepLoggedIn')}</span>
           </label>
-          <Link href={FORGOT_PATH} className={styles.link}>
+          <Link href={FORGOT_PATH} className={`${styles.link} ${extra.forgot}`}>
             {t('forgot')}
           </Link>
         </div>
