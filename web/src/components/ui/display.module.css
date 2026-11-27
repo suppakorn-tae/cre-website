@@ -204,7 +204,7 @@ button.stepInner:hover:not([aria-disabled='true']) {
   flex: 1;
   height: 3px;
   border-radius: var(--radius-pill);
-  background: var(--color-border);
+  background: var(--color-field-border);
 }
 .progressSeg[data-state='done'] {
   background: var(--color-blue-400);

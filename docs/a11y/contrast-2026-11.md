@@ -7,14 +7,12 @@ Ratios below are WCAG 2.x relative luminance of the token values in `web/src/sty
 
 ## Summary
 
-- 142 pairs: 132 pass (15 of them within 0.3 of the limit), 10 fail and are waived below, 0 fail without a waiver.
-- Fixed in tokens: `--color-placeholder` `#8a97a8` to `#677689` (2.97:1 to 4.64:1 on white); `--color-blue-400` `#6e9be6` to `#4a80d8` (done progress step 2.28:1 to 3.18:1 on its track, KPI hover border 2.80:1 to 3.91:1 on white).
-- Open: risk-scale solids (design decision), slider and progress track (IO-222), dashboard search field focus in forced colours (IO-221).
+- 142 pairs: 134 pass (14 of them within 0.3 of the limit), 8 fail and are waived below, 0 fail without a waiver.
+- Fixed in tokens: `--color-placeholder` `#8a97a8` to `#677689` (2.97:1 to 4.64:1 on white); `--color-blue-400` `#6e9be6` to `#4a80d8` (done progress step 2.28:1 to 3.91:1 on white, KPI hover border 2.80:1 to 3.91:1 on white).
+- Open: risk-scale solids (design decision), dashboard search field focus in forced colours (IO-221).
 
 ## Failures and near misses
 
-- color-blue-100 on color-white, slider track: 1.24:1, needs 3:1. Component change needed: the track class is bg-blue-100. Tracked in IO-222.
-- color-border on color-white, progress track (steps not yet done): 1.23:1, needs 3:1. Component change needed. The step number and label also show the state. Tracked in IO-222.
 - level-vl on color-white, level vl bar, donut segment, legend dot: 2.54:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
 - level-vl on color-surface, level vl bar, donut segment, legend dot: 2.47:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
 - level-l on color-white, level l bar, donut segment, legend dot: 1.98:1, needs 3:1. Solid risk-scale colour from hi-fi 00 Foundations. Every bar and segment is also labelled with its level code and value, so the colour is not the only cue (1.4.1). Needs a design decision (not a token-only fix).
@@ -40,7 +38,6 @@ Near misses (pass, within 0.3 of the limit):
 - color-warning on color-warning-bg, TRANSFER idle: 4.60:1 (needs 4.5:1)
 - color-field-border on color-canvas, input, select, checkbox, radio, chip border: 3.10:1 (needs 3:1)
 - color-field-border on color-disabled-bg, segmented control edge: 3.02:1 (needs 3:1)
-- color-blue-400 on color-border, done progress step vs its track: 3.18:1 (needs 3:1)
 
 Design observations, not contrast failures (a decision for the design owner):
 
@@ -187,11 +184,11 @@ Design observations, not contrast failures (a decision for the design owner):
 | Non-text 3:1 | `color-white` #ffffff | `color-blue-600` #1e5bc6 | focus ring gap and checkmark | 6.24 | pass |
 | Non-text 3:1 | `color-blue-600` #1e5bc6 | `color-blue-50` #eaf1fd | selected option, pager edge | 5.49 | pass |
 | Non-text 3:1 | `color-blue-600` #1e5bc6 | `color-border` #e3e8ef | selected tab edge, current progress step | 5.07 | pass |
-| Non-text 3:1 | `color-blue-400` #4a80d8 | `color-border` #e3e8ef | done progress step vs its track | 3.18 | pass (near) |
+| Non-text 3:1 | `color-blue-400` #4a80d8 | `color-white` #ffffff | done progress step | 3.91 | pass |
 | Non-text 3:1 | `color-blue-400` #4a80d8 | `color-white` #ffffff | KPI hover border, compare series | 3.91 | pass |
 | Non-text 3:1 | `color-blue-600` #1e5bc6 | `color-white` #ffffff | slider range and thumb border | 6.24 | pass |
-| Non-text 3:1 | `color-blue-100` #dce8fc | `color-white` #ffffff | slider track | 1.24 | FAIL (waived) |
-| Non-text 3:1 | `color-border` #e3e8ef | `color-white` #ffffff | progress track (steps not yet done) | 1.23 | FAIL (waived) |
+| Non-text 3:1 | `color-field-border` #7f8c9e | `color-white` #ffffff | slider track edge (1 px border on the blue-100 fill) | 3.42 | pass |
+| Non-text 3:1 | `color-field-border` #7f8c9e | `color-surface` #fbfcfe | progress track (steps not yet done) | 3.33 | pass |
 | Non-text 3:1 | `color-success` #15803d | `color-white` #ffffff | toast success edge and icon | 5.02 | pass |
 | Non-text 3:1 | `color-error` #b91c1c | `color-white` #ffffff | toast error edge and icon | 6.47 | pass |
 | Non-text 3:1 | `color-info` #1e5bc6 | `color-white` #ffffff | toast info edge and icon | 6.24 | pass |
