@@ -40,6 +40,51 @@ test.describe('project form', () => {
     await expect(page.getByText(/^ตามแผน \d+ %$/).first()).toBeVisible();
   });
 
+  test('the thumb snaps to the planned tick when dragged near it, not by keyboard', async ({
+    page,
+    isMobile,
+  }) => {
+    // A mouse drag; the touch emulation of the mobile project sends no mouse events.
+    test.skip(isMobile, 'drag is mouse driven');
+    await page.goto('/projects/new');
+    await page.locator('#project-startDate').fill('01/01/2569');
+    await page.locator('#project-endDate').fill('31/12/2569');
+    const slider = page.getByRole('slider', { name: 'ความก้าวหน้าปัจจุบัน' });
+    const box = page.getByRole('textbox', { name: /ความก้าวหน้าปัจจุบัน/ });
+    const planned = Number(
+      (
+        await page
+          .getByText(/^ตามแผน \d+ %$/)
+          .first()
+          .innerText()
+      ).match(/\d+/)?.[0],
+    );
+    await slider.scrollIntoViewIfNeeded();
+    const track = (await page.locator('span.touch-none').boundingBox())!;
+    // Drag onto a point 1 % away from the tick: it lands on the tick.
+    const at = (pct: number) => track.x + 10 + ((track.width - 20) * pct) / 100;
+    const y = track.y + track.height / 2;
+    await page.mouse.move(at(0), y);
+    await page.mouse.down();
+    await page.mouse.move(at(planned - 1), y, { steps: 8 });
+    await page.mouse.up();
+    await expect(box).toHaveValue(String(planned));
+
+    // The arrow keys still move by 1, even next to the tick.
+    await slider.focus();
+    await page.keyboard.press('ArrowRight');
+    await expect(box).toHaveValue(String(planned + 1));
+  });
+
+  test('shows the counters and the error while typing', async ({ page }) => {
+    await page.goto('/projects/new');
+    await page.locator('#project-name').fill('ก'.repeat(121));
+    await expect(page.getByText('121 / 120')).toBeVisible();
+    await expect(page.getByText('ชื่อโครงการยาวได้ไม่เกิน 120 ตัวอักษร')).toBeVisible();
+    await page.locator('#project-progress').fill('12.3');
+    await expect(page.getByText(/ต้องเป็นจำนวนเต็มระหว่าง 0–100 %/)).toBeVisible();
+  });
+
   test('creating a project lands on the assessment of its version 1', async ({ page }) => {
     await page.goto('/projects/new');
     await page.locator('#project-name').fill('ทดสอบแบบฟอร์ม');

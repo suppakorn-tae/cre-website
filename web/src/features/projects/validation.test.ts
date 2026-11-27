@@ -3,7 +3,10 @@ import { describe, expect, it } from 'vitest';
 import {
   emptyForm,
   fromProject,
+  length,
   parseBaht,
+  parseProgress,
+  snapProgress,
   toPayload,
   validateForm,
   type FormValues,
@@ -39,7 +42,9 @@ describe('validateForm', () => {
   it('keeps the nickname to 3-4 characters', () => {
     expect(validateForm({ ...valid, nickname: 'TK' }).nickname).toBe('nicknameLength');
     expect(validateForm({ ...valid, nickname: 'TK234' }).nickname).toBe('nicknameLength');
-    expect(validateForm({ ...valid, nickname: 'เต่า1' }).nickname).toBeUndefined();
+    // Code points like the server: a tone mark counts, so "เต่า" is 4 and "เต่า1" is 5.
+    expect(validateForm({ ...valid, nickname: 'เต่า' }).nickname).toBeUndefined();
+    expect(validateForm({ ...valid, nickname: 'เต่า1' }).nickname).toBe('nicknameLength');
     expect(validateForm({ ...valid, nickname: '   ' }).nickname).toBe('nicknameRequired');
   });
 
@@ -67,6 +72,67 @@ describe('validateForm', () => {
     expect(validateForm({ ...valid, progress: '-1' }).progress).toBe('progressRange');
     expect(validateForm({ ...valid, progress: '' }).progress).toBeUndefined();
     expect(toPayload({ ...valid, progress: '' }).progress_pct).toBe(0);
+  });
+});
+
+describe('text limits', () => {
+  it('limits the name to 120 characters', () => {
+    expect(validateForm({ ...valid, name: 'ก'.repeat(120) }).name).toBeUndefined();
+    expect(validateForm({ ...valid, name: 'ก'.repeat(121) }).name).toBe('nameLength');
+    // Surrounding spaces do not count, like the server.
+    expect(validateForm({ ...valid, name: ` ${'ก'.repeat(120)} ` }).name).toBeUndefined();
+  });
+
+  it('counts Thai tone marks and astral characters as code points', () => {
+    expect(length('เต่า')).toBe(4);
+    expect(length('😀')).toBe(1);
+    expect(validateForm({ ...valid, name: 'ก่'.repeat(60) }).name).toBeUndefined();
+    expect(validateForm({ ...valid, name: 'ก่'.repeat(61) }).name).toBe('nameLength');
+  });
+
+  it('limits the other island and other type to 60 characters', () => {
+    const base = { ...valid, islandCode: 'other', typeCode: 'other' } as const;
+    expect(
+      validateForm({ ...base, islandOther: 'ก'.repeat(60), typeOther: 'ก'.repeat(60) }),
+    ).toEqual({});
+    const errors = validateForm({
+      ...base,
+      islandOther: 'ก'.repeat(61),
+      typeOther: 'ก'.repeat(61),
+    });
+    expect(errors.islandOther).toBe('islandOtherLength');
+    expect(errors.typeOther).toBe('typeOtherLength');
+  });
+
+  it('limits the description to 1,000 characters', () => {
+    expect(validateForm({ ...valid, description: 'ก'.repeat(1000) }).description).toBeUndefined();
+    expect(validateForm({ ...valid, description: 'ก'.repeat(1001) }).description).toBe(
+      'descriptionLength',
+    );
+  });
+});
+
+describe('progress', () => {
+  it('accepts whole numbers only, as the API keeps an integer', () => {
+    expect(parseProgress('12')).toBe(12);
+    expect(parseProgress('12.3')).toBeNull();
+    expect(parseProgress('12.34')).toBeNull();
+    expect(validateForm({ ...valid, progress: '12.3' }).progress).toBe('progressRange');
+    expect(validateForm({ ...valid, progress: '100' }).progress).toBeUndefined();
+  });
+});
+
+describe('snapProgress', () => {
+  it('snaps to the planned tick within 2 percent and not beyond', () => {
+    expect(snapProgress(48, 50)).toBe(50);
+    expect(snapProgress(52, 50)).toBe(50);
+    expect(snapProgress(50, 50)).toBe(50);
+    expect(snapProgress(47, 50)).toBe(47);
+    expect(snapProgress(53, 50)).toBe(53);
+  });
+
+  it('leaves the value alone without a planned tick', () => {
+    expect(snapProgress(48, null)).toBe(48);
   });
 });
 

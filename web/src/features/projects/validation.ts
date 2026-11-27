@@ -28,6 +28,12 @@ export const TYPE_CODES: ProjectType[] = [
 
 export const NICKNAME_MIN = 3;
 export const NICKNAME_MAX = 4;
+export const NAME_MAX = 120;
+export const OTHER_MAX = 60;
+export const DESCRIPTION_MAX = 1000;
+export const PROGRESS_MAX = 100;
+/** The slider thumb snaps to the planned tick within this many percent. */
+export const SNAP_RANGE = 2;
 
 /** Form state: everything the user types stays text, so typing is not rewritten. */
 export type FormValues = {
@@ -70,21 +76,38 @@ export function parseBaht(text: string): number | null {
   return Number(clean);
 }
 
-/** Progress in percent; an empty field means the default 0. */
+/**
+ * Progress in percent; an empty field means the default 0. Whole numbers only:
+ * the API and the database keep progress as an integer (IO-196 needs-decision
+ * for one decimal place).
+ */
 export function parseProgress(text: string): number | null {
   const clean = text.trim();
   if (clean === '') return 0;
-  if (!/^\d+(\.\d{1,2})?$/.test(clean)) return null;
+  if (!/^\d+$/.test(clean)) return null;
   return Number(clean);
 }
 
-// Characters as the user sees them: a Thai tone mark counts with its letter.
-const segmenter = new Intl.Segmenter('th', { granularity: 'grapheme' });
-const length = (text: string) => [...segmenter.segment(text.trim())].length;
+/**
+ * Length the server checks: Unicode code points of the trimmed text. A Thai
+ * tone mark or vowel above or below a letter counts as its own code point.
+ */
+export const length = (text: string) => [...text.trim()].length;
+
+/** Length shown in the "n / max" counter: what the user typed, untrimmed. */
+export const typedLength = (text: string) => [...text].length;
+
+/** The slider value after a drag: the planned tick when within `SNAP_RANGE` of it. */
+export function snapProgress(value: number, planned: number | null): number {
+  if (planned === null) return value;
+  return Math.abs(value - planned) <= SNAP_RANGE ? planned : value;
+}
 
 export function validateForm(values: FormValues): FormErrors {
   const errors: FormErrors = {};
-  if (!values.name.trim()) errors.name = 'nameRequired';
+  const name = length(values.name);
+  if (name === 0) errors.name = 'nameRequired';
+  else if (name > NAME_MAX) errors.name = 'nameLength';
 
   const nick = length(values.nickname);
   if (nick === 0) errors.nickname = 'nicknameRequired';
@@ -93,11 +116,15 @@ export function validateForm(values: FormValues): FormErrors {
   if (!values.islandCode) errors.islandCode = 'islandRequired';
   else if (values.islandCode === 'other' && !values.islandOther.trim()) {
     errors.islandOther = 'islandOtherRequired';
+  } else if (values.islandCode === 'other' && length(values.islandOther) > OTHER_MAX) {
+    errors.islandOther = 'islandOtherLength';
   }
 
   if (!values.typeCode) errors.typeCode = 'typeRequired';
   else if (values.typeCode === 'other' && !values.typeOther.trim()) {
     errors.typeOther = 'typeOtherRequired';
+  } else if (values.typeCode === 'other' && length(values.typeOther) > OTHER_MAX) {
+    errors.typeOther = 'typeOtherLength';
   }
 
   const start = parseThaiDateInput(values.startDate);
@@ -116,7 +143,9 @@ export function validateForm(values: FormValues): FormErrors {
   }
 
   const progress = parseProgress(values.progress);
-  if (progress === null || progress > 100) errors.progress = 'progressRange';
+  if (progress === null || progress > PROGRESS_MAX) errors.progress = 'progressRange';
+
+  if (length(values.description) > DESCRIPTION_MAX) errors.description = 'descriptionLength';
 
   return errors;
 }
