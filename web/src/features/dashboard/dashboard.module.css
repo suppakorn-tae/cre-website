@@ -44,7 +44,7 @@
   padding: 0 var(--space-4);
   border-radius: var(--radius-control);
   background: var(--color-blue-600);
-  color: var(--color-white);
+  color: var(--color-on-solid);
   font-weight: var(--weight-medium);
   text-decoration: none;
 }
@@ -191,7 +191,7 @@
   padding: 0 var(--space-3);
   border: 1px solid var(--color-field-border);
   border-radius: var(--radius-control);
-  background: var(--color-white);
+  background: var(--color-card);
   color: var(--color-text-muted);
 }
 .search:focus-within {
@@ -461,7 +461,7 @@
   padding: 0 var(--space-2);
   border-radius: var(--radius-badge);
   background: var(--color-navy-900);
-  color: var(--color-white);
+  color: var(--color-on-solid);
   font-size: var(--text-caption);
   font-weight: var(--weight-semibold);
   white-space: nowrap;
@@ -650,7 +650,7 @@
   padding: var(--space-3);
   border: 1px solid var(--color-divider);
   border-radius: var(--radius-control);
-  background: var(--color-white);
+  background: var(--color-card);
 }
 .islandInfo {
   display: grid;
@@ -864,7 +864,7 @@
 }
 .actionOutline {
   border-color: var(--color-field-border);
-  background: var(--color-white);
+  background: var(--color-card);
   color: var(--color-text);
 }
 .actionOutline:hover,

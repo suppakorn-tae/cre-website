@@ -117,7 +117,7 @@ export function ReportButton({
             </Tooltip.Trigger>
             <Tooltip.Content
               sideOffset={6}
-              className="z-50 max-w-64 rounded-control bg-navy-900 px-2 py-1 text-caption text-white"
+              className="z-50 max-w-64 rounded-control bg-navy-900 px-2 py-1 text-caption text-on-solid"
             >
               {reason}
             </Tooltip.Content>
