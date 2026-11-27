@@ -132,3 +132,29 @@ func TestResubmitRecalculatesAndDropsIncomplete(t *testing.T) {
 		t.Fatalf("submission_no = %d, want 2", n)
 	}
 }
+
+func TestResubmitOverwritesResultsAndAdviceInBulk(t *testing.T) {
+	ctx := context.Background()
+	db, s, acct, proj, v := setupSubmit(t)
+	for _, c := range []string{"EC-MG-1", "EC-MG-2", "EC-MG-3"} {
+		testutil.NewAnswer(t, db, v.ID, c)
+	}
+	o, p, vid := ids(acct, proj, v)
+	if _, err := s.Submit(ctx, o, p, vid); err != nil {
+		t.Fatal(err)
+	}
+	advice := count(t, db, `SELECT count(*) FROM result_advice_list WHERE version_id = $1`, v.ID)
+	if n := count(t, db, `SELECT count(*) FROM risk_result WHERE version_id = $1`, v.ID); n != 3 {
+		t.Fatalf("results = %d, want 3", n)
+	}
+	// A second submit must overwrite, not duplicate or fail on the keys.
+	if _, err := s.Submit(ctx, o, p, vid); err != nil {
+		t.Fatal(err)
+	}
+	if n := count(t, db, `SELECT count(*) FROM risk_result WHERE version_id = $1`, v.ID); n != 3 {
+		t.Fatalf("results after resubmit = %d, want 3", n)
+	}
+	if n := count(t, db, `SELECT count(*) FROM result_advice_list WHERE version_id = $1`, v.ID); n != advice {
+		t.Fatalf("advice rows = %d, want %d", n, advice)
+	}
+}

@@ -36,25 +36,30 @@ SELECT impact_code, a::float8 AS a, b::float8 AS b, c::float8 AS c,
 FROM version_impact_threshold
 WHERE version_id = @version_id;
 
--- name: UpsertRiskResult :exec
+-- name: UpsertRiskResults :exec
 -- Upserted, not replaced, so a chosen strategy survives a resubmission.
+-- Parallel arrays, one element per scored indicator (codes are distinct).
 INSERT INTO risk_result (version_id, indicator_code, x, y1_pct, y2_pct,
     rl, ri_c, ri_t, ri_e, ri_max, rm, level)
-VALUES (@version_id, @indicator_code, @x::float8, @y1_pct::float8, @y2_pct::float8,
-    @rl::float8, @ri_c::float8, @ri_t::float8, @ri_e::float8, @ri_max::float8,
-    @rm::float8, @level::risk_level)
+SELECT @version_id::uuid, (@codes::text[])[g.i], (@x::float8[])[g.i], (@y1_pct::float8[])[g.i],
+    (@y2_pct::float8[])[g.i], (@rl::float8[])[g.i], (@ri_c::float8[])[g.i],
+    (@ri_t::float8[])[g.i], (@ri_e::float8[])[g.i], (@ri_max::float8[])[g.i],
+    (@rm::float8[])[g.i], (@levels::text[])[g.i]::risk_level
+FROM generate_series(1, cardinality(@codes::text[])) AS g(i)
 ON CONFLICT (version_id, indicator_code) DO UPDATE SET
     x = EXCLUDED.x, y1_pct = EXCLUDED.y1_pct, y2_pct = EXCLUDED.y2_pct,
     rl = EXCLUDED.rl, ri_c = EXCLUDED.ri_c, ri_t = EXCLUDED.ri_t, ri_e = EXCLUDED.ri_e,
     ri_max = EXCLUDED.ri_max, rm = EXCLUDED.rm, level = EXCLUDED.level;
 
--- name: DeleteResultAdvice :exec
+-- name: DeleteResultsAdvice :exec
 DELETE FROM result_advice_list
-WHERE version_id = @version_id AND indicator_code = @indicator_code;
+WHERE version_id = @version_id AND indicator_code = ANY(@codes::text[]);
 
--- name: InsertResultAdvice :exec
+-- name: InsertResultsAdvice :exec
+-- Parallel arrays: one element per (indicator, advice list) pair.
 INSERT INTO result_advice_list (version_id, indicator_code, list)
-VALUES (@version_id, @indicator_code, @list::advice_list);
+SELECT @version_id::uuid, (@codes::text[])[g.i], (@lists::text[])[g.i]::advice_list
+FROM generate_series(1, cardinality(@codes::text[])) AS g(i);
 
 -- name: DeleteStaleResults :exec
 -- Results of indicators that are no longer complete; advice lists and

@@ -189,9 +189,9 @@ func (s *AnswerService) Upsert(
 		codes := make([]string, len(in))
 		for i, a := range in {
 			codes[i] = a.IndicatorCode
-			if err := save(ctx, q, versionID, a); err != nil {
-				return err
-			}
+		}
+		if err := saveAll(ctx, q, versionID, in); err != nil {
+			return err
 		}
 		items, err := read(ctx, q, versionID, codes)
 		out = AnswerList{VersionID: versionID, Editable: true, Items: items}
@@ -228,45 +228,50 @@ func unknownIndicators(ctx context.Context, q *sqlc.Queries, in []AnswerInput, p
 	return fields, nil
 }
 
-// save writes one answer exactly as entered: decimals go to numeric as their
-// shortest decimal text, so 0.1 is stored as 0.1.
-func save(ctx context.Context, q *sqlc.Queries, versionID uuid.UUID, a AnswerInput) error {
-	p := sqlc.UpsertAnswerParams{VersionID: versionID, IndicatorCode: a.IndicatorCode}
-	var err error
-	if a.X != nil {
-		if p.X, err = numeric(*a.X); err != nil {
-			return err
-		}
-	}
-	if a.Y1 != nil {
-		if p.Y1Value, err = numeric(a.Y1.Value); err != nil {
-			return err
-		}
-		p.Y1Unit = sqlc.NullCostUnit{CostUnit: sqlc.CostUnit(a.Y1.Unit), Valid: true}
-	}
-	if a.Y2 != nil {
-		if p.Y2Value, err = numeric(a.Y2.Value); err != nil {
-			return err
-		}
-		p.Y2Unit = sqlc.NullTimeUnit{TimeUnit: sqlc.TimeUnit(a.Y2.Unit), Valid: true}
-	}
-	if err := q.UpsertAnswer(ctx, p); err != nil {
-		return err
-	}
-	if err := q.DeleteAnswerY3(ctx, sqlc.DeleteAnswerY3Params{VersionID: versionID, IndicatorCode: a.IndicatorCode}); err != nil {
-		return err
-	}
-	if len(a.Y3) == 0 {
+// saveAll writes the answers exactly as entered, in one statement per group:
+// the answers, the removal of the stored y3 options, and the new y3 options.
+// Decimals go to numeric as their shortest decimal text, so 0.1 is stored as
+// 0.1. An empty string in a parallel array means NULL.
+func saveAll(ctx context.Context, q *sqlc.Queries, versionID uuid.UUID, in []AnswerInput) error {
+	if len(in) == 0 {
 		return nil
 	}
-	return q.InsertAnswerY3(ctx, sqlc.InsertAnswerY3Params{VersionID: versionID, IndicatorCode: a.IndicatorCode, Options: a.Y3})
+	n := len(in)
+	p := sqlc.UpsertAnswersParams{
+		VersionID: versionID, Codes: make([]string, n), X: make([]string, n),
+		Y1Values: make([]string, n), Y1Units: make([]string, n),
+		Y2Values: make([]string, n), Y2Units: make([]string, n),
+	}
+	var y3Codes, y3Options []string
+	for i, a := range in {
+		p.Codes[i] = a.IndicatorCode
+		if a.X != nil {
+			p.X[i] = decimal(*a.X)
+		}
+		if a.Y1 != nil {
+			p.Y1Values[i], p.Y1Units[i] = decimal(a.Y1.Value), a.Y1.Unit
+		}
+		if a.Y2 != nil {
+			p.Y2Values[i], p.Y2Units[i] = decimal(a.Y2.Value), a.Y2.Unit
+		}
+		for _, o := range a.Y3 {
+			y3Codes = append(y3Codes, a.IndicatorCode)
+			y3Options = append(y3Options, o)
+		}
+	}
+	if err := q.UpsertAnswers(ctx, p); err != nil {
+		return err
+	}
+	if err := q.DeleteAnswersY3(ctx, sqlc.DeleteAnswersY3Params{VersionID: versionID, Codes: p.Codes}); err != nil {
+		return err
+	}
+	if len(y3Codes) == 0 {
+		return nil
+	}
+	return q.InsertAnswersY3(ctx, sqlc.InsertAnswersY3Params{VersionID: versionID, Codes: y3Codes, Options: y3Options})
 }
 
-func numeric(v float64) (pgtype.Numeric, error) {
-	var n pgtype.Numeric
-	err := n.Scan(strconv.FormatFloat(v, 'f', -1, 64))
-	return n, err
-}
+func decimal(v float64) string { return strconv.FormatFloat(v, 'f', -1, 64) }
 
 // read returns the stored answers of the version, only for codes when given.
 func read(ctx context.Context, q *sqlc.Queries, versionID uuid.UUID, codes []string) ([]Answer, error) {

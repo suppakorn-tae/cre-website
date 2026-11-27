@@ -166,28 +166,39 @@ func (s *SubmitService) Submit(ctx context.Context, owner, projectID, versionID 
 
 func store(ctx context.Context, q *sqlc.Queries, versionID uuid.UUID, scored []Scored, rmDecimals int) (SubmitResult, error) {
 	res := SubmitResult{Scored: len(scored), LevelCounts: map[engine.RiskLevel]int{}}
-	kept := make([]string, len(scored))
+	n := len(scored)
+	kept := make([]string, n)
+	rp := sqlc.UpsertRiskResultsParams{
+		VersionID: versionID, Codes: kept, X: make([]float64, n), Y1Pct: make([]float64, n),
+		Y2Pct: make([]float64, n), Rl: make([]float64, n), RiC: make([]float64, n),
+		RiT: make([]float64, n), RiE: make([]float64, n), RiMax: make([]float64, n),
+		Rm: make([]float64, n), Levels: make([]string, n),
+	}
+	var adviceCodes, adviceLists []string
 	var sum float64
 	for i, r := range scored {
 		kept[i] = r.Code
 		sum += r.RM
 		res.LevelCounts[r.Level]++
-		if err := q.UpsertRiskResult(ctx, sqlc.UpsertRiskResultParams{
-			VersionID: versionID, IndicatorCode: r.Code, X: r.Input.X,
-			Y1Pct: r.Input.Y1Pct, Y2Pct: r.Input.Y2Pct, Rl: r.RL, RiC: r.RIC, RiT: r.RIT,
-			RiE: r.RIE, RiMax: r.RIMax, Rm: r.RM, Level: sqlc.RiskLevel(r.Level),
+		rp.X[i], rp.Y1Pct[i], rp.Y2Pct[i] = r.Input.X, r.Input.Y1Pct, r.Input.Y2Pct
+		rp.Rl[i], rp.RiC[i], rp.RiT[i], rp.RiE[i] = r.RL, r.RIC, r.RIT, r.RIE
+		rp.RiMax[i], rp.Rm[i], rp.Levels[i] = r.RIMax, r.RM, string(r.Level)
+		for _, l := range r.Advice {
+			adviceCodes = append(adviceCodes, r.Code)
+			adviceLists = append(adviceLists, string(l))
+		}
+	}
+	if err := q.UpsertRiskResults(ctx, rp); err != nil {
+		return res, err
+	}
+	if err := q.DeleteResultsAdvice(ctx, sqlc.DeleteResultsAdviceParams{VersionID: versionID, Codes: kept}); err != nil {
+		return res, err
+	}
+	if len(adviceCodes) > 0 {
+		if err := q.InsertResultsAdvice(ctx, sqlc.InsertResultsAdviceParams{
+			VersionID: versionID, Codes: adviceCodes, Lists: adviceLists,
 		}); err != nil {
 			return res, err
-		}
-		if err := q.DeleteResultAdvice(ctx, sqlc.DeleteResultAdviceParams{VersionID: versionID, IndicatorCode: r.Code}); err != nil {
-			return res, err
-		}
-		for _, l := range r.Advice {
-			if err := q.InsertResultAdvice(ctx, sqlc.InsertResultAdviceParams{
-				VersionID: versionID, IndicatorCode: r.Code, List: sqlc.AdviceList(l),
-			}); err != nil {
-				return res, err
-			}
 		}
 	}
 	p := math.Pow10(rmDecimals)

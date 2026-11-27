@@ -26,18 +26,18 @@ func (q *Queries) DeleteLowRiskStrategies(ctx context.Context, versionID uuid.UU
 	return err
 }
 
-const deleteResultAdvice = `-- name: DeleteResultAdvice :exec
+const deleteResultsAdvice = `-- name: DeleteResultsAdvice :exec
 DELETE FROM result_advice_list
-WHERE version_id = $1 AND indicator_code = $2
+WHERE version_id = $1 AND indicator_code = ANY($2::text[])
 `
 
-type DeleteResultAdviceParams struct {
-	VersionID     uuid.UUID
-	IndicatorCode string
+type DeleteResultsAdviceParams struct {
+	VersionID uuid.UUID
+	Codes     []string
 }
 
-func (q *Queries) DeleteResultAdvice(ctx context.Context, arg DeleteResultAdviceParams) error {
-	_, err := q.db.Exec(ctx, deleteResultAdvice, arg.VersionID, arg.IndicatorCode)
+func (q *Queries) DeleteResultsAdvice(ctx context.Context, arg DeleteResultsAdviceParams) error {
+	_, err := q.db.Exec(ctx, deleteResultsAdvice, arg.VersionID, arg.Codes)
 	return err
 }
 
@@ -58,19 +58,21 @@ func (q *Queries) DeleteStaleResults(ctx context.Context, arg DeleteStaleResults
 	return err
 }
 
-const insertResultAdvice = `-- name: InsertResultAdvice :exec
+const insertResultsAdvice = `-- name: InsertResultsAdvice :exec
 INSERT INTO result_advice_list (version_id, indicator_code, list)
-VALUES ($1, $2, $3::advice_list)
+SELECT $1::uuid, ($2::text[])[g.i], ($3::text[])[g.i]::advice_list
+FROM generate_series(1, cardinality($2::text[])) AS g(i)
 `
 
-type InsertResultAdviceParams struct {
-	VersionID     uuid.UUID
-	IndicatorCode string
-	List          AdviceList
+type InsertResultsAdviceParams struct {
+	VersionID uuid.UUID
+	Codes     []string
+	Lists     []string
 }
 
-func (q *Queries) InsertResultAdvice(ctx context.Context, arg InsertResultAdviceParams) error {
-	_, err := q.db.Exec(ctx, insertResultAdvice, arg.VersionID, arg.IndicatorCode, arg.List)
+// Parallel arrays: one element per (indicator, advice list) pair.
+func (q *Queries) InsertResultsAdvice(ctx context.Context, arg InsertResultsAdviceParams) error {
+	_, err := q.db.Exec(ctx, insertResultsAdvice, arg.VersionID, arg.Codes, arg.Lists)
 	return err
 }
 
@@ -273,38 +275,41 @@ func (q *Queries) MarkVersionSubmitted(ctx context.Context, versionID uuid.UUID)
 	return submitted_at, err
 }
 
-const upsertRiskResult = `-- name: UpsertRiskResult :exec
+const upsertRiskResults = `-- name: UpsertRiskResults :exec
 INSERT INTO risk_result (version_id, indicator_code, x, y1_pct, y2_pct,
     rl, ri_c, ri_t, ri_e, ri_max, rm, level)
-VALUES ($1, $2, $3::float8, $4::float8, $5::float8,
-    $6::float8, $7::float8, $8::float8, $9::float8, $10::float8,
-    $11::float8, $12::risk_level)
+SELECT $1::uuid, ($2::text[])[g.i], ($3::float8[])[g.i], ($4::float8[])[g.i],
+    ($5::float8[])[g.i], ($6::float8[])[g.i], ($7::float8[])[g.i],
+    ($8::float8[])[g.i], ($9::float8[])[g.i], ($10::float8[])[g.i],
+    ($11::float8[])[g.i], ($12::text[])[g.i]::risk_level
+FROM generate_series(1, cardinality($2::text[])) AS g(i)
 ON CONFLICT (version_id, indicator_code) DO UPDATE SET
     x = EXCLUDED.x, y1_pct = EXCLUDED.y1_pct, y2_pct = EXCLUDED.y2_pct,
     rl = EXCLUDED.rl, ri_c = EXCLUDED.ri_c, ri_t = EXCLUDED.ri_t, ri_e = EXCLUDED.ri_e,
     ri_max = EXCLUDED.ri_max, rm = EXCLUDED.rm, level = EXCLUDED.level
 `
 
-type UpsertRiskResultParams struct {
-	VersionID     uuid.UUID
-	IndicatorCode string
-	X             float64
-	Y1Pct         float64
-	Y2Pct         float64
-	Rl            float64
-	RiC           float64
-	RiT           float64
-	RiE           float64
-	RiMax         float64
-	Rm            float64
-	Level         RiskLevel
+type UpsertRiskResultsParams struct {
+	VersionID uuid.UUID
+	Codes     []string
+	X         []float64
+	Y1Pct     []float64
+	Y2Pct     []float64
+	Rl        []float64
+	RiC       []float64
+	RiT       []float64
+	RiE       []float64
+	RiMax     []float64
+	Rm        []float64
+	Levels    []string
 }
 
 // Upserted, not replaced, so a chosen strategy survives a resubmission.
-func (q *Queries) UpsertRiskResult(ctx context.Context, arg UpsertRiskResultParams) error {
-	_, err := q.db.Exec(ctx, upsertRiskResult,
+// Parallel arrays, one element per scored indicator (codes are distinct).
+func (q *Queries) UpsertRiskResults(ctx context.Context, arg UpsertRiskResultsParams) error {
+	_, err := q.db.Exec(ctx, upsertRiskResults,
 		arg.VersionID,
-		arg.IndicatorCode,
+		arg.Codes,
 		arg.X,
 		arg.Y1Pct,
 		arg.Y2Pct,
@@ -314,7 +319,7 @@ func (q *Queries) UpsertRiskResult(ctx context.Context, arg UpsertRiskResultPara
 		arg.RiE,
 		arg.RiMax,
 		arg.Rm,
-		arg.Level,
+		arg.Levels,
 	)
 	return err
 }

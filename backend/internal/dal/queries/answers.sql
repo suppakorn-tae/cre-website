@@ -19,10 +19,18 @@ FOR SHARE OF v;
 -- name: ListExistingIndicatorCodes :many
 SELECT code FROM indicator WHERE code = ANY(@codes::text[]);
 
--- name: UpsertAnswer :exec
--- Replaces the stored answer of one indicator; NULL columns are cleared.
+-- name: UpsertAnswers :exec
+-- Replaces the stored answers of many indicators in one statement; NULL
+-- columns are cleared. Arrays are parallel (picked by index, see below); an empty string stands for NULL.
+-- Numbers travel as text so they are stored exactly as entered. Codes must be
+-- distinct (ValidateAnswers rejects duplicates).
 INSERT INTO answer (version_id, indicator_code, x, y1_value, y1_unit, y2_value, y2_unit)
-VALUES (@version_id, @indicator_code, @x, @y1_value, @y1_unit, @y2_value, @y2_unit)
+SELECT @version_id::uuid, (@codes::text[])[g.i], NULLIF((@x::text[])[g.i], '')::numeric,
+    NULLIF((@y1_values::text[])[g.i], '')::numeric,
+    NULLIF((@y1_units::text[])[g.i], '')::cost_unit,
+    NULLIF((@y2_values::text[])[g.i], '')::numeric,
+    NULLIF((@y2_units::text[])[g.i], '')::time_unit
+FROM generate_series(1, cardinality(@codes::text[])) AS g(i)
 ON CONFLICT (version_id, indicator_code) DO UPDATE
 SET x = EXCLUDED.x,
     y1_value = EXCLUDED.y1_value,
@@ -31,12 +39,15 @@ SET x = EXCLUDED.x,
     y2_unit = EXCLUDED.y2_unit,
     updated_at = now();
 
--- name: DeleteAnswerY3 :exec
-DELETE FROM answer_y3 WHERE version_id = @version_id AND indicator_code = @indicator_code;
+-- name: DeleteAnswersY3 :exec
+DELETE FROM answer_y3 WHERE version_id = @version_id AND indicator_code = ANY(@codes::text[]);
 
--- name: InsertAnswerY3 :exec
+-- name: InsertAnswersY3 :exec
+-- Parallel arrays: one element per (indicator, option) pair. sqlc cannot type a
+-- multi-argument unnest, so rows are picked by index instead.
 INSERT INTO answer_y3 (version_id, indicator_code, option_code)
-SELECT @version_id, @indicator_code, unnest(@options::text[]);
+SELECT @version_id::uuid, (@codes::text[])[g.i], (@options::text[])[g.i]
+FROM generate_series(1, cardinality(@codes::text[])) AS g(i);
 
 -- name: ListAnswers :many
 SELECT * FROM answer WHERE version_id = @version_id ORDER BY indicator_code;
