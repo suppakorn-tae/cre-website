@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
-import { expectNoViolations } from '../../helpers/a11y';
+import AxeBuilder from '@axe-core/playwright';
+
+import { expectNoViolations, isKnown, KNOWN_ISSUES, WCAG_TAGS } from '../../helpers/a11y';
 
 // Mock mode (see playwright.mock.config.ts). The sample project and versions
 // are in web/src/features/versions/mocks.ts.
@@ -43,7 +45,6 @@ async function eachPopover(page: Page, label: string) {
     await trigger.scrollIntoViewIfNeeded();
     await trigger.click();
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
-    await page.waitForTimeout(250);
     await expectNoViolations(page, `${label}: popover ${i + 1} of ${count} open`);
     await page.keyboard.press('Escape');
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
@@ -95,6 +96,13 @@ const ROUTES: Route[] = [
     ready: 'แนวโน้มข้ามเวอร์ชัน',
   },
   {
+    // The old compare page redirects to the RM view of the versions tab, so this scans
+    // the page a person lands on from the compare route.
+    name: 'compare (redirects to the versions tab, RM view)',
+    path: `/projects/${PROJECT}/compare`,
+    ready: 'RM รายตัวชี้วัด',
+  },
+  {
     name: 'project versions tab, RM view',
     path: `/projects/${PROJECT}?tab=versions&view=rm`,
     ready: 'RM รายตัวชี้วัด',
@@ -127,7 +135,6 @@ const ROUTES: Route[] = [
           .first()
           .click();
         await expect(page.getByRole('dialog')).toBeVisible();
-        await page.waitForTimeout(250);
       },
       'filter and unit popovers open': async (page) => {
         await page.keyboard.press('Escape');
@@ -141,7 +148,6 @@ const ROUTES: Route[] = [
       'submit dialog open': async (page) => {
         await page.getByRole('button', { name: 'ส่งผลการประเมิน' }).first().click();
         await expect(page.getByRole('alertdialog')).toBeVisible();
-        await page.waitForTimeout(250);
       },
     },
   },
@@ -187,6 +193,28 @@ const ROUTES: Route[] = [
   { name: 'admin audit', path: '/admin/audit', ready: 'เปลี่ยนบทบาท', states: popovers },
   { name: 'admin export', path: '/admin/export', ready: 'ส่งออกข้อมูลวิจัย' },
 ];
+
+test.describe('known issues', () => {
+  test.skip(({ isMobile }) => isMobile, 'one Chrome project is enough');
+
+  // A fixed issue must lose its entry: the entry would hide a new violation later.
+  for (const known of KNOWN_ISSUES) {
+    test(`${known.issue} is still present (${known.rule})`, async ({ page }) => {
+      await page.setViewportSize({ width: 1280, height: 900 });
+      await page.goto(known.probe);
+      await expect(visible(page, known.ready)).toBeVisible({ timeout: 30_000 });
+      const { violations } = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+      const hit = violations
+        .filter((v) => v.id === known.rule)
+        .flatMap((v) => v.nodes)
+        .some((n) => isKnown(known.rule, n.target));
+      expect(
+        hit,
+        `${known.issue} no longer shows on ${known.probe}: delete its entry in e2e/helpers/a11y.ts`,
+      ).toBe(true);
+    });
+  }
+});
 
 test.describe('axe, WCAG 2.2 AA', () => {
   // The width is set by the test; one Chrome project is enough.
