@@ -231,6 +231,7 @@ test.describe('axe, WCAG 2.2 AA', () => {
           await page.emulateMedia({ colorScheme: theme });
           await page.setViewportSize({ width, height: 900 });
           await page.goto(route.path);
+          await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
           await expect(visible(page, route.ready)).toBeVisible();
           await expect(page.locator('[role="status"][aria-label]')).toHaveCount(0);
           await expectNoViolations(page, route.name);

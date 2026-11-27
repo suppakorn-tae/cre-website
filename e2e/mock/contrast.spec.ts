@@ -176,6 +176,11 @@ async function measure(
 /** Opens a page and waits for its mock data. */
 async function open(page: Page, path: string, ready: string | RegExp) {
   await page.goto(path);
+  // The theme the run asked for must be the one the page applied, not a silent fall back.
+  const scheme = await page.evaluate(() =>
+    matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light',
+  );
+  await expect(page.locator('html')).toHaveAttribute('data-theme', scheme);
   await expect(page.getByText(ready).and(page.locator(':visible')).first()).toBeVisible();
   // Charts and counters animate for 700 ms; read the end colours.
   await page.emulateMedia({ reducedMotion: 'reduce' });
