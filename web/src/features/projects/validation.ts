@@ -9,7 +9,7 @@ export type ProjectIsland = components['schemas']['ProjectIsland'];
 export type ProjectType = components['schemas']['ProjectType'];
 export type Project = components['schemas']['Project'];
 
-/** True when the api refused a create because the account already has 3 projects. */
+/** True when the api refused a create because the account already has the most projects it may own. */
 export function isProjectLimitError(failure: unknown): boolean {
   return (
     failure instanceof ApiError &&
