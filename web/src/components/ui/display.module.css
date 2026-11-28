@@ -746,6 +746,40 @@ button.kpiSelected:hover {
     animation: donut-sweep var(--motion-chart, 700ms) ease-out both;
   }
 }
+/* Donut arcs with a tooltip: the hovered or focused arc grows a little. Instant under reduced motion. */
+.donutArc {
+  outline: none;
+  cursor: pointer;
+}
+/* An SVG shape takes no box-shadow, so the keyboard ring is an outline round the arc's box. */
+.donutArc:focus-visible {
+  outline: 2px solid var(--color-blue-600);
+  outline-offset: 3px;
+}
+.donutArc[data-active] {
+  stroke-width: 7.6;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .donutArc {
+    transition: stroke-width var(--motion-fast) var(--motion-ease);
+  }
+}
+.donutTipTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 600;
+}
+.donutTipDot {
+  flex: none;
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 9999px;
+  box-shadow: 0 0 0 1px var(--color-on-solid);
+}
+.donutTipDetail {
+  display: block;
+}
 @keyframes donut-sweep {
   from {
     stroke-dashoffset: 100;
