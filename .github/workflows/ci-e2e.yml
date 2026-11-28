@@ -28,6 +28,7 @@ jobs:
     outputs:
       mock: ${{ steps.filter.outputs.mock }}
       stack: ${{ steps.filter.outputs.stack }}
+      zap: ${{ steps.filter.outputs.zap }}
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
@@ -38,6 +39,12 @@ jobs:
               - "web/**"
               - "e2e/**"
               - "contracts/**"
+              - ".github/workflows/ci-e2e.yml"
+            zap:
+              - "e2e/zap/**"
+              - "deploy/compose/Caddyfile*"
+              - "web/src/proxy.ts"
+              - "backend/internal/http/middleware/**"
               - ".github/workflows/ci-e2e.yml"
             stack:
               - "e2e/**"
@@ -141,6 +148,58 @@ jobs:
             e2e/test-results
           if-no-files-found: ignore
           retention-days: 14
+      - name: Stop the stack
+        if: always()
+        working-directory: e2e
+        run: pnpm run stack:down
+
+  # OWASP ZAP passive scans (IO-266) against the same stack: baseline on the
+  # public and signed-in pages, and zap-api-scan on contracts/openapi in safe
+  # mode. Never the active scan. Fails on any medium or high alert (rules.tsv).
+  zap:
+    name: zap
+    needs: changes
+    if: github.event_name != 'pull_request' || needs.changes.outputs.zap == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Start the compose stack
+        working-directory: e2e
+        run: pnpm run stack:up
+      - name: ZAP baseline and api scans
+        working-directory: e2e
+        run: pnpm run zap
+      - name: Compose logs
+        if: failure()
+        working-directory: e2e
+        run: |
+          docker compose --env-file compose.env \
+            -f ../deploy/compose/compose.yaml -f ../deploy/compose/compose.test.yaml \
+            --profile test logs --no-color --tail 200
+      - name: Upload the ZAP reports
+        id: report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: e2e/zap/out
+          if-no-files-found: ignore
+          retention-days: 14
+      - name: Link the report in the job summary
+        if: always() && steps.report.outputs.artifact-url != ''
+        env:
+          URL: ${{ steps.report.outputs.artifact-url }}
+        run: echo "HTML reports (one per scan): [zap-report artifact]($URL)" >> "$GITHUB_STEP_SUMMARY"
       - name: Stop the stack
         if: always()
         working-directory: e2e

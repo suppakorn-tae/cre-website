@@ -255,6 +255,16 @@ corepack pnpm --dir e2e run stack:down
 Check: `stack:up` waits until every service is healthy and returns 0; `test` prints the pass count.
 `stack:down` also removes the e2e volumes.
 
+#### OWASP ZAP scan (passive)
+
+With the e2e stack up, run one command from the repo root. It needs Docker and `python3`, and pulls `zaproxy/zap-stable` the first time.
+
+```sh
+corepack pnpm --dir e2e run zap
+```
+
+It runs the baseline scan on the public pages, again signed in as the e2e user, and `zap-api-scan` on `contracts/openapi` in safe mode. It never attacks (no `zap-full-scan`). The HTML and JSON reports are in `e2e/zap/out/`. The command fails on any medium or high alert; `e2e/zap/rules.tsv` sets the level per rule (every IGNORE has a reason). `ZAP_AUTH=0` skips the signed-in scans. CI runs the same script nightly and on changes to the Caddyfile, `web/src/proxy.ts` or `backend/internal/http/middleware/` (job `zap` in `ci-e2e.yml`).
+
 ### D2. e2e-mock (no Docker)
 
 Needs: Node and Playwright's browser. Playwright starts its own mock dev server (admin role) on `E2E_MOCK_PORT` (default 3100).

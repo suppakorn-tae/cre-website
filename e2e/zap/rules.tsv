@@ -1,0 +1,34 @@
+# OWASP ZAP rule levels for zap-baseline.py and zap-api-scan.py (IO-266).
+# Columns, tab separated: rule id, FAIL | WARN | IGNORE, name.
+# FAIL on medium and high, WARN on low. ZAP treats a rule that is not listed as
+# a WARN, so check.py also fails any medium or high alert that has no IGNORE line.
+# Every IGNORE needs a reason in a comment line right above it ("# reason: ...").
+#
+# Medium and high
+10038	FAIL	Content Security Policy (CSP) Header Not Set
+10055	FAIL	CSP: wildcard directive, unsafe-inline or missing fallback
+10020	FAIL	Missing Anti-clickjacking Header
+10098	FAIL	Cross-Domain Misconfiguration
+10003	FAIL	Vulnerable JS Library
+10024	FAIL	Information Disclosure - Sensitive Information in URL
+10041	FAIL	HTTP to HTTPS Insecure Transition in Form Post
+10040	FAIL	Secure Pages Include Mixed Content
+10062	FAIL	PII Disclosure
+10105	FAIL	Weak Authentication Method
+40012	FAIL	Cross Site Scripting (Reflected)
+90019	FAIL	Server Side Code Injection
+# Low
+10010	WARN	Cookie No HttpOnly Flag
+10011	WARN	Cookie Without Secure Flag
+10054	WARN	Cookie without SameSite Attribute
+90033	WARN	Loosely Scoped Cookie
+10035	WARN	Strict-Transport-Security Header Not Set
+10021	WARN	X-Content-Type-Options Header Missing
+10063	WARN	Permissions Policy Header Not Set
+10015	WARN	Re-examine Cache-control Directives
+10036	WARN	HTTP Server Response Header
+10037	WARN	Server Leaks Information via X-Powered-By
+10017	WARN	Cross-Domain JavaScript Source File Inclusion
+10096	WARN	Timestamp Disclosure
+10202	WARN	Absence of Anti-CSRF Tokens
+90004	WARN	Insufficient Site Isolation Against Spectre Vulnerability
