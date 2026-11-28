@@ -35,7 +35,7 @@ jobs:
       - name: Install TeX Live and fonts
         env:
           PLEX_TAG: "@ibm/plex-sans-thai@1.1.0"
-          PLEX_ZIP_SHA256: ""
+          PLEX_ZIP_SHA256: "d7203f43c20f9abd40487f845c48db4077d2056ea18632c8959591c6815d7fb9"
         run: |
           set -euo pipefail
           sudo apt-get update
