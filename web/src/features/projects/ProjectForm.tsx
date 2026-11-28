@@ -21,6 +21,7 @@ import {
   DESCRIPTION_MAX,
   emptyForm,
   fromProject,
+  isProjectLimitError,
   ISLAND_CODES,
   NAME_MAX,
   NICKNAME_MAX,
@@ -160,6 +161,10 @@ export function ProjectForm({ project }: Props) {
     errors[key] ? t(`errors.${errors[key]}`) : undefined;
 
   function onFailure(failure: unknown) {
+    if (isProjectLimitError(failure)) {
+      setFormError(t('errors.limitReached'));
+      return;
+    }
     if (failure instanceof ApiError && failure.status === 422) {
       // The server names the field in `error.fields`; the shared ApiError
       // does not keep it, so show one message for the whole form.

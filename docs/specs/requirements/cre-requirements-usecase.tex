@@ -685,7 +685,7 @@ ACCEPT & \thai{ยอมรับและติดตามอย่างใ�
 \item[BR-12] Deleting a project or version is a soft delete (\texttt{deleted\_at}): it disappears from every user view and API response; no row or file is removed and there is no restore. Retained data is reachable only through the research export (UC-18).
 \item[BR-13] Deleting an account (by the user or an admin) removes the e-mail, password hash and Google id and marks the account deleted. Its projects and versions are kept for research.
 \item[BR-14] Research export is pseudonymised: no e-mail or Google id; each account is replaced by a stable random pseudonym not derived from its e-mail. Organisation is kept\assume.
-\item[BR-27] There is no limit on the number of projects per account or versions per project.
+\item[BR-27] An account may own at most 3 projects at a time. Soft-deleted projects (BR-12) do not count, so deleting a project frees a slot. A 4th create is rejected (HTTP 409, code \texttt{project\_limit\_reached}), also under parallel requests: the count is checked under a lock on the account row. There is no limit on versions per project.
 \end{description}
 
 \subsection*{Accounts}
@@ -848,7 +848,7 @@ FR-57&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{cr
 \midrule
 \endhead
 25 & Home page after log-in? & Dashboard with KPI cards, charts and the project list (UC-20, FR-42). \\
-26 & Quotas on projects or versions? & None (BR-27). \\
+26 & Quotas on projects or versions? & 3 live projects per account, no version limit (BR-27, changed after the 28 Nov review). \\
 27 & Compare versions? & Yes: compare two versions, trend over all versions, RM per indicator (UC-21, FR-45, FR-46). \\
 28 & Result views? & Overview, detail table, heat map and H/VH only (UC-09, FR-47). \\
 29 & Step bar and expected progress? & Yes (FR-48, FR-49, BR-24). \\

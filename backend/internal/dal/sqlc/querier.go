@@ -81,14 +81,14 @@ type Querier interface {
 	// back too (status tells them apart); their figures are ignored.
 	CompareVersionMetrics(ctx context.Context, arg CompareVersionMetricsParams) (CompareVersionMetricsRow, error)
 	CountAuditLog(ctx context.Context, arg CountAuditLogParams) (int64, error)
+	// Soft-deleted projects do not count towards the limit (BR-27).
+	CountLiveProjects(ctx context.Context, ownerID uuid.UUID) (int32, error)
 	// Live versions of a project, read inside the delete transaction after the
 	// project row is locked.
 	CountLiveVersions(ctx context.Context, projectID uuid.UUID) (int32, error)
 	// Created when a new Google user accepts the retention notice and terms. No
 	// password; Google has verified the e-mail.
 	CreateGoogleAccount(ctx context.Context, arg CreateGoogleAccountParams) (CreateGoogleAccountRow, error)
-	// Every query takes the owner id and hides soft-deleted rows. A project of
-	// another user and a deleted project look the same: no row.
 	CreateProject(ctx context.Context, arg CreateProjectParams) (uuid.UUID, error)
 	// Created only after the OTP was verified. Role and status take their
 	// defaults (user, active); the e-mail counts as verified.
@@ -262,6 +262,11 @@ type Querier interface {
 	// Owner check and the lock that serialises version creation per project.
 	// Another account's project, or a deleted one, looks absent.
 	LockOwnedProject(ctx context.Context, arg LockOwnedProjectParams) (uuid.UUID, error)
+	// Every query takes the owner id and hides soft-deleted rows. A project of
+	// another user and a deleted project look the same: no row.
+	// Serialises project creates of one account: the second create waits here
+	// until the first commits, then counts again.
+	LockProjectOwner(ctx context.Context, ownerID uuid.UUID) (uuid.UUID, error)
 	// Serialises report requests for one version, so that two requests for the
 	// same submission cannot both insert a job.
 	LockReportRequest(ctx context.Context, versionID string) error

@@ -305,3 +305,19 @@ func TestListQueryAndPaging(t *testing.T) {
 		}
 	}
 }
+
+func TestCreateFourthProjectIs409(t *testing.T) {
+	e := newEnv(t)
+	for i := 0; i < 3; i++ {
+		if w := e.do(t, e.a, "POST", "/projects", createJSON); w.Code != 201 {
+			t.Fatal(w.Body)
+		}
+	}
+	w := e.do(t, e.a, "POST", "/projects", createJSON)
+	if w.Code != 409 || !strings.Contains(w.Body.String(), `"project_limit_reached"`) {
+		t.Fatalf("4th create: %d %s", w.Code, w.Body)
+	}
+	if w := e.do(t, e.b, "POST", "/projects", createJSON); w.Code != 201 {
+		t.Fatalf("other account: %d %s", w.Code, w.Body)
+	}
+}

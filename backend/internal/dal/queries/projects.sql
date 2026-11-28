@@ -1,6 +1,15 @@
 -- Every query takes the owner id and hides soft-deleted rows. A project of
 -- another user and a deleted project look the same: no row.
 
+-- name: LockProjectOwner :one
+-- Serialises project creates of one account: the second create waits here
+-- until the first commits, then counts again.
+SELECT id FROM account WHERE id = @owner_id FOR NO KEY UPDATE;
+
+-- name: CountLiveProjects :one
+-- Soft-deleted projects do not count towards the limit (BR-27).
+SELECT count(*)::int FROM project WHERE owner_id = @owner_id AND deleted_at IS NULL;
+
 -- name: CreateProject :one
 INSERT INTO project (id, owner_id, name, nickname, island_code, island_other,
                      type_code, type_other, start_date, end_date, value_baht,

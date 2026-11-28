@@ -13,8 +13,19 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
-const createProject = `-- name: CreateProject :one
+const countLiveProjects = `-- name: CountLiveProjects :one
+SELECT count(*)::int FROM project WHERE owner_id = $1 AND deleted_at IS NULL
+`
 
+// Soft-deleted projects do not count towards the limit (BR-27).
+func (q *Queries) CountLiveProjects(ctx context.Context, ownerID uuid.UUID) (int32, error) {
+	row := q.db.QueryRow(ctx, countLiveProjects, ownerID)
+	var column_1 int32
+	err := row.Scan(&column_1)
+	return column_1, err
+}
+
+const createProject = `-- name: CreateProject :one
 INSERT INTO project (id, owner_id, name, nickname, island_code, island_other,
                      type_code, type_other, start_date, end_date, value_baht,
                      progress_pct, description)
@@ -40,8 +51,6 @@ type CreateProjectParams struct {
 	Description pgtype.Text
 }
 
-// Every query takes the owner id and hides soft-deleted rows. A project of
-// another user and a deleted project look the same: no row.
 func (q *Queries) CreateProject(ctx context.Context, arg CreateProjectParams) (uuid.UUID, error) {
 	row := q.db.QueryRow(ctx, createProject,
 		arg.ID,
@@ -229,6 +238,22 @@ func (q *Queries) ListProjects(ctx context.Context, arg ListProjectsParams) ([]L
 		return nil, err
 	}
 	return items, nil
+}
+
+const lockProjectOwner = `-- name: LockProjectOwner :one
+
+SELECT id FROM account WHERE id = $1 FOR NO KEY UPDATE
+`
+
+// Every query takes the owner id and hides soft-deleted rows. A project of
+// another user and a deleted project look the same: no row.
+// Serialises project creates of one account: the second create waits here
+// until the first commits, then counts again.
+func (q *Queries) LockProjectOwner(ctx context.Context, ownerID uuid.UUID) (uuid.UUID, error) {
+	row := q.db.QueryRow(ctx, lockProjectOwner, ownerID)
+	var id uuid.UUID
+	err := row.Scan(&id)
+	return id, err
 }
 
 const softDeleteProject = `-- name: SoftDeleteProject :one

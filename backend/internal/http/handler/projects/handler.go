@@ -297,6 +297,8 @@ func (h *handler) fail(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, projects.ErrNotFound):
 		middleware.WriteError(w, r, http.StatusNotFound, "not_found", "project not found")
+	case errors.Is(err, projects.ErrLimitReached):
+		middleware.WriteError(w, r, http.StatusConflict, "project_limit_reached", "project limit reached")
 	case errors.As(err, &ve):
 		fields := make([]api.FieldError, len(ve.Fields))
 		for i, f := range ve.Fields {
