@@ -63,6 +63,11 @@ describe('classifyPasswordFailure', () => {
         failure(422, 'validation_failed', { '/new_password': 'password_too_short' }),
       ),
     ).toEqual({ kind: 'fields', errors: { next: 'tooShort' } });
+    expect(
+      classifyPasswordFailure(
+        failure(422, 'validation_failed', { '/new_password': 'password_too_common' }),
+      ),
+    ).toEqual({ kind: 'fields', errors: { next: 'tooCommon' } });
   });
 
   it('handles no_password, rate limit and everything else', () => {

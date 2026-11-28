@@ -24,6 +24,7 @@ describe('classifyResetFailure', () => {
   });
   it('maps password errors', () => {
     expect(fail({ '/new_password': 'password_too_short' })).toEqual({ kind: 'password_short' });
+    expect(fail({ '/new_password': 'password_too_common' })).toEqual({ kind: 'password_common' });
     expect(fail({ '/new_password_confirmation': 'password_mismatch' })).toEqual({
       kind: 'mismatch',
     });

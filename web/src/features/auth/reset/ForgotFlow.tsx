@@ -222,6 +222,9 @@ function ResetStep({
         case 'password_short':
           setPasswordError(t('errors.passwordTooShort'));
           break;
+        case 'password_common':
+          setPasswordError(t('errors.passwordTooCommon'));
+          break;
         case 'mismatch':
           setConfirmError(tReg('passwordsMismatch'));
           break;

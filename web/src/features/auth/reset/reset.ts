@@ -9,6 +9,7 @@ export type ResetFailure =
   | { kind: 'otp_bad' }
   | { kind: 'locked' }
   | { kind: 'password_short' }
+  | { kind: 'password_common' }
   | { kind: 'mismatch' }
   | { kind: 'rate_limited'; retryAfter?: number }
   | { kind: 'other' };
@@ -29,6 +30,7 @@ export function classifyResetFailure(error: Shape): ResetFailure {
   const otp = error.fields['/otp'];
   if (otp === 'otp_locked') return { kind: 'locked' };
   if (otp === 'otp_invalid' || otp === 'otp_expired') return { kind: 'otp_bad' };
+  if (error.fields['/new_password'] === 'password_too_common') return { kind: 'password_common' };
   if (error.fields['/new_password'] === 'password_too_short') return { kind: 'password_short' };
   if (error.fields['/new_password_confirmation'] === 'password_mismatch') {
     return { kind: 'mismatch' };
