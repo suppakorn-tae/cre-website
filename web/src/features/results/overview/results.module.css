@@ -312,10 +312,20 @@
   gap: var(--space-4);
 }
 .tableWrap {
-  overflow-x: auto;
+  /* The wrapper is the scroll container, so the header sticks inside it and the table keeps
+     its horizontal scroll (WCAG 1.4.10). Rows scroll clear of the header (2.4.11). */
+  --table-head-h: 2.75rem;
+  max-height: calc(100dvh - var(--nav-height) - var(--space-4));
+  overflow: auto;
+  scroll-padding-top: var(--table-head-h);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
+}
+/* Keyboard access to the scrolling wrapper (WCAG 2.1.1); the ring sits inside the clip. */
+.tableWrap:focus-visible {
+  outline: 2px solid var(--color-blue-700);
+  outline-offset: -2px;
 }
 .table {
   width: 100%;
@@ -324,11 +334,19 @@
   line-height: var(--leading-body);
 }
 .table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  box-sizing: border-box;
+  height: var(--table-head-h);
   padding: var(--space-3) var(--space-4);
+  box-shadow: 0 1px 0 var(--color-border);
   background: var(--color-subtle);
   color: var(--color-text-secondary);
   font-size: var(--text-caption);
   font-weight: var(--weight-medium);
+  /* One line, so the header is never taller than the scroll padding. */
+  white-space: nowrap;
   text-align: start;
 }
 .table td {
@@ -336,8 +354,31 @@
   border-top: 1px solid var(--color-divider);
   vertical-align: middle;
 }
-.table tbody tr:hover {
+.table tbody tr:nth-child(even) {
   background: var(--color-subtle);
+}
+.table tbody tr:hover {
+  background: var(--color-divider);
+}
+/* Dimension colour band on the leading edge of each row. */
+.dimRow[data-dim='ec'] {
+  --dim: var(--dim-ec);
+  --dim-tint: var(--dim-ec-tint);
+}
+.dimRow[data-dim='so'] {
+  --dim: var(--dim-so);
+  --dim-tint: var(--dim-so-tint);
+}
+.dimRow[data-dim='ev'] {
+  --dim: var(--dim-ev);
+  --dim-tint: var(--dim-ev-tint);
+}
+.dimRow[data-dim] > td:first-child {
+  box-shadow: inset 4px 0 0 var(--dim);
+}
+/* Not on hover, so the row hover colour shows across the whole row. */
+.dimRow[data-dim]:not(:hover) > td:first-child {
+  background: var(--dim-tint);
 }
 .num {
   text-align: end !important;
@@ -369,6 +410,8 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .tableWrap {
+    max-height: none;
+    overflow: visible;
     border: 0;
     background: none;
   }
@@ -391,6 +434,17 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-card);
     background: var(--color-surface);
+  }
+  .table tbody tr:nth-child(even) {
+    background: var(--color-subtle);
+  }
+  .dimRow[data-dim] {
+    border-inline-start: 4px solid var(--dim);
+  }
+  .dimRow[data-dim] > td:first-child,
+  .dimRow[data-dim]:not(:hover) > td:first-child {
+    box-shadow: none;
+    background: none;
   }
   .table td {
     display: flex;
