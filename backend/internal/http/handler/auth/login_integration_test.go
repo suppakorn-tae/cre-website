@@ -214,6 +214,21 @@ func TestLoginLogout(t *testing.T) {
 	if w := e.do(t, "GET", "/me", rc.Value, nil); w.Code != 200 {
 		t.Errorf("other device after logout: %d", w.Code)
 	}
+	// The logged-out token is ended on the server: a kept copy gets 401.
+	if w := e.do(t, "GET", "/me", c.Value, nil); w.Code != 401 {
+		t.Errorf("logged-out token reused: %d, want 401", w.Code)
+	}
+
+	// A new sign-in from a browser that still sends an older session ends
+	// that older session.
+	w = e.do(t, "POST", "/login", rc.Value, api.LoginRequest{Email: "user@example.com", Password: loginUserPwd})
+	if w.Code != 200 || cookieNamed(w, session.CookieName).Value == rc.Value {
+		t.Fatalf("re-login: %d %s", w.Code, w.Body)
+	}
+	if w := e.do(t, "GET", "/me", rc.Value, nil); w.Code != 401 {
+		t.Errorf("token before re-login: %d, want 401", w.Code)
+	}
+
 	// An expired, invalid or missing session still gets its cookie cleared.
 	for _, tok := range []string{"", "not-a-session-token", c.Value + "x"} {
 		w := e.do(t, "POST", "/logout", tok, nil)

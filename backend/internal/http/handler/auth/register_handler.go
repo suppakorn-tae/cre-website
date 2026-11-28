@@ -195,7 +195,7 @@ func (h *registerHandler) verify(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	tok, exp := h.sessions.Issue(acc.ID.String(), acc.SessionVersion, false)
-	h.sessions.SetCookie(w, tok, exp, false)
+	replaceSession(w, r, h.sessions, tok, exp, false)
 	terms := acc.TermsAcceptedAt
 	writeJSON(w, http.StatusCreated, api.AuthSession{
 		User: api.Account{

@@ -90,7 +90,7 @@ func login(l *svc.LoginService, sessions *session.Service) http.HandlerFunc {
 			middleware.WriteError(w, r, http.StatusInternalServerError, "internal", "profile load failed")
 			return
 		}
-		sessions.SetCookie(w, res.Token, res.Expires, res.Remember)
+		replaceSession(w, r, sessions, res.Token, res.Expires, res.Remember)
 		loginWriteSession(w, http.StatusOK, pr, id, res.Expires, res.Remember)
 	}
 }

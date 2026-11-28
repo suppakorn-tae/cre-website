@@ -1,13 +1,14 @@
 'use client';
 
 import { IconArrowLeft } from '@tabler/icons-react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 
 import { Button, FieldError, FieldOk, Icon } from '@/components/ui';
+import { clearClientData } from '@/features/shell/logout';
 
 import {
   AuthApiError,
@@ -34,6 +35,7 @@ export function OtpStep({ email, challenge, onBack }: Props) {
   const t = useTranslations('auth.register');
   const tCommon = useTranslations('common.errors');
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [code, setCode] = useState('');
   const [failure, setFailure] = useState<OtpFailure | { kind: 'incomplete' } | null>(null);
   const [resent, setResent] = useState(false);
@@ -48,6 +50,7 @@ export function OtpStep({ email, challenge, onBack }: Props) {
     mutationFn: () => verifyRegistration(email, code),
     onSuccess: async () => {
       await refreshCsrf();
+      clearClientData(queryClient);
       router.replace(AFTER_SIGNUP_PATH);
     },
     onError: (error) => {

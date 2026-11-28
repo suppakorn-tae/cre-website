@@ -74,6 +74,33 @@ func TestRenderContent(t *testing.T) {
 	}
 }
 
+// User and admin text (project name, nickname, other island, advice) is
+// escaped for its context: HTML in the body, a CSS string in the running
+// header. Nothing a user types can add markup or end the style block.
+func TestRenderEscapesUserText(t *testing.T) {
+	const attack = `x"; } </style><script>alert(1)</script><img src=x onerror=alert(2)>`
+	d := sample()
+	d.ProjectName, d.Nickname = attack, attack
+	d.Island, d.IslandOther = "other", attack
+	d.Indicators[0].Advice[0].Items = []string{attack}
+	html, _, err := report.Render(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	s := string(html)
+	for _, bad := range []string{"<script>", "</style><script", "<img src=x", `x"; }`} {
+		if strings.Contains(s, bad) {
+			t.Errorf("html contains unescaped %q", bad)
+		}
+	}
+	if n := strings.Count(s, "</style>"); n != 1 {
+		t.Errorf("want exactly one </style>, got %d", n)
+	}
+	if !strings.Contains(s, "&lt;script&gt;alert(1)&lt;/script&gt;") {
+		t.Error("body text is not HTML-escaped")
+	}
+}
+
 func TestRenderOtherIslandAndNoHighRisk(t *testing.T) {
 	d := sample()
 	d.Island, d.IslandOther = "other", "เกาะทดสอบ"

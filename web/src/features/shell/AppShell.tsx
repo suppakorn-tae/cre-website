@@ -2,6 +2,7 @@
 
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { IconChevronDown, IconLogout, IconShieldCheck, IconUser } from '@tabler/icons-react';
+import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -15,7 +16,7 @@ import '@/styles/tokens.css';
 import { AdminNav, AdminNavMenu } from './AdminNav';
 import { accountMenuLinks, roleKey } from './account-menu';
 import { LOGGED_OUT_PATH } from './login-path';
-import { signOut } from './logout';
+import { clearClientData, signOut } from './logout';
 import styles from './shell.module.css';
 import { ThemeMenuGroup } from './ThemeSwitch';
 import { ThemeSync } from './ThemeSync';
@@ -103,6 +104,7 @@ export function AccountMenu({ user, defaultOpen }: { user: ShellUser; defaultOpe
   const t = useTranslations('shell.account');
   const pathname = usePathname();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const avatar = user.email.charAt(0).toUpperCase();
@@ -117,6 +119,7 @@ export function AccountMenu({ user, defaultOpen }: { user: ShellUser; defaultOpe
       setFailed(true);
       return;
     }
+    clearClientData(queryClient);
     router.replace(LOGGED_OUT_PATH);
     router.refresh();
   }

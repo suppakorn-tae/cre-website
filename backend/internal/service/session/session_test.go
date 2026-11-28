@@ -157,6 +157,91 @@ func TestBumpEndsOldSessionsAtOnce(t *testing.T) {
 	}
 }
 
+func TestRevokeEndsOnlyThatToken(t *testing.T) {
+	svc, _ := setup(t)
+	ctx := context.Background()
+	a, _ := svc.Issue("a1", 1, false)
+	b, _ := svc.Issue("a1", 1, false) // same account, version and second
+	if a == b {
+		t.Fatal("two sign-ins got the same token")
+	}
+	if _, err := svc.Authenticate(ctx, a); err != nil { // fills the record cache
+		t.Fatal(err)
+	}
+	if err := svc.Revoke(ctx, a); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Authenticate(ctx, a); !errors.Is(err, ErrRevoked) {
+		t.Fatalf("revoked token: %v", err)
+	}
+	if _, err := svc.Authenticate(ctx, b); err != nil {
+		t.Fatalf("other device: %v", err)
+	}
+	// Junk and forged tokens are ignored: they cannot be used anyway.
+	for _, junk := range []string{"", "x.y.z", a + "x"} {
+		if err := svc.Revoke(ctx, junk); err != nil {
+			t.Errorf("%q: %v", junk, err)
+		}
+	}
+}
+
+func TestRevokeLastsUntilTheTokenExpires(t *testing.T) {
+	base := time.Date(2026, 11, 28, 12, 0, 0, 0, time.UTC)
+	now := base
+	cache := &fakeCache{m: map[string][]byte{}, now: func() time.Time { return now }}
+	st := &fakeStore{recs: map[string]Record{"a1": {Role: RoleUser, Status: StatusActive, Version: 1}}}
+	svc, err := New(Config{Secret: []byte(strings.Repeat("k", 32))}, st, cache)
+	if err != nil {
+		t.Fatal(err)
+	}
+	svc.now = func() time.Time { return now }
+	tok, exp := svc.Issue("a1", 1, false)
+	if err := svc.Revoke(context.Background(), tok); err != nil {
+		t.Fatal(err)
+	}
+	if got := cache.ttl[revokedKey(tok)]; !got.Equal(exp) {
+		t.Fatalf("revocation kept until %v, want the token expiry %v", got, exp)
+	}
+	if strings.Contains(revokedKey(tok), tok) {
+		t.Fatal("the revocation key holds the raw token")
+	}
+}
+
+type brokenCache struct{ fakeCache }
+
+func (*brokenCache) Get(context.Context, string) ([]byte, error) {
+	return nil, errors.New("valkey down")
+}
+
+func TestRevocationCheckFailsClosed(t *testing.T) {
+	st := &fakeStore{recs: map[string]Record{"a1": {Role: RoleUser, Status: StatusActive, Version: 1}}}
+	svc, err := New(Config{Secret: []byte(strings.Repeat("k", 32))}, st, &brokenCache{fakeCache{m: map[string][]byte{}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tok, _ := svc.Issue("a1", 1, false)
+	_, err = svc.Authenticate(context.Background(), tok)
+	if err == nil || errors.Is(err, ErrRevoked) || errors.Is(err, ErrInvalidToken) {
+		t.Fatalf("want an infrastructure error, got %v", err)
+	}
+}
+
+func TestRevokeRequestReadsTheCookie(t *testing.T) {
+	svc, _ := setup(t)
+	tok, _ := svc.Issue("a1", 1, false)
+	r := httptest.NewRequest(http.MethodPost, "/auth/logout", nil)
+	if err := svc.RevokeRequest(r); err != nil { // no cookie: nothing to do
+		t.Fatal(err)
+	}
+	r.AddCookie(&http.Cookie{Name: CookieName, Value: tok}) //nolint:gosec // G124: test request cookie, never sent to a browser
+	if err := svc.RevokeRequest(r); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := svc.Authenticate(context.Background(), tok); !errors.Is(err, ErrRevoked) {
+		t.Fatalf("after RevokeRequest: %v", err)
+	}
+}
+
 func TestInactiveAndMissingAccounts(t *testing.T) {
 	svc, st := setup(t)
 	ctx := context.Background()

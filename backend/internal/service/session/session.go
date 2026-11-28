@@ -10,8 +10,10 @@ package session
 import (
 	"context"
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -123,6 +125,9 @@ type claims struct {
 	Ver int    `json:"ver"`
 	Exp int64  `json:"exp"`
 	Rem bool   `json:"rem,omitempty"`
+	// Jti is random, so every sign-in gets a token of its own and Revoke
+	// ends only that one.
+	Jti string `json:"jti,omitempty"`
 }
 
 var header = base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256","typ":"JWT"}`))
@@ -141,7 +146,12 @@ func (s *Service) Issue(accountID string, version int, remember bool) (string, t
 		ttl = s.cfg.RememberTTL
 	}
 	exp := s.now().Add(ttl).Truncate(time.Second)
-	b, _ := json.Marshal(claims{Sub: accountID, Ver: version, Exp: exp.Unix(), Rem: remember})
+	var id [16]byte
+	_, _ = rand.Read(id[:]) // crypto/rand.Read never fails (Go 1.24+)
+	b, _ := json.Marshal(claims{
+		Sub: accountID, Ver: version, Exp: exp.Unix(), Rem: remember,
+		Jti: base64.RawURLEncoding.EncodeToString(id[:]),
+	})
 	p := base64.RawURLEncoding.EncodeToString(b)
 	return header + "." + p + "." + s.sign(p), exp
 }
@@ -233,12 +243,68 @@ func (s *Service) record(ctx context.Context, id string) (Record, error) {
 	return r, nil
 }
 
+// revokedKey marks one ended token. It holds a hash of the token, never the
+// token itself.
+func revokedKey(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return "session:revoked:" + hex.EncodeToString(sum[:])
+}
+
+// Revoke ends one token (log out of this device, or the old token of a new
+// sign-in) until it expires. Other tokens of the account stay valid. A token
+// that is malformed, forged or already expired cannot be used anyway, so it
+// is ignored.
+func (s *Service) Revoke(ctx context.Context, token string) error {
+	c, err := s.parse(token)
+	if err != nil {
+		return nil
+	}
+	ttl := time.Unix(c.Exp, 0).Sub(s.now())
+	if ttl <= 0 {
+		return nil
+	}
+	if err := s.cache.Set(ctx, revokedKey(token), []byte("1"), ttl); err != nil {
+		return fmt.Errorf("session: revoke: %w", err)
+	}
+	return nil
+}
+
+// RevokeRequest revokes the session cookie the request carries, if any.
+func (s *Service) RevokeRequest(r *http.Request) error {
+	c, err := r.Cookie(CookieName)
+	if err != nil || c.Value == "" {
+		return nil
+	}
+	return s.Revoke(r.Context(), c.Value)
+}
+
+// revoked reports whether Revoke ended the token. A cache failure is an
+// error, so a logged-out token is never accepted while Valkey is down.
+func (s *Service) revoked(ctx context.Context, token string) (bool, error) {
+	_, err := s.cache.Get(ctx, revokedKey(token))
+	switch {
+	case err == nil:
+		return true, nil
+	case errors.Is(err, valkey.ErrNotFound):
+		return false, nil
+	default:
+		return false, fmt.Errorf("session: check revoked: %w", err)
+	}
+}
+
 // Authenticate checks the token and the account record. A 401 reason is one
 // of the Err values; any other error is an infrastructure failure (HTTP 500).
 func (s *Service) Authenticate(ctx context.Context, token string) (Principal, error) {
 	c, err := s.parse(token)
 	if err != nil {
 		return Principal{}, err
+	}
+	gone, err := s.revoked(ctx, token)
+	if err != nil {
+		return Principal{}, err
+	}
+	if gone {
+		return Principal{}, ErrRevoked
 	}
 	r, err := s.record(ctx, c.Sub)
 	if errors.Is(err, ErrNoAccount) {
