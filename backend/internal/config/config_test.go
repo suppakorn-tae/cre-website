@@ -224,3 +224,34 @@ func TestLoadAPISMTPRequireTLSDefault(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadAPILimits(t *testing.T) {
+	base := map[string]string{"DATABASE_URL": "p", "VALKEY_ADDR": "v", "APP_ENV": "development"}
+	c, err := LoadAPI(env(base))
+	if err != nil || c.MaxProjectsPerUser != 3 || c.MaxVersionsPerProject != 10 {
+		t.Fatalf("defaults: %d %d %v, want 3 10", c.MaxProjectsPerUser, c.MaxVersionsPerProject, err)
+	}
+	base["MAX_PROJECTS_PER_USER"], base["MAX_VERSIONS_PER_PROJECT"] = "5", "20"
+	c, err = LoadAPI(env(base))
+	if err != nil || c.MaxProjectsPerUser != 5 || c.MaxVersionsPerProject != 20 {
+		t.Fatalf("set: %d %d %v, want 5 20", c.MaxProjectsPerUser, c.MaxVersionsPerProject, err)
+	}
+	base["MAX_PROJECTS_PER_USER"], base["MAX_VERSIONS_PER_PROJECT"] = "", "  "
+	c, err = LoadAPI(env(base))
+	if err != nil || c.MaxProjectsPerUser != 3 || c.MaxVersionsPerProject != 10 {
+		t.Fatalf("empty: %d %d %v, want the defaults", c.MaxProjectsPerUser, c.MaxVersionsPerProject, err)
+	}
+}
+
+func TestLoadAPIRejectsBadLimits(t *testing.T) {
+	for _, bad := range []string{"0", "-1", "abc", "2.5"} {
+		for _, key := range []string{"MAX_PROJECTS_PER_USER", "MAX_VERSIONS_PER_PROJECT"} {
+			_, err := LoadAPI(env(map[string]string{
+				"DATABASE_URL": "p", "VALKEY_ADDR": "v", "APP_ENV": "development", key: bad,
+			}))
+			if err == nil || !strings.Contains(err.Error(), key) {
+				t.Errorf("%s=%q: want an error naming the key, got %v", key, bad, err)
+			}
+		}
+	}
+}

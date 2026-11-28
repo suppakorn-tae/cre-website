@@ -79,6 +79,7 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
 	for i, p := range res.Items {
 		out.Items[i] = toAPI(p)
 	}
+	out.MaxProjects = h.svc.MaxProjects()
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -332,6 +333,8 @@ type wireList struct {
 	Page     int           `json:"page"`
 	PageSize int           `json:"page_size"`
 	Total    int           `json:"total"`
+	// MaxProjects is MAX_PROJECTS_PER_USER.
+	MaxProjects int `json:"max_projects"`
 }
 
 func toAPI(p projects.Project) wireProject {

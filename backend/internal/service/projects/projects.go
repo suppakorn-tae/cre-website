@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
+	"github.com/suppakorn-tae/cre-website/backend/internal/config"
 	"github.com/suppakorn-tae/cre-website/backend/internal/dal"
 	"github.com/suppakorn-tae/cre-website/backend/internal/dal/sqlc"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/versions"
@@ -26,11 +27,8 @@ import (
 // belongs to someone else.
 var ErrNotFound = errors.New("projects: not found")
 
-// MaxProjects is the number of live (not soft-deleted) projects one account
-// may own (BR-27).
-const MaxProjects = 3
-
-// ErrLimitReached means the owner already has MaxProjects live projects.
+// ErrLimitReached means the owner already has the maximum number of live
+// projects (MAX_PROJECTS_PER_USER, BR-27).
 var ErrLimitReached = errors.New("projects: project limit reached")
 
 // FieldError names one invalid field by JSON pointer and a stable code.
@@ -120,6 +118,8 @@ type Service struct {
 	tx       dal.Beginner
 	rounding versions.Rounding
 	now      func() time.Time
+	// maxProjects is MAX_PROJECTS_PER_USER.
+	maxProjects int
 }
 
 // New builds the service. db reads, tx runs the create transaction (a pool
@@ -129,8 +129,20 @@ func New(db dal.DBTX, tx dal.Beginner, rounding versions.Rounding, now func() ti
 	if now == nil {
 		now = time.Now
 	}
-	return &Service{q: sqlc.New(db), tx: tx, rounding: rounding, now: now}
+	return &Service{q: sqlc.New(db), tx: tx, rounding: rounding, now: now, maxProjects: config.DefaultMaxProjectsPerUser}
 }
+
+// WithLimit sets how many live projects one account may own (MAX_PROJECTS_PER_USER).
+// A value below 1 keeps the current one.
+func (s *Service) WithLimit(maxProjects int) *Service {
+	if maxProjects >= 1 {
+		s.maxProjects = maxProjects
+	}
+	return s
+}
+
+// MaxProjects is the number of live projects one account may own.
+func (s *Service) MaxProjects() int { return s.maxProjects }
 
 const dateLayout = "2006-01-02"
 
@@ -184,7 +196,7 @@ func (s *Service) Create(ctx context.Context, owner uuid.UUID, in Fields) (Proje
 		if err != nil {
 			return err
 		}
-		if n >= MaxProjects {
+		if int(n) >= s.maxProjects {
 			return ErrLimitReached
 		}
 		if _, err := q.CreateProject(ctx, sqlc.CreateProjectParams{
@@ -197,7 +209,7 @@ func (s *Service) Create(ctx context.Context, owner uuid.UUID, in Fields) (Proje
 		}); err != nil {
 			return err
 		}
-		return versions.CreateInTx(ctx, tx, id, owner, versionID, s.rounding)
+		return versions.CreateInTx(ctx, tx, id, owner, versionID, s.rounding, 0)
 	})
 	if err != nil {
 		return Project{}, fmt.Errorf("projects: create: %w", err)

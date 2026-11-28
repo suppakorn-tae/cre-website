@@ -51,8 +51,9 @@
         $ref: ../schemas/common.yaml#/responses/Forbidden
       '409':
         description: |
-          The account already has 3 projects (code `project_limit_reached`).
-          Soft-deleted projects do not count.
+          The account already has the most projects it may own, from
+          MAX_PROJECTS_PER_USER (code `project_limit_reached`). Soft-deleted
+          projects do not count.
         content:
           application/json:
             schema:

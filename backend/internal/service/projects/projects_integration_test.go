@@ -404,7 +404,7 @@ func TestCreateRejectsFourthLiveProject(t *testing.T) {
 	e := newEnv(t)
 	ctx := context.Background()
 	var ids []uuid.UUID
-	for i := 0; i < projects.MaxProjects; i++ {
+	for i := 0; i < e.svc.MaxProjects(); i++ {
 		p, err := e.svc.Create(ctx, e.a, fields("P"))
 		if err != nil {
 			t.Fatal(err)
@@ -455,11 +455,25 @@ func TestParallelCreatesNeverPassTheLimit(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 	}
-	if ok != projects.MaxProjects || limited != n-projects.MaxProjects {
-		t.Fatalf("created %d, rejected %d; want %d and %d", ok, limited, projects.MaxProjects, n-projects.MaxProjects)
+	if ok != e.svc.MaxProjects() || limited != n-e.svc.MaxProjects() {
+		t.Fatalf("created %d, rejected %d; want %d and %d", ok, limited, e.svc.MaxProjects(), n-e.svc.MaxProjects())
 	}
 	pg, err := e.svc.List(ctx, e.a, projects.ListParams{Page: 1, PageSize: 20})
-	if err != nil || pg.Total != projects.MaxProjects {
-		t.Fatalf("stored %d (%v), want %d", pg.Total, err, projects.MaxProjects)
+	if err != nil || pg.Total != e.svc.MaxProjects() {
+		t.Fatalf("stored %d (%v), want %d", pg.Total, err, e.svc.MaxProjects())
+	}
+}
+
+func TestProjectLimitFollowsTheConfiguredValue(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	svc := projects.New(e.db, e.db, testRounding, nil).WithLimit(2)
+	for i := 0; i < 2; i++ {
+		if _, err := svc.Create(ctx, e.a, fields("P")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := svc.Create(ctx, e.a, fields("Third")); !errors.Is(err, projects.ErrLimitReached) {
+		t.Fatalf("3rd create with limit 2: %v, want ErrLimitReached", err)
 	}
 }

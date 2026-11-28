@@ -56,7 +56,19 @@ type API struct {
 	// offer STARTTLS. It defaults to true when APP_ENV is production and to
 	// false otherwise; an explicit value wins (Mailpit offers no STARTTLS).
 	SMTPRequireTLS bool
+
+	// MaxProjectsPerUser (MAX_PROJECTS_PER_USER) is how many live projects one
+	// account may own; MaxVersionsPerProject (MAX_VERSIONS_PER_PROJECT) is how
+	// many live versions one project may have. Soft-deleted rows do not count.
+	MaxProjectsPerUser    int
+	MaxVersionsPerProject int
 }
+
+// Defaults for the two limits above (BR-27).
+const (
+	DefaultMaxProjectsPerUser    = 3
+	DefaultMaxVersionsPerProject = 10
+)
 
 // MinSessionSecret is the shortest accepted SESSION_SECRET in bytes.
 const MinSessionSecret = 32
@@ -112,6 +124,8 @@ func LoadAPI(get Getenv) (API, error) {
 	if c.SMTPHost != "" && c.SMTPFrom == "" {
 		r.errs = append(r.errs, errors.New("SMTP_FROM is required when SMTP_HOST is set"))
 	}
+	c.MaxProjectsPerUser = r.positiveInt("MAX_PROJECTS_PER_USER", DefaultMaxProjectsPerUser)
+	c.MaxVersionsPerProject = r.positiveInt("MAX_VERSIONS_PER_PROJECT", DefaultMaxVersionsPerProject)
 	return c, r.err()
 }
 
@@ -201,6 +215,21 @@ func (r *reader) port(key string, def int) int {
 	n, err := strconv.Atoi(v)
 	if err != nil || n < 1 || n > 65535 {
 		r.errs = append(r.errs, fmt.Errorf("%s: %q is not a port", key, v))
+		return def
+	}
+	return n
+}
+
+// positiveInt reads an integer of at least 1; def applies when it is unset or
+// empty.
+func (r *reader) positiveInt(key string, def int) int {
+	v, ok := r.get(key)
+	if !ok || strings.TrimSpace(v) == "" {
+		return def
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(v))
+	if err != nil || n < 1 {
+		r.errs = append(r.errs, fmt.Errorf("%s: %q is not a positive integer", key, v))
 		return def
 	}
 	return n
