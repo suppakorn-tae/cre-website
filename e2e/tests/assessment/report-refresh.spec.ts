@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, test, type Download, type Page } from '../../helpers/test';
+import { expect, guardedContext, test, type Download, type Page } from '../../helpers/test';
 import { loggedIn, type Api } from '../../helpers/api';
 import { newUser } from '../auth/support';
 import { pdfText } from './pdf-text';
@@ -75,7 +75,7 @@ test.describe.serial('a new PDF after a resubmit or a strategy change (IO-248)',
   test.beforeAll(async ({ browser }) => {
     test.setTimeout(120_000);
     api = await loggedIn(await newUser('refresh'));
-    const context = await browser.newContext({
+    const context = await guardedContext(browser, {
       ignoreHTTPSErrors: true,
       storageState: await api.ctx.storageState(),
     });

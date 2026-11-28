@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test';
+import { expect, guardedContext, test } from '../../helpers/test';
 import { Api, loggedIn } from '../../helpers/api';
 import { clearMail, readOtp } from '../../helpers/mailpit';
 import { authText, logInThroughUi, NEW_PASSWORD, newUser, typeOtp } from './support';
@@ -8,7 +8,7 @@ test.describe('forgot password (UC-03)', () => {
     const who = await newUser('reset');
 
     // A session on another device (second browser context).
-    const other = await browser.newContext({ ignoreHTTPSErrors: true });
+    const other = await guardedContext(browser);
     const otherPage = await other.newPage();
     await logInThroughUi(otherPage, who.email, who.password);
     await expect(otherPage).toHaveURL(/\/dashboard$/);

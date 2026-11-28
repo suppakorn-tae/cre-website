@@ -34,6 +34,8 @@ test('a page has the nonce-based policy and the framing headers', async ({ reque
     'upgrade-insecure-requests',
   ])
     expect(policy).toContain(directive);
+  // The nonce is per request, so a shared cache must never store the page.
+  expect(headers['cache-control'] ?? '').toMatch(/\b(no-store|private)\b/);
   // A fresh nonce for every request.
   const again = (await request.get('/login')).headers()['content-security-policy'];
   expect(again).not.toBe(policy);
