@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -124,6 +125,28 @@ func TestHashRoundTrip(t *testing.T) {
 	}
 	if VerifyPassword("wrong", h) || VerifyPassword("x", "not-a-hash") || VerifyPassword("x", "") {
 		t.Fatal("wrong secret or bad hash accepted")
+	}
+}
+
+// The password is checked exactly as typed: no trimming, no case folding and
+// no truncation, so a long passphrase counts in full.
+func TestPasswordIsCheckedExactly(t *testing.T) {
+	const pwd = " Correct Horse รหัสผ่าน "
+	h := loginMustHash(t, pwd)
+	if !VerifyPassword(pwd, h) {
+		t.Fatal("exact password rejected")
+	}
+	for _, near := range []string{
+		strings.TrimSpace(pwd), strings.ToLower(pwd), strings.ToUpper(pwd), pwd[:len(pwd)-1],
+	} {
+		if VerifyPassword(near, h) {
+			t.Errorf("altered password %q accepted", near)
+		}
+	}
+	long := strings.Repeat("ก", 127) + "a" // 128 runes, well past bcrypt's 72 bytes
+	hl := loginMustHash(t, long)
+	if VerifyPassword(strings.Repeat("ก", 127)+"b", hl) {
+		t.Error("only a prefix of a long password is checked")
 	}
 }
 
