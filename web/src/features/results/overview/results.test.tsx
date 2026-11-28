@@ -117,7 +117,7 @@ describe('detail table', () => {
     expect(dimensionOf('EV-AB-3')).toBe('ev');
     expect(dimensionOf('ZZ-1')).toBeUndefined();
     const html = wrap(<ResultsTable items={items} names={names} />);
-    expect(html).toMatch(/<tr[^>]*data-dim="(ec|so|ev)"/);
+    expect(html.match(/<tr[^>]*data-dim="(ec|so|ev)"/g)).toHaveLength(items.length);
   });
 });
 
