@@ -43,6 +43,10 @@ ProjectFields:
       type: string
       minLength: 3
       maxLength: 4
+      description: |
+        Unique among the owner's live projects, ignoring letter case and
+        surrounding spaces. A taken nickname is a 422 with field `/nickname`
+        and code `duplicate`. A deleted project frees its nickname.
     island_code:
       $ref: '#/ProjectIsland'
     island_other:

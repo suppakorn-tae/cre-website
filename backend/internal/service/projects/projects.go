@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/config"
@@ -46,6 +47,25 @@ func (e *ValidationError) Error() string {
 		parts[i] = f.Field + ": " + f.Code
 	}
 	return "projects: invalid: " + strings.Join(parts, ", ")
+}
+
+// nicknameUniqueIndex is the unique index on (owner_id, lower(nickname)) over
+// live projects: one user cannot have two live projects with the same nickname,
+// ignoring letter case. A deleted project frees its nickname.
+const nicknameUniqueIndex = "project_owner_nickname_uq"
+
+// codeDuplicate is the field error code of a nickname the owner already uses.
+const codeDuplicate = "duplicate"
+
+// mapNicknameTaken turns a unique violation on the nickname index into the
+// field error on /nickname, so a duplicate (also one raced past the index)
+// is a 422 and never a 500. Any other error passes through.
+func mapNicknameTaken(err error) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23505" && pgErr.ConstraintName == nicknameUniqueIndex {
+		return &ValidationError{Fields: []FieldError{{Field: "/nickname", Code: codeDuplicate}}}
+	}
+	return err
 }
 
 // Fields are the editable project fields. Dates are YYYY-MM-DD and ValueBaht
@@ -212,7 +232,7 @@ func (s *Service) Create(ctx context.Context, owner uuid.UUID, in Fields) (Proje
 		return versions.CreateInTx(ctx, tx, id, owner, versionID, s.rounding, 0)
 	})
 	if err != nil {
-		return Project{}, fmt.Errorf("projects: create: %w", err)
+		return Project{}, fmt.Errorf("projects: create: %w", mapNicknameTaken(err))
 	}
 	return s.Get(ctx, owner, id)
 }
@@ -324,7 +344,7 @@ func (s *Service) Update(ctx context.Context, owner, id uuid.UUID, patch Patch) 
 		Description: text(f.Description),
 	})
 	if err != nil {
-		return Project{}, fmt.Errorf("projects: update: %w", err)
+		return Project{}, fmt.Errorf("projects: update: %w", mapNicknameTaken(err))
 	}
 	if n == 0 {
 		return Project{}, ErrNotFound // deleted between read and write
@@ -403,8 +423,8 @@ func likePattern(q string) string {
 	return "%" + r.Replace(q) + "%"
 }
 
-// validate checks every rule and returns the fields in storage form (name
-// trimmed, value normalised to two places). It collects all errors.
+// validate checks every rule and returns the fields in storage form (name and
+// nickname trimmed, value normalised to two places). It collects all errors.
 func validate(f Fields) (Fields, error) {
 	var errs []FieldError
 	bad := func(field, code string) { errs = append(errs, FieldError{"/" + field, code}) }
@@ -416,6 +436,7 @@ func validate(f Fields) (Fields, error) {
 	case n > maxName:
 		bad("name", "too_long")
 	}
+	f.Nickname = strings.TrimSpace(f.Nickname) // " KT2" and "KT2" are one nickname
 	switch n := utf8.RuneCountInString(f.Nickname); {
 	case n == 0:
 		bad("nickname", "required")

@@ -3,6 +3,8 @@ package projects_test
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -38,9 +40,13 @@ func newEnv(t *testing.T) env {
 
 var testRounding = versions.Rounding{ScoreDecimals: 2, RMDecimals: 3}
 
+// nickSeq gives every fields() call its own nickname: one user cannot have
+// two live projects with the same nickname.
+var nickSeq atomic.Int64
+
 func fields(name string) projects.Fields {
 	return projects.Fields{
-		Name: name, Nickname: "TST1", IslandCode: "koh_tao", TypeCode: "building",
+		Name: name, Nickname: fmt.Sprintf("T%03d", nickSeq.Add(1)%1000), IslandCode: "koh_tao", TypeCode: "building",
 		StartDate: "2027-01-01", EndDate: "2027-12-31", ValueBaht: "100000000", ProgressPct: 5,
 	}
 }
@@ -368,7 +374,7 @@ func TestUpdate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got.Name != "New" || got.ProgressPct != 40 || got.ValueBaht != "250.50" || got.Nickname != "TST1" ||
+	if got.Name != "New" || got.ProgressPct != 40 || got.ValueBaht != "250.50" || got.Nickname != f.Nickname ||
 		got.Description == nil || *got.Description != "note" || !got.UpdatedAt.After(p.UpdatedAt) {
 		t.Fatalf("patched: %+v", got)
 	}
@@ -475,5 +481,115 @@ func TestProjectLimitFollowsTheConfiguredValue(t *testing.T) {
 	}
 	if _, err := svc.Create(ctx, e.a, fields("Third")); !errors.Is(err, projects.ErrLimitReached) {
 		t.Fatalf("3rd create with limit 2: %v, want ErrLimitReached", err)
+	}
+}
+
+// nick is a project with a fixed nickname for the uniqueness tests.
+func nick(name, nickname string) projects.Fields {
+	f := fields(name)
+	f.Nickname = nickname
+	return f
+}
+
+func wantDuplicate(t *testing.T, err error) {
+	t.Helper()
+	var ve *projects.ValidationError
+	if !errors.As(err, &ve) || len(ve.Fields) != 1 || ve.Fields[0].Field != "/nickname" || ve.Fields[0].Code != "duplicate" {
+		t.Fatalf("want duplicate error on /nickname, got %v", err)
+	}
+}
+
+func TestCreateRejectsDuplicateNickname(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	if _, err := e.svc.Create(ctx, e.a, nick("First", "KT2")); err != nil {
+		t.Fatal(err)
+	}
+	for _, dup := range []string{"KT2", "kt2", "Kt2", " KT2", "KT2 "} {
+		_, err := e.svc.Create(ctx, e.a, nick("Second", dup))
+		wantDuplicate(t, err)
+	}
+	pg, err := e.svc.List(ctx, e.a, projects.ListParams{Page: 1, PageSize: 20})
+	if err != nil || pg.Total != 1 {
+		t.Fatalf("stored %d (%v), want 1: a rejected create stores nothing", pg.Total, err)
+	}
+	// Another user may use the same nickname.
+	if _, err := e.svc.Create(ctx, e.b, nick("Other user", "KT2")); err != nil {
+		t.Fatalf("same nickname for another user: %v", err)
+	}
+}
+
+func TestUpdateNickname(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	p1, err := e.svc.Create(ctx, e.a, nick("One", "ONE1"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.svc.Create(ctx, e.a, nick("Two", "TWO2")); err != nil {
+		t.Fatal(err)
+	}
+	// To another project's nickname, any case: rejected, nothing changes.
+	for _, dup := range []string{"TWO2", "two2"} {
+		_, err := e.svc.Update(ctx, e.a, p1.ID, projects.Patch{Nickname: ptr(dup)})
+		wantDuplicate(t, err)
+	}
+	if got, _ := e.svc.Get(ctx, e.a, p1.ID); got.Nickname != "ONE1" {
+		t.Fatalf("nickname changed to %q", got.Nickname)
+	}
+	// Keeping its own nickname (alone or beside other fields) works.
+	if _, err := e.svc.Update(ctx, e.a, p1.ID, projects.Patch{Nickname: ptr("ONE1"), Name: ptr("One b")}); err != nil {
+		t.Fatalf("keep own nickname: %v", err)
+	}
+	// A case-only change of its own nickname works.
+	got, err := e.svc.Update(ctx, e.a, p1.ID, projects.Patch{Nickname: ptr("one1")})
+	if err != nil || got.Nickname != "one1" {
+		t.Fatalf("case-only change: %+v %v", got, err)
+	}
+	// A free nickname works.
+	if got, err = e.svc.Update(ctx, e.a, p1.ID, projects.Patch{Nickname: ptr(" NEW3 ")}); err != nil || got.Nickname != "NEW3" {
+		t.Fatalf("new nickname: %+v %v", got, err)
+	}
+}
+
+func TestDeletedProjectFreesItsNickname(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	p, err := e.svc.Create(ctx, e.a, nick("Gone", "GONE"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.svc.Delete(ctx, e.a, p.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.svc.Create(ctx, e.a, nick("Reborn", "gone")); err != nil {
+		t.Fatalf("create with the nickname of a deleted project: %v", err)
+	}
+}
+
+func TestParallelCreatesWithOneNicknameStoreOne(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	const n = 6
+	errs := make(chan error, n)
+	start := make(chan struct{})
+	for i := 0; i < n; i++ {
+		go func() {
+			<-start
+			_, err := e.svc.Create(ctx, e.a, nick("Race", "RACE"))
+			errs <- err
+		}()
+	}
+	close(start)
+	ok := 0
+	for i := 0; i < n; i++ {
+		if err := <-errs; err == nil {
+			ok++
+		} else {
+			wantDuplicate(t, err)
+		}
+	}
+	if ok != 1 {
+		t.Fatalf("%d creates succeeded, want 1", ok)
 	}
 }

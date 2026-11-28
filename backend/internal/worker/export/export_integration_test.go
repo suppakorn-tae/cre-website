@@ -89,13 +89,13 @@ func TestResearchExportHidesIdentityAndHonoursScope(t *testing.T) {
 	}
 	for _, want := range []string{
 		"user-alice001/user.json", "user-bob00002/user.json",
-		"user-alice001/GONE_" + gone.ID + "/project.json", "user-alice001/TST1_" + live.ID + "/version-1.csv",
+		"user-alice001/GONE_" + gone.ID + "/project.json", "user-alice001/" + live.Nickname + "_" + live.ID + "/version-1.csv",
 	} {
 		if _, ok := files[want]; !ok {
 			t.Fatalf("missing %s", want)
 		}
 	}
-	if csv := string(files["user-alice001/TST1_"+live.ID+"/version-1.csv"]); !strings.HasPrefix(csv, "\xEF\xBB\xBFindicator,") || !strings.Contains(csv, code+",10,") {
+	if csv := string(files["user-alice001/"+live.Nickname+"_"+live.ID+"/version-1.csv"]); !strings.HasPrefix(csv, "\xEF\xBB\xBFindicator,") || !strings.Contains(csv, code+",10,") {
 		t.Fatalf("CSV wrong:\n%s", csv)
 	}
 
@@ -107,7 +107,7 @@ func TestResearchExportHidesIdentityAndHonoursScope(t *testing.T) {
 	if _, ok := files["user-alice001/GONE_"+gone.ID+"/project.json"]; ok {
 		t.Fatal("a soft-deleted project must not appear unless asked for")
 	}
-	if _, ok := files["user-alice001/TST1_"+live.ID+"/project.json"]; !ok {
+	if _, ok := files["user-alice001/"+live.Nickname+"_"+live.ID+"/project.json"]; !ok {
 		t.Fatal("the live project must appear")
 	}
 
