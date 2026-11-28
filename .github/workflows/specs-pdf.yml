@@ -30,14 +30,16 @@ jobs:
 
       # The preambles use fontspec (XeLaTeX), tikz, caption, titlesec, enumitem, pdflscape, etc.
       # Thai: the preamble picks the first installed of IBM Plex Sans Thai, Thonburi, Noto Sans Thai, Loma.
+      # Ubuntu has no Plex Thai package, and its Noto Sans Thai lacks / and %, which the Thai cells use,
+      # so only Loma is installed and the preamble falls back to it.
       - name: Install TeX Live and fonts
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             latexmk texlive-xetex texlive-latex-recommended texlive-latex-extra \
             texlive-pictures texlive-fonts-recommended \
-            fonts-noto-core fonts-tlwg-loma fontconfig
-          fc-list | grep -iE 'noto sans thai|loma' | head -5
+            fonts-tlwg-loma fontconfig
+          fc-list | grep -i 'loma' | head -5
 
       - name: Build PDFs
         run: |
