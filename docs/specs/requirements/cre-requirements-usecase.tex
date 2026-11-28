@@ -299,7 +299,7 @@ Actor & Registered User \\
 Precondition & User is logged in. \\
 Main flow & 1.~System lists the user's non-deleted projects on the dashboard (UC-20); the user may search by name, nickname or island.\newline 2.~To create, user fills in the project fields (\S\ref{sec:proj}): name, nickname (3--4 characters), island/location, start and end date, project value, project type, progress (default 0\,\%) and optional description.\newline 3.~System validates the fields (Table~\ref{tab:proj}) and saves.\newline 4.~User opens a project; system shows its details, the progress next to the expected progress (BR-24) and its versions (UC-06).\newline 5.~User edits project fields and saves; value and dates apply to versions created afterwards (BR-10). \\
 Alternative & 2a. Island or project type not in the list: user picks \emph{other} and types it.\newline 5a. User deletes the project: system asks for confirmation, sets \texttt{deleted\_at}, hides the project and all its versions and reports. There is no restore; data is retained (BR-12). \\
-Exceptions & 3a. Missing required field, nickname not 3--4 characters, value $\le 0$, end date not after start date or progress outside 0--100: highlight fields; flow returns to 2. \\
+Exceptions & 3a. Missing required field, nickname not 3--4 characters or already used by another of the user's projects, value $\le 0$, end date not after start date or progress outside 0--100: highlight fields; flow returns to 2. \\
 Postcondition & Project stored or soft-deleted; nothing is physically removed. \\
 \bottomrule
 \end{tabularx}
@@ -549,7 +549,7 @@ Postcondition & None (read-only). \\
 \midrule
 \endhead
 \thai{ชื่อโครงการ}\newline Project name & text & yes & Non-empty. \\
-\thai{ชื่อเล่นโครงการ}\newline Project nickname & text & yes & 3--4 characters. \\
+\thai{ชื่อเล่นโครงการ}\newline Project nickname & text & yes & 3--4 characters, trimmed. Unique among the user's own projects, ignoring letter case; a deleted project frees its nickname. \\
 \thai{เกาะ / สถานที่โครงการ}\newline Island / project location & select + other & yes & \thai{เกาะเต่า} Koh Tao, \thai{เกาะสมุย} Koh Samui, \thai{เกาะพะงัน} Koh Phangan, \thai{เกาะพีพี} Koh Phi Phi, \thai{เกาะลันตา} Koh Lanta, \thai{เกาะช้าง} Koh Chang, \thai{เกาะกูด} Koh Kood; \thai{อื่นๆ} other: free text, required when \thai{อื่นๆ} is chosen. \\
 \thai{วันที่เริ่ม}\newline Start date & date & yes & --- \\
 \thai{วันที่สิ้นสุด}\newline End date & date & yes & After the start date. Duration = calendar days start $\to$ end (used for $y_2$). \\
@@ -837,7 +837,7 @@ FR-57&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{cr
 21 & Risk strategy? & For each H/VH indicator the user chooses REDUCE, TRANSFER, AVOID or ACCEPT (UC-10, BR-19). \\
 22 & Audit admin actions? & Yes: append-only audit log of who did what and when; admins view it in UC-19 (BR-20). \\
 23 & Can admins open users' projects and versions? & No. For each user only the number of projects and assessment versions is shown; data reaches admins only via the pseudonymised export (UC-14, BR-21). \\
-24 & Project nickname? & Required, 3--4 characters (\S\ref{sec:proj}). \\
+24 & Project nickname? & Required, 3--4 characters, unique per user among live projects, ignoring letter case; a deleted project frees its nickname (\S\ref{sec:proj}). \\
 \bottomrule
 \end{longtable}
 
@@ -906,7 +906,7 @@ FR-57&\cellcolor{hdr}\textcolor{creBlue}{$\bullet$}&\cellcolor{hdr}\textcolor{cr
 1.12 & 16 Nov 2026 & Project nickname field, required, 3--4 characters (\S\ref{sec:proj}). \\
 1.13 & 23 Nov 2026 & Aligned with the UI wireframes and hi-fi design: dashboard (UC-20) and version comparison (UC-21) added; four result views; step bar and expected progress; disclaimer and PDF signature slots; terms of use at registration; password policy and \emph{keep me logged in} (BR-22, BR-23); forgot password on two screens; export as ZIP of CSV + JSON (closes OI-1); no quotas (BR-27); risk levels by code only; FR-42--FR-54, BR-24--BR-26. \\
 1.14 & 23 Nov 2026 & Hi-fi review: localisation readiness (FR-55, FR-56, NFR-11 rewritten); advice stored per locale, Thai only for now (UC-15); no spec codes in user-facing text (FR-57); $\RIC$/$\RIT$ edited side by side (UC-17); heat-map colouring (FR-47); \thai{อื่นๆ} text required for island and project type (\S\ref{sec:proj}); decisions 37--42. \\
-1.15 & 28 Nov 2026 & Limits after the 28 Nov review: an account may own at most 3 projects and a project at most 10 versions, both set in the environment (BR-27); soft-deleted ones do not count; decision 26 revised. \\
+1.15 & 28 Nov 2026 & Limits after the 28 Nov review: an account may own at most 3 projects and a project at most 10 versions, both set in the environment (BR-27); soft-deleted ones do not count; decision 26 revised. A project nickname is unique per user among live projects, ignoring letter case; a deleted project frees it. \\
 \bottomrule
 \end{tabularx}
 
