@@ -84,5 +84,5 @@ test('the factor bars and heat map take their dark token values', async ({ page 
       s.getPropertyValue(n).trim(),
     );
   });
-  expect(vals).toEqual(['#6f7f96', '#a9b6c8', '#fdba74', '#2a2222']);
+  expect(vals).toEqual(['#6f7f96', '#a9b6c8', '#ff5a4d', '#2a2222']);
 });
