@@ -203,7 +203,7 @@
 /* The table (tablet and desktop); a phone shows cards instead, see below */
 .table {
   --row-height: 64px;
-  --head-height: 44px;
+  --head-height: 64px;
   /* Horizontal padding of every cell, so header text and inputs share their left edge. */
   --pad-x: var(--space-2);
   width: 100%;
@@ -242,7 +242,7 @@
   z-index: 2;
   box-sizing: border-box;
   height: var(--head-height);
-  padding: 0 var(--pad-x);
+  padding: var(--space-2) var(--pad-x);
   border-bottom: 1px solid var(--color-border);
   background: var(--color-subtle);
   text-align: start;
@@ -257,6 +257,19 @@
   font-size: var(--text-body);
   line-height: var(--leading-small);
   color: var(--color-text);
+}
+/* Two lines: the name, then the unit in a smaller, quieter line. */
+.headName,
+.headUnit {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.headUnit {
+  margin-top: var(--space-1);
+  font-size: var(--text-caption);
+  line-height: var(--leading-caption);
+  font-weight: var(--weight-regular);
+  color: var(--color-text-secondary);
 }
 /* The first body cell has a 4px state bar as its border; keep the header text over the code. */
 .table thead th:first-child {

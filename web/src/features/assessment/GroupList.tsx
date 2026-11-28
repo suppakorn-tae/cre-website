@@ -55,11 +55,15 @@ export function GroupList({
   const all = codesOf(catalogue.dimensions.flatMap((d) => d.factors));
   const header = (field: 'y1' | 'y2') => {
     const unit = sharedUnit(all, drafts, field);
-    return t('table.withUnit', {
-      name: t(`table.${field}`),
-      unit: unit === null ? t('table.mixedUnit') : tUnits(unit),
-    });
+    return headLabel(t(`table.${field}`), unit === null ? t('table.mixedUnit') : tUnits(unit));
   };
+  // The label stays short; the unit goes on a second, quieter line so the header can grow taller.
+  const headLabel = (name: string, unit?: string) => (
+    <>
+      <span className={styles.headName}>{name}</span>
+      {unit !== undefined && <span className={styles.headUnit}>{unit}</span>}
+    </>
+  );
 
   if (narrow) {
     return (
@@ -93,7 +97,7 @@ export function GroupList({
           <th scope="col">{t('table.code')}</th>
           <th scope="col">{t('table.indicator')}</th>
           <th scope="col" className={styles.keyHead}>
-            {t('table.withUnit', { name: t('table.x'), unit: t('table.xUnit') })}
+            {headLabel(t('table.x'), t('table.xUnit'))}
           </th>
           <th scope="col" className={styles.keyHead}>
             {header('y1')}
@@ -102,7 +106,7 @@ export function GroupList({
             {header('y2')}
           </th>
           <th scope="col" className={styles.keyHead}>
-            {t('table.y3')}
+            {headLabel(t('table.y3'))}
           </th>
           <th scope="col">{t('table.status')}</th>
         </tr>

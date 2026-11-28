@@ -126,13 +126,18 @@ describe('GroupList', () => {
   });
 });
 
+const headCell = (name: string, unit: string) =>
+  new RegExp(
+    `<span class="[^"]*headName[^"]*">${name}</span><span class="[^"]*headUnit[^"]*">${unit}</span>`,
+  );
+
 describe('assessment table', () => {
   it('is one table with a header row, group rows and one row per indicator', () => {
     const html = render(false);
     expect(html.match(/<table/g)).toHaveLength(1);
     expect(html).toContain('<th scope="col">รหัส</th>');
-    expect(html).toContain('y1 ต้นทุน (บาท)');
-    expect(html).toContain('y2 เวลา (วัน)');
+    expect(html).toMatch(headCell('y1 ต้นทุน', 'บาท'));
+    expect(html).toMatch(headCell('y2 เวลา', 'วัน'));
     expect(html.match(/<tr class="[^"]*row/g)).toHaveLength(2);
     expect(html).toContain('colSpan');
   });
@@ -153,7 +158,7 @@ describe('assessment table', () => {
     const html = render(false);
     expect(html.match(/<thead>/g)).toHaveLength(1);
     expect(html.match(/<col[ /]/g)).toHaveLength(7);
-    expect(html).toContain('X ความถี่ (หน่วยตามตัวชี้วัด)');
+    expect(html).toMatch(headCell('X ความถี่', 'หน่วยตามตัวชี้วัด'));
     expect(html).toMatch(/<span class="[^"]*unitText[^"]*">ครั้ง\/เดือน<\/span>/);
     expect(html).not.toContain('placeholder=');
     expect(html).toContain('aria-haspopup="dialog"');
@@ -192,7 +197,7 @@ describe('assessment table', () => {
         />
       </NextIntlClientProvider>,
     );
-    expect(html).toContain('y1 ต้นทุน (หน่วยต่างกัน)');
+    expect(html).toMatch(headCell('y1 ต้นทุน', 'หน่วยต่างกัน'));
   });
 });
 

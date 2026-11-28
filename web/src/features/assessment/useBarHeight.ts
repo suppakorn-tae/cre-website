@@ -42,6 +42,9 @@ export function useBarHeight(
     apply();
     const observer = new ResizeObserver(apply);
     observer.observe(barEl);
+    // A header that wraps onto more lines when the width changes moves the scroll padding with it.
+    const thead = pageEl.querySelector('thead');
+    if (thead) observer.observe(thead);
     return () => {
       observer.disconnect();
       pageEl.style.removeProperty('--bar-height');

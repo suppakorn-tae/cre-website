@@ -62,7 +62,7 @@ for (const width of [768, 1280]) {
     const top = await heads.first().evaluate((el) => el.getBoundingClientRect().top);
     const height = await heads.first().evaluate((el) => el.getBoundingClientRect().height);
     expect(top).toBe(64); // under the 64px app header
-    expect(height).toBe(44);
+    expect(height).toBe(64); // two lines: the name, then the unit
 
     // Left edge of the header text against the left edge of the input (or code text) of a row.
     const lefts = await page.evaluate(() => {
