@@ -61,10 +61,18 @@ test.describe('overview donut tooltip', () => {
     const violations = await page.evaluate(async () => {
       const axe = (
         window as unknown as {
-          axe: { run(c: Document): Promise<{ violations: { id: string }[] }> };
+          axe: {
+            run(
+              c: Element,
+              o: { rules: Record<string, { enabled: boolean }> },
+            ): Promise<{ violations: { id: string }[] }>;
+          };
         }
       ).axe;
-      return (await axe.run(document)).violations.map((v) => v.id);
+      // The chart with its ring; page-level rules (landmark regions) are not about the ring.
+      const chart = document.querySelector('svg[role="group"]')!.parentElement!;
+      const r = await axe.run(chart, { rules: { region: { enabled: false } } });
+      return r.violations.map((v) => v.id);
     });
     expect(violations).toEqual([]);
     await arc.blur();
