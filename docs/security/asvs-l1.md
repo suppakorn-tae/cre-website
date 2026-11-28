@@ -202,7 +202,7 @@ V16 (Security Logging and Error Handling) and V17 (WebRTC) have no Level 1 requi
 ## Gaps
 
 * **Three fails** (V3.3.1, V6.2.4, V12.2.1), each with an issue above.
-* **Pass (review) without a test:** V12.1.1 (TLS versions), V12.2.2 (certificate issuer) and V13.4.1 (no `.git` in images). They are met by configuration but nothing in CI would notice a regression. The ZAP baseline scan (IO-266) runs against the e2e stack, which uses the dev Caddyfile over plain http, so it does not cover them either.
+* **Pass (review) without a test:** V12.1.1 (TLS versions), V12.2.2 (certificate issuer) and V13.4.1 (no `.git` in images). They are met by configuration but nothing in CI would notice a regression. The ZAP baseline scan ([`e2e/zap`](../../e2e/zap/scan.sh), job `zap` in [ci-e2e.yml](../../.github/workflows/ci-e2e.yml)) runs against the e2e stack, which uses the dev Caddyfile over plain http, so it does not cover them either.
 * **npm has no CI gate** like `govulncheck`; it relies on Dependabot alerts and `pnpm audit`.
 * **Level 2** is not attempted.
 

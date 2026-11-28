@@ -53,7 +53,7 @@ Checked on 28 Nov 2026. Open issues: [IO-269](https://linear.app/printf-scanf/is
 
 * Cookie names have no `__Host-` prefix: [IO-269](https://linear.app/printf-scanf/issue/IO-269).
 * `SMTP_REQUIRE_TLS` is not set in production: [IO-271](https://linear.app/printf-scanf/issue/IO-271).
-* TLS version and the `.git` exclusion are checked by review only (see [Gaps](asvs-l1.md#gaps)). The ZAP baseline scan is IO-266.
+* TLS version and the `.git` exclusion are checked by review only (see [Gaps](asvs-l1.md#gaps)). The ZAP baseline scan ([`e2e/zap`](../../e2e/zap/scan.sh), job `zap` in [ci-e2e.yml](../../.github/workflows/ci-e2e.yml)) fails CI on any medium or high alert, but it scans the e2e stack over plain http, so it does not test TLS.
 
 ## A03:2025 Software Supply Chain Failures
 
