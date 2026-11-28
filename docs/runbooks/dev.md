@@ -286,6 +286,7 @@ make gen lint test
 ```
 
 - `make gen` regenerates the OpenAPI bundle, Go server, sqlc code, TypeScript types and the MSW worker. Generated code is committed, and CI fails when it is stale: `git status` must show no unexpected change after it.
+- `make lint` also runs `gosec` (inside golangci-lint) and `govulncheck`, so it needs network access the first time. Fix a gosec finding; for a true false positive add `//nolint:gosec // <reason>` on that line, never without a reason. govulncheck fails only on a vulnerability your code can reach: bump the module (`go get <module>@<fixed>`, `go mod tidy`) and say so in the PR.
 - `make test` runs the backend tests with testcontainers, so Docker must run. Web only: `make test-web`.
 
 ## Reset the database

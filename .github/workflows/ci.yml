@@ -103,6 +103,11 @@ jobs:
         with:
           version: v2.15
           working-directory: backend
+      # Fails on a known vulnerability that our code can reach (gosec itself runs
+      # inside golangci-lint above). Keep the version in step with the Makefile.
+      - name: govulncheck
+        working-directory: backend
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.10.0 ./...
       - name: go test
         working-directory: backend
         run: go test ./...
