@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../helpers/test';
 
 // WCAG 2.4.11 Focus Not Obscured: tabbing never leaves the centre of the focused control under a
 // sticky or fixed bar (the app header, the table header, the submit footer).

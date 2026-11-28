@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../helpers/test';
 import { Api, loggedIn } from '../../helpers/api';
 import { clearMail, readOtp } from '../../helpers/mailpit';
 import { authText, logInThroughUi, NEW_PASSWORD, newUser, typeOtp } from './support';

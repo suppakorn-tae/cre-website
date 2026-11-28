@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../helpers/test';
 
 // WCAG 2.5.3 Label in Name, on the mock api. A control's accessible name must contain
 // its visible text, so a voice-control user who says what they see can activate it.

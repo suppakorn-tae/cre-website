@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../helpers/test';
 
 // The user menu is a Radix menu, so the keyboard works without any code of ours.
 test('the user menu opens, moves with the arrow keys and closes with Esc', async ({

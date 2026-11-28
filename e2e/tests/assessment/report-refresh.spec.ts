@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, test, type Download, type Page } from '@playwright/test';
+import { expect, test, type Download, type Page } from '../../helpers/test';
 import { loggedIn, type Api } from '../../helpers/api';
 import { newUser } from '../auth/support';
 import { pdfText } from './pdf-text';

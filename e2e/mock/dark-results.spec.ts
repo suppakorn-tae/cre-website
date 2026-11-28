@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../helpers/test';
 
 // IO-259: the four results tabs and the compare page in dark mode pass axe's colour
 // contrast rule, and really paint with the dark tokens. axe-core comes from web/node_modules.

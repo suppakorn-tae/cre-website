@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../helpers/test';
 import { loggedIn, type Api } from '../../helpers/api';
 import { ADMIN } from '../../helpers/env';
 import { logInThroughUi, newUser } from '../auth/support';

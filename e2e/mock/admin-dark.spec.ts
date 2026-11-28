@@ -1,5 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../helpers/test';
 
 // The admin pages in dark mode, on the mock api: the theme is applied, and no
 // visible element keeps a pure white fill (a card or table left on the light

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../helpers/test';
 
 // Dark mode of the shell, auth, account and legal pages (IO-256), on the mock api: the theme
 // switch works, the page uses the dark palette (docs/specs/ux-ui/feedback/2026-11-27/dark-palette.md)

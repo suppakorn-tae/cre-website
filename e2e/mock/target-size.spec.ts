@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from '@playwright/test';
+import { expect, test, type Locator } from '../helpers/test';
 
 // WCAG 2.5.8 (AA): a target is at least 24 x 24 CSS px, or has the spacing to
 // spare. These are the controls that were 20 to 23 px high in the audit
