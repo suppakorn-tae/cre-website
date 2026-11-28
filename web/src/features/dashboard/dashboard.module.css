@@ -251,12 +251,14 @@
 .plot {
   --label-w: 200px;
   --value-w: 2.5em;
+  --axis-h: 24px;
   position: relative;
 }
-/* One grid line per tick, behind every row */
+/* One grid line per tick, behind every row. It stops above the tick labels so no line, the one
+   at 0 included, runs through a number. */
 .grid {
   position: absolute;
-  inset: 0 var(--value-w) 0 calc(var(--label-w) + var(--space-3));
+  inset: 0 var(--value-w) var(--axis-h) calc(var(--label-w) + var(--space-3));
   border-inline-end: 1px solid var(--chart-grid);
   background: repeating-linear-gradient(
     to right,
@@ -343,14 +345,14 @@
 .axisTicks {
   position: relative;
   grid-column: 2;
-  height: 18px;
+  height: var(--axis-h);
   margin-inline-end: var(--value-w);
   color: var(--color-text-muted);
   font-size: var(--text-caption);
 }
 .axisTicks span {
   position: absolute;
-  top: 0;
+  top: var(--space-2);
   transform: translateX(-50%);
 }
 @media (max-width: 599px) {

@@ -16,6 +16,22 @@ describe('dashboard level names', () => {
   });
 });
 
+describe('dashboard H/VH chart axis', () => {
+  const css = read('dashboard.module.css');
+
+  it('stops the grid above the tick labels so no line runs through the 0', () => {
+    const grid = /\.grid\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(grid).toMatch(/inset:\s*0 var\(--value-w\) var\(--axis-h\)/);
+    const ticks = /\.axisTicks\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(ticks).toMatch(/height:\s*var\(--axis-h\)/);
+  });
+
+  it('puts the tick labels below the end of the grid lines', () => {
+    const tick = /\.axisTicks span\s*\{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(tick).toMatch(/top:\s*var\(--space-2\)/);
+  });
+});
+
 describe('dashboard search field', () => {
   it('keeps a transparent outline on focus so forced colours still draws it', () => {
     const css = read('dashboard.module.css');
