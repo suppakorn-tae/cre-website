@@ -67,7 +67,7 @@ export function ResultsTable({ items, names }: Props) {
       {rows.length === 0 ? (
         <EmptyState title={t('emptyTitle')} description={t('emptyText')} />
       ) : (
-        <div className={styles.tableWrap}>
+        <div className={styles.tableWrap} role="region" aria-label={t('caption')} tabIndex={0}>
           <table className={styles.table}>
             <caption className={styles.srOnly}>{t('caption')}</caption>
             <thead>

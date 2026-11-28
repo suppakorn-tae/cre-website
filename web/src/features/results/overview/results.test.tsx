@@ -111,6 +111,11 @@ describe('detail table', () => {
     expect(html).toContain('ความเสี่ยงสูง');
   });
 
+  it('makes the scrolling wrapper a focusable, named region (axe scrollable-region-focusable)', () => {
+    const html = wrap(<ResultsTable items={items} names={names} />);
+    expect(html).toMatch(/<div[^>]*role="region"[^>]*aria-label="[^"]+"[^>]*tabindex="0"/);
+  });
+
   it('reads the dimension of each row from the indicator code', () => {
     expect(dimensionOf('EC-HS-2')).toBe('ec');
     expect(dimensionOf('SO-XX-1')).toBe('so');
