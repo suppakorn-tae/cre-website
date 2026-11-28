@@ -143,7 +143,7 @@ func TestPasswordIsCheckedExactly(t *testing.T) {
 			t.Errorf("altered password %q accepted", near)
 		}
 	}
-	long := strings.Repeat("ก", 127) + "a" // 128 runes, well past bcrypt's 72 bytes
+	long := strings.Repeat("ก", 127) + "a" // 128 runes (382 bytes): Argon2id hashes all of it
 	hl := loginMustHash(t, long)
 	if VerifyPassword(strings.Repeat("ก", 127)+"b", hl) {
 		t.Error("only a prefix of a long password is checked")
