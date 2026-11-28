@@ -2,14 +2,14 @@
 
 **Standard:** [OWASP Top 10:2025](https://owasp.org/Top10/2025/), the final 2025 list. One section per category: how the app defends against it, where the code and tests are, which rows of the [ASVS Level 1 checklist](asvs-l1.md) cover it, and what is still open.
 
-Checked on 28 Nov 2026. Open issues: [IO-269](https://linear.app/printf-scanf/issue/IO-269) (cookie prefixes), [IO-270](https://linear.app/printf-scanf/issue/IO-270) (common passwords), [IO-271](https://linear.app/printf-scanf/issue/IO-271) (SMTP STARTTLS).
+Checked on 28 Nov 2026. Open issues: [IO-269](https://linear.app/printf-scanf/issue/IO-269) (cookie prefixes), [IO-270](https://linear.app/printf-scanf/issue/IO-270) (common passwords).
 
 | Category | Covered | Open |
 | --- | --- | --- |
 | [A01 Broken Access Control](#a012025-broken-access-control) | ✅ | — |
-| [A02 Security Misconfiguration](#a022025-security-misconfiguration) | 🟡 | IO-269, IO-271 |
+| [A02 Security Misconfiguration](#a022025-security-misconfiguration) | 🟡 | IO-269 |
 | [A03 Software Supply Chain Failures](#a032025-software-supply-chain-failures) | ✅ | — |
-| [A04 Cryptographic Failures](#a042025-cryptographic-failures) | 🟡 | IO-271 |
+| [A04 Cryptographic Failures](#a042025-cryptographic-failures) | ✅ | — |
 | [A05 Injection](#a052025-injection) | ✅ | — |
 | [A06 Insecure Design](#a062025-insecure-design) | ✅ | — |
 | [A07 Authentication Failures](#a072025-authentication-failures) | 🟡 | IO-269, IO-270 |
@@ -52,7 +52,6 @@ Checked on 28 Nov 2026. Open issues: [IO-269](https://linear.app/printf-scanf/is
 **Left**
 
 * Cookie names have no `__Host-` prefix: [IO-269](https://linear.app/printf-scanf/issue/IO-269).
-* `SMTP_REQUIRE_TLS` is not set in production: [IO-271](https://linear.app/printf-scanf/issue/IO-271).
 * TLS version and the `.git` exclusion are checked by review only (see [Gaps](asvs-l1.md#gaps)). The ZAP baseline scan ([`e2e/zap`](../../e2e/zap/scan.sh), job `zap` in [ci-e2e.yml](../../.github/workflows/ci-e2e.yml)) fails CI on any medium or high alert, but it scans the e2e stack over plain http, so it does not test TLS.
 
 ## A03:2025 Software Supply Chain Failures
@@ -84,7 +83,9 @@ Checked on 28 Nov 2026. Open issues: [IO-269](https://linear.app/printf-scanf/is
 
 **ASVS rows:** V11.3.1, V11.3.2, V11.4.1, V12.1.1, V12.2.1, V12.2.2, V9.1.1, V9.1.2, V9.1.3.
 
-**Left:** the OTP e-mail can go out without STARTTLS if a relay does not offer it: [IO-271](https://linear.app/printf-scanf/issue/IO-271).
+**Also:** The OTP mailer refuses to send without STARTTLS in production (`SMTP_REQUIRE_TLS` defaults to true; `TestSendRequireTLSFailsWithoutStartTLS` in [mailer_test.go](../../backend/internal/adapter/mailer/mailer_test.go)).
+
+**Left:** nothing open at Level 1.
 
 ## A05:2025 Injection
 

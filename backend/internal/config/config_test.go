@@ -190,3 +190,37 @@ func TestLoadWorkerRejectsTimeoutOverTaskLimit(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadAPISMTPRequireTLSDefault(t *testing.T) {
+	prod := map[string]string{
+		"SESSION_SECRET": strings.Repeat("s", 32), "SMTP_HOST": "relay", "SMTP_FROM": "a@example.com",
+	}
+	cases := []struct {
+		name string
+		env  map[string]string
+		want bool
+	}{
+		{"production unset", map[string]string{}, true},
+		{"production empty", map[string]string{"SMTP_REQUIRE_TLS": ""}, true},
+		{"production explicit false", map[string]string{"SMTP_REQUIRE_TLS": "false"}, false},
+		{"production explicit true", map[string]string{"SMTP_REQUIRE_TLS": "true"}, true},
+		{"development unset", map[string]string{"APP_ENV": "development"}, false},
+		{"development explicit true", map[string]string{"APP_ENV": "development", "SMTP_REQUIRE_TLS": "true"}, true},
+	}
+	for _, tc := range cases {
+		env := map[string]string{}
+		for k, v := range prod {
+			env[k] = v
+		}
+		for k, v := range tc.env {
+			env[k] = v
+		}
+		c, err := LoadAPI(apiEnv(env))
+		if err != nil {
+			t.Fatalf("%s: %v", tc.name, err)
+		}
+		if c.SMTPRequireTLS != tc.want {
+			t.Errorf("%s: SMTPRequireTLS = %v, want %v", tc.name, c.SMTPRequireTLS, tc.want)
+		}
+	}
+}

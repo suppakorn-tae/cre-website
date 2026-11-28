@@ -10,11 +10,11 @@ The Top 10 view of the same evidence is in [`owasp-top-10.md`](owasp-top-10.md).
 
 | Status | Rows |
 | --- | ---: |
-| Pass | 51 |
-| &nbsp;&nbsp;of which Pass (code and test) | 44 |
+| Pass | 52 |
+| &nbsp;&nbsp;of which Pass (code and test) | 45 |
 | &nbsp;&nbsp;of which Pass (absence) | 4 |
 | &nbsp;&nbsp;of which Pass (review) | 3 |
-| Fail | 3 |
+| Fail | 2 |
 | N/A | 16 |
 | **Total** | **70** |
 
@@ -24,7 +24,6 @@ The Top 10 view of the same evidence is in [`owasp-top-10.md`](owasp-top-10.md).
 | --- | --- | --- |
 | V3.3.1 | Cookies have no `__Host-` or `__Secure-` prefix | [IO-269](https://linear.app/printf-scanf/issue/IO-269) |
 | V6.2.4 | New passwords are not checked against a common-password list | [IO-270](https://linear.app/printf-scanf/issue/IO-270) |
-| V12.2.1 | The mailer may send without STARTTLS in production | [IO-271](https://linear.app/printf-scanf/issue/IO-271) |
 
 ### Fixed in this change (IO-267)
 
@@ -173,7 +172,7 @@ The app is an OAuth client of Google. It is not an authorization server, and eve
 | ID | Requirement (paraphrase) | Status | Evidence |
 | --- | --- | --- | --- |
 | V12.1.1 | Only TLS 1.2 and 1.3, with the newest preferred | Pass (review) | Caddy's defaults are TLS 1.2 minimum and 1.3 preferred, and [Caddyfile.prod][caddy-prod] does not override them (no `tls` or `protocols` option). No test checks the live handshake. |
-| V12.2.1 | TLS for every connection to external HTTP services, with no plain-text fallback | **Fail** | Browser to Caddy is HTTPS with HSTS; Google is called over HTTPS. But the mailer carries on without STARTTLS when the relay does not offer it, because `SMTP_REQUIRE_TLS` is off in production ([mailer.go][mailer], [config.go][config]). Today only Go's `smtp.PlainAuth`, which refuses to send the relay password over plain text, stops the send. [IO-271](https://linear.app/printf-scanf/issue/IO-271) |
+| V12.2.1 | TLS for every connection to external HTTP services, with no plain-text fallback | Pass | Browser to Caddy is HTTPS with HSTS; Google is called over HTTPS. The mailer fails the send when the relay does not offer STARTTLS, and `SMTP_REQUIRE_TLS` defaults to true when `APP_ENV=production` ([config.go][config], [mailer.go][mailer]; `TestLoadAPISMTPRequireTLSDefault`, `TestSendRequireTLSFailsWithoutStartTLS`). Only an explicit `SMTP_REQUIRE_TLS=false` turns it off; the e2e and load test stacks do that for Mailpit. |
 | V12.2.2 | Public services use publicly trusted certificates | Pass (review) | Caddy gets Let's Encrypt certificates over ACME for the site address ([Caddyfile.prod][caddy-prod]). No test checks the issued chain. |
 
 ## V13 Configuration
@@ -201,7 +200,7 @@ V16 (Security Logging and Error Handling) and V17 (WebRTC) have no Level 1 requi
 
 ## Gaps
 
-* **Three fails** (V3.3.1, V6.2.4, V12.2.1), each with an issue above.
+* **Two fails** (V3.3.1, V6.2.4), each with an issue above.
 * **Pass (review) without a test:** V12.1.1 (TLS versions), V12.2.2 (certificate issuer) and V13.4.1 (no `.git` in images). They are met by configuration but nothing in CI would notice a regression. The ZAP baseline scan ([`e2e/zap`](../../e2e/zap/scan.sh), job `zap` in [ci-e2e.yml](../../.github/workflows/ci-e2e.yml)) runs against the e2e stack, which uses the dev Caddyfile over plain http, so it does not cover them either.
 * **npm has no CI gate** like `govulncheck`; it relies on Dependabot alerts and `pnpm audit`.
 * **Level 2** is not attempted.

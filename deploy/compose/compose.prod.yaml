@@ -49,6 +49,8 @@ services:
       SMTP_USER: ${SMTP_USER:?Brevo SMTP login}
       SMTP_PASSWORD: ${SMTP_PASSWORD:?Brevo SMTP key}
       SMTP_FROM: ${SMTP_FROM:-no-reply@conriskexpert.com}
+      # Empty: the api requires STARTTLS when APP_ENV is production.
+      SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?}
       GOOGLE_REDIRECT_URL: ${GOOGLE_REDIRECT_URL:-}

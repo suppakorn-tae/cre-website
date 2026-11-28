@@ -53,7 +53,8 @@ type API struct {
 	SMTPPassword string
 	SMTPFrom     string
 	// SMTPRequireTLS (SMTP_REQUIRE_TLS) fails a send when the relay does not
-	// offer STARTTLS. Set it for Brevo; Mailpit in dev does not offer it.
+	// offer STARTTLS. It defaults to true when APP_ENV is production and to
+	// false otherwise; an explicit value wins (Mailpit offers no STARTTLS).
 	SMTPRequireTLS bool
 }
 
@@ -104,7 +105,7 @@ func LoadAPI(get Getenv) (API, error) {
 	c.SMTPUser = r.str("SMTP_USER", "")
 	c.SMTPPassword = r.str("SMTP_PASSWORD", "")
 	c.SMTPFrom = r.str("SMTP_FROM", "")
-	c.SMTPRequireTLS = r.boolean("SMTP_REQUIRE_TLS")
+	c.SMTPRequireTLS = r.boolean("SMTP_REQUIRE_TLS", c.Env == "production")
 	if c.Env == "production" && c.SMTPHost == "" {
 		r.errs = append(r.errs, errors.New("SMTP_HOST is required in production"))
 	}
@@ -205,10 +206,11 @@ func (r *reader) port(key string, def int) int {
 	return n
 }
 
-func (r *reader) boolean(key string) bool {
+// boolean reads a true/false variable; def applies when it is unset or empty.
+func (r *reader) boolean(key string, def bool) bool {
 	v, ok := r.get(key)
 	if !ok || v == "" {
-		return false
+		return def
 	}
 	b, err := strconv.ParseBool(v)
 	if err != nil {
