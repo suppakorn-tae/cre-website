@@ -3,7 +3,7 @@ import { loggedIn } from '../../helpers/api';
 import { ADMIN, USER } from '../../helpers/env';
 import { answerBody, go, json, send, VH_ANSWER } from '../admin/support';
 import { msg } from '../assessment/support';
-import { shellText } from '../auth/support';
+import { newUser, shellText } from '../auth/support';
 
 test.describe.configure({ timeout: 120_000 });
 test.use({ actionTimeout: 20_000, navigationTimeout: 45_000 });
@@ -19,7 +19,8 @@ async function consoleErrorsDuring(page: Page, visit: () => Promise<void>) {
 
 test('signed-in routes load without console errors', async ({ browser }) => {
   // A project with one answered, submitted version, so every page has data.
-  const user = await loggedIn(USER);
+  // A new user each run: the shared seeded user would hit the project limit.
+  const user = await loggedIn(await newUser('shell'));
   const projectId = await user.createProject({ name: `Shell e2e ${Date.now()}` });
   const created = await json<{ id: string }>(
     await send(user, 'post', `/projects/${projectId}/versions`, {}),
