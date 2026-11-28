@@ -19,3 +19,11 @@ The current specs are the source of truth for every issue. Each Linear issue's *
 - If specs disagree with each other or with an issue, label the Linear issue `needs-decision` and stop.
 - A spec change is its own PR (`docs(repo): …`), never part of a feature PR.
 - `backend/seed/` holds the copy of `cre-indicators.json`, `cre-indicators.csv` and `cre-advice.csv` that the app loads. When the risk-engine seed files change here, update `backend/seed/` in the same PR.
+
+## Building the PDFs
+
+The requirements and database PDFs are built from their `.tex` sources with XeLaTeX.
+
+- CI (`specs-pdf` workflow) builds both on every PR that touches a `.tex` file or `figures/`, and on demand (`workflow_dispatch`). It fails on missing glyphs and uploads the PDFs and logs as the `specs-pdf` artifact (kept 14 days).
+- To update the committed PDFs: open the workflow run, download the artifact, copy the two PDFs over the ones here, and commit them in the same spec PR.
+- Locally, with TeX Live and a Thai font installed, run from the folder of the `.tex` file: `latexmk -xelatex -interaction=nonstopmode -halt-on-error cre-requirements-usecase.tex` (or `cre-database-design-v1.tex`).
