@@ -66,7 +66,7 @@ export class Api {
   async createProject(overrides: Partial<ProjectInput> = {}): Promise<string> {
     const body: ProjectInput = {
       name: 'E2E project',
-      nickname: 'E2E',
+      nickname: randomNickname(),
       island_code: 'koh_samui',
       type_code: 'pier',
       start_date: '2026-01-01',
@@ -79,6 +79,11 @@ export class Api {
     if (res.status() !== 201) throw new Error(`createProject ${res.status()}: ${await res.text()}`);
     return ((await res.json()) as { id: string }).id;
   }
+}
+
+/** A 4-character nickname; the api rejects a nickname the user already has on a live project. */
+export function randomNickname(): string {
+  return Math.random().toString(36).slice(2, 6).padEnd(4, 'x');
 }
 
 /** Log in as `who` and return an authenticated client. */
