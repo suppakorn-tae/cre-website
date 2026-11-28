@@ -199,7 +199,7 @@ jobs:
         if: always() && steps.report.outputs.artifact-url != ''
         env:
           URL: ${{ steps.report.outputs.artifact-url }}
-        run: echo "HTML reports (one per scan): [zap-report artifact]($URL)" >> "$GITHUB_STEP_SUMMARY"
+        run: echo "HTML reports, one per scan - [zap-report artifact]($URL)" >> "$GITHUB_STEP_SUMMARY"
       - name: Stop the stack
         if: always()
         working-directory: e2e
