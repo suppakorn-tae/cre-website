@@ -115,7 +115,7 @@ func (e auditEnv) get(t *testing.T, as testutil.Account, method, path string) *h
 	tok, _ := e.sess.Issue(as.ID, ver, false)
 	req := httptest.NewRequest(method, "/api/v1/admin"+path, nil)
 	req.RemoteAddr = "198.51.100.7:1234"
-	req.AddCookie(&http.Cookie{Name: session.CookieName, Value: tok})
+	req.AddCookie(&http.Cookie{Name: session.CookieName, Value: tok}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	rec := httptest.NewRecorder()
 	e.h.ServeHTTP(rec, req)
 	resp := rec.Result()
@@ -308,7 +308,7 @@ func TestAuditHasNoWriteRoutes(t *testing.T) {
 			var ver int
 			_ = e.db.QueryRow(context.Background(), `SELECT session_version FROM account WHERE id = $1`, a.ID).Scan(&ver)
 			tok, _ := e.sess.Issue(a.ID, ver, false)
-			req.AddCookie(&http.Cookie{Name: session.CookieName, Value: tok})
+			req.AddCookie(&http.Cookie{Name: session.CookieName, Value: tok}) //nolint:gosec // G124: test request cookie, never sent to a browser
 			rec := httptest.NewRecorder()
 			e.h.ServeHTTP(rec, req)
 			if rec.Code != http.StatusNotFound && rec.Code != http.StatusMethodNotAllowed {

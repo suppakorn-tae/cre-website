@@ -94,7 +94,7 @@ func (h *googleHandler) mount(r chi.Router, limit app.Middleware) {
 }
 
 func (h *googleHandler) setCookie(w http.ResponseWriter, name, value string, maxAge time.Duration) {
-	http.SetCookie(w, &http.Cookie{
+	http.SetCookie(w, &http.Cookie{ //nolint:gosec // Secure is off only outside production (local http development)
 		Name: name, Value: value, Path: googleCookiePath, MaxAge: int(maxAge.Seconds()),
 		HttpOnly: true, Secure: !h.insecure, SameSite: http.SameSiteLaxMode,
 	})

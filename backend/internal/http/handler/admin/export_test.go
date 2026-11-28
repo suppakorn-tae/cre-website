@@ -66,7 +66,7 @@ func exportSpec(t *testing.T) *openapi3.T {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := os.ReadFile(root)
+	data, err := os.ReadFile(root) //nolint:gosec // G304: test reads its own fixture file
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -97,7 +97,7 @@ func callExport(t *testing.T, f *fakeExport, accountID, method, path, body strin
 	req.Header.Set("Content-Type", "application/json")
 	if accountID != "" {
 		token, _ := ss.Issue(accountID, 1, false)
-		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token})
+		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	}
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)

@@ -67,7 +67,7 @@ type thresholdFile struct {
 
 func readJSON(t testing.TB, path string, v any) {
 	t.Helper()
-	b, err := os.ReadFile(path)
+	b, err := os.ReadFile(path) //nolint:gosec // G304: test reads its own fixture file
 	if err != nil {
 		t.Fatalf("read %s: %v", path, err)
 	}

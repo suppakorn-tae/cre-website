@@ -31,7 +31,7 @@ func startRustFS(t *testing.T) *s3.Store {
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        "rustfs/rustfs:latest",
 			ExposedPorts: []string{"9000/tcp"},
-			Env:          map[string]string{"RUSTFS_ACCESS_KEY": "rustfsadmin", "RUSTFS_SECRET_KEY": "rustfsadmin-secret"},
+			Env:          map[string]string{"RUSTFS_ACCESS_KEY": "rustfsadmin", "RUSTFS_SECRET_KEY": "rustfsadmin-secret"}, //nolint:gosec // G101: test fixture, not a real credential
 			WaitingFor:   wait.ForHTTP("/health").WithPort("9000/tcp").WithStartupTimeout(2 * time.Minute),
 		},
 		Started: true,
@@ -44,7 +44,7 @@ func startRustFS(t *testing.T) *s3.Store {
 	if err != nil {
 		t.Fatal(err)
 	}
-	st, err := s3.New(s3.Config{
+	st, err := s3.New(s3.Config{ //nolint:gosec // G101: test fixture, not a real credential
 		Endpoint: endpoint, Region: "us-east-1", Bucket: "cre",
 		AccessKey: "rustfsadmin", SecretKey: "rustfsadmin-secret",
 	})

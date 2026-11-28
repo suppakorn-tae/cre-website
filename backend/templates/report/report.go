@@ -204,7 +204,7 @@ func buildView(d Data) (view, error) {
 		for _, l := range adviceOrder {
 			for _, a := range i.Advice {
 				if a.List == l && len(a.Items) > 0 {
-					iv.Advice = append(iv.Advice, adviceView{Label: template.HTML(m("advice." + l)), Items: a.Items})
+					iv.Advice = append(iv.Advice, adviceView{Label: template.HTML(m("advice." + l)), Items: a.Items}) //nolint:gosec // embedded catalogue, never user input
 				}
 			}
 		}

@@ -44,6 +44,23 @@ jobs:
               - "deploy/compose/compose.test.yaml"
               - ".github/workflows/ci-e2e.yml"
 
+  # New CVEs show up in code nobody touched. Runs on the nightly schedule and on
+  # manual dispatch only; pull requests get the same scan from ci.yml.
+  govulncheck:
+    name: govulncheck
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache: false
+      - name: govulncheck
+        working-directory: backend
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.10.0 ./...
+
   # The web app alone in mock mode: no compose stack and no api.
   e2e-mock:
     name: e2e-mock

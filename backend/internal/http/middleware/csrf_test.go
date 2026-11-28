@@ -13,7 +13,7 @@ import (
 func csrfReq(method, cookie, header, origin string) *http.Request {
 	req := httptest.NewRequest(method, "http://api.example.com/x", nil)
 	if cookie != "" {
-		req.AddCookie(&http.Cookie{Name: middleware.CSRFCookie, Value: cookie})
+		req.AddCookie(&http.Cookie{Name: middleware.CSRFCookie, Value: cookie}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	}
 	if header != "" {
 		req.Header.Set(middleware.CSRFHeader, header)

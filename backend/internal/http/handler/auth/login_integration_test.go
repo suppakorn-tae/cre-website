@@ -68,7 +68,7 @@ const (
 	loginUserID  = "7d1c0a3e-5b0e-4b7a-9a43-0d2f4a1e9c11"
 	loginOffID   = "0193a5c2-7b1e-4c3a-9d4f-2a6b8e1f5c70"
 	loginGoogID  = "5c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f"
-	loginUserPwd = "รหัสผ่านทดสอบ-2569"
+	loginUserPwd = "รหัสผ่านทดสอบ-2569" //nolint:gosec // G101: test fixture, not a real credential
 )
 
 func newLoginEnv(t *testing.T) (loginEnv, string) {
@@ -146,7 +146,7 @@ func (e loginEnv) do(t *testing.T, method, path, token string, body any) *httpte
 	req := httptest.NewRequest(method, "https://app.example.com/api/v1/auth"+path, rd)
 	req.Header.Set("Content-Type", "application/json")
 	if token != "" {
-		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token})
+		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	}
 	w := httptest.NewRecorder()
 	e.h.ServeHTTP(w, req)

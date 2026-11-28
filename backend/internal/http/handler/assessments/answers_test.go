@@ -79,7 +79,7 @@ func answersSpec(t *testing.T) *openapi3.T {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := os.ReadFile(root)
+	data, err := os.ReadFile(root) //nolint:gosec // G304: test reads its own fixture file
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -111,7 +111,7 @@ func callAnswers(t *testing.T, f *answerFake, method, path, body string) (int, s
 	req := httptest.NewRequest(method, "/api/v1"+path, strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	token, _ := ss.Issue(owner.String(), 1, false)
-	req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token})
+	req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
 	resp := rec.Result()

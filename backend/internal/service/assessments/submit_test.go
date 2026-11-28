@@ -121,7 +121,7 @@ func (g *goldenCase) UnmarshalJSON(b []byte) error {
 
 func readJSON(t *testing.T, name string, v any) {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join("..", "..", "engine", "testdata", name))
+	b, err := os.ReadFile(filepath.Join("..", "..", "engine", "testdata", name)) //nolint:gosec // G304: test reads its own fixture file
 	if err != nil {
 		t.Fatal(err)
 	}

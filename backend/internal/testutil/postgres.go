@@ -82,7 +82,7 @@ const AppRole = "cre_app"
 func NewAppPool(t testing.TB, owner *pgxpool.Pool) *pgxpool.Pool {
 	t.Helper()
 	ctx := context.Background()
-	const password = "cre-app-test-password"
+	const password = "cre-app-test-password" //nolint:gosec // throwaway password of a testcontainers database
 	// ALTER ROLE takes no bind parameters; the password is a constant here.
 	if _, err := owner.Exec(ctx, `ALTER ROLE `+AppRole+` WITH LOGIN PASSWORD '`+password+`'`); err != nil {
 		t.Fatalf("set %s password: %v", AppRole, err)

@@ -122,7 +122,7 @@ func get(t *testing.T, f *fakeReader, accountID, path string) *http.Response {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	if accountID != "" {
 		token, _ := ss.Issue(accountID, 1, false)
-		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token})
+		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	}
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)

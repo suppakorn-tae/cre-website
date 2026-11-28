@@ -26,7 +26,7 @@ func NewCSRFToken() string {
 // SetCSRFCookie writes the double-submit cookie. It is not httpOnly so the
 // web client can read it and echo it in X-CSRF-Token.
 func SetCSRFCookie(w http.ResponseWriter, token string, insecure bool) {
-	http.SetCookie(w, &http.Cookie{
+	http.SetCookie(w, &http.Cookie{ //nolint:gosec // double-submit token: the web client must read it, so it cannot be HttpOnly
 		Name: CSRFCookie, Value: token, Path: "/",
 		Secure: !insecure, SameSite: http.SameSiteLaxMode,
 	})

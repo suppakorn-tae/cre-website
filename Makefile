@@ -29,6 +29,7 @@ lint:
 	else \
 		cd backend && go vet ./...; \
 	fi
+	cd backend && go run golang.org/x/vuln/cmd/govulncheck@v1.10.0 ./...
 	pnpm --dir web lint
 
 test: test-backend test-web

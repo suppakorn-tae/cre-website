@@ -123,7 +123,7 @@ func (e env) doToken(t *testing.T, tok, method, path, body string) *http.Respons
 	req := httptest.NewRequest(method, "/api/v1/admin"+path, strings.NewReader(body))
 	req.RemoteAddr = "198.51.100.7:1234"
 	req.Header.Set("Content-Type", "application/json")
-	req.AddCookie(&http.Cookie{Name: session.CookieName, Value: tok})
+	req.AddCookie(&http.Cookie{Name: session.CookieName, Value: tok}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	rec := httptest.NewRecorder()
 	e.h.ServeHTTP(rec, req)
 	resp := rec.Result()

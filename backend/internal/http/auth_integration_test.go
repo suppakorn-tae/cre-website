@@ -112,13 +112,13 @@ func newAuthEnv(t *testing.T) authEnv {
 func (e authEnv) do(method, path, token string, hdr map[string]string) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(method, "https://app.example.com"+path, nil)
 	if token != "" {
-		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token})
+		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	}
 	for k, v := range hdr {
 		req.Header.Set(k, v)
 	}
 	if v := hdr[middleware.CSRFHeader]; v != "" {
-		req.AddCookie(&http.Cookie{Name: middleware.CSRFCookie, Value: v})
+		req.AddCookie(&http.Cookie{Name: middleware.CSRFCookie, Value: v}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	}
 	w := httptest.NewRecorder()
 	e.h.ServeHTTP(w, req)

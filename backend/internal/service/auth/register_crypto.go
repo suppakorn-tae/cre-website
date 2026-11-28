@@ -55,10 +55,10 @@ func VerifyPassword(password, encoded string) bool {
 	}
 	salt, err1 := base64.RawStdEncoding.DecodeString(parts[4])
 	want, err2 := base64.RawStdEncoding.DecodeString(parts[5])
-	if err1 != nil || err2 != nil || len(want) == 0 || mem > 1<<20 || t == 0 || t > 10 || threads == 0 {
+	if err1 != nil || err2 != nil || len(want) == 0 || len(want) > 1<<10 || mem > 1<<20 || t == 0 || t > 10 || threads == 0 {
 		return false
 	}
-	got := argon2.IDKey([]byte(password), salt, t, mem, threads, uint32(len(want)))
+	got := argon2.IDKey([]byte(password), salt, t, mem, threads, uint32(len(want))) //nolint:gosec // len(want) is checked above to be at most 1024
 	return subtle.ConstantTimeCompare(got, want) == 1
 }
 

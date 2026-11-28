@@ -45,7 +45,7 @@ func (f *loginFakeSessions) Issue(id string, v int, remember bool) (string, time
 	if remember {
 		ttl = 30 * 24 * time.Hour
 	}
-	return id + ":" + string(rune('0'+v)), time.Now().Add(ttl)
+	return id + ":" + string(rune('0'+v)), time.Now().Add(ttl) //nolint:gosec // G115: small loop counter, no overflow
 }
 
 func (f *loginFakeSessions) BumpVersion(_ context.Context, id string) (int, error) {

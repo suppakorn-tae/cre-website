@@ -23,7 +23,7 @@ func TestRenderSendsHTMLAssetsAndLayout(t *testing.T) {
 	var gotPath string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
-		if err := r.ParseMultipartForm(1 << 20); err != nil {
+		if err := r.ParseMultipartForm(1 << 20); err != nil { //nolint:gosec // G120: test server, small fixed payload
 			t.Errorf("parse form: %v", err)
 		}
 		for k, v := range r.MultipartForm.Value {
