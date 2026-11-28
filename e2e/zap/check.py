@@ -6,7 +6,6 @@ list as a WARN. This reads the JSON reports instead, so a new medium or high
 rule fails too, unless rules.tsv has an IGNORE line (with a reason) for its id.
 Writes a markdown table to the job summary when GITHUB_STEP_SUMMARY is set.
 """
-import glob
 import json
 import os
 import sys
@@ -15,24 +14,57 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 RISK = {"0": "Info", "1": "Low", "2": "Medium", "3": "High"}
 
 
+def fail(message):
+    print(f"FAIL: {message}", file=sys.stderr)
+    sys.exit(1)
+
+
 def ignored():
+    """Rule ids with an IGNORE line; each needs a "# reason:" line right above it."""
     ids = set()
+    previous = ""
     with open(os.path.join(HERE, "rules.tsv"), encoding="utf-8") as f:
         for line in f:
-            cols = line.rstrip("\n").split("\t")
+            line = line.rstrip("\n")
+            cols = line.split("\t")
             if len(cols) >= 2 and cols[1] == "IGNORE":
+                if not previous.startswith("# reason:") or not previous[len("# reason:") :].strip():
+                    fail(f"rules.tsv: IGNORE {cols[0]} has no '# reason: ...' line right above it")
                 ids.add(cols[0])
+            previous = line
     return ids
+
+
+def expected():
+    names = [
+        "public-login",
+        "public-register",
+        "public-forgot-password",
+        "public-legal-terms",
+        "public-legal-retention",
+        "api",
+    ]
+    if os.environ.get("ZAP_AUTH", "1") != "0":
+        names.append("signed-in")
+    return names
 
 
 def main():
     skip = ignored()
     rows, failing = [], []
-    for path in sorted(glob.glob(os.path.join(HERE, "out", "*.json"))):
-        scan = os.path.basename(path)[:-5]
-        with open(path, encoding="utf-8") as f:
-            report = json.load(f)
-        for site in report.get("site", []):
+    # Fail closed: a scan that did not run or wrote no usable report is not clean.
+    for scan in expected():
+        path = os.path.join(HERE, "out", scan + ".json")
+        if not os.path.isfile(path):
+            fail(f"report missing: {path}")
+        try:
+            with open(path, encoding="utf-8") as f:
+                report = json.load(f)
+        except ValueError as err:
+            fail(f"report {scan}.json is not valid JSON: {err}")
+        if not isinstance(report, dict) or "site" not in report:
+            fail(f"report {scan}.json has no 'site' key")
+        for site in report["site"]:
             for alert in site.get("alerts", []):
                 code = str(alert.get("riskcode"))
                 risk = RISK.get(code, "?")

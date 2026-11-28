@@ -18,41 +18,53 @@ TARGET=${ZAP_TARGET:-https://localhost}
 IMAGE=${ZAP_IMAGE:-zaproxy/zap-stable:2.17.0}
 OUT=zap/out
 
+# The session cookie, the plan with it and the bundled api file stay outside
+# e2e/zap/out, which CI uploads as an artifact. Removed on every exit.
+SECRET=$(mktemp -d)
+trap 'rm -rf "$SECRET"' EXIT
+chmod 755 "$SECRET" # the container user is not the runner user
+
 rm -rf "$OUT"
 mkdir -p "$OUT"
-chmod 777 "$OUT" # the container user is not the runner user
+chmod 777 "$OUT"
 
 # ZAP runs on the host network, so https://localhost is the Caddy of the stack.
-# Exit 0 is clean, 1 a FAIL rule and 2 a WARN rule. Only 3 and above (an error)
-# stop here: check.py reads the JSON reports and decides.
+# zap(max_rc, args): the baseline and api scans exit 0 when clean, 1 on a FAIL rule
+# and 2 on a WARN rule, so they pass max_rc 2 and check.py decides. An automation
+# plan exits 0 or 1, and 1 is a failed plan, so it passes max_rc 0.
 zap() {
+  max=$1
+  shift
   set +e
-  docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" "$IMAGE" "$@"
+  docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" -v "$SECRET:/zap/in:ro" "$IMAGE" "$@"
   rc=$?
   set -e
-  if [ "$rc" -gt 2 ]; then
+  if [ "$rc" -gt "$max" ]; then
     echo "ZAP failed with exit code $rc" >&2
     exit "$rc"
   fi
 }
 
 for path in /login /register /forgot-password /legal/terms /legal/retention; do
-  zap zap-baseline.py -t "$TARGET$path" -c rules.tsv -m 1 -I \
+  zap 2 zap-baseline.py -t "$TARGET$path" -c rules.tsv -m 1 -I \
     -r "out/public$(echo "$path" | tr / -).html" -J "out/public$(echo "$path" | tr / -).json"
 done
 
 # The api definition: contracts/bundle.mjs merges paths/ and schemas/ into one file.
 (cd "$ROOT" && node contracts/bundle.mjs)
-cp "$ROOT/contracts/openapi/dist/openapi.yaml" "$OUT/openapi.yaml"
-zap zap-api-scan.py -t /zap/wrk/out/openapi.yaml -f openapi -O "$TARGET" -S -I \
+cp "$ROOT/contracts/openapi/dist/openapi.yaml" "$SECRET/openapi.yaml"
+zap 2 zap-api-scan.py -t /zap/in/openapi.yaml -f openapi -O "$TARGET" -S -I \
   -c rules.tsv -r out/api.html -J out/api.json
 
 if [ "${ZAP_AUTH:-1}" = 1 ]; then
-  pnpm exec playwright test -c zap/playwright.config.ts
-  sed -e "s|__TARGET__|$TARGET|g" -e "s|__COOKIE__|$(cat "$OUT/cookie.txt")|" \
-    zap/signed-in.yaml >"$OUT/plan.yaml"
-  zap zap.sh -cmd -autorun /zap/wrk/out/plan.yaml
+  ZAP_COOKIE_FILE="$SECRET/cookie.txt" pnpm exec playwright test -c zap/playwright.config.ts
+  TARGET="$TARGET" COOKIE=$(cat "$SECRET/cookie.txt") python3 -I -c '
+import os, sys
+plan = open(sys.argv[1], encoding="utf-8").read()
+plan = plan.replace("__TARGET__", os.environ["TARGET"]).replace("__COOKIE__", os.environ["COOKIE"])
+open(sys.argv[2], "w", encoding="utf-8").write(plan)
+' zap/signed-in.yaml "$SECRET/plan.yaml"
+  zap 0 zap.sh -cmd -autorun /zap/in/plan.yaml
 fi
 
-rm -f "$OUT/cookie.txt" "$OUT/openapi.yaml" "$OUT/plan.yaml"
 python3 zap/check.py

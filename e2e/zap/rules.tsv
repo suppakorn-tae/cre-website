@@ -3,7 +3,7 @@
 # FAIL on medium and high, WARN on low. ZAP treats a rule that is not listed as
 # a WARN, so check.py also fails any medium or high alert that has no IGNORE line.
 # The signed-in scan (signed-in.yaml) runs the passive rules at their defaults and
-# is gated by check.py alone. Every IGNORE needs a reason in a comment line right above it ("# reason: ...").
+# is gated by check.py alone. Every IGNORE needs a "# reason: ..." comment line right above it (check.py enforces it).
 #
 # Medium and high
 10038	FAIL	Content Security Policy (CSP) Header Not Set
@@ -18,6 +18,9 @@
 10105	FAIL	Weak Authentication Method
 40012	FAIL	Cross Site Scripting (Reflected)
 90019	FAIL	Server Side Code Injection
+# Informational and server errors
+# reason: 503 google_unavailable by design: e2e stack has no Google client; declared in the contract and asserted in google_test.go
+100000	IGNORE	A Client/Server Error response code was returned by the server
 # Low
 10010	WARN	Cookie No HttpOnly Flag
 10011	WARN	Cookie Without Secure Flag

@@ -257,9 +257,10 @@ Check: `stack:up` waits until every service is healthy and returns 0; `test` pri
 
 #### OWASP ZAP scan (passive)
 
-With the e2e stack up, run one command from the repo root. It needs Docker and `python3`, and pulls `zaproxy/zap-stable` the first time.
+With the e2e stack up, run one command from the repo root. It needs Docker, `python3` and Playwright's browser (the signed-in scan signs in with it), and pulls `zaproxy/zap-stable` the first time.
 
 ```sh
+corepack pnpm --dir e2e exec playwright install chromium   # once
 corepack pnpm --dir e2e run zap
 ```
 

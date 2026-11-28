@@ -34,7 +34,7 @@ jobs:
       maxDuration: 2
   - type: openapi
     parameters:
-      apiFile: /zap/wrk/out/openapi.yaml
+      apiFile: /zap/in/openapi.yaml
       targetUrl: __TARGET__
       context: app
   - type: passiveScan-wait
