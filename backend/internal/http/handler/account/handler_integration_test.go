@@ -220,6 +220,7 @@ func TestChangePassword(t *testing.T) {
 	}{
 		{"wrong current", "current_password_incorrect", body("wrong-password", "newpassword-1", "newpassword-1")},
 		{"too short", "password_too_short", body(password, "short", "short")},
+		{"too common", "password_too_common", body(password, "Password123", "Password123")},
 		{"mismatch", "password_mismatch", body(password, "newpassword-1", "newpassword-2")},
 	} {
 		if w := e.do(t, "PUT", "/password", tok, c.b); w.Code != 422 || !strings.Contains(w.Body.String(), c.code) {

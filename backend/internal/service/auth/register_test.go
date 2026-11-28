@@ -169,12 +169,13 @@ func TestStartValidation(t *testing.T) {
 		mod  func(*StartInput)
 		want []FieldError
 	}{
-		"bad email":      {func(i *StartInput) { i.Email = "nope" }, []FieldError{{"/email", CodeInvalidEmail}}},
-		"short password": {func(i *StartInput) { i.Password, i.PasswordConfirmation = "short", "short" }, []FieldError{{"/password", CodePasswordTooShort}}},
-		"mismatch":       {func(i *StartInput) { i.PasswordConfirmation = "different-pass" }, []FieldError{{"/password_confirmation", CodePasswordMismatch}}},
-		"no retention":   {func(i *StartInput) { i.RetentionAccepted = false }, []FieldError{{"/retention_accepted", CodeRetentionRequired}}},
-		"no terms":       {func(i *StartInput) { i.TermsAccepted = false }, []FieldError{{"/terms_accepted", CodeTermsRequired}}},
-		"long org":       {func(i *StartInput) { i.Organisation = strings.Repeat("ก", 201) }, []FieldError{{"/organisation", CodeOrgTooLong}}},
+		"bad email":       {func(i *StartInput) { i.Email = "nope" }, []FieldError{{"/email", CodeInvalidEmail}}},
+		"short password":  {func(i *StartInput) { i.Password, i.PasswordConfirmation = "short", "short" }, []FieldError{{"/password", CodePasswordTooShort}}},
+		"common password": {func(i *StartInput) { i.Password, i.PasswordConfirmation = "Password123", "Password123" }, []FieldError{{"/password", CodePasswordTooCommon}}},
+		"mismatch":        {func(i *StartInput) { i.PasswordConfirmation = "different-pass" }, []FieldError{{"/password_confirmation", CodePasswordMismatch}}},
+		"no retention":    {func(i *StartInput) { i.RetentionAccepted = false }, []FieldError{{"/retention_accepted", CodeRetentionRequired}}},
+		"no terms":        {func(i *StartInput) { i.TermsAccepted = false }, []FieldError{{"/terms_accepted", CodeTermsRequired}}},
+		"long org":        {func(i *StartInput) { i.Organisation = strings.Repeat("ก", 201) }, []FieldError{{"/organisation", CodeOrgTooLong}}},
 	}
 	for name, c := range cases {
 		t.Run(name, func(t *testing.T) {

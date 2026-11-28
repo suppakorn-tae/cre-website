@@ -75,6 +75,8 @@ func resetPassword(s *svc.ResetService) http.HandlerFunc {
 			loginInvalid(w, r, loginFieldErr{"/otp", "otp_locked"})
 		case errors.Is(err, svc.ErrResetPasswordShort):
 			loginInvalid(w, r, loginFieldErr{"/new_password", "password_too_short"})
+		case errors.Is(err, svc.ErrResetPasswordCommon):
+			loginInvalid(w, r, loginFieldErr{"/new_password", "password_too_common"})
 		case errors.Is(err, svc.ErrResetPasswordMismatch):
 			loginInvalid(w, r, loginFieldErr{"/new_password_confirmation", "password_mismatch"})
 		default:

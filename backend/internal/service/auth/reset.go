@@ -52,6 +52,8 @@ var (
 	// ErrResetPasswordShort and ErrResetPasswordMismatch are field errors.
 	ErrResetPasswordShort    = errors.New("auth: password too short")
 	ErrResetPasswordMismatch = errors.New("auth: password mismatch")
+	// ErrResetPasswordCommon: the password is on the common-password list.
+	ErrResetPasswordCommon = errors.New("auth: password too common")
 )
 
 // ResetChallenge is what the client learns after requesting a code.
@@ -178,6 +180,9 @@ func (s *ResetService) maybeSendGoogleMail(ctx context.Context, email string, ac
 func ResetValidatePassword(newPassword, confirmation string) error {
 	if n := utf8.RuneCountInString(newPassword); n < ResetMinPassword || n > ResetMaxPassword {
 		return ErrResetPasswordShort
+	}
+	if IsCommonPassword(newPassword) {
+		return ErrResetPasswordCommon
 	}
 	if newPassword != confirmation {
 		return ErrResetPasswordMismatch

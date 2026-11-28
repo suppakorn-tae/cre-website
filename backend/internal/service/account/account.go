@@ -159,6 +159,8 @@ func (s *Service) ChangePassword(ctx context.Context, id uuid.UUID, current, nex
 		return 0, &FieldError{Field: "/new_password", Code: "password_too_short"}
 	case n > MaxPassword:
 		return 0, &FieldError{Field: "/new_password", Code: "too_long"}
+	case auth.IsCommonPassword(next):
+		return 0, &FieldError{Field: "/new_password", Code: auth.CodePasswordTooCommon}
 	case next != confirm:
 		return 0, &FieldError{Field: "/new_password_confirmation", Code: "password_mismatch"}
 	}

@@ -169,6 +169,8 @@ func (in StartInput) validate() ValidationError {
 	}
 	if n := utf8.RuneCountInString(in.Password); n < minPasswordRunes || n > maxPasswordRunes {
 		v = append(v, FieldError{"/password", CodePasswordTooShort})
+	} else if IsCommonPassword(in.Password) {
+		v = append(v, FieldError{"/password", CodePasswordTooCommon})
 	}
 	if in.Password != in.PasswordConfirmation {
 		v = append(v, FieldError{"/password_confirmation", CodePasswordMismatch})

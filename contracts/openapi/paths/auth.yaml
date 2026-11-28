@@ -17,7 +17,7 @@
 # Error codes (ErrorBody.code and FieldError.code) used here:
 #   invalid_credentials, account_unavailable, email_taken, otp_invalid,
 #   otp_expired, otp_locked, otp_resend_cooldown, no_pending_signup,
-#   rate_limited, password_too_short, password_mismatch,
+#   rate_limited, password_too_short, password_too_common, password_mismatch,
 #   retention_not_accepted, terms_not_accepted, csrf_invalid.
 # OTP failures return 422 with the field `/otp`; the codes mean: wrong code
 # (`otp_invalid`), older than 10 minutes or never issued (`otp_expired`),
@@ -59,6 +59,8 @@
       Validates the form, stores the pending sign-up in Valkey only and
       e-mails a 6-digit OTP. Nothing is written to Postgres until the OTP is
       verified. Validation (422) codes: `invalid_email`, `password_too_short`,
+      `password_too_common` (on `/password`: in the embedded list of common
+      passwords (8 or more characters), compared ignoring case),
       `password_mismatch` (on `/password_confirmation`),
       `retention_not_accepted`, `terms_not_accepted`. A second start for the
       same e-mail inside the 60 s cool-down returns 429 `otp_resend_cooldown`.
@@ -330,7 +332,7 @@
       On success stores the new hash and ends every session of the account.
       The client then returns to log in; no cookie is set. 422 codes:
       `/otp`: `otp_invalid`, `otp_expired`, `otp_locked` (password
-      unchanged, UC-02 1g); `/new_password`: `password_too_short`;
+      unchanged, UC-02 1g); `/new_password`: `password_too_short`, `password_too_common`;
       `/new_password_confirmation`: `password_mismatch`.
     security:
       - csrfToken: []
