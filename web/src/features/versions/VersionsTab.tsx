@@ -7,6 +7,7 @@ import { forwardRef, useState } from 'react';
 
 import { Alert, EmptyState, Icon } from '@/components/ui';
 import { ComparePanel, type CompareViewName } from '@/features/compare/ComparePanel';
+import type { LimitState } from '@/features/dashboard/limit';
 import { formatDate } from '@/lib/format/locale';
 
 import type { VersionSummary } from './api';
@@ -18,6 +19,8 @@ type Props = {
   projectId: string;
   versions: VersionSummary[];
   view: CompareViewName;
+  /** Versions of the project out of the most it may have; undefined until known. */
+  limit?: LimitState;
   onViewChange: (view: CompareViewName) => void;
   onCreate: (trigger: HTMLElement | null) => void;
   onDelete: (version: VersionSummary, trigger: HTMLElement | null) => void;
@@ -34,7 +37,7 @@ export function defaultSelection(versions: VersionSummary[]): VersionSummary | u
 
 /** Versions tab (hi-fi 2.4, 2.5, 2.8): the version cards on the left, the comparison on the right. */
 export const VersionsTab = forwardRef<HTMLHeadingElement, Props>(function VersionsTab(
-  { projectId, versions, view, onViewChange, onCreate, onDelete },
+  { projectId, versions, view, limit, onViewChange, onCreate, onDelete },
   titleRef,
 ) {
   const [pickedId, setPickedId] = useState<string | null>(null);
@@ -47,6 +50,7 @@ export const VersionsTab = forwardRef<HTMLHeadingElement, Props>(function Versio
         ref={titleRef}
         projectId={projectId}
         versions={versions}
+        limit={limit}
         selectedId={selected?.id}
         onSelect={(v) => setPickedId(v.id)}
         onCreate={onCreate}

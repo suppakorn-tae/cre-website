@@ -7,6 +7,9 @@ export type VersionSummary = components['schemas']['VersionSummary'];
 export const catalogueTotalKey = ['catalogue', 'indicator-total'] as const;
 export const projectKey = (projectId: string) => ['projects', projectId] as const;
 export const versionsKey = (projectId: string) => ['projects', projectId, 'versions'] as const;
+/** The most versions the project may have, from the same answer as `versionsKey` (see ProjectDetail). */
+export const versionLimitKey = (projectId: string) =>
+  ['projects', projectId, 'versions', 'limit'] as const;
 
 export async function fetchProject(projectId: string): Promise<Project> {
   const { data } = await browserApi().GET('/projects/{project_id}', {
@@ -16,11 +19,18 @@ export async function fetchProject(projectId: string): Promise<Project> {
   return data;
 }
 
-export async function fetchVersions(projectId: string): Promise<VersionSummary[]> {
+/** The version list with the limit that came with it; `max` is undefined when the answer is empty. */
+export async function fetchVersionList(
+  projectId: string,
+): Promise<{ items: VersionSummary[]; max: number | undefined }> {
   const { data } = await browserApi().GET('/projects/{project_id}/versions', {
     params: { path: { project_id: projectId } },
   });
-  return data?.items ?? [];
+  return { items: data?.items ?? [], max: data?.max_versions };
+}
+
+export async function fetchVersions(projectId: string): Promise<VersionSummary[]> {
+  return (await fetchVersionList(projectId)).items;
 }
 
 /** Starts a blank version; the server copies today's project settings. */

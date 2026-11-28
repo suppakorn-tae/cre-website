@@ -6,16 +6,20 @@ import { forwardRef } from 'react';
 
 import { Button, EmptyState, Icon, LevelBadge } from '@/components/ui';
 import { cx } from '@/components/ui/cx';
+import type { LimitState } from '@/features/dashboard/limit';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format/locale';
 
 import type { VersionSummary } from './api';
 import { newestFirst } from './rules';
 import styles from './versions.module.css';
+import { createProps, VersionCount, VersionLimitHint } from './VersionLimit';
 import { VersionMenu } from './VersionMenu';
 
 type Props = {
   projectId: string;
   versions: VersionSummary[];
+  /** Versions out of the most the project may have; undefined until known. */
+  limit?: LimitState;
   /** The card of the version being compared. */
   selectedId: string | undefined;
   onSelect: (version: VersionSummary) => void;
@@ -28,7 +32,7 @@ type Props = {
  * first. A click selects the version for the comparison; it does not navigate.
  */
 export const VersionList = forwardRef<HTMLHeadingElement, Props>(function VersionList(
-  { projectId, versions, selectedId, onSelect, onCreate, onDelete },
+  { projectId, versions, limit, selectedId, onSelect, onCreate, onDelete },
   titleRef,
 ) {
   const t = useTranslations('versions.list');
@@ -37,18 +41,23 @@ export const VersionList = forwardRef<HTMLHeadingElement, Props>(function Versio
   return (
     <section className={styles.listCard} aria-labelledby="versions-title">
       <div className={styles.listHead}>
-        <h2 id="versions-title" ref={titleRef} tabIndex={-1} className={styles.listTitle}>
-          {t('title')}
-        </h2>
+        <div className={styles.listHeading}>
+          <h2 id="versions-title" ref={titleRef} tabIndex={-1} className={styles.listTitle}>
+            {t('title')}
+          </h2>
+          <VersionCount limit={limit} />
+        </div>
         <Button
           variant="secondary"
           size="sm"
           icon={<Icon icon={IconPlus} size={16} />}
-          onClick={(e) => onCreate(e.currentTarget)}
+          className={styles.createButton}
+          {...createProps(limit, onCreate)}
         >
           {t('createShort')}
         </Button>
       </div>
+      <VersionLimitHint limit={limit} />
       {rows.length === 0 ? (
         <EmptyState
           title={t('empty.title')}
