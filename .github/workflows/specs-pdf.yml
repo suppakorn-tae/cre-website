@@ -1,0 +1,85 @@
+name: specs-pdf
+
+# Builds the two LaTeX specs to PDF so nobody needs TeX Live locally.
+# Download the artifact and commit the PDFs to update docs/specs (see docs/specs/README.md).
+
+on:
+  pull_request:
+    paths:
+      - "docs/specs/**/*.tex"
+      - "docs/specs/**/figures/**"
+      - ".github/workflows/specs-pdf.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: specs-pdf-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+
+      # The preambles use fontspec (XeLaTeX), tikz, caption, titlesec, enumitem, pdflscape, etc.
+      # Thai: the preamble picks the first installed of IBM Plex Sans Thai, Thonburi, Noto Sans Thai, Loma.
+      # Ubuntu has no Plex Thai package, so the font comes from the official IBM/plex release (pinned
+      # tag, sha256 checked). Loma stays installed as the fallback.
+      - name: Install TeX Live and fonts
+        env:
+          PLEX_TAG: "@ibm/plex-sans-thai@1.1.0"
+          PLEX_ZIP_SHA256: ""
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            latexmk texlive-xetex texlive-latex-recommended texlive-latex-extra \
+            texlive-pictures texlive-fonts-recommended \
+            fonts-tlwg-loma fontconfig unzip
+          tag_url=$(printf '%s' "$PLEX_TAG" | sed 's/@/%40/g')
+          curl -fsSL -o "$RUNNER_TEMP/plex-thai.zip" \
+            "https://github.com/IBM/plex/releases/download/${tag_url}/ibm-plex-sans-thai.zip"
+          echo "plex-thai.zip sha256: $(sha256sum "$RUNNER_TEMP/plex-thai.zip" | cut -d' ' -f1)"
+          echo "$PLEX_ZIP_SHA256  $RUNNER_TEMP/plex-thai.zip" | sha256sum -c -
+          mkdir -p ~/.fonts "$RUNNER_TEMP/plex"
+          unzip -q "$RUNNER_TEMP/plex-thai.zip" -d "$RUNNER_TEMP/plex"
+          find "$RUNNER_TEMP/plex" -path '*/otf/*' -name '*.otf' -exec cp {} ~/.fonts/ \;
+          fc-cache -f
+          fc-list | grep -i 'plex sans thai' | head -3
+
+      - name: Build PDFs
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/build"
+          export FORCE_SOURCE_DATE=1
+          for tex in docs/specs/requirements/cre-requirements-usecase.tex \
+                     docs/specs/database/cre-database-design-v1.tex; do
+            name=$(basename "$tex" .tex)
+            SOURCE_DATE_EPOCH=$(git log -1 --format=%ct -- "$tex")
+            export SOURCE_DATE_EPOCH
+            (cd "$(dirname "$tex")" && latexmk -xelatex -interaction=nonstopmode -halt-on-error \
+              -outdir="$GITHUB_WORKSPACE/build/$name" "$name.tex")
+            cp "build/$name/$name.pdf" "build/$name/$name.log" build/
+            if grep -q "Missing character" "build/$name.log"; then
+              echo "::error::Missing characters in $name.log"
+              grep "Missing character" "build/$name.log" | sort -u | head -20
+              exit 1
+            fi
+            grep -m3 -E "Font family .* for font '(IBM Plex Sans Thai|Loma)'" "build/$name.log" || true
+          done
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: specs-pdf
+          path: |
+            build/*.pdf
+            build/*.log
+          retention-days: 14
+          if-no-files-found: error
