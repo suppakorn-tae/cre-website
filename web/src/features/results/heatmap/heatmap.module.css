@@ -1,4 +1,4 @@
-/* Heat map: one orange hue, light to dark by level (hi-fi 3.3c, "Heat-map colour"). */
+/* Heat map: one orange hue, strongest at VH (hi-fi 3.3c, "Heat-map colour"). */
 .legend {
   display: flex;
   flex-wrap: wrap;
@@ -23,7 +23,10 @@
 }
 .VH {
   background: var(--heat-vh);
+  /* Strongest cell: bold text and an inner ring so it outranks H in both themes. */
+  box-shadow: inset 0 0 0 2px var(--color-on-solid);
   color: var(--color-on-solid);
+  font-weight: var(--weight-bold, 700);
 }
 .H {
   background: var(--heat-h);
