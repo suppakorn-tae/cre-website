@@ -75,6 +75,9 @@
   --color-disabled: var(--color-disabled);
   --color-placeholder: var(--color-placeholder);
   --color-text-muted: var(--color-text-muted);
+  --color-logo-chip: var(--color-logo-chip);
+  --color-logo-name: var(--color-logo-name);
+  --color-logo-tagline: var(--color-logo-tagline);
   --color-text-secondary: var(--color-text-secondary);
   --color-text: var(--color-text);
 

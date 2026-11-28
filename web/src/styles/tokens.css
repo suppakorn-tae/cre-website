@@ -40,6 +40,11 @@
   --color-disabled: #9aa6b6;
   --color-placeholder: #677689;
   --color-text-muted: #57677d;
+  /* Logo chip: white in light mode (no visible chip), a soft grey-blue in dark.
+     The name and tagline take their own pair so the chip scope can set them. */
+  --color-logo-chip: #ffffff;
+  --color-logo-name: #0f2a4a;
+  --color-logo-tagline: #57677d;
   --color-text-secondary: #475569;
   --color-text: #0f1e33;
 
@@ -201,6 +206,9 @@
   --color-disabled: #55637a;
   --color-placeholder: #8d9bb0;
   --color-text-muted: #9dabbf;
+  --color-logo-chip: #dbe4ef;
+  --color-logo-name: #0f2a4a;
+  --color-logo-tagline: #475569;
   --color-text-secondary: #b8c3d2;
   --color-text: #e7edf5;
 

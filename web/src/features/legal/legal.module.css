@@ -108,8 +108,8 @@
 :root[data-theme='dark'] .brand {
   padding-inline: var(--space-3);
   border-radius: var(--radius-control);
-  background: #ffffff;
-  /* The chip is light, so the logo text takes the light-theme colours. */
-  --color-navy-900: #0f2a4a;
-  --color-text-muted: #57677d;
+  background: var(--color-logo-chip);
+  /* The chip is light, so the logo text takes its own dark colours. */
+  --color-navy-900: var(--color-logo-name);
+  --color-text-muted: var(--color-logo-tagline);
 }
