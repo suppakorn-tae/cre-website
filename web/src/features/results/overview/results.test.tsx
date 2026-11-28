@@ -75,7 +75,7 @@ describe('overview', () => {
   it('shows the donut with the total and a legend row per level (code, count, share)', () => {
     const results = mockResults('v', items);
     const html = wrap(<OverviewTab results={results} names={names} />);
-    expect(html).toContain(`<svg viewBox="0 0 40 40" role="group"`);
+    expect(html).toContain(`<svg viewBox="-2 -2 44 44" role="group"`);
     expect(html).toContain(`>${results.summary.scored_count}</span>`); // centre
     for (const level of ['VH', 'H', 'M', 'L', 'VL']) {
       expect(html).toMatch(
