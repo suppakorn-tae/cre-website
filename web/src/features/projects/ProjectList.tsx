@@ -6,7 +6,7 @@ import { useState } from 'react';
 
 import { ConfirmDialog, Toast } from '@/components/ui';
 
-import { AddProjectLink } from '../dashboard/AddProjectLink';
+import { AddProjectLink, ProjectLimitHint } from '../dashboard/AddProjectLink';
 import { DashboardMocks } from '../dashboard/DashboardMocks';
 import { ProjectsPanel } from '../dashboard/Panels';
 import { RowButton, RowLink } from '../dashboard/RowActions';
@@ -49,8 +49,9 @@ export function ProjectList() {
             <h1 className={dashboard.title}>{t('title')}</h1>
             <p className={dashboard.subtitle}>{t('subtitle')}</p>
           </div>
-          <AddProjectLink label={tDash('addProject')} compactOnPhone />
+          <AddProjectLink label={tDash('addProject')} compactOnPhone withLimit />
         </header>
+        <ProjectLimitHint />
 
         {notice && (
           <div className={styles.notice}>

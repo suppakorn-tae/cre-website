@@ -12,7 +12,7 @@ import { useState } from 'react';
 import { Button, EmptyState, Icon, KpiCard, LEVELS, Skeleton } from '@/components/ui';
 import { formatNumber } from '@/lib/format/locale';
 
-import { AddProjectLink } from './AddProjectLink';
+import { AddProjectLink, ProjectLimitHint } from './AddProjectLink';
 import { useDashboard, useIslandNames } from './api';
 import { LevelChart, ProjectRiskChart } from './Charts';
 import styles from './dashboard.module.css';
@@ -51,9 +51,10 @@ export function DashboardPage() {
           <p className={styles.subtitle}>{t('subtitle')}</p>
         </div>
         {data?.kpis.project_count !== 0 && (
-          <AddProjectLink label={t('addProject')} compactOnPhone />
+          <AddProjectLink label={t('addProject')} compactOnPhone withLimit />
         )}
       </header>
+      {data?.kpis.project_count !== 0 && <ProjectLimitHint />}
 
       {dashboard.isPending && (
         <div role="status" aria-label={t('loading')} className={styles.skeletons}>
