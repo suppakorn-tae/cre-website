@@ -262,6 +262,15 @@ function pairs(): Pair[] {
     add({ kind: 'text', fg: 'color-navy-900', bg: `heat-${l}`, use: `heat map ${l} cell text` });
   }
 
+  // Logo name and tagline on the logo chip (a light chip in dark mode).
+  add({ kind: 'text', fg: 'color-logo-name', bg: 'color-logo-chip', use: 'logo name on its chip' });
+  add({
+    kind: 'text',
+    fg: 'color-logo-tagline',
+    bg: 'color-logo-chip',
+    use: 'logo tagline on its chip',
+  });
+
   return out;
 }
 

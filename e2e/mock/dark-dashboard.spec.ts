@@ -28,14 +28,12 @@ for (const { name, path, ready } of PAGES) {
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
     await page.emulateMedia({ reducedMotion: 'reduce', colorScheme: 'dark' });
     await expectNoViolations(page, name);
-    // No surface is still painted pure white. The logo sits on a light chip on
-    // purpose in dark mode (IO-256), so the shell brand link is left out.
+    // No surface is still painted pure white (the logo chip is a soft grey-blue).
     const whites = await page.evaluate(() =>
       [...document.querySelectorAll('body *')]
         .filter((e) => {
           const r = e.getBoundingClientRect();
           return (
-            !e.closest('[class*="__brand"]') &&
             r.width > 40 &&
             r.height > 20 &&
             getComputedStyle(e).backgroundColor === 'rgb(255, 255, 255)'
