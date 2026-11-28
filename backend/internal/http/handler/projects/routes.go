@@ -24,7 +24,7 @@ func Routes(r chi.Router, d app.Deps) {
 		rounding = versions.Rounding{ScoreDecimals: defaultScoreDecimals, RMDecimals: defaultRMDecimals}
 	}
 	tx, _ := d.DB.(dal.Beginner) // nil in router tests without a pool; create then answers 500
-	h := &handler{svc: projects.New(d.DB, tx, rounding, nil), owner: sessionOwner}
+	h := &handler{svc: projects.New(d.DB, tx, rounding, nil).WithLimit(d.Config.MaxProjectsPerUser), owner: sessionOwner}
 	r.Group(func(r chi.Router) {
 		if d.Auth != nil {
 			r.Use(d.Auth)

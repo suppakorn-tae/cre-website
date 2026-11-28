@@ -72,7 +72,7 @@ func newWiring(d Deps) wiring {
 	if r == (svcversions.Rounding{}) {
 		r = svcversions.Rounding{ScoreDecimals: defaultScoreDecimals, RMDecimals: defaultRMDecimals}
 	}
-	w.versions = svcversions.New(d.DB, w.begin, r)
+	w.versions = svcversions.New(d.DB, w.begin, r).WithLimit(d.Config.MaxVersionsPerProject)
 	if pool, ok := d.DB.(svcjobs.Pool); ok && d.FileStore != nil && d.Enqueuer != nil {
 		jobs := svcjobs.New(pool, d.Enqueuer)
 		w.reports = svcreports.New(d.DB, w.begin, jobs, d.FileStore, d.Logger)

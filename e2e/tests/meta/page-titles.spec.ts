@@ -34,7 +34,9 @@ test('unknown page has the not-found title', async ({ page }) => {
 });
 
 test('signed-in pages have titles with project and version context', async ({ page }) => {
-  const api = await loggedIn(USER);
+  // A new user each run: the shared seeded user would hit the project limit.
+  const who = await newUser('titles');
+  const api = await loggedIn(who);
   const nickname = Math.random().toString(36).slice(2, 6).padEnd(4, 'x');
   const name = `Titles ${Date.now()}`;
   const projectId = await api.createProject({ name, nickname });
@@ -46,7 +48,7 @@ test('signed-in pages have titles with project and version context', async ({ pa
   const base = `/projects/${projectId}`;
   const versionBase = `${base}/versions/${version.id}`;
 
-  await logInThroughUi(page, USER.email, USER.password);
+  await logInThroughUi(page, who.email, who.password);
   await page.waitForURL('**/dashboard');
 
   await expectTitle(page, '/dashboard', title(msg('dashboard', 'meta.title')));

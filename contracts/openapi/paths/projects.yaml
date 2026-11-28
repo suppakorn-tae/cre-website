@@ -49,6 +49,15 @@
         $ref: ../schemas/common.yaml#/responses/Unauthorized
       '403':
         $ref: ../schemas/common.yaml#/responses/Forbidden
+      '409':
+        description: |
+          The account already has the most projects it may own, from
+          MAX_PROJECTS_PER_USER (code `project_limit_reached`). Soft-deleted
+          projects do not count.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/common.yaml#/schemas/ErrorEnvelope
       '422':
         $ref: ../schemas/common.yaml#/responses/ValidationFailed
 /projects/{project_id}:

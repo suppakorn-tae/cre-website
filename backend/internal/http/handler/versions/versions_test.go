@@ -54,7 +54,15 @@ func (fake) versions() []svc.Version {
 	}
 }
 
+func (f fake) MaxVersions() int { return 10 }
+
+// fullProject is a project that already has the most versions it may have.
+var fullProject = uuid.MustParse("77777777-7777-4777-8777-777777777777")
+
 func (f fake) Create(_ context.Context, p, o uuid.UUID) (svc.Version, error) {
+	if p == fullProject && o == owner {
+		return svc.Version{}, svc.ErrLimitReached
+	}
 	if p != project || o != owner {
 		return svc.Version{}, svc.ErrNotFound
 	}
@@ -241,5 +249,30 @@ func TestListCarriesTheStoredStrategyCount(t *testing.T) {
 				t.Fatalf("draft: chosen/needed = %v/%v, want null", it.Chosen, it.Needed)
 			}
 		}
+	}
+}
+
+func TestCreateOverTheVersionLimitIsA409WithItsOwnCode(t *testing.T) {
+	resp := call(t, owner.String(), http.MethodPost, "/api/v1/projects/"+fullProject.String()+"/versions")
+	if resp.StatusCode != http.StatusConflict {
+		t.Fatalf("status = %d, want 409", resp.StatusCode)
+	}
+	var body struct {
+		Error struct {
+			Code string `json:"code"`
+		} `json:"error"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil || body.Error.Code != "version_limit_reached" {
+		t.Fatalf("body code = %q, err %v, want version_limit_reached", body.Error.Code, err)
+	}
+}
+
+func TestListCarriesTheVersionLimit(t *testing.T) {
+	resp := call(t, owner.String(), http.MethodGet, "/api/v1/projects/"+project.String()+"/versions")
+	var body struct {
+		MaxVersions int `json:"max_versions"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil || body.MaxVersions != 10 {
+		t.Fatalf("max_versions = %d, err %v, want 10", body.MaxVersions, err)
 	}
 }

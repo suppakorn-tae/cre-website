@@ -1,11 +1,22 @@
 import type { components } from '@/lib/api/generated/schema';
 
+import { ApiError } from '@/lib/api/errors';
+
 import { durationDays, isoToThaiInput, parseThaiDateInput } from './dates';
 
 export type ProjectFields = components['schemas']['ProjectFields'];
 export type ProjectIsland = components['schemas']['ProjectIsland'];
 export type ProjectType = components['schemas']['ProjectType'];
 export type Project = components['schemas']['Project'];
+
+/** True when the api refused a create because the account already has the most projects it may own. */
+export function isProjectLimitError(failure: unknown): boolean {
+  return (
+    failure instanceof ApiError &&
+    failure.status === 409 &&
+    failure.code === 'project_limit_reached'
+  );
+}
 
 export const ISLAND_CODES: ProjectIsland[] = [
   'koh_tao',

@@ -323,3 +323,77 @@ func TestNoLiveProjectEndsWithoutAVersion(t *testing.T) {
 		t.Fatalf("%d live projects have no live version", n)
 	}
 }
+
+func TestCreateRejectsVersionOverTheLimit(t *testing.T) {
+	ctx := context.Background()
+	db, svc, pid, owner := setup(t)
+	svc.WithLimit(3)
+
+	var first uuid.UUID
+	for i := 0; i < 3; i++ {
+		v, err := svc.Create(ctx, pid, owner)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if i == 0 {
+			first = v.ID
+		}
+	}
+	if _, err := svc.Create(ctx, pid, owner); !errors.Is(err, versions.ErrLimitReached) {
+		t.Fatalf("4th create: %v, want ErrLimitReached", err)
+	}
+	// A soft-deleted version frees a slot; its number is still not reused.
+	if err := svc.Delete(ctx, pid, first, owner); err != nil {
+		t.Fatal(err)
+	}
+	v, err := svc.Create(ctx, pid, owner)
+	if err != nil {
+		t.Fatalf("create after delete: %v", err)
+	}
+	if v.No != 4 {
+		t.Fatalf("version_no = %d, want 4", v.No)
+	}
+	if got := count(t, db, `SELECT count(*) FROM assessment_version WHERE project_id = $1 AND deleted_at IS NULL`, pid); got != 3 {
+		t.Fatalf("live versions = %d, want 3", got)
+	}
+}
+
+func TestParallelVersionCreatesNeverPassTheLimit(t *testing.T) {
+	ctx := context.Background()
+	db, svc, pid, owner := setup(t)
+	svc.WithLimit(4)
+
+	const n = 12
+	var wg sync.WaitGroup
+	errs := make(chan error, n)
+	start := make(chan struct{})
+	for range n {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			_, err := svc.Create(ctx, pid, owner)
+			errs <- err
+		}()
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+	ok, limited := 0, 0
+	for err := range errs {
+		switch {
+		case err == nil:
+			ok++
+		case errors.Is(err, versions.ErrLimitReached):
+			limited++
+		default:
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+	if ok != 4 || limited != n-4 {
+		t.Fatalf("created %d, rejected %d; want 4 and %d", ok, limited, n-4)
+	}
+	if got := count(t, db, `SELECT count(*) FROM assessment_version WHERE project_id = $1`, pid); got != 4 {
+		t.Fatalf("stored %d versions, want 4", got)
+	}
+}

@@ -278,7 +278,10 @@ func TestListSearchAndPaging(t *testing.T) {
 	mk("Alpha Hotel", "ALPH", "koh_tao", nil)
 	mk("Beta Pier", "BETA", "koh_phi_phi", nil)
 	mk("Gamma 100% Villa", "GAMA", "other", ptr("Koh Mak"))
-	mk("Delta Road", "DELT", "koh_samui", nil)
+	// The fourth is inserted directly: Create refuses a fourth live project.
+	testutil.NewProject(t, e.db, e.a.String(), func(p *testutil.Project) {
+		p.Name, p.Nickname, p.Island = "Delta Road", "DELT", "koh_samui"
+	})
 	if _, err := e.svc.Create(ctx, e.b, fields("Alpha of someone else")); err != nil {
 		t.Fatal(err)
 	}
@@ -394,5 +397,83 @@ func TestUpdate(t *testing.T) {
 	again, _ := e.svc.Get(ctx, e.a, p.ID)
 	if again.EndDate != "2027-12-31" {
 		t.Fatalf("unchanged: %+v", again)
+	}
+}
+
+func TestCreateRejectsFourthLiveProject(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	var ids []uuid.UUID
+	for i := 0; i < e.svc.MaxProjects(); i++ {
+		p, err := e.svc.Create(ctx, e.a, fields("P"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, p.ID)
+	}
+	if _, err := e.svc.Create(ctx, e.a, fields("Fourth")); !errors.Is(err, projects.ErrLimitReached) {
+		t.Fatalf("4th create: %v, want ErrLimitReached", err)
+	}
+	// Another account has its own allowance.
+	if _, err := e.svc.Create(ctx, e.b, fields("Other")); err != nil {
+		t.Fatal(err)
+	}
+	// A soft-deleted project frees its slot.
+	if err := e.svc.Delete(ctx, e.a, ids[0]); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := e.svc.Create(ctx, e.a, fields("Again")); err != nil {
+		t.Fatalf("create after delete: %v", err)
+	}
+	if _, err := e.svc.Create(ctx, e.a, fields("Over")); !errors.Is(err, projects.ErrLimitReached) {
+		t.Fatalf("create over limit again: %v", err)
+	}
+}
+
+func TestParallelCreatesNeverPassTheLimit(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	const n = 12
+	errs := make(chan error, n)
+	start := make(chan struct{})
+	for i := 0; i < n; i++ {
+		go func() {
+			<-start
+			_, err := e.svc.Create(ctx, e.a, fields("Race"))
+			errs <- err
+		}()
+	}
+	close(start)
+	ok, limited := 0, 0
+	for i := 0; i < n; i++ {
+		switch err := <-errs; {
+		case err == nil:
+			ok++
+		case errors.Is(err, projects.ErrLimitReached):
+			limited++
+		default:
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+	if ok != e.svc.MaxProjects() || limited != n-e.svc.MaxProjects() {
+		t.Fatalf("created %d, rejected %d; want %d and %d", ok, limited, e.svc.MaxProjects(), n-e.svc.MaxProjects())
+	}
+	pg, err := e.svc.List(ctx, e.a, projects.ListParams{Page: 1, PageSize: 20})
+	if err != nil || pg.Total != e.svc.MaxProjects() {
+		t.Fatalf("stored %d (%v), want %d", pg.Total, err, e.svc.MaxProjects())
+	}
+}
+
+func TestProjectLimitFollowsTheConfiguredValue(t *testing.T) {
+	e := newEnv(t)
+	ctx := context.Background()
+	svc := projects.New(e.db, e.db, testRounding, nil).WithLimit(2)
+	for i := 0; i < 2; i++ {
+		if _, err := svc.Create(ctx, e.a, fields("P")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := svc.Create(ctx, e.a, fields("Third")); !errors.Is(err, projects.ErrLimitReached) {
+		t.Fatalf("3rd create with limit 2: %v, want ErrLimitReached", err)
 	}
 }

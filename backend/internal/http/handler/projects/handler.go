@@ -79,6 +79,7 @@ func (h *handler) list(w http.ResponseWriter, r *http.Request) {
 	for i, p := range res.Items {
 		out.Items[i] = toAPI(p)
 	}
+	out.MaxProjects = h.svc.MaxProjects()
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -297,6 +298,8 @@ func (h *handler) fail(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, projects.ErrNotFound):
 		middleware.WriteError(w, r, http.StatusNotFound, "not_found", "project not found")
+	case errors.Is(err, projects.ErrLimitReached):
+		middleware.WriteError(w, r, http.StatusConflict, "project_limit_reached", "project limit reached")
 	case errors.As(err, &ve):
 		fields := make([]api.FieldError, len(ve.Fields))
 		for i, f := range ve.Fields {
@@ -330,6 +333,8 @@ type wireList struct {
 	Page     int           `json:"page"`
 	PageSize int           `json:"page_size"`
 	Total    int           `json:"total"`
+	// MaxProjects is MAX_PROJECTS_PER_USER.
+	MaxProjects int `json:"max_projects"`
 }
 
 func toAPI(p projects.Project) wireProject {
