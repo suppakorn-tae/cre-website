@@ -101,7 +101,7 @@ export function createVersionHandlers(): HttpHandler[] {
   const listFor = (projectId: string) => lists.get(projectId) ?? mockVersions();
   return [
     mswHttp.get('*/api/v1/projects/:projectId/versions', ({ params }) =>
-      HttpResponse.json({ items: listFor(String(params.projectId)) }),
+      HttpResponse.json({ items: listFor(String(params.projectId)), max_versions: 10 }),
     ),
     mswHttp.post('*/api/v1/projects/:projectId/versions', ({ params }) => {
       const projectId = String(params.projectId);

@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
+	"github.com/suppakorn-tae/cre-website/backend/internal/config"
 	"github.com/suppakorn-tae/cre-website/backend/internal/dal"
 	"github.com/suppakorn-tae/cre-website/backend/internal/dal/sqlc"
 )
@@ -24,6 +25,10 @@ var ErrNotFound = errors.New("versions: not found")
 // ErrLastVersion means the version is the only live one of its project. A
 // project always keeps at least one version; delete the project instead.
 var ErrLastVersion = errors.New("versions: last version")
+
+// ErrLimitReached means the project already has the maximum number of live
+// versions (MAX_VERSIONS_PER_PROJECT, BR-27).
+var ErrLimitReached = errors.New("versions: version limit reached")
 
 // Status is a version's lifecycle state.
 type Status string
@@ -73,13 +78,27 @@ type Service struct {
 	db       dal.DBTX
 	tx       dal.Beginner
 	rounding Rounding
+	// maxVersions is MAX_VERSIONS_PER_PROJECT.
+	maxVersions int
 }
 
 // New returns a Service. db reads, tx runs the create transaction (a pool
 // satisfies both) and rounding is the configured SCORE_DECIMALS/RM_DECIMALS.
 func New(db dal.DBTX, tx dal.Beginner, rounding Rounding) *Service {
-	return &Service{db: db, tx: tx, rounding: rounding}
+	return &Service{db: db, tx: tx, rounding: rounding, maxVersions: config.DefaultMaxVersionsPerProject}
 }
+
+// WithLimit sets how many live versions one project may have
+// (MAX_VERSIONS_PER_PROJECT). A value below 1 keeps the current one.
+func (s *Service) WithLimit(maxVersions int) *Service {
+	if maxVersions >= 1 {
+		s.maxVersions = maxVersions
+	}
+	return s
+}
+
+// MaxVersions is the number of live versions one project may have.
+func (s *Service) MaxVersions() int { return s.maxVersions }
 
 // Create starts the next blank version of an owned project. One transaction
 // locks the project row, so concurrent creates queue and each gets its own
@@ -87,7 +106,7 @@ func New(db dal.DBTX, tx dal.Beginner, rounding Rounding) *Service {
 func (s *Service) Create(ctx context.Context, projectID, owner uuid.UUID) (Version, error) {
 	id := uuid.New()
 	err := dal.WithTx(ctx, s.tx, func(tx pgx.Tx) error {
-		return CreateInTx(ctx, tx, projectID, owner, id, s.rounding)
+		return CreateInTx(ctx, tx, projectID, owner, id, s.rounding, s.maxVersions)
 	})
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Version{}, ErrNotFound
@@ -104,10 +123,22 @@ func (s *Service) Create(ctx context.Context, projectID, owner uuid.UUID) (Versi
 // thresholds (BR-10). It returns pgx.ErrNoRows when the project is missing,
 // deleted or not owned. Service.Create and the project service's create both
 // go through it, so the first version is exactly what Create would store.
-func CreateInTx(ctx context.Context, tx dal.DBTX, projectID, owner, id uuid.UUID, rounding Rounding) error {
+// With maxVersions above 0 it counts the project's live versions under the
+// row lock and returns ErrLimitReached when there are already that many; 0
+// skips the check (a new project has none).
+func CreateInTx(ctx context.Context, tx dal.DBTX, projectID, owner, id uuid.UUID, rounding Rounding, maxVersions int) error {
 	q := sqlc.New(tx)
 	if _, err := q.LockOwnedProject(ctx, sqlc.LockOwnedProjectParams{ID: projectID, OwnerID: owner}); err != nil {
 		return err
+	}
+	if maxVersions > 0 {
+		n, err := q.CountLiveVersions(ctx, projectID)
+		if err != nil {
+			return err
+		}
+		if int(n) >= maxVersions {
+			return ErrLimitReached
+		}
 	}
 	if _, err := q.InsertVersion(ctx, sqlc.InsertVersionParams{
 		ID: id, ProjectID: projectID,

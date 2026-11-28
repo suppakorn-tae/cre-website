@@ -39,6 +39,15 @@
         $ref: ../schemas/common.yaml#/responses/Forbidden
       '404':
         $ref: ../schemas/common.yaml#/responses/NotFound
+      '409':
+        description: |
+          The project already has the most versions it may have, from
+          MAX_VERSIONS_PER_PROJECT (code `version_limit_reached`).
+          Soft-deleted versions do not count.
+        content:
+          application/json:
+            schema:
+              $ref: ../schemas/common.yaml#/schemas/ErrorEnvelope
 /projects/{project_id}/versions/{version_id}:
   parameters:
     - name: project_id

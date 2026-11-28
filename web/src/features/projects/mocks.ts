@@ -158,6 +158,7 @@ export const projectHandlers: HttpHandler[] = [
       page,
       page_size: pageSize,
       total: found.length,
+      max_projects: 3,
       items: found.slice((page - 1) * pageSize, page * pageSize),
     });
   }),

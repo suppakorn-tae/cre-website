@@ -2009,6 +2009,8 @@ export interface components {
             updated_at: components["schemas"]["Timestamp"];
         };
         ProjectList: components["schemas"]["PageMeta"] & {
+            /** @description How many projects one account may own (MAX_PROJECTS_PER_USER). */
+            max_projects: number;
             items: components["schemas"]["Project"][];
         };
         /** @description One row of a project's version list. */
@@ -2061,6 +2063,8 @@ export interface components {
         };
         /** @description All non-deleted versions of a project, newest first. Not paginated. */
         VersionList: {
+            /** @description How many versions one project may have (MAX_VERSIONS_PER_PROJECT). */
+            max_versions: number;
             items: components["schemas"]["VersionSummary"][];
         };
         /** Format: uuid */
@@ -3805,8 +3809,9 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             /**
-             * @description The account already has 3 projects (code `project_limit_reached`).
-             *     Soft-deleted projects do not count.
+             * @description The account already has the most projects it may own, from
+             *     MAX_PROJECTS_PER_USER (code `project_limit_reached`). Soft-deleted
+             *     projects do not count.
              */
             409: {
                 headers: {
@@ -4063,6 +4068,19 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            /**
+             * @description The project already has the most versions it may have, from
+             *     MAX_VERSIONS_PER_PROJECT (code `version_limit_reached`).
+             *     Soft-deleted versions do not count.
+             */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
     getVersion: {

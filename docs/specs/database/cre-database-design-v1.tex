@@ -138,7 +138,7 @@ Multiplicity is written parent : child; (C) marks a composition and (G) a genera
 \tb{indicator} & \tb{advice\_item} & 1 : 1..* & (C) Four lists ($\RL,\RIC,\RIT,\RIE$), 1--5 items each. \\
 \tb{account} & \tb{indicator}, \tb{impact\_table}, \tb{advice\_item} & 0..1 : 0..* & Admin who last edited (\tb{updated\_by}); NULL for seeded rows. \\
 \multicolumn{4}{@{}l}{\cellcolor{grp}\textit{Projects and assessments}}\\
-\tb{account} & \tb{project} & 1 : 0..* & Owner. At most 3 live projects per account (BR-27), enforced in the create transaction under a lock on the account row. \\
+\tb{account} & \tb{project} & 1 : 0..* & Owner. At most \texttt{MAX\_PROJECTS\_PER\_USER} live projects per account (BR-27), enforced in the create transaction under a lock on the account row. \\
 \tb{island}, \tb{project\_type} & \tb{project} & 1 : 0..* & Location and type code. \\
 \tb{project} & \tb{assessment\_version} & 1 : 0..* & (C) Versions $v_1..v_n$ (BR-08). \\
 \tb{assessment\_version} & \tb{version\_rl\_threshold} & 1 : 1..* & (C) Snapshot of all 55 indicators' thresholds. \\

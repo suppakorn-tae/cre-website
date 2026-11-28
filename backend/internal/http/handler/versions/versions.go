@@ -20,6 +20,8 @@ type Service interface {
 	List(ctx context.Context, projectID, owner uuid.UUID) ([]svc.Version, error)
 	Get(ctx context.Context, projectID, id, owner uuid.UUID) (svc.Version, error)
 	Delete(ctx context.Context, projectID, id, owner uuid.UUID) error
+	// MaxVersions is MAX_VERSIONS_PER_PROJECT, shown to the web.
+	MaxVersions() int
 }
 
 // Mount registers the version endpoints on r, which must be mounted at
@@ -65,7 +67,7 @@ func list(s Service) handler {
 		for i, v := range vs {
 			items[i] = toSummary(v)
 		}
-		_ = api.ListVersions200JSONResponse(api.VersionList{Items: items}).VisitListVersionsResponse(w)
+		_ = api.ListVersions200JSONResponse(api.VersionList{Items: items, MaxVersions: s.MaxVersions()}).VisitListVersionsResponse(w)
 	}
 }
 
@@ -135,6 +137,10 @@ func pathID(w http.ResponseWriter, r *http.Request, name string) (uuid.UUID, boo
 func fail(w http.ResponseWriter, r *http.Request, err error) {
 	if errors.Is(err, svc.ErrLastVersion) {
 		middleware.WriteError(w, r, http.StatusConflict, "last_version", "a project keeps at least one version; delete the project instead")
+		return
+	}
+	if errors.Is(err, svc.ErrLimitReached) {
+		middleware.WriteError(w, r, http.StatusConflict, "version_limit_reached", "the project has the most versions it can have")
 		return
 	}
 	if errors.Is(err, svc.ErrNotFound) {

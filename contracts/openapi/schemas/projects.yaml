@@ -155,8 +155,12 @@ ProjectList:
   allOf:
     - $ref: common.yaml#/schemas/PageMeta
     - type: object
-      required: [items]
+      required: [items, max_projects]
       properties:
+        max_projects:
+          type: integer
+          minimum: 1
+          description: How many projects one account may own (MAX_PROJECTS_PER_USER).
         items:
           type: array
           items:
@@ -261,8 +265,12 @@ Version:
 VersionList:
   type: object
   description: All non-deleted versions of a project, newest first. Not paginated.
-  required: [items]
+  required: [items, max_versions]
   properties:
+    max_versions:
+      type: integer
+      minimum: 1
+      description: How many versions one project may have (MAX_VERSIONS_PER_PROJECT).
     items:
       type: array
       items:

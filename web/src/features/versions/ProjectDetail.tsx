@@ -66,7 +66,12 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   const [deleting, setDeleting] = useState<VersionSummary | null>(null);
   const [deletingProject, setDeletingProject] = useState(false);
   const [failure, setFailure] = useState<
-    'create.failed' | 'delete.failed' | 'delete.lastVersion' | 'deleteProject.failed' | null
+    | 'create.failed'
+    | 'create.limitReached'
+    | 'delete.failed'
+    | 'delete.lastVersion'
+    | 'deleteProject.failed'
+    | null
   >(null);
 
   // After a dialog closes, focus goes back to the button that opened it.
@@ -93,9 +98,13 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
       setCreating(false);
       refresh();
     },
-    onError: () => {
+    onError: (error) => {
       setCreating(false);
-      setFailure('create.failed');
+      setFailure(
+        error instanceof ApiError && error.code === 'version_limit_reached'
+          ? 'create.limitReached'
+          : 'create.failed',
+      );
     },
   });
   const remove = useMutation({
