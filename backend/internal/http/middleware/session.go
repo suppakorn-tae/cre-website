@@ -28,7 +28,7 @@ func PrincipalFrom(ctx context.Context) (session.Principal, bool) {
 func Session(svc *session.Service) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			c, err := r.Cookie(session.CookieName)
+			c, err := r.Cookie(svc.CookieName())
 			if err != nil || c.Value == "" {
 				WriteError(w, r, http.StatusUnauthorized, "unauthenticated", "session required")
 				return

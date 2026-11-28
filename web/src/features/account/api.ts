@@ -1,7 +1,7 @@
 import createClient, { type Client } from 'openapi-fetch';
 
 import { AuthApiError, ensureCsrf } from '@/features/auth/register/api';
-import { CSRF_COOKIE, CSRF_HEADER, readCookie } from '@/lib/api/client';
+import { CSRF_HEADER, readCsrfCookie } from '@/lib/api/client';
 import type { components, paths } from '@/lib/api/generated/schema';
 
 export type Account = components['schemas']['Account'];
@@ -68,7 +68,7 @@ function browserClient() {
   client.use({
     onRequest({ request }) {
       if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
-        const token = readCookie(document.cookie, CSRF_COOKIE);
+        const token = readCsrfCookie(document.cookie);
         if (token) request.headers.set(CSRF_HEADER, token);
       }
       return request;

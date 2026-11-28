@@ -52,7 +52,7 @@ Account:
       $ref: common.yaml#/schemas/Timestamp
 AuthSession:
   type: object
-  description: The signed-in user. The session itself is the `cre_session` cookie.
+  description: The signed-in user. The session itself is the `__Host-cre_session` cookie.
   required: [user, expires_at, keep_logged_in]
   properties:
     user:
@@ -68,7 +68,7 @@ CsrfToken:
   properties:
     csrf_token:
       type: string
-      description: Same value as the `cre_csrf` cookie. Send as `X-CSRF-Token` on every unsafe request; the server returns 403 when it does not match the cookie.
+      description: Same value as the `__Host-cre_csrf` cookie. Send as `X-CSRF-Token` on every unsafe request; the server returns 403 when it does not match the cookie.
 RegisterStartRequest:
   type: object
   required: [email, password, password_confirmation, retention_accepted, terms_accepted]

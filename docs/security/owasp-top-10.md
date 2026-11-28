@@ -2,17 +2,17 @@
 
 **Standard:** [OWASP Top 10:2025](https://owasp.org/Top10/2025/), the final 2025 list. One section per category: how the app defends against it, where the code and tests are, which rows of the [ASVS Level 1 checklist](asvs-l1.md) cover it, and what is still open.
 
-Checked on 28 Nov 2026. Open issues: [IO-269](https://linear.app/printf-scanf/issue/IO-269) (cookie prefixes), [IO-270](https://linear.app/printf-scanf/issue/IO-270) (common passwords).
+Checked on 28 Nov 2026. No open issues.
 
 | Category | Covered | Open |
 | --- | --- | --- |
 | [A01 Broken Access Control](#a012025-broken-access-control) | ✅ | — |
-| [A02 Security Misconfiguration](#a022025-security-misconfiguration) | 🟡 | IO-269 |
+| [A02 Security Misconfiguration](#a022025-security-misconfiguration) | ✅ | — |
 | [A03 Software Supply Chain Failures](#a032025-software-supply-chain-failures) | ✅ | — |
 | [A04 Cryptographic Failures](#a042025-cryptographic-failures) | ✅ | — |
 | [A05 Injection](#a052025-injection) | ✅ | — |
 | [A06 Insecure Design](#a062025-insecure-design) | ✅ | — |
-| [A07 Authentication Failures](#a072025-authentication-failures) | 🟡 | IO-269, IO-270 |
+| [A07 Authentication Failures](#a072025-authentication-failures) | ✅ | — |
 | [A08 Software or Data Integrity Failures](#a082025-software-or-data-integrity-failures) | ✅ | — |
 | [A09 Security Logging and Alerting Failures](#a092025-security-logging-and-alerting-failures) | 🟡 | alerting, see below |
 | [A10 Mishandling of Exceptional Conditions](#a102025-mishandling-of-exceptional-conditions) | ✅ | — |
@@ -51,7 +51,6 @@ Checked on 28 Nov 2026. Open issues: [IO-269](https://linear.app/printf-scanf/is
 
 **Left**
 
-* Cookie names have no `__Host-` prefix: [IO-269](https://linear.app/printf-scanf/issue/IO-269).
 * TLS version and the `.git` exclusion are checked by review only (see [Gaps](asvs-l1.md#gaps)). The ZAP baseline scan ([`e2e/zap`](../../e2e/zap/scan.sh), job `zap` in [ci-e2e.yml](../../.github/workflows/ci-e2e.yml)) fails CI on any medium or high alert, but it scans the e2e stack over plain http, so it does not test TLS.
 
 ## A03:2025 Software Supply Chain Failures
@@ -122,7 +121,7 @@ Checked on 28 Nov 2026. Open issues: [IO-269](https://linear.app/printf-scanf/is
 
 **Defence**
 
-* Passwords of 8 to 128 characters, any characters, compared exactly as typed. Change needs the current password.
+* Passwords of 8 to 128 characters, any characters, compared exactly as typed, and checked against a list of common passwords. Change needs the current password.
 * Rate limits per IP and per e-mail on log in, sign-up, OTP and reset; 5 wrong OTPs drop the code. No permanent lockout ([policies.md][policies-rl]).
 * Same answer and similar timing for a wrong password, an unknown e-mail and a Google-only account.
 * Sessions are checked on the server on every request. A sign-in replaces the old token; log out revokes the token on the server; password reset, deactivation and deletion end every session of the account.
@@ -134,8 +133,6 @@ Checked on 28 Nov 2026. Open issues: [IO-269](https://linear.app/printf-scanf/is
 
 **Left**
 
-* No check against common passwords: [IO-270](https://linear.app/printf-scanf/issue/IO-270).
-* No `__Host-` cookie prefix: [IO-269](https://linear.app/printf-scanf/issue/IO-269).
 * No second factor. It is not required at Level 1.
 
 ## A08:2025 Software or Data Integrity Failures

@@ -10,11 +10,11 @@ The Top 10 view of the same evidence is in [`owasp-top-10.md`](owasp-top-10.md).
 
 | Status | Rows |
 | --- | ---: |
-| Pass | 53 |
-| &nbsp;&nbsp;of which Pass (code and test) | 46 |
+| Pass | 54 |
+| &nbsp;&nbsp;of which Pass (code and test) | 47 |
 | &nbsp;&nbsp;of which Pass (absence) | 4 |
 | &nbsp;&nbsp;of which Pass (review) | 3 |
-| Fail | 1 |
+| Fail | 0 |
 | N/A | 16 |
 | **Total** | **70** |
 
@@ -22,7 +22,7 @@ The Top 10 view of the same evidence is in [`owasp-top-10.md`](owasp-top-10.md).
 
 | ID | What is missing | Issue |
 | --- | --- | --- |
-| V3.3.1 | Cookies have no `__Host-` or `__Secure-` prefix | [IO-269](https://linear.app/printf-scanf/issue/IO-269) |
+None.
 
 ### Fixed in this change (IO-267)
 
@@ -74,7 +74,7 @@ Integration tests (files ending in `_integration_test.go`, and the `securitytest
 | --- | --- | --- | --- |
 | V3.2.1 | Responses cannot be rendered in the wrong context (for example an API response opened as a page) | Pass | `/api/v*` gets `Content-Security-Policy: default-src 'none'; frame-ancestors 'none'` and every response gets `nosniff` ([Caddyfile.prod][caddy-prod]; [caddyfile_test.sh][caddy-test]; "the api has a deny-all policy" in [security-headers.spec.ts][headers-spec]). Downloads have a fixed type and `attachment` by default ([reports.go][reports-h]; [reports_test.go][reports-h-test]). |
 | V3.2.2 | Text is rendered as text, not as HTML | Pass | React renders strings as text. The only `dangerouslySetInnerHTML` uses are the two constant scripts ([theme-script.tsx][theme-script]). Every e2e spec fails on any CSP violation, so injected script would be caught ([helpers/test.ts][csp-guard]). |
-| V3.3.1 | Cookies are `Secure` and use the `__Host-` (or at least `__Secure-`) prefix | **Fail** | Cookies are `Secure` in production (`TestCookies` in [session_test.go][session-test]) but named `cre_session` and `cre_csrf` without a prefix. The names are in the contract. [IO-269](https://linear.app/printf-scanf/issue/IO-269) |
+| V3.3.1 | Cookies are `Secure` and use the `__Host-` (or at least `__Secure-`) prefix | Pass | In production every cookie the api sets has the `__Host-` prefix with `Secure`, `Path=/` and no `Domain`: `__Host-cre_session` ([session.go][session]), `__Host-cre_csrf` ([csrf.go][csrf]) and the two Google flow cookies ([google.go][google-h]). Local http development drops the prefix, and the api reads only the name of its environment. `TestCookies` and `TestCookiesInsecureDropPrefix` in [session_test.go][session-test], `TestCSRFCookie` and `TestCSRFCookieNameByEnv` in [csrf_test.go][csrf-test], `TestGoogleSignupFlow` in [google_test.go][google-h-test], "keep me logged in" in [login.spec.ts][login-spec] (e2e over https). |
 | V3.4.1 | Every response has HSTS with a max-age of at least one year | Pass | `Strict-Transport-Security: max-age=31536000; includeSubDomains` on the whole site ([Caddyfile.prod][caddy-prod]; "prod hsts" in [caddyfile_test.sh][caddy-test]). |
 | V3.4.2 | CORS `Access-Control-Allow-Origin` is fixed or checked against an allow list | Pass (absence) | The browser calls the api on the same origin through Caddy, so no CORS header is ever sent. Check: `grep -rni "access-control" backend/internal web/src deploy/compose` finds nothing. |
 | V3.5.1 | Cross-site requests to sensitive functions are rejected (anti-forgery token or a non-safelisted header) | Pass | Double-submit token in `X-CSRF-Token` plus an `Origin` check on every POST, PUT, PATCH and DELETE ([csrf.go][csrf]; `TestCSRF` in [csrf_test.go][csrf-test]; `TestCSRFOnEveryMutation` in [security_test.go][sectest]). |
@@ -199,7 +199,7 @@ V16 (Security Logging and Error Handling) and V17 (WebRTC) have no Level 1 requi
 
 ## Gaps
 
-* **One fail** (V3.3.1), with an issue above.
+* **No fails remain.**
 * **Pass (review) without a test:** V12.1.1 (TLS versions), V12.2.2 (certificate issuer) and V13.4.1 (no `.git` in images). They are met by configuration but nothing in CI would notice a regression. The ZAP baseline scan ([`e2e/zap`](../../e2e/zap/scan.sh), job `zap` in [ci-e2e.yml](../../.github/workflows/ci-e2e.yml)) runs against the e2e stack, which uses the dev Caddyfile over plain http, so it does not cover them either.
 * **npm has no CI gate** like `govulncheck`; it relies on Dependabot alerts and `pnpm audit`.
 * **Level 2** is not attempted.
@@ -247,6 +247,7 @@ V16 (Security Logging and Error Handling) and V17 (WebRTC) have no Level 1 requi
 [caddy-prod]: ../../deploy/compose/Caddyfile.prod
 [caddy-test]: ../../deploy/test/caddyfile_test.sh
 [headers-spec]: ../../e2e/tests/meta/security-headers.spec.ts
+[login-spec]: ../../e2e/tests/auth/login.spec.ts
 [csp-guard]: ../../e2e/helpers/test.ts
 [session]: ../../backend/internal/service/session/session.go
 [session-test]: ../../backend/internal/service/session/session_test.go

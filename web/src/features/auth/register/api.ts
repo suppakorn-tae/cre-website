@@ -1,6 +1,6 @@
 import createClient from 'openapi-fetch';
 
-import { CSRF_COOKIE, CSRF_HEADER, readCookie } from '@/lib/api/client';
+import { CSRF_HEADER, readCsrfCookie } from '@/lib/api/client';
 import type { components, paths } from '@/lib/api/generated/schema';
 
 export type OtpChallenge = components['schemas']['OtpChallenge'];
@@ -35,7 +35,7 @@ const client = createClient<paths>({ baseUrl: '/api/v1', credentials: 'include' 
 client.use({
   onRequest({ request }) {
     if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
-      const token = readCookie(document.cookie, CSRF_COOKIE) ?? memoToken;
+      const token = readCsrfCookie(document.cookie) ?? memoToken;
       if (token) request.headers.set(CSRF_HEADER, token);
     }
     return request;
@@ -61,7 +61,7 @@ function unwrap<T>({ data, error, response }: Result<T>): T {
 
 /** Fetches the CSRF cookie once; later unsafe calls echo it in the header. */
 export async function ensureCsrf(): Promise<void> {
-  if (memoToken || readCookie(document.cookie, CSRF_COOKIE)) return;
+  if (memoToken || readCsrfCookie(document.cookie)) return;
   const data = unwrap(await client.GET('/auth/csrf'));
   memoToken = data.csrf_token;
 }

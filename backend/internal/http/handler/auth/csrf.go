@@ -8,8 +8,9 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/middleware"
 )
 
-// csrfToken serves GET /auth/csrf: it sets the cre_csrf cookie and returns
-// the same token in the body (CsrfToken in the contract).
+// csrfToken serves GET /auth/csrf: it sets the CSRF cookie
+// (middleware.CSRFCookie) and returns the same token in the body
+// (CsrfToken in the contract).
 func csrfToken(insecure bool) http.HandlerFunc {
 	return func(w http.ResponseWriter, _ *http.Request) {
 		tok := middleware.NewCSRFToken()

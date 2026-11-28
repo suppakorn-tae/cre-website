@@ -2,17 +2,25 @@
 # (UC-01, UC-02, UC-03). Account management is in account.yaml.
 #
 # Cookies: a successful register verification, log in, Google callback or
-# Google signup completion sets `cre_session` (httpOnly, Secure,
+# Google signup completion sets `__Host-cre_session` (httpOnly, Secure,
 # SameSite=Lax, path=/). Log out clears it. Without `keep_logged_in` it is a
 # session cookie (SESSION_TTL); with it, it persists for REMEMBER_TTL.
 #
-# CSRF (double submit): `GET /auth/csrf` sets the cookie `cre_csrf` (not
+# CSRF (double submit): `GET /auth/csrf` sets the cookie `__Host-cre_csrf` (not
 # httpOnly, so the web client can read it; Secure, SameSite=Lax, path=/).
 # The client echoes its value in the header `X-CSRF-Token` on every unsafe
 # request (POST, PUT, PATCH, DELETE), declared as the `csrfToken` security
 # scheme. The server answers 403 (`csrf_invalid`) when the header is missing
 # or does not match the cookie. Server-side calls from Next.js send no
 # Origin header and are accepted when the token matches.
+#
+# Cookie names: every cookie the api sets has the `__Host-` prefix in
+# production (Secure, Path=/, no Domain), so a sibling subdomain or a
+# plain-http page cannot plant or overwrite it. The Google flow cookies
+# `__Host-cre_google_state` and `__Host-cre_google_pending` use Path=/ for
+# the same reason. Local development (APP_ENV=development, plain http)
+# drops the prefix (`cre_session`, `cre_csrf`, ...), because browsers
+# reject a `__Host-` cookie that is not Secure.
 #
 # Error codes (ErrorBody.code and FieldError.code) used here:
 #   invalid_credentials, account_unavailable, email_taken, otp_invalid,
@@ -27,7 +35,7 @@
     operationId: getCsrfToken
     summary: Get a CSRF token
     description: |
-      Sets the cookie `cre_csrf` (not httpOnly, Secure, SameSite=Lax,
+      Sets the cookie `__Host-cre_csrf` (not httpOnly, Secure, SameSite=Lax,
       path=/) and returns the same token in the body. The client sends the
       token in the header `X-CSRF-Token` on every unsafe request (POST, PUT,
       PATCH, DELETE). The server returns 403 `csrf_invalid` when the header
@@ -37,11 +45,11 @@
     security: []
     responses:
       '200':
-        description: Token for the current session (or anonymous visitor). Sets `cre_csrf`.
+        description: Token for the current session (or anonymous visitor). Sets `__Host-cre_csrf`.
         headers:
           Set-Cookie:
             description: >-
-              `cre_csrf=<token>; Path=/; Secure; SameSite=Lax`. Not httpOnly,
+              `__Host-cre_csrf=<token>; Path=/; Secure; SameSite=Lax`. Not httpOnly,
               so the web client can read it and echo it in `X-CSRF-Token`.
             schema:
               type: string
@@ -130,7 +138,7 @@
             otp: '482915'
     responses:
       '201':
-        description: Account created and signed in. Sets `cre_session`.
+        description: Account created and signed in. Sets `__Host-cre_session`.
         headers:
           Set-Cookie:
             schema:
@@ -215,7 +223,7 @@
             keep_logged_in: true
     responses:
       '200':
-        description: Signed in. Sets `cre_session`.
+        description: Signed in. Sets `__Host-cre_session`.
         headers:
           Set-Cookie:
             schema:
@@ -239,7 +247,7 @@
     description: Clears the session cookie. Other devices stay signed in.
     responses:
       '204':
-        description: Logged out. Clears `cre_session`.
+        description: Logged out. Clears `__Host-cre_session`.
         headers:
           Set-Cookie:
             schema:
@@ -414,11 +422,11 @@
       e-mail gets the Google id linked, BR-16), otherwise `no_account`.
       `signup`: an existing account signs in as for `login`; a new identity
       is parked in Valkey and `needs_signup` sets a short-lived httpOnly
-      `cre_google_pending` cookie.
+      `__Host-cre_google_pending` cookie.
       `link`: stores the Google id on the session account (`linked`), or
       `already_linked`.
       `reauth`: marks the session as freshly re-authenticated for 5 minutes.
-      A successful sign-in also sets `cre_session`.
+      A successful sign-in also sets `__Host-cre_session`.
     security: []
     parameters:
       - name: code
@@ -452,7 +460,7 @@
     summary: Get the pending Google sign-up
     description: |
       Shows the verified Google e-mail on the notice screen. Requires the
-      `cre_google_pending` cookie; 404 when it is missing or expired.
+      `__Host-cre_google_pending` cookie; 404 when it is missing or expired.
     security: []
     responses:
       '200':
@@ -488,7 +496,7 @@
             terms_accepted: true
     responses:
       '201':
-        description: Account created and signed in. Sets `cre_session`.
+        description: Account created and signed in. Sets `__Host-cre_session`.
         headers:
           Set-Cookie:
             schema:

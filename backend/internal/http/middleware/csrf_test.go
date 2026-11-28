@@ -25,7 +25,7 @@ func csrfReq(method, cookie, header, origin string) *http.Request {
 }
 
 func TestCSRF(t *testing.T) {
-	h := middleware.CSRF(nil, "https://web.example.com")(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	h := middleware.CSRF(false, nil, "https://web.example.com")(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(204)
 	}))
 	tests := []struct {
@@ -67,7 +67,7 @@ func TestCSRF(t *testing.T) {
 // https://api.example.com sends Origin: https://api.example.com.
 func TestCSRFBehindTLSTerminatingProxy(t *testing.T) {
 	trusted := []netip.Prefix{netip.MustParsePrefix("10.0.0.0/8")}
-	h := middleware.CSRF(trusted, "https://web.example.com")(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	h := middleware.CSRF(false, trusted, "https://web.example.com")(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(204)
 	}))
 	tests := []struct {
@@ -107,13 +107,49 @@ func TestCSRFCookie(t *testing.T) {
 	w := httptest.NewRecorder()
 	middleware.SetCSRFCookie(w, tok, false)
 	c := w.Result().Cookies()[0]
-	if c.Name != "cre_csrf" || c.HttpOnly || !c.Secure || c.Path != "/" || c.SameSite != http.SameSiteLaxMode {
+	if c.Name != "__Host-cre_csrf" || c.HttpOnly || !c.Secure || c.Path != "/" || c.Domain != "" ||
+		c.SameSite != http.SameSiteLaxMode {
 		t.Fatalf("cookie: %+v", c)
+	}
+
+	// Local http development: browsers reject a __Host- cookie without
+	// Secure, so the name drops the prefix.
+	w = httptest.NewRecorder()
+	middleware.SetCSRFCookie(w, tok, true)
+	if c := w.Result().Cookies()[0]; c.Name != "cre_csrf" || c.Secure || c.Path != "/" {
+		t.Fatalf("dev cookie: %+v", c)
+	}
+}
+
+// The middleware reads only the cookie name of its environment: in
+// production an unprefixed cre_csrf (which a sibling subdomain could plant)
+// does not count.
+func TestCSRFCookieNameByEnv(t *testing.T) {
+	ok := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(204) })
+	tests := []struct {
+		insecure bool
+		cookie   string
+		want     int
+	}{
+		{false, "__Host-cre_csrf", 204},
+		{false, "cre_csrf", 403},
+		{true, "cre_csrf", 204},
+		{true, "__Host-cre_csrf", 403},
+	}
+	for _, tt := range tests {
+		req := httptest.NewRequest(http.MethodPost, "http://api.example.com/x", nil)
+		req.AddCookie(&http.Cookie{Name: tt.cookie, Value: "t"}) //nolint:gosec // G124: test request cookie, never sent to a browser
+		req.Header.Set(middleware.CSRFHeader, "t")
+		w := httptest.NewRecorder()
+		middleware.CSRF(tt.insecure, nil)(ok).ServeHTTP(w, req)
+		if w.Code != tt.want {
+			t.Errorf("insecure=%v cookie=%s: got %d, want %d", tt.insecure, tt.cookie, w.Code, tt.want)
+		}
 	}
 }
 
 func TestCSRFDefaultPortOrigins(t *testing.T) {
-	h := middleware.CSRF(nil, "https://web.example.com")(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	h := middleware.CSRF(false, nil, "https://web.example.com")(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(204)
 	}))
 	tests := []struct {

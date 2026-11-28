@@ -21,10 +21,13 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/session"
 )
 
+// The Google flow cookies, by their production names. They use Path=/
+// because a "__Host-" cookie must (session.HostPrefix); local http
+// development drops the prefix.
 const (
-	googleStateCookie   = "cre_google_state"
-	googlePendingCookie = "cre_google_pending"
-	googleCookiePath    = "/api/v1/auth/google"
+	googleStateCookie   = session.HostPrefix + "cre_google_state"
+	googlePendingCookie = session.HostPrefix + "cre_google_pending"
+	googlePath          = "/api/v1/auth/google"
 )
 
 // Web pages the callback redirects to, by intent.
@@ -48,7 +51,7 @@ func googleRoutes(r chi.Router, d app.Deps) {
 	base := strings.TrimSuffix(os.Getenv("PUBLIC_BASE_URL"), "/")
 	redirect := os.Getenv("GOOGLE_REDIRECT_URL")
 	if redirect == "" && base != "" {
-		redirect = base + googleCookiePath + "/callback"
+		redirect = base + googlePath + "/callback"
 	}
 	if id == "" || secret == "" || redirect == "" || base == "" || d.DB == nil || d.Valkey == nil || d.Sessions == nil {
 		slog.Warn("google sign-in disabled: set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and PUBLIC_BASE_URL (or GOOGLE_REDIRECT_URL)")
@@ -93,16 +96,21 @@ func (h *googleHandler) mount(r chi.Router, limit app.Middleware) {
 	r.With(limit).Post("/google/complete", h.complete)
 }
 
+// cookie is the request cookie name for this environment.
+func (h *googleHandler) cookie(r *http.Request, name string) (*http.Cookie, error) {
+	return r.Cookie(session.CookieNameFor(name, h.insecure))
+}
+
 func (h *googleHandler) setCookie(w http.ResponseWriter, name, value string, maxAge time.Duration) {
 	http.SetCookie(w, &http.Cookie{ //nolint:gosec // Secure is off only outside production (local http development)
-		Name: name, Value: value, Path: googleCookiePath, MaxAge: int(maxAge.Seconds()),
+		Name: session.CookieNameFor(name, h.insecure), Value: value, Path: "/", MaxAge: int(maxAge.Seconds()),
 		HttpOnly: true, Secure: !h.insecure, SameSite: http.SameSiteLaxMode,
 	})
 }
 
 // sessionAccount is the account of a valid session cookie, or "".
 func (h *googleHandler) sessionAccount(r *http.Request) (string, error) {
-	c, err := r.Cookie(session.CookieName)
+	c, err := r.Cookie(h.sessions.CookieName())
 	if err != nil || c.Value == "" {
 		return "", nil
 	}
@@ -153,7 +161,7 @@ func (h *googleHandler) start(w http.ResponseWriter, r *http.Request) {
 func (h *googleHandler) callback(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
 	in := svc.CallbackInput{State: q.Get("state"), Code: q.Get("code"), Error: q.Get("error")}
-	if c, err := r.Cookie(googleStateCookie); err != nil || subtle.ConstantTimeCompare([]byte(c.Value), []byte(in.State)) != 1 {
+	if c, err := h.cookie(r, googleStateCookie); err != nil || subtle.ConstantTimeCompare([]byte(c.Value), []byte(in.State)) != 1 {
 		in.State = "" // not started in this browser
 	}
 	h.setCookie(w, googleStateCookie, "", -time.Second)
@@ -180,8 +188,8 @@ func (h *googleHandler) callback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, h.web+page+"?result="+url.QueryEscape(out.Result), http.StatusFound)
 }
 
-func pendingToken(r *http.Request) string {
-	if c, err := r.Cookie(googlePendingCookie); err == nil {
+func (h *googleHandler) pendingToken(r *http.Request) string {
+	if c, err := h.cookie(r, googlePendingCookie); err == nil {
 		return c.Value
 	}
 	return ""
@@ -189,7 +197,7 @@ func pendingToken(r *http.Request) string {
 
 // pending serves GET /auth/google/pending (getGooglePending).
 func (h *googleHandler) pending(w http.ResponseWriter, r *http.Request) {
-	email, left, err := h.svc.Pending(r.Context(), pendingToken(r))
+	email, left, err := h.svc.Pending(r.Context(), h.pendingToken(r))
 	if err != nil {
 		(&registerHandler{}).fail(w, r, err)
 		return
@@ -207,7 +215,7 @@ func (h *googleHandler) complete(w http.ResponseWriter, r *http.Request) {
 	if req.Organisation != nil {
 		org = *req.Organisation
 	}
-	acc, res, err := h.svc.Complete(r.Context(), pendingToken(r), org, req.RetentionAccepted, req.TermsAccepted)
+	acc, res, err := h.svc.Complete(r.Context(), h.pendingToken(r), org, req.RetentionAccepted, req.TermsAccepted)
 	if errors.Is(err, svc.ErrGoogleAlreadyLinked) {
 		middleware.WriteError(w, r, http.StatusConflict, "google_already_linked", "the Google account is already linked")
 		return

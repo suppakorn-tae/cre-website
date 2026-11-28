@@ -31,12 +31,14 @@ test.describe('log in and out (UC-02)', () => {
 
   test('keep me logged in sets a persistent session cookie', async ({ page }) => {
     const sessionCookie = async () =>
-      (await page.context().cookies()).find((c) => c.name === 'cre_session');
+      (await page.context().cookies()).find((c) => c.name === '__Host-cre_session');
 
     await logInThroughUi(page, USER.email, USER.password, true);
     await expect(page).toHaveURL(/\/dashboard$/);
     const kept = await sessionCookie();
     expect(kept?.expires).toBeGreaterThan(Date.now() / 1000 + 24 * 3600);
+    // __Host- prefix (ASVS V3.3.1): Secure, Path=/ and no Domain attribute.
+    expect(kept).toMatchObject({ secure: true, path: '/', httpOnly: true });
 
     await page.context().clearCookies();
     await logInThroughUi(page, USER.email, USER.password, false);
