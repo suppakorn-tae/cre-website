@@ -81,7 +81,7 @@ func jobSpec(t *testing.T) *openapi3.T {
 	if err != nil {
 		t.Fatal(err)
 	}
-	data, err := os.ReadFile(root)
+	data, err := os.ReadFile(root) //nolint:gosec // G304: test reads its own fixture file
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,7 +109,7 @@ func get(t *testing.T, accountID, path string) *http.Response {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	if accountID != "" {
 		token, _ := ss.Issue(accountID, 1, false)
-		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token})
+		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	}
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
@@ -145,7 +145,7 @@ func TestGetJobNotAUUIDIs404(t *testing.T) {
 	r.Route("/jobs", func(r chi.Router) { jobs.Mount(r, fakeJobs{}, middleware.Session(ss)) })
 	token, _ := ss.Issue(owner.String(), 1, false)
 	req := httptest.NewRequest(http.MethodGet, "/jobs/nope", nil)
-	req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token})
+	req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	rec := httptest.NewRecorder()
 	r.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {

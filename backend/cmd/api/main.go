@@ -144,7 +144,7 @@ func decimals(key string, def int16, l *slog.Logger) int16 {
 	if v == "" {
 		return def
 	}
-	n, err := strconv.Atoi(v)
+	n, err := strconv.ParseInt(v, 10, 8)
 	if err != nil || n < 0 || n > 6 {
 		l.Warn("invalid decimals, using the default", "key", key, "default", def)
 		return def

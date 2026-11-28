@@ -122,7 +122,7 @@ func mapErr(err error) error {
 	return err
 }
 
-func (s *Service) submitted(ctx context.Context, project, id, owner uuid.UUID) (Metrics, int, error) {
+func (s *Service) submitted(ctx context.Context, project, id, owner uuid.UUID) (Metrics, int32, error) {
 	m, err := s.q.CompareVersionMetrics(ctx, sqlc.CompareVersionMetricsParams{ID: id, ProjectID: project, OwnerID: owner})
 	if err != nil {
 		return Metrics{}, 0, mapErr(err)
@@ -137,7 +137,7 @@ func (s *Service) submitted(ctx context.Context, project, id, owner uuid.UUID) (
 	if m.ScoredCount > 0 {
 		out.AvgRM = &m.AvgRm
 	}
-	return out, int(m.VersionNo), nil
+	return out, m.VersionNo, nil
 }
 
 // Compare returns the figures of two submitted versions and the indicators
@@ -152,7 +152,7 @@ func (s *Service) Compare(ctx context.Context, owner, project, target uuid.UUID,
 		baseID = *base
 	} else {
 		baseID, err = s.q.ComparePreviousSubmitted(ctx, sqlc.ComparePreviousSubmittedParams{
-			ProjectID: project, VersionNo: int32(targetNo),
+			ProjectID: project, VersionNo: targetNo,
 		})
 		if errors.Is(err, pgx.ErrNoRows) {
 			return Comparison{}, ErrNoBase

@@ -19,7 +19,7 @@ import (
 
 const (
 	accessKey = "rustfsadmin"
-	secretKey = "rustfsadmin-secret"
+	secretKey = "rustfsadmin-secret" //nolint:gosec // G101: test fixture, not a real credential
 )
 
 // startStore runs RustFS, not MinIO: the minio/minio and quay.io/minio/minio

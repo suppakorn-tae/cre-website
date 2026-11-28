@@ -110,7 +110,7 @@ func app(svc *session.Service) http.Handler {
 func doGet(h http.Handler, path, token string) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(http.MethodGet, path, nil)
 	if token != "" {
-		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token})
+		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: token}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	}
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, req)
@@ -211,7 +211,7 @@ func TestSessionPutsAuditContextOnAdminRequests(t *testing.T) {
 		tok, _ := svc.Issue(account, 1, false)
 		req := httptest.NewRequest(http.MethodGet, "/x", nil)
 		req.RemoteAddr = "203.0.113.9:4000"
-		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: tok})
+		req.AddCookie(&http.Cookie{Name: session.CookieName, Value: tok}) //nolint:gosec // G124: test request cookie, never sent to a browser
 		h.ServeHTTP(httptest.NewRecorder(), req)
 	}
 

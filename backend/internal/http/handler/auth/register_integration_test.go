@@ -116,7 +116,7 @@ func (e env) post(t *testing.T, path string, body any) result {
 	req := httptest.NewRequest(http.MethodPost, base+path, bytes.NewReader(b))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set(middleware.CSRFHeader, csrf)
-	req.AddCookie(&http.Cookie{Name: middleware.CSRFCookie, Value: csrf})
+	req.AddCookie(&http.Cookie{Name: middleware.CSRFCookie, Value: csrf}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	w := httptest.NewRecorder()
 	e.h.ServeHTTP(w, req)
 
@@ -152,7 +152,7 @@ func (e env) code(t *testing.T) string {
 }
 
 func form(email string) map[string]any {
-	return map[string]any{
+	return map[string]any{ //nolint:gosec // G101: test fixture, not a real credential
 		"email": email, "password": "รหัสผ่านทดสอบ-2569", "password_confirmation": "รหัสผ่านทดสอบ-2569",
 		"organisation": "บริษัท สยามก่อสร้าง จำกัด", "retention_accepted": true, "terms_accepted": true,
 	}

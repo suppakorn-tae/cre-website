@@ -228,7 +228,7 @@ func cookie(resp *http.Response, name string) *http.Cookie {
 
 func (e *gEnv) sessionCookie(id string) *http.Cookie {
 	tok, _ := e.sess.Issue(id, 1, false)
-	return &http.Cookie{Name: session.CookieName, Value: tok}
+	return &http.Cookie{Name: session.CookieName, Value: tok} //nolint:gosec // G124: test request cookie, never sent to a browser
 }
 
 // start runs startGoogleAuth and lets the fake provider accept code "code"
@@ -309,7 +309,7 @@ func TestGoogleCallbackRejects(t *testing.T) {
 	failed := webBase + "/login?result=failed"
 
 	state, bind := e.start("login", alice)
-	if _, loc := e.callback(state+"x", &http.Cookie{Name: googleStateCookie, Value: state + "x"}); loc != failed {
+	if _, loc := e.callback(state+"x", &http.Cookie{Name: googleStateCookie, Value: state + "x"}); loc != failed { //nolint:gosec // G124: test request cookie, never sent to a browser
 		t.Fatalf("tampered state: %s", loc)
 	}
 	if resp, loc := e.callback(state); loc != failed || cookie(resp, session.CookieName) != nil {

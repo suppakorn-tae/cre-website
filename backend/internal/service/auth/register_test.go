@@ -134,7 +134,7 @@ func newEnv() env {
 }
 
 func goodForm() StartInput {
-	return StartInput{
+	return StartInput{ //nolint:gosec // G101: test fixture, not a real credential
 		Email: "Somchai.K@Example.co.th ", Password: "รหัสผ่านทดสอบ-2569", PasswordConfirmation: "รหัสผ่านทดสอบ-2569",
 		Organisation: "บริษัท สยามก่อสร้าง จำกัด", RetentionAccepted: true, TermsAccepted: true,
 	}

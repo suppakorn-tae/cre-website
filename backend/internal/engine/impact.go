@@ -105,13 +105,12 @@ func scoreImpactPct(pct float64, t ImpactTable) (float64, error) {
 
 func (t ImpactTable) validate() error {
 	pts := [5]float64{t.A, t.B, t.C, t.D, t.E}
-	for i, p := range pts {
-		if math.IsNaN(p) || math.IsInf(p, 0) || p < 0 {
+	prev := math.Inf(-1)
+	for _, p := range pts {
+		if math.IsNaN(p) || math.IsInf(p, 0) || p < 0 || p <= prev {
 			return ErrImpactTable
 		}
-		if i > 0 && p <= pts[i-1] {
-			return ErrImpactTable
-		}
+		prev = p
 	}
 	return nil
 }

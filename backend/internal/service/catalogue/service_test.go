@@ -32,7 +32,7 @@ func testSnapshot(n int) *catalogue.Snapshot {
 					Thresholds: engine.Thresholds{
 						A: a, B: engine.F(2), C: c, D: d, E: e, Direction: engine.DirectionNormal,
 					},
-					Name:       catalogue.Text{"th": "ชื่อ", "en": string(rune('0' + n))},
+					Name:       catalogue.Text{"th": "ชื่อ", "en": string(rune('0' + n))}, //nolint:gosec // G115: small loop counter, no overflow
 					Unit:       catalogue.Text{"th": "ครั้ง"},
 					QuestionX:  catalogue.Text{"th": "คำถาม"},
 					QuestionY1: catalogue.Text{},

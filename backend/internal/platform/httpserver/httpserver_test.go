@@ -20,7 +20,7 @@ func start(t *testing.T, h http.HandlerFunc, drain time.Duration) (url string, c
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	done = make(chan error, 1)
-	go func() { done <- Serve(ctx, &http.Server{Handler: h}, ln, drain, quiet, nil) }()
+	go func() { done <- Serve(ctx, &http.Server{Handler: h}, ln, drain, quiet, nil) }() //nolint:gosec // G112: test server on a loopback listener
 	return "http://" + ln.Addr().String() + "/", cancel, done
 }
 
@@ -34,7 +34,7 @@ func TestShutdownDrainsInFlight(t *testing.T) {
 
 	body := make(chan string, 1)
 	go func() {
-		resp, err := http.Get(url)
+		resp, err := http.Get(url) //nolint:gosec // G107: test calls its own loopback server
 		if err != nil {
 			body <- err.Error()
 			return
@@ -63,7 +63,7 @@ func TestOnDrainRunsBeforeShutdown(t *testing.T) {
 	called := false
 	done := make(chan error, 1)
 	go func() {
-		done <- Serve(ctx, &http.Server{Handler: http.NotFoundHandler()}, ln, time.Second, quiet, func() { called = true })
+		done <- Serve(ctx, &http.Server{Handler: http.NotFoundHandler()}, ln, time.Second, quiet, func() { called = true }) //nolint:gosec // G112: test server on a loopback listener
 	}()
 	cancel()
 	if err := <-done; err != nil || !called {
@@ -79,7 +79,7 @@ func TestShutdownTimeoutForcesClose(t *testing.T) {
 	}, 100*time.Millisecond)
 
 	go func() {
-		if resp, err := http.Get(url); err == nil {
+		if resp, err := http.Get(url); err == nil { //nolint:gosec // G107: test calls its own loopback server
 			_ = resp.Body.Close()
 		}
 	}()

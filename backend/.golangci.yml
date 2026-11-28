@@ -12,6 +12,7 @@ linters:
     - ineffassign
     - unused
     - revive
+    - gosec
 
 formatters:
   enable:

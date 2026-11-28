@@ -154,14 +154,14 @@ func (e *env) do(r req) *httptest.ResponseRecorder {
 		hr.Header.Set("Content-Type", "application/json")
 	}
 	if r.as != nil {
-		hr.AddCookie(&http.Cookie{Name: session.CookieName, Value: r.as.token})
+		hr.AddCookie(&http.Cookie{Name: session.CookieName, Value: r.as.token}) //nolint:gosec // G124: test request cookie, never sent to a browser
 	}
 	if r.csrf {
-		hr.AddCookie(&http.Cookie{Name: middleware.CSRFCookie, Value: csrfToken})
+		hr.AddCookie(&http.Cookie{Name: middleware.CSRFCookie, Value: csrfToken}) //nolint:gosec // G124: test request cookie, never sent to a browser
 		hr.Header.Set(middleware.CSRFHeader, csrfToken)
 	}
 	if r.badCSRF {
-		hr.AddCookie(&http.Cookie{Name: middleware.CSRFCookie, Value: csrfToken})
+		hr.AddCookie(&http.Cookie{Name: middleware.CSRFCookie, Value: csrfToken}) //nolint:gosec // G124: test request cookie, never sent to a browser
 		hr.Header.Set(middleware.CSRFHeader, "ffffffffffffffffffffffffffffffff")
 	}
 	if r.origin != "" {
