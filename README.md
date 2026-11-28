@@ -341,6 +341,10 @@ Every folder, what it does and where new code goes: [**docs/repo-structure.md**]
 | 🤝 | [**CONTRIBUTING.md**](CONTRIBUTING.md): branches, commits, pull requests and required checks |
 | 🤖 | [**AGENTS.md**](AGENTS.md): rules for coding agents |
 
+## 📄 License
+
+Proprietary. Copyright © 2026 Mr. Suppakorn Krabtong (Tae) and Ms. Paramee Bheganan (Pammy). Mr. Torsak Chollatarn holds an exclusive, unrestricted licence to use it for any purpose, and owns the logo, branding and the data he provided. See [LICENSE](LICENSE).
+
 <div align="center">
 <br>
 <sub>Construction Risk Expert · assess · analyze · control</sub>
