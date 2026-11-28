@@ -318,6 +318,8 @@ loadtest/    k6 scripts, seed data and runner
 docs/        Specs, runbooks, accessibility reports (a11y/) and brand assets (brand/)
 ```
 
+Every folder, what it does and where new code goes: [**docs/repo-structure.md**](docs/repo-structure.md).
+
 ---
 
 ## 📚 Docs
@@ -330,6 +332,7 @@ docs/        Specs, runbooks, accessibility reports (a11y/) and brand assets (br
 | 💻 | [**Dev runbook**](docs/runbooks/dev.md): five ways to run the app, a local admin account and troubleshooting |
 | 🚢 | [**Deploy runbook**](docs/runbooks/deploy.md): production deploy, including [Google sign-in setup](docs/runbooks/deploy.md#google-sign-in) |
 | 💾 | [**Restore runbook**](docs/runbooks/restore.md): backups and restore |
+| 🗂️ | [**Repo structure**](docs/repo-structure.md): what each folder does and where new code goes |
 | 🎨 | [**Brand**](docs/brand/README.md): logo, mark and app icons |
 | 🤝 | [**CONTRIBUTING.md**](CONTRIBUTING.md): branches, commits, pull requests and required checks |
 | 🤖 | [**AGENTS.md**](AGENTS.md): rules for coding agents |
