@@ -165,7 +165,9 @@ Check: `dig +short conriskexpert.com` prints the server address.
    shown there, `SMTP_PASSWORD` is the key.
 4. Defaults in `compose.prod.yaml`: `smtp-relay.brevo.com`, port 587
    (STARTTLS), `SMTP_FROM=no-reply@conriskexpert.com`. Only `api` has
-   outbound access (`egress-net`).
+   outbound access (`egress-net`). In production the api refuses to send
+   when the relay does not offer STARTTLS (`SMTP_REQUIRE_TLS` defaults to
+   true; leave it unset).
 
 Check: Brevo shows the domain as verified.
 

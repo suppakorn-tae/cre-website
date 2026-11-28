@@ -56,6 +56,8 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASSWORD: ${SMTP_PASSWORD}
       SMTP_FROM: ${SMTP_FROM}
+      # Empty: the api requires STARTTLS when APP_ENV is production.
+      SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-}
     networks: [private-net, egress-net]
     depends_on:
       migrate: { condition: service_completed_successfully }
