@@ -3,6 +3,8 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { browserApi } from '@/lib/api/client';
 import type { components } from '@/lib/api/generated/schema';
 
+import { limitState, type LimitState } from './limit';
+
 export const PANEL_PAGE_SIZE = 10;
 
 export type DashboardSummary = components['schemas']['DashboardSummary'];
@@ -122,4 +124,24 @@ export function useIndicatorNames(enabled: boolean) {
       return { indicators, factors };
     },
   });
+}
+
+/**
+ * How many projects the user owns out of the most they may own. One row is enough: the page
+ * meta carries the total and the list carries the limit. Undefined until it has loaded, and
+ * after a failure, so the create link then stays usable and the server answer decides.
+ */
+export function useProjectLimit(enabled = true): LimitState | undefined {
+  return (
+    useQuery({
+      queryKey: ['projects', 'limit'] as const,
+      enabled,
+      queryFn: async () => {
+        const { data } = await browserApi().GET('/projects', {
+          params: { query: { page: 1, page_size: 1 } },
+        });
+        return data ? limitState(data.total, data.max_projects) : null;
+      },
+    }).data ?? undefined
+  );
 }

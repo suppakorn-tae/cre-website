@@ -13,6 +13,7 @@ import {
   LevelBadge,
   type DataTableColumn,
 } from '@/components/ui';
+import type { LimitState } from '@/features/dashboard/limit';
 import { ReportButton } from '@/features/reports/ReportButton';
 import { formatDate, formatDateTime, formatNumber } from '@/lib/format/locale';
 import { timeZone } from '@/lib/i18n/config';
@@ -29,10 +30,13 @@ import {
   recentVersions,
 } from './rules';
 import styles from './versions.module.css';
+import { createProps, VersionCount, VersionLimitHint } from './VersionLimit';
 
 type Props = {
   project: Project;
   versions: VersionSummary[];
+  /** Versions out of the most the project may have; undefined until known. */
+  limit?: LimitState;
   onCreate: (trigger: HTMLElement | null) => void;
   onShowVersions: () => void;
   /** Indicators in the catalogue; undefined until it has loaded. */
@@ -43,6 +47,7 @@ type Props = {
 export function OverviewPanel({
   project,
   versions,
+  limit,
   onCreate,
   onShowVersions,
   indicatorTotal,
@@ -55,6 +60,7 @@ export function OverviewPanel({
           projectId={project.id}
           versions={versions}
           latest={latest}
+          limit={limit}
           onCreate={onCreate}
           indicatorTotal={indicatorTotal}
         />
@@ -69,12 +75,14 @@ function LatestVersionCard({
   projectId,
   versions,
   latest,
+  limit,
   onCreate,
   indicatorTotal,
 }: {
   projectId: string;
   versions: VersionSummary[];
   latest: VersionSummary | undefined;
+  limit?: LimitState;
   onCreate: (trigger: HTMLElement | null) => void;
   indicatorTotal?: number;
 }) {
@@ -195,11 +203,13 @@ function LatestVersionCard({
       </div>
       <p className={styles.newVersion}>
         {t('latest.newPrompt')}{' '}
-        <button type="button" className={styles.link} onClick={(e) => onCreate(e.currentTarget)}>
+        <button type="button" className={styles.link} {...createProps(limit, onCreate)}>
           {tList('create')}
         </button>{' '}
-        <span className={styles.muted}>{t('latest.newNote', { no: latest.version_no })}</span>
+        <span className={styles.muted}>{t('latest.newNote', { no: latest.version_no })}</span>{' '}
+        <VersionCount limit={limit} />
       </p>
+      <VersionLimitHint limit={limit} />
     </section>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { skipToken, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Button, ConfirmDialog, EmptyState, Skeleton, Toast, useToaster } from '@/components/ui';
 import type { CompareViewName } from '@/features/compare/ComparePanel';
+import { limitState, type LimitState } from '@/features/dashboard/limit';
 import { useDeleteProject } from '@/features/projects/api';
 import { ApiError } from '@/lib/api/errors';
 
@@ -17,8 +18,9 @@ import {
   deleteVersion,
   fetchIndicatorTotal,
   fetchProject,
-  fetchVersions,
+  fetchVersionList,
   projectKey,
+  versionLimitKey,
   versionsKey,
   type VersionSummary,
 } from './api';
@@ -60,8 +62,21 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
   });
   const versions = useQuery({
     queryKey: versionsKey(projectId),
-    queryFn: () => fetchVersions(projectId),
+    // One request fills both: the list here, its limit under the key read just below.
+    queryFn: async () => {
+      const list = await fetchVersionList(projectId);
+      queryClient.setQueryData(versionLimitKey(projectId), list.max);
+      return list.items;
+    },
   });
+  const maxVersions = useQuery<number | undefined>({
+    queryKey: versionLimitKey(projectId),
+    queryFn: skipToken,
+  }).data;
+  const limit: LimitState | undefined =
+    versions.data && maxVersions !== undefined
+      ? limitState(versions.data.length, maxVersions)
+      : undefined;
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState<VersionSummary | null>(null);
   const [deletingProject, setDeletingProject] = useState(false);
@@ -236,6 +251,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                 <OverviewPanel
                   project={project.data}
                   versions={versions.data}
+                  limit={limit}
                   onCreate={(button) => {
                     open(button);
                     setCreating(true);
@@ -250,6 +266,7 @@ export function ProjectDetail({ projectId }: { projectId: string }) {
                 projectId={projectId}
                 versions={versions.data}
                 view={view}
+                limit={limit}
                 onViewChange={(next) => writeProjectView('versions', next)}
                 onCreate={(button) => {
                   open(button);

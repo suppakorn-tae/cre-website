@@ -1,6 +1,7 @@
 import { HttpResponse, http as mswHttp, type HttpHandler } from 'msw';
 
 import type { components } from '@/lib/api/generated/schema';
+import { MAX_VERSIONS_FLAG, MOCK_MAX_VERSIONS, mockLimit } from '@/mocks/limits';
 
 type Project = components['schemas']['Project'];
 type VersionSummary = components['schemas']['VersionSummary'];
@@ -101,11 +102,20 @@ export function createVersionHandlers(): HttpHandler[] {
   const listFor = (projectId: string) => lists.get(projectId) ?? mockVersions();
   return [
     mswHttp.get('*/api/v1/projects/:projectId/versions', ({ params }) =>
-      HttpResponse.json({ items: listFor(String(params.projectId)), max_versions: 10 }),
+      HttpResponse.json({
+        items: listFor(String(params.projectId)),
+        max_versions: mockLimit(MAX_VERSIONS_FLAG, MOCK_MAX_VERSIONS),
+      }),
     ),
     mswHttp.post('*/api/v1/projects/:projectId/versions', ({ params }) => {
       const projectId = String(params.projectId);
       const versions = listFor(projectId);
+      if (versions.length >= mockLimit(MAX_VERSIONS_FLAG, MOCK_MAX_VERSIONS)) {
+        return HttpResponse.json(
+          { error: { code: 'version_limit_reached', message: 'version limit reached' } },
+          { status: 409 },
+        );
+      }
       const no = Math.max(0, ...versions.map((v) => v.version_no)) + 1;
       const created = {
         ...version(no, {

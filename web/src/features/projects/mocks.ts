@@ -5,6 +5,8 @@ import type { paths } from '@/lib/api/generated/schema';
 
 import messages from '../../../messages/th/projects.json';
 
+import { MAX_PROJECTS_FLAG, MOCK_MAX_PROJECTS, mockLimit } from '../../mocks/limits';
+
 import { expectedProgress } from './dates';
 import type { Project, ProjectFields } from './validation';
 
@@ -173,11 +175,15 @@ export const projectHandlers: HttpHandler[] = [
       page,
       page_size: pageSize,
       total: found.length,
-      max_projects: 3,
+      max_projects: mockLimit(MAX_PROJECTS_FLAG, MOCK_MAX_PROJECTS),
       items: found.slice((page - 1) * pageSize, page * pageSize),
     });
   }),
   http.post('/projects', async ({ request, response }) => {
+    // Like the api: a full account is refused, which the web shows as a message.
+    if (store.length >= mockLimit(MAX_PROJECTS_FLAG, MOCK_MAX_PROJECTS)) {
+      return response(409).json(errorBody('project_limit_reached', 'project limit reached'));
+    }
     const body = (await request.clone().json()) as ProjectFields;
     if (nicknameTaken(body.nickname)) return response(422).json(duplicateNickname());
     // Like the api, creating a project also creates its first version.
