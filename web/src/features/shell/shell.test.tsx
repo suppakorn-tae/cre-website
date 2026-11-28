@@ -17,9 +17,11 @@ import { ContentSkeleton } from './Skeletons';
 
 const wrap = (node: ReactNode) =>
   renderToStaticMarkup(
-    <NextIntlClientProvider locale="th" messages={{ shell }}>
-      {node}
-    </NextIntlClientProvider>,
+    <QueryClientProvider client={new QueryClient()}>
+      <NextIntlClientProvider locale="th" messages={{ shell }}>
+        {node}
+      </NextIntlClientProvider>
+    </QueryClientProvider>,
   );
 
 describe('AccountMenu', () => {

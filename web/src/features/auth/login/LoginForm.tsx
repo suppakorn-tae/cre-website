@@ -1,7 +1,7 @@
 'use client';
 
 import { IconArrowRight, IconMail } from '@tabler/icons-react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -10,6 +10,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Alert, Button, GoogleMark, Icon, Input } from '@/components/ui';
 import { AuthShell } from '@/features/auth/register/AuthShell';
 import styles from '@/features/auth/register/register.module.css';
+import { clearClientData } from '@/features/shell/logout';
 
 import { AuthApiError, login, refreshCsrf, startGoogleLogin } from './api';
 import { classifyLoginFailure, waitParts, type LoginFailure } from './failure';
@@ -24,6 +25,7 @@ export function LoginForm() {
   const t = useTranslations('auth.login');
   const tCommon = useTranslations('common.errors');
   const router = useRouter();
+  const queryClient = useQueryClient();
   const params = useSearchParams();
   const view = loginReturnView(params.get('result'));
   const [email, setEmail] = useState('');
@@ -40,6 +42,7 @@ export function LoginForm() {
     mutationFn: () => login({ email: email.trim(), password, keep_logged_in: keep }),
     onSuccess: async () => {
       await refreshCsrf();
+      clearClientData(queryClient);
       router.replace(AFTER_LOGIN_PATH);
     },
     onError: (error) =>

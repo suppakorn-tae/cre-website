@@ -1,6 +1,6 @@
 'use client';
 
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
@@ -8,6 +8,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 
 import { IconBuilding } from '@tabler/icons-react';
 import { Alert, Button, GoogleMark, Input } from '@/components/ui';
+import { clearClientData } from '@/features/shell/logout';
 
 import { AuthApiError, completeGoogleSignup, getGooglePending, refreshCsrf } from './api';
 import { AuthShell } from './AuthShell';
@@ -47,6 +48,7 @@ function FinishForm() {
   const tCommon = useTranslations('common.errors');
   const tUi = useTranslations('ui');
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [organisation, setOrganisation] = useState('');
   const [retention, setRetention] = useState(false);
   const [terms, setTerms] = useState(false);
@@ -61,6 +63,7 @@ function FinishForm() {
       }),
     onSuccess: async () => {
       await refreshCsrf();
+      clearClientData(queryClient);
       router.replace(AFTER_SIGNUP_PATH);
     },
   });

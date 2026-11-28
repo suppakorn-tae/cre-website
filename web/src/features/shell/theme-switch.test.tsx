@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { NextIntlClientProvider } from 'next-intl';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -20,9 +21,11 @@ const root = () => document.documentElement;
 
 function ui(node: React.ReactNode) {
   return (
-    <NextIntlClientProvider locale="th" messages={{ shell, auth }}>
-      {node}
-    </NextIntlClientProvider>
+    <QueryClientProvider client={new QueryClient()}>
+      <NextIntlClientProvider locale="th" messages={{ shell, auth }}>
+        {node}
+      </NextIntlClientProvider>
+    </QueryClientProvider>
   );
 }
 
