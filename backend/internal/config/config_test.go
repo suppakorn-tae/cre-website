@@ -255,3 +255,29 @@ func TestLoadAPIRejectsBadLimits(t *testing.T) {
 		}
 	}
 }
+
+func TestRequireAppRole(t *testing.T) {
+	base := map[string]string{"DATABASE_URL": "p", "VALKEY_ADDR": "v", "APP_ENV": "development"}
+	for _, tc := range []struct {
+		val     string
+		set     bool
+		want    bool
+		wantErr bool
+	}{{"", false, false, false}, {"", true, false, false}, {"true", true, true, false}, {"false", true, false, false}, {"yes please", true, false, true}} {
+		m := map[string]string{}
+		for k, v := range base {
+			m[k] = v
+		}
+		if tc.set {
+			m["DB_REQUIRE_APP_ROLE"] = tc.val
+		}
+		a, errA := LoadAPI(env(m))
+		w, errW := LoadWorker(env(m))
+		if (errA != nil) != tc.wantErr || (errW != nil) != tc.wantErr {
+			t.Fatalf("%q: errors api=%v worker=%v", tc.val, errA, errW)
+		}
+		if !tc.wantErr && (a.RequireAppRole != tc.want || w.RequireAppRole != tc.want) {
+			t.Errorf("%q: api=%t worker=%t, want %t", tc.val, a.RequireAppRole, w.RequireAppRole, tc.want)
+		}
+	}
+}
