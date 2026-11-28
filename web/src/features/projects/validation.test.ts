@@ -1,8 +1,10 @@
+import { ApiError } from '@/lib/api/errors';
 import { describe, expect, it } from 'vitest';
 
 import {
   emptyForm,
   fromProject,
+  isProjectLimitError,
   length,
   parseBaht,
   parseProgress,
@@ -185,5 +187,14 @@ describe('parseBaht', () => {
   it('reads commas and satang', () => {
     expect(parseBaht('1,234.50')).toBe(1234.5);
     expect(parseBaht('1.234')).toBeNull();
+  });
+});
+
+describe('isProjectLimitError', () => {
+  it('is true only for the 409 project_limit_reached answer', () => {
+    expect(isProjectLimitError(new ApiError(409, 'project_limit_reached', 'x'))).toBe(true);
+    expect(isProjectLimitError(new ApiError(409, 'conflict', 'x'))).toBe(false);
+    expect(isProjectLimitError(new ApiError(422, 'validation_failed', 'x'))).toBe(false);
+    expect(isProjectLimitError(new TypeError('network'))).toBe(false);
   });
 });

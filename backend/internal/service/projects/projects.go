@@ -26,6 +26,13 @@ import (
 // belongs to someone else.
 var ErrNotFound = errors.New("projects: not found")
 
+// MaxProjects is the number of live (not soft-deleted) projects one account
+// may own (BR-27).
+const MaxProjects = 3
+
+// ErrLimitReached means the owner already has MaxProjects live projects.
+var ErrLimitReached = errors.New("projects: project limit reached")
+
 // FieldError names one invalid field by JSON pointer and a stable code.
 type FieldError struct {
 	Field string
@@ -168,7 +175,19 @@ func (s *Service) Create(ctx context.Context, owner uuid.UUID, in Fields) (Proje
 		return Project{}, fmt.Errorf("projects: new version id: %w", err)
 	}
 	err = dal.WithTx(ctx, s.tx, func(tx pgx.Tx) error {
-		if _, err := sqlc.New(tx).CreateProject(ctx, sqlc.CreateProjectParams{
+		q := sqlc.New(tx)
+		// Lock the owner row, then count: parallel creates run one by one.
+		if _, err := q.LockProjectOwner(ctx, owner); err != nil {
+			return err
+		}
+		n, err := q.CountLiveProjects(ctx, owner)
+		if err != nil {
+			return err
+		}
+		if n >= MaxProjects {
+			return ErrLimitReached
+		}
+		if _, err := q.CreateProject(ctx, sqlc.CreateProjectParams{
 			ID: id, OwnerID: owner, Name: in.Name, Nickname: in.Nickname,
 			IslandCode: in.IslandCode, IslandOther: text(in.IslandOther),
 			TypeCode: in.TypeCode, TypeOther: text(in.TypeOther),
