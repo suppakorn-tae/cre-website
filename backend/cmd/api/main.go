@@ -21,6 +21,7 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/config"
 	apihttp "github.com/suppakorn-tae/cre-website/backend/internal/http"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/app"
+	"github.com/suppakorn-tae/cre-website/backend/internal/platform/dbrole"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/health"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/httpserver"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
@@ -48,6 +49,10 @@ func main() {
 		os.Exit(1)
 	}
 	defer pool.Close()
+	if err := dbrole.Check(ctx, pool, cfg.RequireAppRole, l); err != nil {
+		l.Error("unsafe database role, exiting", "error", err.Error())
+		os.Exit(1)
+	}
 	cache, err := valkey.New(valkeyURL(cfg.ValkeyAddr))
 	if err != nil {
 		l.Error("invalid VALKEY_ADDR, exiting", "error", err.Error())

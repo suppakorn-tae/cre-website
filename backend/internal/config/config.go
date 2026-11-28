@@ -20,6 +20,9 @@ type Common struct {
 	ValkeyAddr      string
 	LogLevel        string
 	ShutdownTimeout time.Duration
+	// RequireAppRole (DB_REQUIRE_APP_ROLE) makes a startup error of the
+	// warning about a database role that can modify audit_log. Off by default.
+	RequireAppRole bool
 }
 
 // API is the api process configuration.
@@ -170,6 +173,7 @@ func (r *reader) common() Common {
 		ValkeyAddr:      r.required("VALKEY_ADDR"),
 		LogLevel:        strings.ToLower(r.str("LOG_LEVEL", "info")),
 		ShutdownTimeout: r.duration("SHUTDOWN_TIMEOUT", 25*time.Second),
+		RequireAppRole:  r.boolean("DB_REQUIRE_APP_ROLE", false),
 	}
 	switch c.LogLevel {
 	case "debug", "info", "warn", "error":

@@ -135,6 +135,13 @@ image.
   (`postgres://cre_app:<password>@db:5432/cre?sslmode=disable`). By hand, use
   the same command. A hex value needs no URL escaping. Keep it different from
   `POSTGRES_PASSWORD`; `--check` tests both.
+- At startup, `api` and `worker` check which role they connect as. If it is a
+  superuser, owns `audit_log` or can UPDATE it (for example an old `.env.prod`
+  with `cre_owner` in `DATABASE_URL`), they log a warning that names the role
+  and says to use `cre_app`. With `DB_REQUIRE_APP_ROLE=true` (set in
+  `env.prod.example`) they refuse to start instead. It is off by default,
+  including in the local `.env.example`, so an old local setup still starts.
+  Compose passes it to both services.
 - Rotate it by changing both values and redeploying: `migrate` sets the new
   password, then `api` and `worker` restart with the new `DATABASE_URL`.
 - Check, after the first deploy: `deploy/backup/deploy.sh exec db psql -U cre_owner -d cre -c "SELECT usename FROM pg_stat_activity WHERE datname = 'cre'"`

@@ -21,6 +21,7 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/s3"
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
 	"github.com/suppakorn-tae/cre-website/backend/internal/config"
+	"github.com/suppakorn-tae/cre-website/backend/internal/platform/dbrole"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/health"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/httpserver"
 	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
@@ -74,6 +75,9 @@ func run() int {
 		return fail("invalid DATABASE_URL, exiting", err)
 	}
 	defer pool.Close()
+	if err := dbrole.Check(ctx, pool, cfg.RequireAppRole, l); err != nil {
+		return fail("unsafe database role, exiting", err)
+	}
 
 	valkeyURL := cfg.ValkeyAddr
 	if !strings.Contains(valkeyURL, "://") {
