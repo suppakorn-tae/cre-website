@@ -167,7 +167,7 @@ func (h *googleHandler) callback(w http.ResponseWriter, r *http.Request) {
 		slog.ErrorContext(r.Context(), "google callback failed", "error", err)
 	}
 	if out.Session != nil {
-		h.sessions.SetCookie(w, out.Session.Token, out.Session.Expires, false)
+		replaceSession(w, r, h.sessions, out.Session.Token, out.Session.Expires, false)
 	}
 	if out.PendingToken != "" {
 		h.setCookie(w, googlePendingCookie, out.PendingToken, svc.GooglePendingTTL)
@@ -217,7 +217,7 @@ func (h *googleHandler) complete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	h.setCookie(w, googlePendingCookie, "", -time.Second)
-	h.sessions.SetCookie(w, res.Token, res.Expires, false)
+	replaceSession(w, r, h.sessions, res.Token, res.Expires, false)
 	terms := acc.TermsAcceptedAt.UTC()
 	writeJSON(w, http.StatusCreated, api.AuthSession{
 		User: api.Account{
