@@ -11,6 +11,9 @@ The Top 10 view of the same evidence is in [`owasp-top-10.md`](owasp-top-10.md).
 | Status | Rows |
 | --- | ---: |
 | Pass | 51 |
+| &nbsp;&nbsp;of which Pass (code and test) | 44 |
+| &nbsp;&nbsp;of which Pass (absence) | 4 |
+| &nbsp;&nbsp;of which Pass (review) | 3 |
 | Fail | 3 |
 | N/A | 16 |
 | **Total** | **70** |
@@ -53,7 +56,7 @@ Integration tests (files ending in `_integration_test.go`, and the `securitytest
 | V1.2.2 | URLs built from data are encoded, and only safe URL schemes are allowed | Pass | The Google URL is built with `url.Values` ([oidc.go][oidc]; `TestAuthURLCarriesPKCEStateAndNonce` in [oidc_test.go][oidc-test]). The callback redirect goes to a fixed page with an escaped result code ([google.go][google-h]; `TestGoogleCallbackRejects` in [google_test.go][google-h-test]). Web links use only ids from the api; the app never renders a URL a user typed. |
 | V1.2.3 | JavaScript and JSON output is built with encoding, not string joining | Pass | All JSON goes through `encoding/json` ([errors.go][errors]; `TestWriteErrorShape` in [base_test.go][base-test]). The two inline scripts are constants with a nonce ([theme-script.tsx][theme-script]; [layout.test.tsx][layout-test]). |
 | V1.2.4 | Database queries are parameterised | Pass | All app queries are sqlc-generated from [`dal/queries`][queries] with `$n` parameters. The seed uses parameters ([apply.go][seed-apply]); the role password is quoted by Postgres `format('%I', '%L')` ([approle.go][approle]; [approle_test.go][approle-test]). Search input is escaped for `LIKE` (`TestLikePattern` in [projects_internal_test.go][projects-test]). |
-| V1.2.5 | OS commands are protected from injection | N/A | The app runs no OS commands. Check: `grep -rn "os/exec" backend --include=*.go` finds nothing. PDFs are rendered by Gotenberg over HTTP. |
+| V1.2.5 | OS commands are protected from injection | N/A | The app runs no OS commands. Check: `grep -rln "os/exec" backend --include=*.go | grep -v _test.go` finds nothing (only test helpers use it). PDFs are rendered by Gotenberg over HTTP. |
 | V1.3.1 | HTML from rich-text editors is sanitised | N/A | No rich-text or HTML input. Every user field is plain text. |
 | V1.3.2 | No `eval()` or other dynamic code execution | Pass | No `eval` or `new Function` in `web/src` or the backend. The production CSP has no `'unsafe-eval'`, so the browser blocks it too ([csp.ts][csp]; "never allows eval or inline scripts in production" in [csp.test.ts][csp-test]). |
 | V1.5.1 | XML parsers are configured safely (no external entities) | N/A | The app parses no XML. Check: `grep -rn "encoding/xml" backend --include=*.go` finds nothing. |
@@ -107,7 +110,7 @@ Integration tests (files ending in `_integration_test.go`, and the `securitytest
 | V6.2.4 | New passwords are checked against at least the 3,000 most common passwords | **Fail** | Only the length is checked. Adding a check needs a new error code in the contract. [IO-270](https://linear.app/printf-scanf/issue/IO-270) |
 | V6.2.5 | No rules on character types | Pass | Length is the only rule (`TestStartValidation` in [register_test.go][register-test]). |
 | V6.2.6 | Password fields use `type=password` | Pass | [PasswordInput.tsx][password-input] starts masked and can be shown on request ([password-input.test.tsx][password-input-test]). |
-| V6.2.7 | Paste and password managers work | Pass (absence) | No field blocks paste, and the fields carry `autocomplete="current-password"` or `"new-password"`. Check: `grep -rn "onPaste" web/src` finds nothing. |
+| V6.2.7 | Paste and password managers work | Pass (absence) | No field blocks paste, and the password fields carry `autocomplete="current-password"` or `"new-password"`. Check: `grep -rn "onPaste" web/src` finds only the OTP input ([OtpInput.tsx][otp-input]), which accepts a pasted code and spreads it over the boxes; it is not a password field. |
 | V6.2.8 | The password is checked exactly as typed (no trimming, case change or truncation) | Pass | Argon2id over the full input ([register_crypto.go][crypto]); handlers do not trim passwords ([login.go][login-h]). `TestPasswordIsCheckedExactly` in [login_test.go][login-test] (added in this change). |
 | V6.3.1 | Brute-force and credential-stuffing controls are in place as documented | Pass | Limits in [ratelimit.go][ratelimit] as listed in [policies.md][policies-rl]; `TestRateLimitsOnPublicAuthRoutes` and `TestEveryDeclaredRateLimitIsTested` in [ratelimit_test.go][sectest-rl]; 5-wrong-codes rule in `TestSixthWrongCodeInvalidatesPendingSignup` ([register_test.go][register-test]). |
 | V6.3.2 | No default accounts such as `admin` or `root` | Pass (absence) | No migration or seed creates an account; the first admin is a normal sign-up promoted by hand ([dev runbook][dev-admin]). Check: `grep -rln "INSERT INTO account" backend/migrations backend/seed backend/internal/seed` finds nothing. |
@@ -264,6 +267,7 @@ V16 (Security Logging and Error Handling) and V17 (WebRTC) have no Level 1 requi
 [report-worker-test]: ../../backend/internal/worker/report/report_test.go
 [password-input]: ../../web/src/components/ui/PasswordInput.tsx
 [password-input-test]: ../../web/src/components/ui/password-input.test.tsx
+[otp-input]: ../../web/src/features/auth/register/OtpInput.tsx
 [web-logout]: ../../web/src/features/shell/logout.ts
 [web-logout-test]: ../../web/src/features/shell/logout.test.ts
 [admin-users]: ../../backend/internal/service/admin/users.go
