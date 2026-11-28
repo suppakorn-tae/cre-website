@@ -7,7 +7,7 @@ Source of truth, in [`docs/specs/`](docs/specs/README.md):
 - Requirements & use cases v1.14 — `docs/specs/requirements/`
 - Risk engine & indicators v1.1 — `docs/specs/risk-engine/`
 - UX/UI wireframes + hi-fi UI — `docs/specs/ux-ui/`, user flow in `docs/specs/user-flow/`
-- Architecture v2.3 (decisions v2.14) — `docs/specs/architecture/`
+- Architecture v2.3 (decisions v2.15) — `docs/specs/architecture/`
 - Database design v1.1 — `docs/specs/database/`
 
 If they disagree, label the Linear issue `needs-decision` and stop.
