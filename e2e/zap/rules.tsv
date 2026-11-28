@@ -2,7 +2,8 @@
 # Columns, tab separated: rule id, FAIL | WARN | IGNORE, name.
 # FAIL on medium and high, WARN on low. ZAP treats a rule that is not listed as
 # a WARN, so check.py also fails any medium or high alert that has no IGNORE line.
-# Every IGNORE needs a reason in a comment line right above it ("# reason: ...").
+# The signed-in scan (signed-in.yaml) runs the passive rules at their defaults and
+# is gated by check.py alone. Every IGNORE needs a reason in a comment line right above it ("# reason: ...").
 #
 # Medium and high
 10038	FAIL	Content Security Policy (CSP) Header Not Set
