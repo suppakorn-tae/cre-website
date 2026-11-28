@@ -75,6 +75,43 @@ describe('DonutChart tooltip', () => {
   });
 });
 
+describe('donut focus ring', () => {
+  const rings = () => document.querySelectorAll('[data-focus-ring]');
+  const keyboardFocus = (el: Element, visible: boolean) => {
+    const matches = el.matches.bind(el);
+    el.matches = (sel: string) => (sel === ':focus-visible' ? visible : matches(sel));
+    act(() => (el as HTMLElement).focus());
+  };
+
+  it('draws a halo and a ring along the arc on keyboard focus, and removes them on blur', () => {
+    setup();
+    expect(rings().length).toBe(0);
+    const vh = arc(/VH/);
+    keyboardFocus(vh, true);
+    const [ring, halo] = [...rings()];
+    expect(rings().length).toBe(2);
+    // Same dash and offset as the arc, wider than it, so the ring follows the arc's shape.
+    expect(ring.getAttribute('stroke')).toBe('var(--color-blue-600)');
+    expect(halo.getAttribute('stroke')).toBe('var(--color-card)');
+    expect(Number(ring.getAttribute('stroke-width'))).toBeGreaterThan(7.6);
+    expect(ring.getAttribute('stroke-dasharray')).not.toBeNull();
+    act(() => vh.blur());
+    expect(rings().length).toBe(0);
+  });
+
+  it('does not draw the ring for a mouse focus', () => {
+    setup();
+    keyboardFocus(arc(/VH/), false);
+    expect(rings().length).toBe(0);
+  });
+
+  it('turns the default outline off on the focused arc', () => {
+    const css = readFileSync(join(__dirname, 'display.module.css'), 'utf8');
+    expect(css).toMatch(/\.donutArc:focus-visible\s*\{\s*outline:\s*none/);
+    expect(css).not.toMatch(/\.donutArc:focus-visible\s*\{[^}]*outline:\s*2px/);
+  });
+});
+
 describe('donut arc styles', () => {
   const css = readFileSync(join(__dirname, 'display.module.css'), 'utf8');
   it('grows the active arc and only animates it when motion is allowed', () => {

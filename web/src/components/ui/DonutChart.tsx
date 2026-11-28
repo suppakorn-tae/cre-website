@@ -24,6 +24,14 @@ export type DonutArc = DonutSegment & { length: number; offset: number };
 /** The ring has a circumference of 100, so a segment's length is its share in percent. */
 const RADIUS = 15.9155;
 const STROKE = 6;
+/** Stroke of an arc while it is hovered or focused (see `.donutArc[data-active]`). */
+export const ACTIVE_STROKE = 7.6;
+/** Keyboard focus ring: a card-coloured halo, then the ring, both outside the grown arc. */
+const HALO = 0.5;
+const RING = 1;
+/** The viewBox has room for the ring outside the radius, so it is never clipped. */
+const VIEW_PAD = 2;
+const VIEW = 40 + 2 * VIEW_PAD;
 /** Gap between neighbouring segments: about 2 degrees of the ring (100 = 360 degrees). */
 export const GAP = (2 / 360) * 100;
 
@@ -56,8 +64,8 @@ export function drawnArc(arc: DonutArc, count: number): { length: number; offset
 export function arcAnchor(arc: DonutArc): { x: number; y: number } {
   const angle = ((arc.offset + arc.length / 2) / 100) * 2 * Math.PI - Math.PI / 2;
   return {
-    x: ((20 + RADIUS * Math.cos(angle)) / 40) * 100,
-    y: ((20 + RADIUS * Math.sin(angle)) / 40) * 100,
+    x: ((VIEW_PAD + 20 + RADIUS * Math.cos(angle)) / VIEW) * 100,
+    y: ((VIEW_PAD + 20 + RADIUS * Math.sin(angle)) / VIEW) * 100,
   };
 }
 
@@ -76,6 +84,15 @@ export function centreCount(centre: ReactNode): number | null {
     return Number(centre.replace(/,/g, ''));
   }
   return null;
+}
+
+/** True when the browser shows a focus ring for this element (keyboard, not a mouse click). */
+function focusVisible(el: Element): boolean {
+  try {
+    return el.matches(':focus-visible');
+  } catch {
+    return false;
+  }
 }
 
 type Props = {
@@ -123,6 +140,8 @@ export function DonutChart({
     else hide();
   }, []);
   useEffect(() => () => clearTimeout(closeTimer.current), []);
+  // The arc that shows the keyboard ring. A mouse click or a tap focuses without it.
+  const [ringKey, setRingKey] = useState<string | null>(null);
   const interactive = details !== undefined;
   const maskId = useId();
   const moving = shouldAnimate(animate, useReducedMotion());
@@ -138,10 +157,10 @@ export function DonutChart({
   return (
     <div
       className="relative mx-auto w-full shrink-0"
-      style={{ maxWidth: '11rem', aspectRatio: '1 / 1' }}
+      style={{ maxWidth: `${(11 * VIEW) / 40}rem`, aspectRatio: '1 / 1' }}
     >
       <svg
-        viewBox="0 0 40 40"
+        viewBox={`${-VIEW_PAD} ${-VIEW_PAD} ${VIEW} ${VIEW}`}
         role={interactive ? 'group' : 'img'}
         aria-label={label}
         aria-describedby={describedBy}
@@ -155,6 +174,41 @@ export function DonutChart({
           stroke="var(--color-subtle)"
           strokeWidth={STROKE}
         />
+        {ringKey !== null &&
+          arcs.length > 0 &&
+          (() => {
+            const arc = arcs.find((a) => a.key === ringKey);
+            if (!arc) return null;
+            // Longer than the arc by a sliver at each end, so the ends are ringed too; the
+            // neighbours are drawn later and cover the overlap.
+            const d = drawnArc(arc, arcs.length);
+            const pad = arcs.length < 2 ? 0 : GAP / 2;
+            const dash = `${d.length + 2 * pad} ${100 - d.length - 2 * pad}`;
+            const shared = {
+              cx: 20,
+              cy: 20,
+              r: RADIUS,
+              fill: 'none',
+              strokeDasharray: dash,
+              strokeDashoffset: 25 - d.offset + pad,
+              'data-focus-ring': '',
+              className: styles.donutRing,
+            };
+            return (
+              <g aria-hidden="true">
+                <circle
+                  {...shared}
+                  stroke="var(--color-blue-600)"
+                  strokeWidth={ACTIVE_STROKE + 2 * (HALO + RING)}
+                />
+                <circle
+                  {...shared}
+                  stroke="var(--color-card)"
+                  strokeWidth={ACTIVE_STROKE + 2 * HALO}
+                />
+              </g>
+            );
+          })()}
         {/* A mask, not a paint: white means "show". It stays white in dark mode. */}
         <mask id={maskId}>
           <circle
@@ -185,8 +239,14 @@ export function DonutChart({
                   // Touch has no hover: a tap focuses the arc, and focus shows the tooltip.
                   onPointerEnter: (e) => e.pointerType !== 'touch' && open(arc.key),
                   onPointerLeave: (e) => e.pointerType !== 'touch' && close(arc.key, CLOSE_DELAY),
-                  onFocus: () => open(arc.key),
-                  onBlur: () => close(arc.key),
+                  onFocus: (e) => {
+                    open(arc.key);
+                    setRingKey(focusVisible(e.currentTarget) ? arc.key : null);
+                  },
+                  onBlur: () => {
+                    close(arc.key);
+                    setRingKey((now) => (now === arc.key ? null : now));
+                  },
                 })}
                 cx="20"
                 cy="20"

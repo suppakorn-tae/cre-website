@@ -334,7 +334,10 @@ for (const theme of THEMES) {
                     ]
                   : [];
               const wrapBand = wrapRings.length ? parse(wrapRings[wrapRings.length - 1]![0]) : null;
-              const ring = outline ?? band ?? wrapBand;
+              // A donut arc takes no box-shadow: its ring is a wider stroke drawn under it.
+              const arcRing = focused.closest('svg')?.querySelector('circle[data-focus-ring]');
+              const stroke = arcRing ? parse(getComputedStyle(arcRing).stroke) : null;
+              const ring = outline ?? band ?? wrapBand ?? stroke;
               if (!ring) return { label, none: true as const };
               return {
                 label,
