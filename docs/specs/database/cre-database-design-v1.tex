@@ -436,7 +436,7 @@ sort\_no & smallint &  & U &  \\
 id & uuid &  & PK &  \\
 owner\_id & uuid &  & FK$\to$\texttt{account} &  \\
 name & text &  &  & Not blank. \\
-nickname & varchar(4) &  &  & 3--4 characters. \\
+nickname & varchar(4) &  &  & 3--4 characters. Unique per \texttt{owner\_id}, ignoring case, among live projects (\texttt{project\_owner\_nickname\_uq}). \\
 island\_code & text &  & FK$\to$\texttt{island} &  \\
 island\_other & text & yes &  & Set iff \texttt{island\_code = other}. \\
 type\_code & text &  & FK$\to$\texttt{project\_type} &  \\
@@ -659,12 +659,13 @@ ip\_address & inet & yes &  & Client IP (RealIP trusts Caddy only). \\
 
 
 \subsection{Indexes}
-Primary keys, unique keys and the \tb{locale} default index come from the tables above. Further indexes serve the frequent reads:
+Primary keys, unique keys and the \tb{locale} default index come from the tables above. Further indexes serve the frequent reads and one rule (the unique nickname):
 
 {\footnotesize\noindent
 \begin{tabularx}{\linewidth}{@{}>{\ttfamily}l >{\ttfamily\raggedright\arraybackslash}p{6.2cm} Y@{}}
 \toprule\rowcolor{hdr}\normalfont Index & \normalfont On & Serves \\ \midrule
 project\_owner\_ix & project (owner\_id) WHERE deleted\_at IS NULL & Dashboard and project list (every query carries the owner). \\
+project\_owner\_nickname\_uq & UNIQUE project (owner\_id, lower(nickname)) WHERE deleted\_at IS NULL & One nickname per user among live projects, ignoring case; a deleted project frees it. \\
 job\_requester\_ix & job (requested\_by, created\_at DESC) & Job status for the requester. \\
 job\_expiry\_ix & job (expires\_at) WHERE status = 'done' & Daily sweep of expired exports. \\
 report\_job\_version\_ix & report\_job (version\_id, submission\_no) & Reuse the report of the same submission. \\

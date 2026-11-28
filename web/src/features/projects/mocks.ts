@@ -148,6 +148,21 @@ export function searchProjects(items: Project[], q: string): Project[] {
 
 const errorBody = (code: string, message: string) => ({ error: { code, message } });
 
+/** Like the api: a nickname is taken when another live project of the user has it, ignoring case. */
+const nicknameTaken = (nickname: string | undefined, exceptId?: string) =>
+  nickname !== undefined &&
+  store.some(
+    (p) => p.id !== exceptId && p.nickname.toLowerCase() === nickname.trim().toLowerCase(),
+  );
+
+const duplicateNickname = () => ({
+  error: {
+    code: 'validation_failed',
+    message: 'one or more fields are invalid',
+    fields: [{ field: '/nickname', code: 'duplicate' }],
+  },
+});
+
 export const projectHandlers: HttpHandler[] = [
   http.get('/projects', ({ request, response }) => {
     const url = new URL(request.url);
@@ -164,6 +179,7 @@ export const projectHandlers: HttpHandler[] = [
   }),
   http.post('/projects', async ({ request, response }) => {
     const body = (await request.clone().json()) as ProjectFields;
+    if (nicknameTaken(body.nickname)) return response(422).json(duplicateNickname());
     // Like the api, creating a project also creates its first version.
     const project = withDerived(idFor(nextId++), body, 1, new Date().toISOString());
     store = [project, ...store];
@@ -179,6 +195,9 @@ export const projectHandlers: HttpHandler[] = [
     const current = store.find((p) => p.id === params.project_id);
     if (!current) return response(404).json(errorBody('not_found', 'project not found'));
     const changes = (await request.clone().json()) as Partial<ProjectFields>;
+    if (nicknameTaken(changes.nickname, current.id)) {
+      return response(422).json(duplicateNickname());
+    }
     const merged = { ...current, ...changes };
     const updated: Project = {
       ...merged,

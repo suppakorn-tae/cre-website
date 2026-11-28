@@ -119,6 +119,52 @@ describe('mock create project', () => {
     expect(list.items[0].latest_version_id).toBe(created.latest_version_id);
   });
 
+  describe('nickname uniqueness', () => {
+    const send = (method: string, path: string, body: object) =>
+      fetch(`http://localhost/api/v1${path}`, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    const newProject = (nickname: string) => ({
+      name: 'ทดสอบ',
+      nickname,
+      island_code: 'koh_tao',
+      type_code: 'building',
+      start_date: '2027-01-01',
+      end_date: '2027-12-31',
+      value_baht: 1_000_000,
+      progress_pct: 0,
+    });
+    const duplicateBody = {
+      error: expect.objectContaining({
+        code: 'validation_failed',
+        fields: [{ field: '/nickname', code: 'duplicate' }],
+      }),
+    };
+
+    it('rejects a create with a nickname the user already has, in any letter case', async () => {
+      for (const nickname of ['TK2', 'tk2', ' TK2']) {
+        const res = await send('POST', '/projects', newProject(nickname));
+        expect(res.status).toBe(422);
+        expect(await res.json()).toEqual(duplicateBody);
+      }
+    });
+
+    it('rejects an edit to another project nickname but allows keeping its own', async () => {
+      const [first, second] = getProjectStore();
+      const taken = await send('PATCH', `/projects/${first.id}`, {
+        nickname: second.nickname.toLowerCase(),
+      });
+      expect(taken.status).toBe(422);
+      expect(await taken.json()).toEqual(duplicateBody);
+      const same = await send('PATCH', `/projects/${first.id}`, {
+        nickname: first.nickname.toLowerCase(),
+      });
+      expect(same.status).toBe(200);
+    });
+  });
+
   it('sends a new project to the assessment of its version 1', async () => {
     const res = await fetch('http://localhost/api/v1/projects', {
       method: 'POST',

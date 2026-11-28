@@ -90,6 +90,7 @@ func TestValidate(t *testing.T) {
 		{"short nickname", func(f *Fields) { f.Nickname = "AB" }, []FieldError{fe("/nickname", "too_short")}},
 		{"long nickname", func(f *Fields) { f.Nickname = "ABCDE" }, []FieldError{fe("/nickname", "too_long")}},
 		{"thai nickname counts runes not bytes", func(f *Fields) { f.Nickname = "ปลา" }, nil},
+		{"nickname spaces are trimmed before the length check", func(f *Fields) { f.Nickname = " AB " }, []FieldError{fe("/nickname", "too_short")}},
 		{"bad island", func(f *Fields) { f.IslandCode = "mars" }, []FieldError{fe("/island_code", "invalid")}},
 		{"other needs text", func(f *Fields) { f.IslandCode = "other" }, []FieldError{fe("/island_other", "required")}},
 		{"text without other", func(f *Fields) { f.TypeOther = str("x") }, []FieldError{fe("/type_other", "not_allowed")}},

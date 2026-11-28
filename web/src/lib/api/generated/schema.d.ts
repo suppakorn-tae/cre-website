@@ -1954,6 +1954,11 @@ export interface components {
         ProjectFields: {
             /** @description Not blank. */
             name: string;
+            /**
+             * @description Unique among the owner's live projects, ignoring letter case and
+             *     surrounding spaces. A taken nickname is a 422 with field `/nickname`
+             *     and code `duplicate`. A deleted project frees its nickname.
+             */
             nickname: string;
             island_code: components["schemas"]["ProjectIsland"];
             island_other?: string | null;
@@ -2135,6 +2140,11 @@ export interface components {
         JobStatus: "queued" | "running" | "done" | "failed" | "expired";
         /** @description Not blank. */
         name: string;
+        /**
+         * @description Unique among the owner's live projects, ignoring letter case and
+         *     surrounding spaces. A taken nickname is a 422 with field `/nickname`
+         *     and code `duplicate`. A deleted project frees its nickname.
+         */
         nickname: string;
         island_other: string | null;
         type_other: string | null;

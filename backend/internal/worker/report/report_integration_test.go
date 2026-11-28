@@ -216,7 +216,7 @@ func TestGoldenReport(t *testing.T) {
 		}
 	}()
 
-	want := []string{"TST1", "ผลลัพธ์เป็นข้อมูลเบื้องต้นสำหรับใช้ประกอบการพิจารณาเท่านั้น", "ผู้ประเมิน", "ผู้ตรวจสอบ", "ผู้อนุมัติ", "ลดความเสี่ยง", "โอนความเสี่ยง"}
+	want := []string{p.Nickname, "ผลลัพธ์เป็นข้อมูลเบื้องต้นสำหรับใช้ประกอบการพิจารณาเท่านั้น", "ผู้ประเมิน", "ผู้ตรวจสอบ", "ผู้อนุมัติ", "ลดความเสี่ยง", "โอนความเสี่ยง"}
 	for _, c := range codes[:2] { // H and VH: code, name and every advice item of the stored lists
 		var name string
 		if err := db.QueryRow(ctx, `SELECT name FROM indicator_text WHERE indicator_code = $1 AND locale = 'th'`, c).Scan(&name); err != nil {

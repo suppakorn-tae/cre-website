@@ -153,6 +153,8 @@ export function ProjectForm({ project }: Props) {
     return () => {
       clearTimeout(timers.current[key]);
       if (key === 'progress' && values.progress.trim() === '') return;
+      // The server's "taken" answer stays until the user edits the nickname.
+      if (errors[key] === 'nicknameDuplicate') return;
       setFieldError(key, validateForm(values)[key]);
     };
   }
@@ -166,8 +168,13 @@ export function ProjectForm({ project }: Props) {
       return;
     }
     if (failure instanceof ApiError && failure.status === 422) {
-      // The server names the field in `error.fields`; the shared ApiError
-      // does not keep it, so show one message for the whole form.
+      // A nickname the user already has: show it on the field. Other server
+      // field errors share one message for the whole form.
+      if (failure.fields.some((f) => f.field === '/nickname' && f.code === 'duplicate')) {
+        setFieldError('nickname', 'nicknameDuplicate');
+        document.getElementById('project-nickname')?.focus();
+        return;
+      }
       setFormError(tCommon('validation_failed'));
       return;
     }

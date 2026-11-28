@@ -3,6 +3,7 @@ package projects
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -283,8 +284,9 @@ func TestValidation(t *testing.T) {
 
 func TestListQueryAndPaging(t *testing.T) {
 	e := newEnv(t)
-	for _, n := range []string{"Alpha", "Beta", "Gamma"} {
+	for i, n := range []string{"Alpha", "Beta", "Gamma"} {
 		body := strings.Replace(createJSON, `"Hotel"`, `"`+n+`"`, 1)
+		body = strings.Replace(body, `"HTL1"`, fmt.Sprintf(`"HT%d"`, i), 1)
 		if w := e.do(t, e.a, "POST", "/projects", body); w.Code != 201 {
 			t.Fatal(w.Body)
 		}
@@ -309,15 +311,64 @@ func TestListQueryAndPaging(t *testing.T) {
 func TestCreateFourthProjectIs409(t *testing.T) {
 	e := newEnv(t)
 	for i := 0; i < 3; i++ {
-		if w := e.do(t, e.a, "POST", "/projects", createJSON); w.Code != 201 {
+		body := strings.Replace(createJSON, `"HTL1"`, fmt.Sprintf(`"HT%d"`, i), 1)
+		if w := e.do(t, e.a, "POST", "/projects", body); w.Code != 201 {
 			t.Fatal(w.Body)
 		}
 	}
-	w := e.do(t, e.a, "POST", "/projects", createJSON)
+	w := e.do(t, e.a, "POST", "/projects", strings.Replace(createJSON, `"HTL1"`, `"HT9"`, 1))
 	if w.Code != 409 || !strings.Contains(w.Body.String(), `"project_limit_reached"`) {
 		t.Fatalf("4th create: %d %s", w.Code, w.Body)
 	}
 	if w := e.do(t, e.b, "POST", "/projects", createJSON); w.Code != 201 {
 		t.Fatalf("other account: %d %s", w.Code, w.Body)
+	}
+}
+
+func TestDuplicateNicknameIs422OnNickname(t *testing.T) {
+	e := newEnv(t)
+	w := e.do(t, e.a, "POST", "/projects", createJSON)
+	if w.Code != 201 {
+		t.Fatalf("create: %d %s", w.Code, w.Body)
+	}
+	id := decodeProject(t, w)["id"].(string)
+	other := strings.Replace(createJSON, `"HTL1"`, `"OTH2"`, 1)
+	w = e.do(t, e.a, "POST", "/projects", other)
+	if w.Code != 201 {
+		t.Fatalf("second project: %d %s", w.Code, w.Body)
+	}
+	otherID := decodeProject(t, w)["id"].(string)
+
+	wantDuplicate := func(w *httptest.ResponseRecorder) {
+		t.Helper()
+		var env api.ValidationErrorEnvelope
+		if err := json.Unmarshal(w.Body.Bytes(), &env); err != nil {
+			t.Fatal(err)
+		}
+		if w.Code != 422 || env.Error.Code != "validation_failed" || len(env.Error.Fields) != 1 ||
+			env.Error.Fields[0].Field != "/nickname" || env.Error.Fields[0].Code != "duplicate" {
+			t.Fatalf("want 422 duplicate on /nickname: %d %s", w.Code, w.Body)
+		}
+	}
+	// Create with a taken nickname, same and different case.
+	wantDuplicate(e.do(t, e.a, "POST", "/projects", createJSON))
+	wantDuplicate(e.do(t, e.a, "POST", "/projects", strings.Replace(createJSON, `"HTL1"`, `"htl1"`, 1)))
+	// Edit to another project's nickname.
+	wantDuplicate(e.do(t, e.a, "PATCH", "/projects/"+otherID, `{"nickname":"Htl1"}`))
+	// Edit keeping its own nickname, also with a case-only change.
+	for _, nick := range []string{"HTL1", "htl1"} {
+		if w := e.do(t, e.a, "PATCH", "/projects/"+id, `{"nickname":"`+nick+`","name":"Renamed"}`); w.Code != 200 {
+			t.Fatalf("keep own nickname %q: %d %s", nick, w.Code, w.Body)
+		}
+	}
+	// Another user may use it; a deleted project frees it.
+	if w := e.do(t, e.b, "POST", "/projects", createJSON); w.Code != 201 {
+		t.Fatalf("other user: %d %s", w.Code, w.Body)
+	}
+	if w := e.do(t, e.a, "DELETE", "/projects/"+id, ""); w.Code != 204 {
+		t.Fatalf("delete: %d", w.Code)
+	}
+	if w := e.do(t, e.a, "POST", "/projects", createJSON); w.Code != 201 {
+		t.Fatalf("reuse after delete: %d %s", w.Code, w.Body)
 	}
 }
