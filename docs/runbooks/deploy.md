@@ -1,6 +1,6 @@
 # Deploy runbook: production (conriskexpert.com)
 
-Spec: Architecture v2.3 with decisions v2.14 (Stack, Networking, Backup and
+Spec: Architecture v2.3 with decisions v2.15 (Stack, Networking, Backup and
 recovery, Kubernetes-readiness 1 and 6; v2.13 fixed the domain, Brevo and the
 S3-compatible backup repository).
 Files: `deploy/compose/compose.prod.yaml`, `deploy/compose/Caddyfile.prod`,

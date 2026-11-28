@@ -1,8 +1,11 @@
 package middleware_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
@@ -235,5 +238,47 @@ func TestSessionPutsAuditContextOnAdminRequests(t *testing.T) {
 	call("user")
 	if !errors.Is(recErr, audit.ErrNoAdmin) {
 		t.Fatalf("user request must not carry an admin: %v", recErr)
+	}
+}
+
+// downCache fails every read of a revoked-token key, as a Valkey outage does.
+type downCache struct{ *cache }
+
+func (c downCache) Get(ctx context.Context, k string) ([]byte, error) {
+	if strings.HasPrefix(k, "session:revoked:") {
+		return nil, errors.New("valkey down")
+	}
+	return c.cache.Get(ctx, k)
+}
+
+func TestValkeyOutageLogsCauseAndRequestIDAndAnswers500(t *testing.T) {
+	// A plain handler, not platform/log: the request id must come from the
+	// explicit attr in the middleware, since production uses the default logger.
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, nil)))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	st := &store{recs: map[string]session.Record{
+		"user": {Role: session.RoleUser, Status: session.StatusActive, Version: 1},
+	}}
+	svc, err := session.New(session.Config{Secret: []byte(strings.Repeat("k", 32))}, st, downCache{&cache{m: map[string][]byte{}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tok, _ := svc.Issue("user", 1, false)
+
+	h := middleware.RequestID(app(svc))
+	w := doGet(h, "/me", tok)
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500", w.Code)
+	}
+	rid := w.Header().Get(middleware.RequestIDHeader)
+	var line map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &line); err != nil {
+		t.Fatalf("log line: %v: %s", err, buf.String())
+	}
+	if rid == "" || line["request_id"] != rid || !strings.Contains(buf.String(), "valkey down") {
+		t.Fatalf("log lacks request id %q or cause: %s", rid, buf.String())
 	}
 }

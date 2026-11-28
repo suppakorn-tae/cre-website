@@ -1,10 +1,10 @@
-# CRE — Architecture Decisions (v2.14, 2026-11-26)
+# CRE — Architecture Decisions (v2.15, 2026-11-28)
 
 Aligned with Requirements & Use Case Specification v1.14 (23 Nov 2026) and Database Design v1.1 (23 Nov 2026).
 Document: `architecture/v2.3/cre-architecture-v2.3.docx` / `.pdf` (v2.3 resolves the database schema, optional backup and export expiry: AD-23 – AD-26).
 Diagram: `architecture/v2.3/cre-architecture-v2.3.drawio` / `.png` (UML component view, updated for Database Design v1.1 and the optional backup container).
 
-Database Design v1.1 was written against v2.10. Its three changes to this set — snapshot as rows, rounding per version, percentages on the result — are carried into v2.12 as AD-16 (updated), AD-17 (updated) and AD-23. v2.12 adds AD-26 (backup is optional) and nothing in v1.1 contradicts it. v2.13 (24 Nov 2026) fixes three open items: PDF engine = Gotenberg, e-mail provider = Brevo (SMTP relay), session lifetime by env defaults; and sets the production domain (conriskexpert.com) and the backup repository type (S3-compatible). v2.14 (26 Nov 2026, UI review) keeps one current PDF report per version: reuse it while its inputs are unchanged, replace it (and delete the old file) after they change.
+Database Design v1.1 was written against v2.10. Its three changes to this set — snapshot as rows, rounding per version, percentages on the result — are carried into v2.12 as AD-16 (updated), AD-17 (updated) and AD-23. v2.12 adds AD-26 (backup is optional) and nothing in v1.1 contradicts it. v2.13 (24 Nov 2026) fixes three open items: PDF engine = Gotenberg, e-mail provider = Brevo (SMTP relay), session lifetime by env defaults; and sets the production domain (conriskexpert.com) and the backup repository type (S3-compatible). v2.14 (26 Nov 2026, UI review) keeps one current PDF report per version: reuse it while its inputs are unchanged, replace it (and delete the old file) after they change. v2.15 (28 Nov 2026, security review) lists revoked session tokens in Valkey data placement, accepts that a Valkey wipe makes them valid again until expiry (no extra persistence, no session-version bump on restore), and records that a Valkey outage fails signed-in requests with 500.
 
 ## Stack
 - Frontend: Next.js (TypeScript)
@@ -129,14 +129,17 @@ Admin Service: manage users (list, search, role, deactivate, delete = anonymise;
 - **PostgreSQL (when enabled):** physical backup with continuous WAL archiving; `archive_mode = on`, `archive_timeout = 60s`. `backup` runs pgBackRest: full every Sunday 02:00 Asia/Bangkok, differential on the other days at 02:00. Retention: 5 full backups with all WAL between them (4–5 weeks of PITR); the first full of each month is copied to a second repository with object lock and kept 12 months. Encrypted (AES-256) and compressed (zstd) before upload; separate credentials.
 - **Where:** any S3-compatible bucket (endpoint, region, bucket and keys from env) at a different provider or region — never the app's RustFS on the same host. 3-2-1: live database, off-site repository, monthly immutable copy.
 - **RustFS (when enabled):** `reports/` mirrored nightly (replaced reports drop out of the mirror under its retention); `exports/` not backed up (rebuilt by requesting the export again).
-- **Valkey:** no backup; only short-lived state. Jobs survive because the `job` table is the source of truth; on start-up the worker re-enqueues queued / running jobs.
+- **Valkey:** no backup; only short-lived state (including revoked session tokens: see Data placement for the accepted loss). Jobs survive because the `job` table is the source of truth; on start-up the worker re-enqueues queued / running jobs.
 - **Restore (when enabled):** PITR to the latest point by default. To undo a mistake, restore to a separate instance and copy the affected rows back; production is not rolled back as a whole. Monthly automated restore test + quarterly full drill.
 - **Monitoring:** while enabled, alert when the newest WAL is older than 10 minutes, the last backup older than 26 hours, or `pgbackrest check` fails; while disabled, emit one `backup disabled` warning instead.
 - **Deleted accounts in backups:** anonymised e-mail may persist for up to 5 weeks (12 months for monthly copies); the retention notice discloses this. Backups are never used to bring erased data back into production.
 
 ## Data placement
 - Postgres: accounts, projects, versions (+ typed snapshot rows), answers, results, strategies, catalogue, thresholds, advice, jobs, audit log. No backend volume — api/worker are stateless.
-- Valkey: asynq queues + short-lived state (OTPs, pending sign-ups, OAuth state, resend cool-downs, rate-limit counters, session-check cache, cache-invalidation pub/sub). All state keys have a TTL; `noeviction` policy; AOF on.
+- Valkey: asynq queues + short-lived state (OTPs, pending sign-ups, OAuth state, resend cool-downs, rate-limit counters, session-check cache, revoked session tokens, cache-invalidation pub/sub). All state keys have a TTL; `noeviction` policy; AOF on.
+- Revoked session tokens (v2.15): key `session:revoked:<sha256 of token>`, TTL = the token's remaining life (at most 30 days). Log out and every new sign-in write it for the old token; the session middleware reads it on every signed-in request.
+  - **Accepted trade-off:** Valkey has no backup. If its data is wiped (volume lost, `FLUSHALL`, rebuilt host), tokens revoked before the wipe are valid again until they expire. Decided 28 Nov 2026 to accept this: no extra persistence and no session-version bump on restore. Password reset, deactivate and delete are not affected, because they raise the session version in Postgres.
+  - **Fail closed:** if Valkey cannot be read, signed-in requests fail with 500 `internal`; there is no fallback to Postgres. The middleware logs the cause with the request id. `/readyz` already fails without Valkey, so the api is taken out of rotation.
 - RustFS: `reports/`, `exports/` — reached only through the api. Export files expire after 7 days.
 - Volumes: `pgdata`, `valkey-data` (AOF on), `rustfs-data`, `caddy-data` (certs). Backups are off-site, not a local volume.
 
