@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/audit"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/session"
 )
@@ -50,8 +51,9 @@ func Session(svc *session.Service) func(http.Handler) http.Handler {
 				WriteError(w, r, http.StatusUnauthorized, "unauthenticated", "session is not valid")
 			default:
 				// Fail closed, and keep the cause for ops: the request log line
-				// carries only the status. The logger adds the request id.
-				slog.ErrorContext(r.Context(), "session check failed", "error", err)
+				// carries only the status.
+				slog.ErrorContext(r.Context(), "session check failed",
+					"request_id", log.RequestID(r.Context()), "error", err)
 				WriteError(w, r, http.StatusInternalServerError, "internal", "session check failed")
 			}
 		})

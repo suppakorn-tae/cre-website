@@ -3,6 +3,7 @@ package middleware_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -19,7 +20,6 @@ import (
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/middleware"
-	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/audit"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/session"
 )
@@ -241,19 +241,28 @@ func TestSessionPutsAuditContextOnAdminRequests(t *testing.T) {
 	}
 }
 
-type failingStore struct{ *store }
+// downCache fails every read of a revoked-token key, as a Valkey outage does.
+type downCache struct{ *cache }
 
-func (*failingStore) GetRecord(context.Context, string) (session.Record, error) {
-	return session.Record{}, errors.New("valkey and postgres down")
+func (c downCache) Get(ctx context.Context, k string) ([]byte, error) {
+	if strings.HasPrefix(k, "session:revoked:") {
+		return nil, errors.New("valkey down")
+	}
+	return c.cache.Get(ctx, k)
 }
 
-func TestSessionStoreFailureLogsCauseAndAnswers500(t *testing.T) {
+func TestValkeyOutageLogsCauseAndRequestIDAndAnswers500(t *testing.T) {
+	// A plain handler, not platform/log: the request id must come from the
+	// explicit attr in the middleware, since production uses the default logger.
 	var buf bytes.Buffer
 	prev := slog.Default()
-	slog.SetDefault(log.New(&buf, "info"))
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&buf, nil)))
 	t.Cleanup(func() { slog.SetDefault(prev) })
 
-	svc, err := session.New(session.Config{Secret: []byte(strings.Repeat("k", 32))}, &failingStore{}, &cache{m: map[string][]byte{}})
+	st := &store{recs: map[string]session.Record{
+		"user": {Role: session.RoleUser, Status: session.StatusActive, Version: 1},
+	}}
+	svc, err := session.New(session.Config{Secret: []byte(strings.Repeat("k", 32))}, st, downCache{&cache{m: map[string][]byte{}}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -265,8 +274,11 @@ func TestSessionStoreFailureLogsCauseAndAnswers500(t *testing.T) {
 		t.Fatalf("status = %d, want 500", w.Code)
 	}
 	rid := w.Header().Get(middleware.RequestIDHeader)
-	out := buf.String()
-	if rid == "" || !strings.Contains(out, rid) || !strings.Contains(out, "valkey and postgres down") {
-		t.Fatalf("log lacks request id %q or cause: %s", rid, out)
+	var line map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &line); err != nil {
+		t.Fatalf("log line: %v: %s", err, buf.String())
+	}
+	if rid == "" || line["request_id"] != rid || !strings.Contains(buf.String(), "valkey down") {
+		t.Fatalf("log lacks request id %q or cause: %s", rid, buf.String())
 	}
 }
