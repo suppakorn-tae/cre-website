@@ -297,6 +297,11 @@ func TestPasswordResetEndsOtherSessions(t *testing.T) {
 	}
 
 	req := api.ResetPasswordRequest{Email: "user@example.com", Otp: api.OtpCode(code), NewPassword: "brand-new-pass", NewPasswordConfirmation: "brand-new-pass"}
+	common := req
+	common.NewPassword, common.NewPasswordConfirmation = "Password123", "Password123"
+	if w := e.do(t, "POST", "/password/reset", "", common); w.Code != 422 || !strings.Contains(w.Body.String(), "password_too_common") {
+		t.Errorf("common password: %d %s", w.Code, w.Body)
+	}
 	bad := req
 	bad.Otp = "000000"
 	if bad.Otp == req.Otp {

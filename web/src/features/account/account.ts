@@ -22,6 +22,7 @@ export type PasswordErrors = Partial<
     | 'currentIncorrect'
     | 'tooShort'
     | 'tooLong'
+    | 'tooCommon'
     | 'confirmationRequired'
     | 'mismatch'
   >
@@ -57,6 +58,7 @@ export function classifyPasswordFailure(error: Shape): PasswordFailure {
     const errors: PasswordErrors = {};
     if (error.fields['/current_password'] === 'current_password_incorrect')
       errors.current = 'currentIncorrect';
+    if (error.fields['/new_password'] === 'password_too_common') errors.next = 'tooCommon';
     if (error.fields['/new_password'] === 'password_too_short') errors.next = 'tooShort';
     if (error.fields['/new_password_confirmation'] === 'password_mismatch')
       errors.confirmation = 'mismatch';

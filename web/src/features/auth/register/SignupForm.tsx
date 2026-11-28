@@ -91,6 +91,7 @@ export function SignupForm({ onBack, onSent, initialEmail = '' }: Props) {
       const hit = map[field];
       if (hit) out[hit[0]] = hit[1];
     }
+    if (error.fields['/password'] === 'password_too_common') out.password = 'passwordTooCommon';
     if (Object.keys(out).length === 0) out.form = tCommon('validation_failed');
     return out;
   }

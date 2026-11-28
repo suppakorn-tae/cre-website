@@ -10,11 +10,11 @@ The Top 10 view of the same evidence is in [`owasp-top-10.md`](owasp-top-10.md).
 
 | Status | Rows |
 | --- | ---: |
-| Pass | 52 |
-| &nbsp;&nbsp;of which Pass (code and test) | 45 |
+| Pass | 53 |
+| &nbsp;&nbsp;of which Pass (code and test) | 46 |
 | &nbsp;&nbsp;of which Pass (absence) | 4 |
 | &nbsp;&nbsp;of which Pass (review) | 3 |
-| Fail | 2 |
+| Fail | 1 |
 | N/A | 16 |
 | **Total** | **70** |
 
@@ -23,7 +23,6 @@ The Top 10 view of the same evidence is in [`owasp-top-10.md`](owasp-top-10.md).
 | ID | What is missing | Issue |
 | --- | --- | --- |
 | V3.3.1 | Cookies have no `__Host-` or `__Secure-` prefix | [IO-269](https://linear.app/printf-scanf/issue/IO-269) |
-| V6.2.4 | New passwords are not checked against a common-password list | [IO-270](https://linear.app/printf-scanf/issue/IO-270) |
 
 ### Fixed in this change (IO-267)
 
@@ -106,7 +105,7 @@ Integration tests (files ending in `_integration_test.go`, and the `securitytest
 | V6.2.1 | Passwords are at least 8 characters | Pass | 8 to 128 characters at sign-up, reset and change ([register.go][register], [reset.go][reset], [account.go][account-svc]; `TestStartValidation` in [register_test.go][register-test]; `TestResetPasswordValidationKeepsCode` in [reset_test.go][reset-test]; `TestChangePassword` in [handler_integration_test.go][account-test]). |
 | V6.2.2 | Users can change their password | Pass | `PUT /account/password` ([account.go][account-svc]; `TestChangePassword` in [handler_integration_test.go][account-test]). |
 | V6.2.3 | Changing the password needs the current and the new password | Pass | `current_password_incorrect` when the current one is wrong (`TestChangePassword` in [handler_integration_test.go][account-test]). |
-| V6.2.4 | New passwords are checked against at least the 3,000 most common passwords | **Fail** | Only the length is checked. Adding a check needs a new error code in the contract. [IO-270](https://linear.app/printf-scanf/issue/IO-270) |
+| V6.2.4 | New passwords are checked against at least the 3,000 most common passwords | Pass | `IsCommonPassword` in [common_passwords.go](../../backend/internal/service/auth/common_passwords.go) checks an embedded list of 4,995 passwords of 8 or more characters (UK NCSC 100k list from SecLists, MIT), ignoring case. Sign-up (`StartInput.validate`), password reset (`ResetValidatePassword`) and password change (`ChangePassword`) return 422 `password_too_common`. Tests: `TestIsCommonPasswordIgnoresCase`, `TestStartValidation`, `TestChangePasswordRejectsCommonPassword`, and the handler tests `TestStartRejectsCommonPassword`, `TestPasswordResetEndsOtherSessions`, `TestChangePassword`. |
 | V6.2.5 | No rules on character types | Pass | Length is the only rule (`TestStartValidation` in [register_test.go][register-test]). |
 | V6.2.6 | Password fields use `type=password` | Pass | [PasswordInput.tsx][password-input] starts masked and can be shown on request ([password-input.test.tsx][password-input-test]). |
 | V6.2.7 | Paste and password managers work | Pass (absence) | No field blocks paste, and the password fields carry `autocomplete="current-password"` or `"new-password"`. Check: `grep -rn "onPaste" web/src` finds only the OTP input ([OtpInput.tsx][otp-input]), which accepts a pasted code and spreads it over the boxes; it is not a password field. |
@@ -200,7 +199,7 @@ V16 (Security Logging and Error Handling) and V17 (WebRTC) have no Level 1 requi
 
 ## Gaps
 
-* **Two fails** (V3.3.1, V6.2.4), each with an issue above.
+* **One fail** (V3.3.1), with an issue above.
 * **Pass (review) without a test:** V12.1.1 (TLS versions), V12.2.2 (certificate issuer) and V13.4.1 (no `.git` in images). They are met by configuration but nothing in CI would notice a regression. The ZAP baseline scan ([`e2e/zap`](../../e2e/zap/scan.sh), job `zap` in [ci-e2e.yml](../../.github/workflows/ci-e2e.yml)) runs against the e2e stack, which uses the dev Caddyfile over plain http, so it does not cover them either.
 * **npm has no CI gate** like `govulncheck`; it relies on Dependabot alerts and `pnpm audit`.
 * **Level 2** is not attempted.

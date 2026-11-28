@@ -300,6 +300,20 @@ func TestStartValidation(t *testing.T) {
 	}
 }
 
+func TestStartRejectsCommonPassword(t *testing.T) {
+	e := newEnv(t)
+	f := form("common@example.co.th")
+	f["password"], f["password_confirmation"] = "Password123", "Password123"
+	w := e.post(t, signup+"start", f)
+	_, fields := errCode(t, w)
+	if w.Code != 422 || len(fields) != 1 || fields[0].Field != "/password" || fields[0].Code != "password_too_common" {
+		t.Fatalf("got %d %s", w.Code, w.Body)
+	}
+	if len(e.mail.Sent()) != 0 {
+		t.Fatal("e-mail sent")
+	}
+}
+
 func TestResendNeedsPendingSignUp(t *testing.T) {
 	e := newEnv(t)
 	w := e.post(t, signup+"resend", map[string]any{"email": "nobody@example.co.th"})

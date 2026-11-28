@@ -1,6 +1,7 @@
 # Manage own account (UC-04). Every operation needs a session. An account
 # endpoint never returns another user's data. Error codes used here:
-# current_password_incorrect, password_too_short, password_mismatch,
+# current_password_incorrect, password_too_short, password_too_common,
+# password_mismatch,
 # no_password, password_required, google_not_linked, reauth_required.
 /account:
   get:
@@ -92,7 +93,8 @@
     description: |
       For accounts that have a password. 422 codes:
       `/current_password`: `current_password_incorrect` (UC-04 4a);
-      `/new_password`: `password_too_short` (4b);
+      `/new_password`: `password_too_short` (4b), `password_too_common` (on the
+      embedded list of common passwords, compared ignoring case);
       `/new_password_confirmation`: `password_mismatch`. An account without a
       password gets 409 `no_password`.
     requestBody:

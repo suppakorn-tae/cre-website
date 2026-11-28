@@ -50,7 +50,8 @@ export interface paths {
          * Change password (UC-04 3, 4)
          * @description For accounts that have a password. 422 codes:
          *     `/current_password`: `current_password_incorrect` (UC-04 4a);
-         *     `/new_password`: `password_too_short` (4b);
+         *     `/new_password`: `password_too_short` (4b), `password_too_common` (on the
+         *     embedded list of common passwords, compared ignoring case);
          *     `/new_password_confirmation`: `password_mismatch`. An account without a
          *     password gets 409 `no_password`.
          */
@@ -509,6 +510,8 @@ export interface paths {
          * @description Validates the form, stores the pending sign-up in Valkey only and
          *     e-mails a 6-digit OTP. Nothing is written to Postgres until the OTP is
          *     verified. Validation (422) codes: `invalid_email`, `password_too_short`,
+         *     `password_too_common` (on `/password`: in the embedded list of common
+         *     passwords (8 or more characters), compared ignoring case),
          *     `password_mismatch` (on `/password_confirmation`),
          *     `retention_not_accepted`, `terms_not_accepted`. A second start for the
          *     same e-mail inside the 60 s cool-down returns 429 `otp_resend_cooldown`.
@@ -669,7 +672,7 @@ export interface paths {
          * @description On success stores the new hash and ends every session of the account.
          *     The client then returns to log in; no cookie is set. 422 codes:
          *     `/otp`: `otp_invalid`, `otp_expired`, `otp_locked` (password
-         *     unchanged, UC-02 1g); `/new_password`: `password_too_short`;
+         *     unchanged, UC-02 1g); `/new_password`: `password_too_short`, `password_too_common`;
          *     `/new_password_confirmation`: `password_mismatch`.
          */
         post: operations["resetPassword"];
