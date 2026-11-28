@@ -25,8 +25,24 @@ import (
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
 )
 
-// CookieName is the session cookie.
-const CookieName = "cre_session"
+// HostPrefix starts every cookie name in production. Browsers accept a
+// "__Host-" cookie only when it is Secure, has Path=/ and no Domain, so a
+// sibling subdomain or a plain-http page cannot plant or overwrite it.
+const HostPrefix = "__Host-"
+
+// CookieName is the session cookie in production. Local http development
+// drops the prefix, see CookieNameFor.
+const CookieName = HostPrefix + "cre_session"
+
+// CookieNameFor returns the production name, or the name without the
+// "__Host-" prefix when insecure: browsers reject a "__Host-" cookie that is
+// not Secure, and local development runs on plain http.
+func CookieNameFor(name string, insecure bool) string {
+	if insecure {
+		return strings.TrimPrefix(name, HostPrefix)
+	}
+	return name
+}
 
 // Roles and statuses as stored in the account table.
 const (
@@ -269,9 +285,12 @@ func (s *Service) Revoke(ctx context.Context, token string) error {
 	return nil
 }
 
+// CookieName is the session cookie name for this environment.
+func (s *Service) CookieName() string { return CookieNameFor(CookieName, s.cfg.Insecure) }
+
 // RevokeRequest revokes the session cookie the request carries, if any.
 func (s *Service) RevokeRequest(r *http.Request) error {
-	c, err := r.Cookie(CookieName)
+	c, err := r.Cookie(s.CookieName())
 	if err != nil || c.Value == "" {
 		return nil
 	}
@@ -356,7 +375,7 @@ func (s *Service) Forget(ctx context.Context, accountID string) error {
 // exp; otherwise the cookie ends with the browser session.
 func (s *Service) SetCookie(w http.ResponseWriter, token string, exp time.Time, remember bool) {
 	c := &http.Cookie{ //nolint:gosec // Secure is off only outside production (local http development)
-		Name: CookieName, Value: token, Path: "/",
+		Name: s.CookieName(), Value: token, Path: "/",
 		HttpOnly: true, Secure: !s.cfg.Insecure, SameSite: http.SameSiteLaxMode,
 	}
 	if remember {
@@ -369,7 +388,7 @@ func (s *Service) SetCookie(w http.ResponseWriter, token string, exp time.Time, 
 // ClearCookie removes the session cookie (log out of this device).
 func (s *Service) ClearCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{ //nolint:gosec // Secure is off only outside production (local http development)
-		Name: CookieName, Value: "", Path: "/", MaxAge: -1,
+		Name: s.CookieName(), Value: "", Path: "/", MaxAge: -1,
 		HttpOnly: true, Secure: !s.cfg.Insecure, SameSite: http.SameSiteLaxMode,
 	})
 }

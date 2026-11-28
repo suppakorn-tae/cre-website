@@ -40,7 +40,10 @@ export const mockAdminSession: AuthSession = {
   },
 };
 
-/** CSRF token the mock sets as the `cre_csrf` cookie and returns in the body. */
+/**
+ * CSRF token the mock sets as the `cre_csrf` cookie and returns in the body.
+ * Mock mode runs on local http, so it uses the development name (no `__Host-`).
+ */
 export const mockCsrfToken = '9f2c1d7a4be84c6f8a0e3b5d71c2a946';
 
 /** The OTP every mock accepts. */

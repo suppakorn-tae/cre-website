@@ -118,7 +118,7 @@ func newLoginEnv(t *testing.T) (loginEnv, string) {
 	r := chi.NewRouter()
 	r.Use(middleware.RealIP(nil))
 	r.Route("/api/v1/auth", func(r chi.Router) {
-		r.Get("/csrf", csrfToken(true))
+		r.Get("/csrf", csrfToken(d.Config.Insecure()))
 		r.With(d.Auth).Get("/me", me(d.Sessions))
 		loginRoutes(r, d, fake)
 	})

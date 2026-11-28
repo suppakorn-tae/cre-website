@@ -313,7 +313,7 @@ func TestCookies(t *testing.T) {
 	w := httptest.NewRecorder()
 	svc.SetCookie(w, "tok", exp, false)
 	c := w.Result().Cookies()[0]
-	if c.Name != CookieName || !c.HttpOnly || !c.Secure || c.Path != "/" ||
+	if c.Name != "__Host-cre_session" || !c.HttpOnly || !c.Secure || c.Path != "/" || c.Domain != "" ||
 		c.SameSite != http.SameSiteLaxMode || c.MaxAge != 0 || !c.Expires.IsZero() {
 		t.Fatalf("session cookie: %+v", c)
 	}
@@ -326,8 +326,30 @@ func TestCookies(t *testing.T) {
 
 	w = httptest.NewRecorder()
 	svc.ClearCookie(w)
-	if c := w.Result().Cookies()[0]; c.MaxAge >= 0 || c.Value != "" {
+	if c := w.Result().Cookies()[0]; c.Name != CookieName || c.MaxAge >= 0 || c.Value != "" {
 		t.Fatalf("clear: %+v", c)
+	}
+}
+
+// Local http development drops the __Host- prefix, which browsers accept
+// only on a Secure cookie; the service then reads the same name back.
+func TestCookiesInsecureDropPrefix(t *testing.T) {
+	svc, err := New(Config{Secret: []byte(strings.Repeat("k", 32)), Insecure: true}, &fakeStore{}, &fakeCache{m: map[string][]byte{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if svc.CookieName() != "cre_session" {
+		t.Fatalf("dev name %q", svc.CookieName())
+	}
+	w := httptest.NewRecorder()
+	svc.SetCookie(w, "tok", time.Now().Add(time.Hour), false)
+	if c := w.Result().Cookies()[0]; c.Name != "cre_session" || c.Secure || c.Path != "/" {
+		t.Fatalf("dev cookie: %+v", c)
+	}
+	w = httptest.NewRecorder()
+	svc.ClearCookie(w)
+	if c := w.Result().Cookies()[0]; c.Name != "cre_session" || c.MaxAge >= 0 {
+		t.Fatalf("dev clear: %+v", c)
 	}
 }
 

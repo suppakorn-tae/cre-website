@@ -20,8 +20,10 @@ components:
     sessionCookie:
       type: apiKey
       in: cookie
-      name: cre_session
-      description: httpOnly, Secure, SameSite=Lax session cookie holding the JWT.
+      name: __Host-cre_session
+      description: >-
+        httpOnly, Secure, SameSite=Lax session cookie holding the JWT. Named
+        `cre_session` without the `__Host-` prefix in local http development.
     csrfToken:
       type: apiKey
       in: header

@@ -73,7 +73,7 @@
             current_password: รหัสผ่านทดสอบ-2569
     responses:
       '204':
-        description: Account anonymised and closed. Clears `cre_session`.
+        description: Account anonymised and closed. Clears `__Host-cre_session`.
         headers:
           Set-Cookie:
             schema:

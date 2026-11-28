@@ -479,7 +479,7 @@ export interface paths {
         };
         /**
          * Get a CSRF token
-         * @description Sets the cookie `cre_csrf` (not httpOnly, Secure, SameSite=Lax,
+         * @description Sets the cookie `__Host-cre_csrf` (not httpOnly, Secure, SameSite=Lax,
          *     path=/) and returns the same token in the body. The client sends the
          *     token in the header `X-CSRF-Token` on every unsafe request (POST, PUT,
          *     PATCH, DELETE). The server returns 403 `csrf_invalid` when the header
@@ -725,11 +725,11 @@ export interface paths {
          *     e-mail gets the Google id linked, BR-16), otherwise `no_account`.
          *     `signup`: an existing account signs in as for `login`; a new identity
          *     is parked in Valkey and `needs_signup` sets a short-lived httpOnly
-         *     `cre_google_pending` cookie.
+         *     `__Host-cre_google_pending` cookie.
          *     `link`: stores the Google id on the session account (`linked`), or
          *     `already_linked`.
          *     `reauth`: marks the session as freshly re-authenticated for 5 minutes.
-         *     A successful sign-in also sets `cre_session`.
+         *     A successful sign-in also sets `__Host-cre_session`.
          */
         get: operations["googleCallback"];
         put?: never;
@@ -750,7 +750,7 @@ export interface paths {
         /**
          * Get the pending Google sign-up
          * @description Shows the verified Google e-mail on the notice screen. Requires the
-         *     `cre_google_pending` cookie; 404 when it is missing or expired.
+         *     `__Host-cre_google_pending` cookie; 404 when it is missing or expired.
          */
         get: operations["getGooglePending"];
         put?: never;
@@ -1548,7 +1548,7 @@ export interface components {
             terms_accepted_at?: components["schemas"]["Timestamp"];
             created_at: components["schemas"]["Timestamp"];
         };
-        /** @description The signed-in user. The session itself is the `cre_session` cookie. */
+        /** @description The signed-in user. The session itself is the `__Host-cre_session` cookie. */
         AuthSession: {
             user: components["schemas"]["Account"];
             expires_at: components["schemas"]["Timestamp"];
@@ -1556,7 +1556,7 @@ export interface components {
             keep_logged_in: boolean;
         };
         CsrfToken: {
-            /** @description Same value as the `cre_csrf` cookie. Send as `X-CSRF-Token` on every unsafe request; the server returns 403 when it does not match the cookie. */
+            /** @description Same value as the `__Host-cre_csrf` cookie. Send as `X-CSRF-Token` on every unsafe request; the server returns 403 when it does not match the cookie. */
             csrf_token: string;
         };
         RegisterStartRequest: {
@@ -2286,7 +2286,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Account anonymised and closed. Clears `cre_session`. */
+            /** @description Account anonymised and closed. Clears `__Host-cre_session`. */
             204: {
                 headers: {
                     "Set-Cookie"?: string;
@@ -2991,10 +2991,10 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Token for the current session (or anonymous visitor). Sets `cre_csrf`. */
+            /** @description Token for the current session (or anonymous visitor). Sets `__Host-cre_csrf`. */
             200: {
                 headers: {
-                    /** @description `cre_csrf=<token>; Path=/; Secure; SameSite=Lax`. Not httpOnly, so the web client can read it and echo it in `X-CSRF-Token`. */
+                    /** @description `__Host-cre_csrf=<token>; Path=/; Secure; SameSite=Lax`. Not httpOnly, so the web client can read it and echo it in `X-CSRF-Token`. */
                     "Set-Cookie"?: string;
                     [name: string]: unknown;
                 };
@@ -3084,7 +3084,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Account created and signed in. Sets `cre_session`. */
+            /** @description Account created and signed in. Sets `__Host-cre_session`. */
             201: {
                 headers: {
                     "Set-Cookie"?: string;
@@ -3164,7 +3164,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Signed in. Sets `cre_session`. */
+            /** @description Signed in. Sets `__Host-cre_session`. */
             200: {
                 headers: {
                     "Set-Cookie"?: string;
@@ -3189,7 +3189,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Logged out. Clears `cre_session`. */
+            /** @description Logged out. Clears `__Host-cre_session`. */
             204: {
                 headers: {
                     "Set-Cookie"?: string;
@@ -3423,7 +3423,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Account created and signed in. Sets `cre_session`. */
+            /** @description Account created and signed in. Sets `__Host-cre_session`. */
             201: {
                 headers: {
                     "Set-Cookie"?: string;

@@ -12,8 +12,10 @@ test('sign in as the e2e user and save the session cookie', async () => {
   const api = await loggedIn(USER);
   const cookies = (await api.ctx.storageState()).cookies;
   await api.dispose();
-  expect(cookies.map((c) => c.name)).toContain('cre_session');
+  // The e2e stack runs in production mode, so the cookie has the __Host- prefix.
+  const name = '__Host-cre_session';
+  expect(cookies.map((c) => c.name)).toContain(name);
   // Only the session: ZAP splits its options on spaces, so no "a=1; b=2" header.
-  const header = `cre_session=${cookies.find((c) => c.name === 'cre_session')!.value}`;
+  const header = `${name}=${cookies.find((c) => c.name === name)!.value}`;
   writeFileSync(file, header);
 });

@@ -8,10 +8,15 @@ export const SERVER_BASE_URL = 'http://api:4000/api/v1';
 
 /** Header named by the contract (`csrfToken` security scheme). */
 export const CSRF_HEADER = 'X-CSRF-Token';
-/** Session cookie named by the contract (`sessionCookie` security scheme). */
-export const SESSION_COOKIE = 'cre_session';
-/** Cookie the api sets with the CSRF token (double-submit); readable by script. */
-export const CSRF_COOKIE = 'cre_csrf';
+/**
+ * Session cookie named by the contract (`sessionCookie` security scheme), by
+ * preference. Production uses the `__Host-` name; local http development
+ * drops the prefix, because browsers reject a `__Host-` cookie that is not
+ * Secure. The api reads only the name of its own environment.
+ */
+export const SESSION_COOKIES = ['__Host-cre_session', 'cre_session'] as const;
+/** Cookie the api sets with the CSRF token (double-submit); readable by script. Same naming. */
+export const CSRF_COOKIES = ['__Host-cre_csrf', 'cre_csrf'] as const;
 
 const SAFE_METHODS = new Set(['GET', 'HEAD', 'OPTIONS']);
 
@@ -30,6 +35,19 @@ export function readCookie(cookieHeader: string, name: string): string | undefin
     if (key === name) return decodeURIComponent(rest.join('='));
   }
   return undefined;
+}
+
+/**
+ * The CSRF token from the browser's cookies. Over https (production) only the
+ * `__Host-` cookie counts: an unprefixed `cre_csrf` left from before the
+ * rename, or planted by a sibling subdomain, would fail the api's check.
+ * Over plain http (local development) the api sets the unprefixed name.
+ */
+export function readCsrfCookie(
+  cookieHeader: string,
+  https = globalThis.location?.protocol === 'https:',
+): string | undefined {
+  return readCookie(cookieHeader, https ? CSRF_COOKIES[0] : CSRF_COOKIES[1]);
 }
 
 /** Turns non-2xx answers into ApiError so TanStack Query can handle them. */
@@ -74,7 +92,7 @@ let browserClient: ApiClient | undefined;
 export function browserApi(): ApiClient {
   browserClient ??= createApiClient({
     baseUrl: BROWSER_BASE_URL,
-    getCsrfToken: () => readCookie(document.cookie, CSRF_COOKIE),
+    getCsrfToken: () => readCsrfCookie(document.cookie),
   });
   return browserClient;
 }

@@ -8,11 +8,15 @@ import (
 	"net/netip"
 	"net/url"
 	"strings"
+
+	"github.com/suppakorn-tae/cre-website/backend/internal/service/session"
 )
 
 // CSRF cookie and header names, as in the contract (GET /auth/csrf).
+// CSRFCookie is the production name; local http development drops the
+// "__Host-" prefix (session.CookieNameFor).
 const (
-	CSRFCookie = "cre_csrf"
+	CSRFCookie = session.HostPrefix + "cre_csrf"
 	CSRFHeader = "X-CSRF-Token"
 )
 
@@ -27,7 +31,7 @@ func NewCSRFToken() string {
 // web client can read it and echo it in X-CSRF-Token.
 func SetCSRFCookie(w http.ResponseWriter, token string, insecure bool) {
 	http.SetCookie(w, &http.Cookie{ //nolint:gosec // double-submit token: the web client must read it, so it cannot be HttpOnly
-		Name: CSRFCookie, Value: token, Path: "/",
+		Name: session.CookieNameFor(CSRFCookie, insecure), Value: token, Path: "/",
 		Secure: !insecure, SameSite: http.SameSiteLaxMode,
 	})
 }
@@ -39,8 +43,10 @@ func SetCSRFCookie(w http.ResponseWriter, token string, insecure bool) {
 // host; for a request from a trusted proxy (Caddy) the client scheme is read
 // from X-Forwarded-Proto. A missing Origin (server-side calls from
 // Next.js) is accepted when the token matches. Failures answer 403
-// `csrf_invalid`.
-func CSRF(trusted []netip.Prefix, extraOrigins ...string) func(http.Handler) http.Handler {
+// `csrf_invalid`. insecure (local http development) reads the cookie
+// without the "__Host-" prefix, as SetCSRFCookie writes it.
+func CSRF(insecure bool, trusted []netip.Prefix, extraOrigins ...string) func(http.Handler) http.Handler {
+	cookie := session.CookieNameFor(CSRFCookie, insecure)
 	allowed := map[string]bool{}
 	for _, o := range extraOrigins {
 		if n, ok := normOrigin(o); ok {
@@ -54,7 +60,7 @@ func CSRF(trusted []netip.Prefix, extraOrigins ...string) func(http.Handler) htt
 				next.ServeHTTP(w, r)
 				return
 			}
-			c, err := r.Cookie(CSRFCookie)
+			c, err := r.Cookie(cookie)
 			h := r.Header.Get(CSRFHeader)
 			if err != nil || c.Value == "" || h == "" ||
 				subtle.ConstantTimeCompare([]byte(c.Value), []byte(h)) != 1 {

@@ -261,7 +261,8 @@ var alice = oidctest.Identity{Subject: "g-alice", Email: "alice@example.com", Em
 func TestGoogleSignupFlow(t *testing.T) {
 	e := newGoogleEnv(t)
 	state, bind := e.start("signup", alice)
-	if bind == nil || !bind.HttpOnly || bind.Value != state {
+	if bind == nil || bind.Name != "__Host-cre_google_state" || !bind.HttpOnly || !bind.Secure ||
+		bind.Path != "/" || bind.Domain != "" || bind.Value != state {
 		t.Fatalf("state cookie %+v", bind)
 	}
 	resp, loc := e.callback(state, bind)
@@ -269,7 +270,8 @@ func TestGoogleSignupFlow(t *testing.T) {
 		t.Fatalf("location %s", loc)
 	}
 	pending := cookie(resp, googlePendingCookie)
-	if pending == nil || !pending.HttpOnly || cookie(resp, session.CookieName) != nil {
+	if pending == nil || pending.Name != "__Host-cre_google_pending" || !pending.HttpOnly || !pending.Secure ||
+		pending.Path != "/" || cookie(resp, session.CookieName) != nil {
 		t.Fatal("want the pending cookie and no session yet")
 	}
 	if resp := e.do(http.MethodGet, "/api/v1/auth/google/pending", "", pending); resp.StatusCode != http.StatusOK {

@@ -2,7 +2,7 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
 
-import { CSRF_HEADER, createApiClient, readCookie } from './client';
+import { CSRF_HEADER, createApiClient, readCookie, readCsrfCookie } from './client';
 import { ApiError, errorToToast } from './errors';
 
 const base = 'http://test.local/api/v1';
@@ -73,6 +73,22 @@ describe('readCookie', () => {
   it('reads and decodes a value', () => {
     expect(readCookie('a=1; cre_csrf=x%20y', 'cre_csrf')).toBe('x y');
     expect(readCookie('a=1', 'cre_csrf')).toBeUndefined();
+  });
+});
+
+describe('readCsrfCookie', () => {
+  it('reads only the __Host- cookie over https', () => {
+    expect(readCsrfCookie('cre_csrf=old; __Host-cre_csrf=prod', true)).toBe('prod');
+    expect(readCsrfCookie('a=1; cre_csrf=old', true)).toBeUndefined();
+  });
+  it('reads the development name over http', () => {
+    expect(readCsrfCookie('a=1; cre_csrf=dev', false)).toBe('dev');
+    expect(readCsrfCookie('__Host-cre_csrf=x', false)).toBeUndefined();
+  });
+  it('picks the name from the page protocol by default', () => {
+    expect(readCsrfCookie('cre_csrf=dev')).toBe(
+      globalThis.location?.protocol === 'https:' ? undefined : 'dev',
+    );
   });
 });
 
