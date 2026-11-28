@@ -1,0 +1,53 @@
+# ZAP automation plan for the signed-in scans (IO-266), filled in by scan.sh:
+# __TARGET__ is the base URL and __COOKIE__ the e2e user's session cookie.
+# Passive only: a spider on the signed-in pages, the openapi file imported so
+# every /api/v1 endpoint is requested once, then the passive rules. No active scan.
+#
+# zap-baseline.py is not used here: its -z replacer rules never reach the spider,
+# and a replacer rule added by the plan does.
+env:
+  contexts:
+    - name: app
+      urls:
+        - __TARGET__/dashboard
+        - __TARGET__/projects
+        - __TARGET__/projects/new
+        - __TARGET__/account
+      includePaths:
+        - __TARGET__/.*
+  parameters:
+    failOnError: true
+    progressToStdout: true
+jobs:
+  - type: replacer
+    parameters:
+      deleteAllRules: true
+    rules:
+      - description: e2e session
+        matchType: req_header
+        matchString: Cookie
+        matchRegex: false
+        replacementString: __COOKIE__
+  - type: spider
+    parameters:
+      context: app
+      maxDuration: 2
+  - type: openapi
+    parameters:
+      apiFile: /zap/in/openapi.yaml
+      targetUrl: __TARGET__
+      context: app
+  - type: passiveScan-wait
+    parameters:
+      maxDuration: 5
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: /zap/wrk/out
+      reportFile: signed-in
+      reportTitle: ZAP signed-in scan
+  - type: report
+    parameters:
+      template: traditional-json
+      reportDir: /zap/wrk/out
+      reportFile: signed-in

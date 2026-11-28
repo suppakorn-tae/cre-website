@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { expect, test, type Page } from '../../helpers/test';
+import { expect, guardedContext, test, type Page } from '../../helpers/test';
 import { loggedIn, type Api } from '../../helpers/api';
 import { pdfText } from './pdf-text';
 import { newUser } from '../auth/support';
@@ -69,7 +69,7 @@ test.describe.serial('project to report (UC-05 to UC-13)', () => {
     const who = await newUser('assess');
     api = await loggedIn(who);
     // Log-in itself is covered by tests/auth; reuse the API session in the browser.
-    const context = await browser.newContext({
+    const context = await guardedContext(browser, {
       ignoreHTTPSErrors: true,
       storageState: await api.ctx.storageState(),
     });

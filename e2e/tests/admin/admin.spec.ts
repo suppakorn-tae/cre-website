@@ -1,4 +1,4 @@
-import { expect, test } from '../../helpers/test';
+import { expect, guardedContext, test } from '../../helpers/test';
 import { loggedIn, type Api } from '../../helpers/api';
 import { ADMIN } from '../../helpers/env';
 import { logInThroughUi, newUser } from '../auth/support';
@@ -91,7 +91,7 @@ test('an advice edit shows in the results without resubmitting (UC-16)', async (
   const list = 'RL';
   type Lists = { lists: Record<string, { text: { th: string } }[]> };
   const original = (await json<Lists>(await admin.get(`/admin/advice/${code}`))).lists[list]!;
-  const context = await browser.newContext({
+  const context = await guardedContext(browser, {
     ignoreHTTPSErrors: true,
     storageState: await user.ctx.storageState(),
   });

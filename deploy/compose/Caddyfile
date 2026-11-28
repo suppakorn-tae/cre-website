@@ -1,6 +1,9 @@
 {
 	# Local TLS: Caddy's internal CA issues the localhost certificate.
 	local_certs
+	# Java clients such as ZAP (e2e/zap) send no SNI for a name without a dot,
+	# which Caddy answers with a TLS internal_error. Serve the localhost cert.
+	default_sni localhost
 }
 
 localhost {

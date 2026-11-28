@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '../../helpers/test';
+import { expect, guardedContext, test, type Page } from '../../helpers/test';
 import { loggedIn } from '../../helpers/api';
 import { ADMIN, USER } from '../../helpers/env';
 import { answerBody, go, json, send, VH_ANSWER } from '../admin/support';
@@ -31,7 +31,9 @@ test('signed-in routes load without console errors', async ({ browser }) => {
   const sub = await send(user, 'post', `${base}/submit`, {});
   expect(sub.status(), await sub.text()).toBe(200);
 
-  const userContext = await browser.newContext({ storageState: await user.ctx.storageState() });
+  const userContext = await guardedContext(browser, {
+    storageState: await user.ctx.storageState(),
+  });
   const userPage = await userContext.newPage();
   const userErrors = await consoleErrorsDuring(userPage, async () => {
     for (const path of [
@@ -53,7 +55,9 @@ test('signed-in routes load without console errors', async ({ browser }) => {
   expect(userErrors).toEqual([]);
 
   const admin = await loggedIn(ADMIN);
-  const adminContext = await browser.newContext({ storageState: await admin.ctx.storageState() });
+  const adminContext = await guardedContext(browser, {
+    storageState: await admin.ctx.storageState(),
+  });
   const adminPage = await adminContext.newPage();
   const adminErrors = await consoleErrorsDuring(adminPage, async () => {
     await go(adminPage, '/admin/users');
@@ -72,7 +76,7 @@ test('a signed-out visit goes to the log-in page', async ({ page }) => {
 
 test('a non-admin gets a 404 on the admin area', async ({ browser }) => {
   const user = await loggedIn(USER);
-  const context = await browser.newContext({ storageState: await user.ctx.storageState() });
+  const context = await guardedContext(browser, { storageState: await user.ctx.storageState() });
   const page = await context.newPage();
   await go(page, '/admin/users');
   await expect(page.getByTestId('admin-badge')).toHaveCount(0);
