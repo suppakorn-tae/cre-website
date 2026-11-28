@@ -4,6 +4,20 @@
 }
 
 localhost {
+	# The production security headers (Caddyfile.prod, IO-264) without HSTS,
+	# which would pin localhost to HTTPS in the browser for a year. The page CSP
+	# comes from the web app (web/src/proxy.ts).
+	header {
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		Cross-Origin-Opener-Policy "same-origin"
+	}
+
+	@api path /api/v*
+	header @api Content-Security-Policy "default-src 'none'; frame-ancestors 'none'"
+
 	# The API serves its liveness probe at /healthz, outside the /api/v1 prefix.
 	handle /api/v1/healthz {
 		rewrite * /healthz

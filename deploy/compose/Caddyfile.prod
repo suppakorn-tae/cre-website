@@ -6,12 +6,24 @@
 {$SITE_ADDRESS:conriskexpert.com} {
 	encode zstd gzip
 
+	# Security headers on every response (IO-264). The page CSP is made per
+	# request by the web app (web/src/proxy.ts), because it needs a nonce.
 	header {
-		Strict-Transport-Security "max-age=31536000"
+		# No `preload` until Tae decides: leaving the preload list is slow.
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
+		# For older browsers, next to the CSP's frame-ancestors 'none'.
+		X-Frame-Options "DENY"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+		Cross-Origin-Opener-Policy "same-origin"
 		-Server
 	}
+
+	# The api returns JSON and PDF/ZIP downloads, never a page: nothing in a
+	# response may load or run, and nothing may frame it.
+	@api path /api/v*
+	header @api Content-Security-Policy "default-src 'none'; frame-ancestors 'none'"
 
 	# The API serves its liveness probe at /healthz, outside the /api/v1 prefix.
 	handle /api/v1/healthz {

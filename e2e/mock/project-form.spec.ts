@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../helpers/test';
 
 // The project form on the mock api (MSW), see web/src/features/projects.
 const PROJECT = '0193a5c2-7b1e-7c3a-9d4f-000000000001';

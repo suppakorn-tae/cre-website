@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../../helpers/test';
 import { loggedIn } from '../../helpers/api';
 import { ADMIN, USER } from '../../helpers/env';
 import { answerBody, go, json, send, VH_ANSWER } from '../admin/support';

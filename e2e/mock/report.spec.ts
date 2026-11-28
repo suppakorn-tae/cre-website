@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../helpers/test';
 
 // The sample project and its versions (web/src/features/versions/mocks.ts):
 // v3 and v2 are submitted, v1 is a draft. The job mock walks queued, running,

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from '../helpers/test';
 
 // Ids of the sample project and its versions in web/src/features/versions/mocks.ts.
 const PROJECT = '0193a5c2-7b1e-7c3a-9d4f-000000000001';

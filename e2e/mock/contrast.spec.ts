@@ -1,4 +1,4 @@
-import { expect, test, type Locator, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '../helpers/test';
 
 // Colour contrast of the rendered pages (WCAG 2.2 1.4.3, 1.4.11, 1.4.1), on the mock api.
 // axe skips text on gradients and images, hover / focus / disabled states and all non-text

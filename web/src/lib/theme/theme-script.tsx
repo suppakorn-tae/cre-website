@@ -13,6 +13,8 @@ export const THEME_INIT_SCRIPT = `(function(){var d=document.documentElement,c=n
 )}).matches)t='dark'}catch(e){}d.setAttribute('data-theme',t)})();`;
 
 /** Render first in `<head>` of the root layout. */
-export function ThemeScript() {
-  return <script id="theme-init" dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />;
+export function ThemeScript({ nonce }: { nonce?: string }) {
+  return (
+    <script id="theme-init" nonce={nonce} dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+  );
 }

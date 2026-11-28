@@ -203,12 +203,14 @@ jobs:
           "$RUNNER_TEMP/sc/bin/pip" install shellcheck-py==0.11.0.1
           "$RUNNER_TEMP/sc/bin/shellcheck" --version
           find deploy -name '*.sh' -print0 | xargs -0 "$RUNNER_TEMP/sc/bin/shellcheck" -x
-      # No docker needed: the tests stub it.
+      # No docker needed: the tests stub it. caddyfile_test also parses the
+      # Caddyfiles with the caddy image when docker is there (as on this runner).
       - name: Shell tests
         run: |
           sh deploy/backup/test/preflight_test.sh
           sh deploy/backup/test/deploy_test.sh
           bash deploy/test/init_env_test.sh
+          sh deploy/test/caddyfile_test.sh
 
   # The single check to require for the areas above. It always runs, fails if any
   # needed job failed or was cancelled, and passes when jobs were skipped by the

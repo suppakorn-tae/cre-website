@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../../helpers/test';
 import { Api } from '../../helpers/api';
 import { PASSWORD } from '../../helpers/env';
 import { readOtp } from '../../helpers/mailpit';
