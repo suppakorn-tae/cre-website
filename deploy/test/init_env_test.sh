@@ -47,6 +47,8 @@ t "domain fills PUBLIC_BASE_URL" test "$(get PUBLIC_BASE_URL $f)" = https://exam
 t "domain fills SITE_ADDRESS" test "$(get SITE_ADDRESS $f)" = example.com
 t "no CHANGEME left in generated keys" bash -c '! grep -E "^(SESSION_SECRET|POSTGRES_PASSWORD|APP_DB_PASSWORD|S3_ACCESS_KEY|S3_SECRET_KEY|BACKUP_CIPHER_PASS|DATABASE_URL|MIGRATE_DATABASE_URL)=.*CHANGEME" .env.prod'
 t "input keys stay CHANGEME" bash -c 'grep -q "^SMTP_PASSWORD=CHANGEME" .env.prod'
+t "project limit defaults to 3" test "$(get MAX_PROJECTS_PER_USER $f)" = 3
+t "version limit defaults to 10" test "$(get MAX_VERSIONS_PER_PROJECT $f)" = 10
 t "comments kept" bash -c 'grep -q "^# Production template" .env.prod'
 
 # 2. no secret in the output
