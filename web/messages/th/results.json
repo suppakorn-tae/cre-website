@@ -53,6 +53,10 @@
   "overview": {
     "distributionTitle": "การกระจายระดับความเสี่ยง",
     "legendItem": "{count} · {pct}%",
+    "tooltip": {
+      "title": "{level} - {name}",
+      "detail": "จำนวน: {count} ({pct}%)"
+    },
     "factorChart": {
       "title": "ค่าเฉลี่ย RL, RI<sub>max</sub> และ RM รายด้าน (คะแนน 1–5)",
       "label": "ค่าเฉลี่ย RL, RI สูงสุด และ RM ของแต่ละปัจจัย คะแนน {min} ถึง {max}",

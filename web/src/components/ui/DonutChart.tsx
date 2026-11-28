@@ -1,11 +1,13 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
+import * as Tooltip from '@radix-ui/react-tooltip';
+import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 'react';
 
 import { formatNumber } from '@/lib/format/locale';
 
 import { useReducedMotion, useSweep, useTween } from './chartMotion';
 import styles from './display.module.css';
+import { TooltipContent } from './TooltipContent';
 
 export type DonutSegment = {
   key: string;
@@ -13,6 +15,9 @@ export type DonutSegment = {
   /** Any CSS colour, normally a token such as `var(--level-h)`. */
   color: string;
 };
+
+/** Text of one segment's tooltip. `title` is the name line, `detail` the numbers line. */
+export type DonutSegmentDetail = { title: string; detail: string };
 
 export type DonutArc = DonutSegment & { length: number; offset: number };
 
@@ -47,6 +52,18 @@ export function drawnArc(arc: DonutArc, count: number): { length: number; offset
   return { length, offset: arc.offset + (arc.length - length) / 2 };
 }
 
+/** Centre of an arc as a share (0 to 100) of the viewBox width and height, for anchoring a popup. */
+export function arcAnchor(arc: DonutArc): { x: number; y: number } {
+  const angle = ((arc.offset + arc.length / 2) / 100) * 2 * Math.PI - Math.PI / 2;
+  return {
+    x: ((20 + RADIUS * Math.cos(angle)) / 40) * 100,
+    y: ((20 + RADIUS * Math.sin(angle)) / 40) * 100,
+  };
+}
+
+/** Pause before a tooltip closes, so the pointer can cross to the popup (WCAG 1.4.13 hoverable). */
+const CLOSE_DELAY = 150;
+
 /** Motion runs only when asked for and not switched off in the system settings. */
 export function shouldAnimate(animate: boolean, reducedMotion: boolean): boolean {
   return animate && !reducedMotion;
@@ -73,6 +90,11 @@ type Props = {
   describedBy?: string;
   /** Sweep the ring in on mount and move the slices when values change. None under reduced motion. */
   animate?: boolean;
+  /**
+   * Tooltip text per segment key. A segment listed here grows on hover or focus and shows a
+   * tooltip (also on keyboard focus and touch; Escape dismisses it). Without it the ring is plain.
+   */
+  details?: Record<string, DonutSegmentDetail>;
 };
 
 /**
@@ -86,7 +108,22 @@ export function DonutChart({
   caption,
   describedBy,
   animate = true,
+  details,
 }: Props) {
+  const [active, setActive] = useState<string | null>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const open = useCallback((key: string) => {
+    clearTimeout(closeTimer.current);
+    setActive(key);
+  }, []);
+  const close = useCallback((key: string, delay = 0) => {
+    clearTimeout(closeTimer.current);
+    const hide = () => setActive((now) => (now === key ? null : now));
+    if (delay > 0) closeTimer.current = setTimeout(hide, delay);
+    else hide();
+  }, []);
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
+  const interactive = details !== undefined;
   const maskId = useId();
   const moving = shouldAnimate(animate, useReducedMotion());
   const progress = useSweep(moving);
@@ -105,7 +142,7 @@ export function DonutChart({
     >
       <svg
         viewBox="0 0 40 40"
-        role="img"
+        role={interactive ? 'group' : 'img'}
         aria-label={label}
         aria-describedby={describedBy}
         className="block h-full w-full"
@@ -135,9 +172,22 @@ export function DonutChart({
         <g mask={`url(#${maskId})`}>
           {arcs.map((arc) => {
             const d = drawnArc(arc, arcs.length);
+            const detail = details?.[arc.key];
             return (
               <circle
                 key={arc.key}
+                {...(detail && {
+                  role: 'img',
+                  tabIndex: 0,
+                  'aria-label': `${detail.title} ${detail.detail}`,
+                  'data-active': active === arc.key ? '' : undefined,
+                  className: styles.donutArc,
+                  // Touch has no hover: a tap focuses the arc, and focus shows the tooltip.
+                  onPointerEnter: (e) => e.pointerType !== 'touch' && open(arc.key),
+                  onPointerLeave: (e) => e.pointerType !== 'touch' && close(arc.key, CLOSE_DELAY),
+                  onFocus: () => open(arc.key),
+                  onBlur: () => close(arc.key),
+                })}
                 cx="20"
                 cy="20"
                 r={RADIUS}
@@ -151,9 +201,50 @@ export function DonutChart({
           })}
         </g>
       </svg>
+      {details && (
+        <Tooltip.Provider>
+          {arcs.map((arc) => {
+            const detail = details[arc.key];
+            if (!detail) return null;
+            const { x, y } = arcAnchor(arc);
+            return (
+              <Tooltip.Root
+                key={arc.key}
+                open={active === arc.key}
+                onOpenChange={(next) => !next && close(arc.key)}
+              >
+                {/* Only the anchor of the popup; the arc itself takes the pointer and focus. */}
+                <Tooltip.Trigger asChild>
+                  <span
+                    aria-hidden="true"
+                    tabIndex={-1}
+                    className="pointer-events-none absolute h-px w-px"
+                    style={{ left: `${x}%`, top: `${y}%` }}
+                  />
+                </Tooltip.Trigger>
+                <TooltipContent
+                  sideOffset={10}
+                  onPointerEnter={() => open(arc.key)}
+                  onPointerLeave={() => close(arc.key, CLOSE_DELAY)}
+                >
+                  <span className={styles.donutTipTitle}>
+                    <span
+                      aria-hidden="true"
+                      className={styles.donutTipDot}
+                      style={{ background: arc.color }}
+                    />
+                    {detail.title}
+                  </span>
+                  <span className={styles.donutTipDetail}>{detail.detail}</span>
+                </TooltipContent>
+              </Tooltip.Root>
+            );
+          })}
+        </Tooltip.Provider>
+      )}
       <span
         aria-hidden="true"
-        className="absolute inset-0 flex flex-col items-center justify-center text-center"
+        className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center"
       >
         <span className="text-kpi font-semibold leading-none text-navy-900">{shownCentre}</span>
         {caption !== undefined && (

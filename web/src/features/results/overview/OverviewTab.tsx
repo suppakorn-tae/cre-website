@@ -105,6 +105,18 @@ export function OverviewTab({ results, names }: Props) {
               describedBy="results-dist-legend"
               centre={formatNumber(total)}
               caption={t('unit')}
+              details={Object.fromEntries(
+                parts.map((p) => [
+                  p.level,
+                  {
+                    title: t('tooltip.title', { level: p.level, name: tUi(`levels.${p.level}`) }),
+                    detail: t('tooltip.detail', {
+                      count: formatNumber(p.count),
+                      pct: pct(p.pct),
+                    }),
+                  },
+                ]),
+              )}
             />
             <ul id="results-dist-legend" className={styles.legend}>
               {parts.map((p) => (
