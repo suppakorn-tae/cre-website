@@ -312,7 +312,8 @@
   gap: var(--space-4);
 }
 .tableWrap {
-  overflow-x: auto;
+  /* clip, not auto: a scroll container would stop the header sticking to the page. */
+  overflow-x: clip;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   background: var(--color-surface);
@@ -324,7 +325,13 @@
   line-height: var(--leading-body);
 }
 .table th {
+  position: sticky;
+  top: var(--nav-height);
+  z-index: 1;
+  box-sizing: border-box;
+  height: var(--table-head-h);
   padding: var(--space-3) var(--space-4);
+  box-shadow: 0 1px 0 var(--color-border);
   background: var(--color-subtle);
   color: var(--color-text-secondary);
   font-size: var(--text-caption);
@@ -336,8 +343,35 @@
   border-top: 1px solid var(--color-divider);
   vertical-align: middle;
 }
-.table tbody tr:hover {
+.table {
+  /* Header height; rows scroll clear of it so a focused cell is never under the sticky header. */
+  --table-head-h: 2.75rem;
+}
+.table tbody tr {
+  scroll-margin-top: var(--table-head-h);
+}
+.table tbody tr:nth-child(even) {
   background: var(--color-subtle);
+}
+.table tbody tr:hover {
+  background: var(--color-divider);
+}
+/* Dimension colour band on the leading edge of each row. */
+.dimRow[data-dim='ec'] {
+  --dim: var(--dim-ec);
+  --dim-tint: var(--dim-ec-tint);
+}
+.dimRow[data-dim='so'] {
+  --dim: var(--dim-so);
+  --dim-tint: var(--dim-so-tint);
+}
+.dimRow[data-dim='ev'] {
+  --dim: var(--dim-ev);
+  --dim-tint: var(--dim-ev-tint);
+}
+.dimRow[data-dim] > td:first-child {
+  box-shadow: inset 4px 0 0 var(--dim);
+  background: var(--dim-tint);
 }
 .num {
   text-align: end !important;
@@ -391,6 +425,16 @@
     border: 1px solid var(--color-border);
     border-radius: var(--radius-card);
     background: var(--color-surface);
+  }
+  .table tbody tr:nth-child(even) {
+    background: var(--color-subtle);
+  }
+  .dimRow[data-dim] {
+    border-inline-start: 4px solid var(--dim);
+  }
+  .dimRow[data-dim] > td:first-child {
+    box-shadow: none;
+    background: none;
   }
   .table td {
     display: flex;

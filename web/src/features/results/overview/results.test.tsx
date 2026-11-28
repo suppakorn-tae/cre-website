@@ -11,7 +11,7 @@ import results from '../../../../messages/th/results.json';
 import ui from '../../../../messages/th/ui.json';
 
 import { filterRows } from '../table/filter';
-import { ResultsTable } from '../table/ResultsTable';
+import { dimensionOf, ResultsTable } from '../table/ResultsTable';
 import type { IndicatorName } from './api';
 import { mockResultItems, mockResults, resultHandlers } from './mocks';
 import { OverviewTab } from './OverviewTab';
@@ -67,7 +67,7 @@ describe('overview', () => {
     expect(html).toContain('การกระจายระดับความเสี่ยง');
     expect(html).toContain('10 อันดับความเสี่ยงสูงสุด');
     expect(html).toContain('ด้านทดสอบ');
-    expect(html.match(/<tr>/g)).toHaveLength(6); // header + the first 5 of the top 10
+    expect(html.match(/<tr[ >]/g)).toHaveLength(6); // header + the first 5 of the top 10
     expect(html).toContain('แสดงครบ 10 อันดับ');
     expect(html).toContain('aria-expanded="false"');
   });
@@ -107,8 +107,17 @@ describe('detail table', () => {
     expect(html).toContain('RI<sub>C</sub>');
     expect(html).toContain('RI<sub>max</sub>');
     expect(html).toContain(`แสดง ${items.length} จาก ${items.length} ตัวชี้วัด`);
-    expect(html.match(/<tr>/g)).toHaveLength(items.length + 1);
+    expect(html.match(/<tr[ >]/g)).toHaveLength(items.length + 1);
     expect(html).toContain('ความเสี่ยงสูง');
+  });
+
+  it('reads the dimension of each row from the indicator code', () => {
+    expect(dimensionOf('EC-HS-2')).toBe('ec');
+    expect(dimensionOf('SO-XX-1')).toBe('so');
+    expect(dimensionOf('EV-AB-3')).toBe('ev');
+    expect(dimensionOf('ZZ-1')).toBeUndefined();
+    const html = wrap(<ResultsTable items={items} names={names} />);
+    expect(html).toMatch(/<tr[^>]*data-dim="(ec|so|ev)"/);
   });
 });
 

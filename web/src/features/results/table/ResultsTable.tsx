@@ -10,6 +10,14 @@ import { formatRm, formatScore, subscript } from '../overview/format';
 import styles from '../overview/results.module.css';
 import { filterRows } from './filter';
 
+const DIMENSIONS = ['ec', 'so', 'ev'] as const;
+
+/** Dimension of an indicator, read from the code prefix (EC, SO or EV). */
+export function dimensionOf(code: string): (typeof DIMENSIONS)[number] | undefined {
+  const prefix = code.slice(0, 2).toLowerCase();
+  return DIMENSIONS.find((d) => d === prefix);
+}
+
 type Props = { items: IndicatorResult[]; names: Map<string, IndicatorName> };
 
 /** Detail table (FR-25): every score per indicator, with search and a level filter. Read only. */
@@ -79,7 +87,11 @@ export function ResultsTable({ items, names }: Props) {
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={row.indicator_code}>
+                <tr
+                  key={row.indicator_code}
+                  data-dim={dimensionOf(row.indicator_code)}
+                  className={styles.dimRow}
+                >
                   <td data-primary="true" className={styles.code}>
                     {row.indicator_code}
                   </td>
