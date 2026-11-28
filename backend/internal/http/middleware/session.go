@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -48,6 +49,9 @@ func Session(svc *session.Service) func(http.Handler) http.Handler {
 				errors.Is(err, session.ErrRevoked):
 				WriteError(w, r, http.StatusUnauthorized, "unauthenticated", "session is not valid")
 			default:
+				// Fail closed, and keep the cause for ops: the request log line
+				// carries only the status. The logger adds the request id.
+				slog.ErrorContext(r.Context(), "session check failed", "error", err)
 				WriteError(w, r, http.StatusInternalServerError, "internal", "session check failed")
 			}
 		})

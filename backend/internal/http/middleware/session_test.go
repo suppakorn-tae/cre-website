@@ -1,8 +1,10 @@
 package middleware_test
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
@@ -17,6 +19,7 @@ import (
 
 	"github.com/suppakorn-tae/cre-website/backend/internal/adapter/valkey"
 	"github.com/suppakorn-tae/cre-website/backend/internal/http/middleware"
+	"github.com/suppakorn-tae/cre-website/backend/internal/platform/log"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/audit"
 	"github.com/suppakorn-tae/cre-website/backend/internal/service/session"
 )
@@ -235,5 +238,35 @@ func TestSessionPutsAuditContextOnAdminRequests(t *testing.T) {
 	call("user")
 	if !errors.Is(recErr, audit.ErrNoAdmin) {
 		t.Fatalf("user request must not carry an admin: %v", recErr)
+	}
+}
+
+type failingStore struct{ *store }
+
+func (*failingStore) GetRecord(context.Context, string) (session.Record, error) {
+	return session.Record{}, errors.New("valkey and postgres down")
+}
+
+func TestSessionStoreFailureLogsCauseAndAnswers500(t *testing.T) {
+	var buf bytes.Buffer
+	prev := slog.Default()
+	slog.SetDefault(log.New(&buf, "info"))
+	t.Cleanup(func() { slog.SetDefault(prev) })
+
+	svc, err := session.New(session.Config{Secret: []byte(strings.Repeat("k", 32))}, &failingStore{}, &cache{m: map[string][]byte{}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	tok, _ := svc.Issue("user", 1, false)
+
+	h := middleware.RequestID(app(svc))
+	w := doGet(h, "/me", tok)
+	if w.Code != http.StatusInternalServerError {
+		t.Fatalf("status = %d, want 500", w.Code)
+	}
+	rid := w.Header().Get(middleware.RequestIDHeader)
+	out := buf.String()
+	if rid == "" || !strings.Contains(out, rid) || !strings.Contains(out, "valkey and postgres down") {
+		t.Fatalf("log lacks request id %q or cause: %s", rid, out)
 	}
 }
