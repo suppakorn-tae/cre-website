@@ -66,7 +66,7 @@ for (const theme of ['light', 'dark'] as const) {
         await action.focus();
         await expect(action).toBeFocused();
         await action.click({ force: true });
-        await expect(page.getByRole('dialog')).toHaveCount(0);
+        await expect(page.getByRole('alertdialog')).toHaveCount(0);
         await expectNoViolations(page, `${theme} ${tab} at the version limit`);
       });
     }
@@ -77,7 +77,7 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(page.getByText('3 / 10 เวอร์ชัน')).toBeVisible({ timeout: 20_000 });
       await expect(action).not.toHaveAttribute('aria-disabled', 'true');
       await action.click();
-      await expect(page.getByRole('dialog')).toBeVisible();
+      await expect(page.getByRole('alertdialog')).toBeVisible();
     });
   });
 }
@@ -89,7 +89,7 @@ test('a create refused by the server still shows its message (stale page)', asyn
   await page.evaluate(() => localStorage.setItem('cre-mock-max-versions', '3'));
   await page.getByRole('button', { name: 'เวอร์ชันใหม่', exact: true }).click();
   await page
-    .getByRole('dialog')
+    .getByRole('alertdialog')
     .getByRole('button', { name: 'สร้างเวอร์ชันใหม่', exact: true })
     .click();
   await expect(
