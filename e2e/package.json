@@ -1,6 +1,7 @@
 {
   "name": "@cre/e2e",
   "private": true,
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "stack:up": "sh scripts/stack.sh up",
